@@ -67,6 +67,7 @@ export interface CanvasComponentProps {
   onCharacterRightClick?: (character: Character) => void;
   isPanelEditMode?: boolean; // コマ編集モード
   onPanelSplit?: (panelId: number, direction: "horizontal" | "vertical") => void; // 分割ハンドラー
+  onPanelEditModeToggle?: (enabled: boolean) => void; // 🆕 この行を追加
 }
 
 // テンプレート定義の型

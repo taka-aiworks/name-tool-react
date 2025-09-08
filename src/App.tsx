@@ -293,6 +293,12 @@ function App() {
     setShowCharacterPanel(true);
   }, []);
 
+// 編集モード切り替え関数を追加（既存の編集モード管理の近くに）
+const handlePanelEditModeToggle = (enabled: boolean) => {
+  setIsPanelEditMode(enabled);
+};
+
+
   return (
     <div className={`app ${isDarkMode ? 'dark' : 'light'}`}>
       {/* ヘッダー */}
@@ -466,6 +472,7 @@ function App() {
             onCharacterRightClick={handleCharacterRightClick}
             isPanelEditMode={isPanelEditMode}
             onPanelSplit={handlePanelSplit}
+            onPanelEditModeToggle={handlePanelEditModeToggle} // 🆕 この行を追加
           />
         </div>
 

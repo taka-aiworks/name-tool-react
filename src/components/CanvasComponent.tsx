@@ -22,6 +22,7 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
   onCharacterRightClick,
   isPanelEditMode = false, // 🆕 コマ編集モード
   onPanelSplit, // 🆕 分割ハンドラー
+  onPanelEditModeToggle, // 🆕 この行を追加
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   
@@ -38,6 +39,8 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
   const [isPanelMoving, setIsPanelMoving] = useState(false); // 🆕
   const [resizeDirection, setResizeDirection] = useState<string>("");
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  // 🆕 スナップライン管理
+  const [snapLines, setSnapLines] = useState<Array<{x1: number, y1: number, x2: number, y2: number, type: 'vertical' | 'horizontal'}>>([]);
   
   // 編集モーダル管理
   const [editingBubble, setEditingBubble] = useState<SpeechBubble | null>(null);
@@ -252,12 +255,22 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
     const { target, targetElement } = contextMenu;
     
     switch (action) {
-      case 'edit':
-        if (target === 'bubble' && targetElement) {
-          setEditingBubble(targetElement as SpeechBubble);
-          setEditText((targetElement as SpeechBubble).text);
+      case 'editPanel':
+      if (target === 'panel' && targetElement) {
+        setSelectedPanel(targetElement as Panel);
+        setSelectedCharacter(null);
+        setSelectedBubble(null);
+        if (onPanelSelect) onPanelSelect(targetElement as Panel);
+        if (onCharacterSelect) onCharacterSelect(null);
+        
+        // 🆕 編集モードを自動でONにする
+        if (onPanelEditModeToggle) {
+          onPanelEditModeToggle(true);
         }
-        break;
+        
+        console.log("コマ編集モード開始:", (targetElement as Panel).id);
+      }
+      break;
       case 'delete':
         if (target === 'panel' && targetElement) {
           deletePanelWithConfirmation(targetElement as Panel);
@@ -330,6 +343,10 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
     PanelRenderer.drawPanels(ctx, panels, selectedPanel, isDarkMode, isPanelEditMode);
     CharacterRenderer.drawCharacters(ctx, characters, panels, selectedCharacter);
     BubbleRenderer.drawBubbles(ctx, speechBubbles, panels, selectedBubble);
+    // 🆕 スナップライン描画
+    if (snapLines.length > 0) {
+      PanelRenderer.drawSnapLines(ctx, snapLines, isDarkMode);
+    }
   };
 
   // 左クリック処理
@@ -383,8 +400,13 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
+    // 🔧 デバッグ用ログ追加
+    console.log("右クリック座標:", x, y);
+    console.log("編集モード:", isPanelEditMode);
+
     const clickedBubble = BubbleRenderer.findBubbleAt(x, y, speechBubbles, panels);
     if (clickedBubble) {
+      console.log("吹き出しを右クリック"); // 🔧 デバッグ用
       setContextMenu({
         visible: true,
         x: e.clientX,
@@ -397,6 +419,7 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
 
     const clickedCharacter = CharacterRenderer.findCharacterAt(x, y, characters, panels);
     if (clickedCharacter) {
+      console.log("キャラクターを右クリック"); // 🔧 デバッグ用
       setContextMenu({
         visible: true,
         x: e.clientX,
@@ -408,7 +431,12 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
     }
 
     const clickedPanel = PanelRenderer.findPanelAt(x, y, panels);
-    if (clickedPanel && PanelRenderer.shouldShowContextMenu(x, y, clickedPanel, isPanelEditMode)) {
+    console.log("パネル判定結果:", clickedPanel); // 🔧 デバッグ用
+    console.log("shouldShowContextMenu:", clickedPanel ? PanelRenderer.shouldShowContextMenu(x, y, clickedPanel, isPanelEditMode) : false); // 🔧 デバッグ用
+    
+    if (clickedPanel) {
+    // 編集モードOFFでも右クリックメニューは表示（編集開始用）
+      console.log("パネルを右クリック - メニュー表示"); // 🔧 デバッグ用
       setContextMenu({
         visible: true,
         x: e.clientX,
@@ -419,6 +447,7 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
       return;
     }
 
+    console.log("どの要素でもない箇所を右クリック"); // 🔧 デバッグ用
     setContextMenu({
       visible: true,
       x: e.clientX,
@@ -582,12 +611,19 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
 
-    // 🔧 パネルリサイズ処理（完全修正）
+    // 🔧 パネルリサイズ処理（感度調整・安定化版）
     if (selectedPanel && isPanelResizing) {
       const startX = dragOffset.x;
       const startY = dragOffset.y;
-      const deltaX = mouseX - startX;
-      const deltaY = mouseY - startY;
+      
+      // 🔧 移動量を制限して感度を下げる
+      let deltaX = mouseX - startX;
+      let deltaY = mouseY - startY;
+      
+      // 大きな変化量を制限（安定性向上）
+      const maxDelta = 100;
+      deltaX = Math.max(-maxDelta, Math.min(maxDelta, deltaX));
+      deltaY = Math.max(-maxDelta, Math.min(maxDelta, deltaY));
       
       const updatedPanel = PanelRenderer.resizePanel(
         selectedPanel,
@@ -598,6 +634,9 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
       
       setPanels(panels.map(p => p.id === selectedPanel.id ? updatedPanel : p));
       setSelectedPanel(updatedPanel);
+      
+      // 🔧 開始位置を更新（連続的なリサイズのため）
+      setDragOffset({ x: mouseX, y: mouseY });
       return;
     }
 
@@ -758,6 +797,7 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
     setIsPanelResizing(false); // 🆕
     setIsPanelMoving(false); // 🆕
     setResizeDirection("");
+    setSnapLines([]); // 🆕 スナップラインをクリア
   };
 
   // 🆕 キーボードイベント処理（パネル削除対応）
@@ -804,7 +844,7 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
   // 再描画
   useEffect(() => {
     drawCanvas();
-  }, [panels, selectedPanel, characters, selectedCharacter, speechBubbles, selectedBubble, isPanelEditMode]);
+  }, [panels, selectedPanel, characters, selectedCharacter, speechBubbles, selectedBubble, isPanelEditMode, snapLines.length]);
 
   // ダークモード監視
   useEffect(() => {
@@ -1005,6 +1045,26 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
                 onClick={() => handleContextMenuAction('select')}
               >
                 選択
+              </div>
+              {/* 🆕 コマ編集メニュー項目 */}
+              <div
+                style={{
+                  padding: "8px 12px",
+                  cursor: "pointer",
+                  borderBottom: `1px solid ${document.documentElement.getAttribute("data-theme") === "dark" ? "#555555" : "#eee"}`,
+                  transition: "background-color 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  const target = e.target as HTMLElement;
+                  target.style.backgroundColor = document.documentElement.getAttribute("data-theme") === "dark" ? "#3d3d3d" : "#f5f5f5";
+                }}
+                onMouseLeave={(e) => {
+                  const target = e.target as HTMLElement;
+                  target.style.backgroundColor = "transparent";
+                }}
+                onClick={() => handleContextMenuAction('editPanel')}
+              >
+                コマ編集
               </div>
               <div
                 style={{
