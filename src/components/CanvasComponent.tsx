@@ -54,6 +54,7 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
   });
 
   // キャラクター追加機能（テンプレート強制読み込み対応）
+  // キャラクター追加機能（新システム対応）
   const addCharacter = (type: string) => {
     // パネルが存在しない場合は、選択されたテンプレートから取得
     let availablePanels = panels;
@@ -88,13 +89,21 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
       x: absoluteX,
       y: absoluteY,
       scale: 2.0,
+      
+      // 旧システム（後方互換性）
       facing: "front",
       gaze: "center",
       pose: "standing",
       expression: "neutral",
-      viewType: "halfBody",
       faceAngle: "front",
-      eyeDirection: "center",
+      
+      // 新システム
+      bodyDirection: "front",
+      faceExpression: "normal",
+      bodyPose: "standing",
+      eyeDirection: "front", // center → front に変更
+      
+      viewType: "halfBody",
       isGlobalPosition: true,
     };
 

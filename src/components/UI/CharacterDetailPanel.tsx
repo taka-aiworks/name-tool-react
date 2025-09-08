@@ -1,4 +1,4 @@
-// src/components/UI/CharacterDetailPanel.tsx (レイアウト改善&斜め角度追加版)
+// src/components/UI/CharacterDetailPanel.tsx (簡略化版)
 import React from "react";
 import { Character } from "../../types";
 
@@ -17,7 +17,6 @@ const CharacterDetailPanel: React.FC<CharacterDetailPanelProps> = ({
 }) => {
   if (!selectedCharacter) return null;
 
-  // ダークモード判定
   const isDarkMode = document.documentElement.getAttribute("data-theme") === "dark";
 
   const handleUpdate = (updates: Partial<Character>) => {
@@ -32,7 +31,7 @@ const CharacterDetailPanel: React.FC<CharacterDetailPanelProps> = ({
     }
   };
 
-  // ダークモード対応のスタイル
+  // スタイル定義
   const panelStyle = {
     position: "absolute" as const,
     top: "100px",
@@ -40,16 +39,19 @@ const CharacterDetailPanel: React.FC<CharacterDetailPanelProps> = ({
     background: isDarkMode ? "#2d2d2d" : "white",
     border: `2px solid ${isDarkMode ? "#555555" : "#0066ff"}`,
     borderRadius: "8px",
-    padding: "15px",
+    padding: "16px",
     boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
-    minWidth: "220px",
+    minWidth: "260px",
+    maxWidth: "280px",
     zIndex: 1000,
     color: isDarkMode ? "#ffffff" : "#333333",
+    maxHeight: "80vh",
+    overflowY: "auto" as const,
   };
 
-  const buttonStyle = (isActive: boolean) => ({
-    padding: "6px 10px",
-    fontSize: "11px",
+  const buttonStyle = (isActive: boolean, size: "small" | "medium" = "medium") => ({
+    padding: size === "small" ? "6px 8px" : "8px 12px",
+    fontSize: size === "small" ? "10px" : "11px",
     border: `1px solid ${isDarkMode ? "#555555" : "#ccc"}`,
     borderRadius: "4px",
     background: isActive 
@@ -59,25 +61,29 @@ const CharacterDetailPanel: React.FC<CharacterDetailPanelProps> = ({
       ? "white" 
       : (isDarkMode ? "#ffffff" : "#333"),
     cursor: "pointer",
-    minWidth: "32px",
     textAlign: "center" as const,
     transition: "all 0.2s ease",
+    fontWeight: isActive ? "bold" : "normal",
+    minHeight: "32px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
   });
 
   const labelStyle = {
     fontSize: "12px",
     fontWeight: "bold" as const,
     color: isDarkMode ? "#ffffff" : "#333333",
-    marginBottom: "6px",
+    marginBottom: "8px",
     display: "block",
   };
 
-  const inputStyle = {
-    width: "100%",
-    marginTop: "5px",
-    background: isDarkMode ? "#3d3d3d" : "white",
-    border: `1px solid ${isDarkMode ? "#555555" : "#ccc"}`,
-    color: isDarkMode ? "#ffffff" : "#333333",
+  const sectionStyle = {
+    marginBottom: "16px",
+    padding: "12px",
+    background: isDarkMode ? "#1a1a1a" : "#f8f9fa",
+    borderRadius: "6px",
+    border: `1px solid ${isDarkMode ? "#444444" : "#e9ecef"}`,
   };
 
   return (
@@ -87,13 +93,16 @@ const CharacterDetailPanel: React.FC<CharacterDetailPanelProps> = ({
         display: "flex", 
         justifyContent: "space-between", 
         alignItems: "center", 
-        marginBottom: "15px" 
+        marginBottom: "16px",
+        borderBottom: `2px solid ${isDarkMode ? "#ff8833" : "#0066ff"}`,
+        paddingBottom: "8px",
       }}>
         <h4 style={{ 
           margin: "0", 
-          color: isDarkMode ? "#ff8833" : "#0066ff" 
+          color: isDarkMode ? "#ff8833" : "#0066ff",
+          fontSize: "15px",
         }}>
-          🎭 {selectedCharacter.name} 設定
+          🎭 {selectedCharacter.name}
         </h4>
         {onClose && (
           <button
@@ -104,6 +113,7 @@ const CharacterDetailPanel: React.FC<CharacterDetailPanelProps> = ({
               fontSize: "16px",
               cursor: "pointer",
               color: isDarkMode ? "#cccccc" : "#666",
+              padding: "4px",
             }}
             title="閉じる"
           >
@@ -113,11 +123,11 @@ const CharacterDetailPanel: React.FC<CharacterDetailPanelProps> = ({
       </div>
 
       {/* 表示タイプ */}
-      <div style={{ marginBottom: "12px" }}>
-        <label style={labelStyle}>📷 表示タイプ:</label>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "4px" }}>
+      <div style={sectionStyle}>
+        <label style={labelStyle}>📷 表示タイプ</label>
+        <div style={{ display: "flex", gap: "6px" }}>
           {[
-            { value: "face", label: "顔" },
+            { value: "face", label: "顔のみ" },
             { value: "halfBody", label: "半身" },
             { value: "fullBody", label: "全身" },
           ].map((option) => (
@@ -125,6 +135,7 @@ const CharacterDetailPanel: React.FC<CharacterDetailPanelProps> = ({
               key={option.value}
               onClick={() => handleUpdate({ viewType: option.value as any })}
               style={buttonStyle(selectedCharacter.viewType === option.value)}
+              title={option.label}
             >
               {option.label}
             </button>
@@ -132,139 +143,231 @@ const CharacterDetailPanel: React.FC<CharacterDetailPanelProps> = ({
         </div>
       </div>
 
-      {/* 顔の角度 - 斜め方向追加 */}
-      <div style={{ marginBottom: "12px" }}>
-        <label style={labelStyle}>🔄 顔の角度:</label>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "3px" }}>
-          {[
-            { value: "leftDiagonal", label: "↖" },
-            { value: "left", label: "←" },
-            { value: "leftBack", label: "↙" },
-            { value: "front", label: "正面" },
-            { value: "back", label: "後ろ" },
-            { value: "rightDiagonal", label: "↗" },
-            { value: "right", label: "→" },
-            { value: "rightBack", label: "↘" },
-          ].map((option, index) => (
-            <button
-              key={option.value}
-              onClick={() => handleUpdate({ faceAngle: option.value as any })}
-              style={{
-                ...buttonStyle(selectedCharacter.faceAngle === option.value),
-                gridColumn: index === 3 ? "1 / 3" : index === 4 ? "3" : "auto",
-                fontSize: option.value === "front" || option.value === "back" ? "9px" : "11px",
-              }}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* 視線方向 - 整理されたレイアウト */}
-      <div style={{ marginBottom: "12px" }}>
-        <label style={labelStyle}>👀 視線方向:</label>
+      {/* 体の向き（4方向に簡略化） */}
+      <div style={sectionStyle}>
+        <label style={labelStyle}>🔄 体の向き</label>
         <div style={{ 
           display: "grid", 
           gridTemplateColumns: "repeat(3, 1fr)", 
-          gap: "3px",
-          maxWidth: "120px",
-          margin: "0 auto"
+          gap: "6px",
+          maxWidth: "150px",
+          margin: "0 auto",
         }}>
+          {/* 上段 */}
           <div></div>
           <button
-            onClick={() => handleUpdate({ eyeDirection: "up" })}
-            style={buttonStyle(selectedCharacter.eyeDirection === "up")}
+            onClick={() => handleUpdate({ 
+              bodyDirection: "front" as any, 
+              faceAngle: "front" as any 
+            })}
+            style={buttonStyle(selectedCharacter.bodyDirection === "front", "small")}
+            title="正面"
           >
-            ↑
+            正面
           </button>
           <div></div>
           
+          {/* 中段 */}
           <button
-            onClick={() => handleUpdate({ eyeDirection: "left" })}
-            style={buttonStyle(selectedCharacter.eyeDirection === "left")}
+            onClick={() => handleUpdate({ 
+              bodyDirection: "left" as any, 
+              faceAngle: "left" as any 
+            })}
+            style={buttonStyle(selectedCharacter.bodyDirection === "left", "small")}
+            title="左向き"
           >
-            ←
+            左
           </button>
+          <div style={{ 
+            background: isDarkMode ? "#444444" : "#e9ecef", 
+            borderRadius: "4px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: "14px",
+            minHeight: "32px",
+          }}>
+            🧍
+          </div>
           <button
-            onClick={() => handleUpdate({ eyeDirection: "center" })}
-            style={buttonStyle(selectedCharacter.eyeDirection === "center")}
+            onClick={() => handleUpdate({ 
+              bodyDirection: "right" as any, 
+              faceAngle: "right" as any 
+            })}
+            style={buttonStyle(selectedCharacter.bodyDirection === "right", "small")}
+            title="右向き"
           >
-            ●
-          </button>
-          <button
-            onClick={() => handleUpdate({ eyeDirection: "right" })}
-            style={buttonStyle(selectedCharacter.eyeDirection === "right")}
-          >
-            →
+            右
           </button>
           
+          {/* 下段 */}
           <div></div>
           <button
-            onClick={() => handleUpdate({ eyeDirection: "down" })}
-            style={buttonStyle(selectedCharacter.eyeDirection === "down")}
+            onClick={() => handleUpdate({ 
+              bodyDirection: "back" as any, 
+              faceAngle: "back" as any 
+            })}
+            style={buttonStyle(selectedCharacter.bodyDirection === "back", "small")}
+            title="後ろ向き"
           >
-            ↓
+            後ろ
           </button>
           <div></div>
         </div>
       </div>
 
-      {/* 移動モード */}
-      <div style={{ marginBottom: "12px" }}>
+      {/* 表情（わかりやすい名前に変更） */}
+      <div style={sectionStyle}>
+        <label style={labelStyle}>😊 表情</label>
+        <div style={{ 
+          display: "grid", 
+          gridTemplateColumns: "repeat(2, 1fr)", 
+          gap: "4px",
+        }}>
+          {[
+            { value: "normal", label: "ふつう" },
+            { value: "smile", label: "にっこり" },
+            { value: "sad", label: "かなしい" },
+            { value: "angry", label: "おこってる" },
+            { value: "surprised", label: "びっくり" },
+            { value: "embarrassed", label: "てれてる" },
+            { value: "worried", label: "こまった" },
+            { value: "sleepy", label: "ねむい" },
+          ].map((expr) => (
+            <button
+              key={expr.value}
+              onClick={() => handleUpdate({ faceExpression: expr.value as any })}
+              style={buttonStyle(selectedCharacter.faceExpression === expr.value, "small")}
+              title={expr.label}
+            >
+              {expr.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ポーズ（わかりやすい名前に変更） */}
+      <div style={sectionStyle}>
+        <label style={labelStyle}>🤸 ポーズ</label>
+        <div style={{ 
+          display: "grid", 
+          gridTemplateColumns: "repeat(2, 1fr)", 
+          gap: "4px",
+        }}>
+          {[
+            { value: "standing", label: "立ってる" },
+            { value: "sitting", label: "座ってる" },
+            { value: "walking", label: "歩いてる" },
+            { value: "pointing", label: "指さし" },
+            { value: "waving", label: "手を振る" },
+            { value: "arms_crossed", label: "腕くみ" },
+          ].map((pose) => (
+            <button
+              key={pose.value}
+              onClick={() => handleUpdate({ bodyPose: pose.value as any })}
+              style={buttonStyle(selectedCharacter.bodyPose === pose.value, "small")}
+              title={pose.label}
+            >
+              {pose.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* 視線方向（シンプルに） */}
+      <div style={sectionStyle}>
+        <label style={labelStyle}>👀 視線</label>
+        <div style={{ 
+          display: "flex", 
+          justifyContent: "center",
+          gap: "4px",
+        }}>
+          {[
+            { value: "left", label: "←" },
+            { value: "front", label: "●" },
+            { value: "right", label: "→" },
+            { value: "up", label: "↑" },
+            { value: "down", label: "↓" },
+          ].map((eye) => (
+            <button
+              key={eye.value}
+              onClick={() => handleUpdate({ eyeDirection: eye.value as any })}
+              style={{
+                ...buttonStyle(selectedCharacter.eyeDirection === eye.value, "small"),
+                minWidth: "32px",
+              }}
+              title={eye.value === "front" ? "正面" : eye.value}
+            >
+              {eye.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* 設定 */}
+      <div style={sectionStyle}>
+        <label style={labelStyle}>⚙️ 設定</label>
+        
         <label style={{ 
-          fontSize: "12px", 
-          fontWeight: "bold",
-          color: isDarkMode ? "#ffffff" : "#333333"
+          fontSize: "11px", 
+          fontWeight: "normal",
+          color: isDarkMode ? "#ffffff" : "#333333",
+          display: "flex",
+          alignItems: "center",
+          marginBottom: "10px",
+          cursor: "pointer",
         }}>
           <input
             type="checkbox"
             checked={selectedCharacter.isGlobalPosition}
             onChange={(e) => handleUpdate({ isGlobalPosition: e.target.checked })}
-            style={{ marginRight: "6px" }}
+            style={{ marginRight: "8px" }}
           />
           🆓 自由移動モード
         </label>
-        <div style={{ 
-          fontSize: "10px", 
-          color: isDarkMode ? "#888888" : "#666", 
-          marginTop: "3px",
-          marginLeft: "20px"
-        }}>
-          パネル外への移動が可能
-        </div>
-      </div>
-
-      {/* スケール調整 */}
-      <div style={{ marginBottom: "15px" }}>
-        <label style={labelStyle}>📏 サイズ: {selectedCharacter.scale.toFixed(1)}x</label>
+        
+        <label style={{...labelStyle, marginBottom: "4px", fontSize: "11px"}}>
+          📏 サイズ: {selectedCharacter.scale.toFixed(1)}x
+        </label>
         <input
           type="range"
-          min="0.3"
-          max="10.0"
+          min="0.5"
+          max="4.0"
           step="0.1"
           value={selectedCharacter.scale}
           onChange={(e) => handleUpdate({ scale: parseFloat(e.target.value) })}
-          style={inputStyle}
+          style={{
+            width: "100%",
+            marginTop: "4px",
+            background: isDarkMode ? "#3d3d3d" : "white",
+          }}
         />
+        <div style={{ 
+          fontSize: "9px", 
+          color: isDarkMode ? "#888888" : "#666", 
+          textAlign: "center",
+          marginTop: "2px",
+        }}>
+          0.5x ～ 4.0x
+        </div>
       </div>
 
       {/* 削除ボタン */}
       {onCharacterDelete && (
         <div style={{ 
           borderTop: `1px solid ${isDarkMode ? "#555555" : "#eee"}`, 
-          paddingTop: "12px" 
+          paddingTop: "12px",
         }}>
           <button
             onClick={handleDelete}
             style={{
               width: "100%",
-              padding: "10px 12px",
+              padding: "10px",
               background: "#ff4444",
               color: "white",
               border: "none",
               borderRadius: "4px",
-              fontSize: "12px",
+              fontSize: "11px",
               cursor: "pointer",
               fontWeight: "bold",
               transition: "background-color 0.2s ease",
@@ -277,7 +380,7 @@ const CharacterDetailPanel: React.FC<CharacterDetailPanelProps> = ({
             }}
             title="このキャラクターを削除"
           >
-            🗑️ キャラクターを削除
+            🗑️ 削除
           </button>
         </div>
       )}

@@ -277,31 +277,32 @@ const handleCharacterRightClick = (character: Character) => {
           <div className="section">
             <h3>🎭 シーンテンプレート</h3>
             <div className="scene-grid">
-              {Object.keys(sceneTemplates).map((sceneType) => (
+              {[
+                { key: 'daily', icon: '🌅', name: '日常' },
+                { key: 'dialogue', icon: '💬', name: '会話' },
+                { key: 'action', icon: '⚡', name: 'アクション' },
+                { key: 'emotional', icon: '😢', name: '感情' },
+                { key: 'comedy', icon: '😄', name: 'コメディ' },
+                { key: 'romance', icon: '💕', name: '恋愛' },
+                { key: 'tension', icon: '😰', name: '緊張' },
+                { key: 'surprise', icon: '😲', name: '驚き' },
+              ].map((scene) => (
                 <div
-                  key={sceneType}
-                  className={`scene-card ${selectedScene === sceneType ? 'selected' : ''}`}
-                  onClick={() => handleSceneClick(sceneType)}
+                  key={scene.key}
+                  className={`scene-card ${selectedScene === scene.key ? 'selected' : ''}`}
+                  onClick={() => handleSceneClick(scene.key)}
+                  title={`${scene.name}シーン - 斜め方向対応`}
                 >
                   <div className="scene-icon">
-                    {sceneType === 'daily' && '🌅'}
-                    {sceneType === 'dialogue' && '💬'}
-                    {sceneType === 'action' && '⚡'}
-                    {sceneType === 'emotional' && '😢'}
-                    {sceneType === 'comedy' && '😄'}
+                    {scene.icon}
                   </div>
-                  <span>
-                    {sceneType === 'daily' && '日常'}
-                    {sceneType === 'dialogue' && '会話'}
-                    {sceneType === 'action' && 'アクション'}
-                    {sceneType === 'emotional' && '感情'}
-                    {sceneType === 'comedy' && 'コメディ'}
-                  </span>
+                  <span>{scene.name}</span>
                 </div>
               ))}
             </div>
             <div className="scene-info">
-              💡 キャラクターと吹き出しが自動配置されます
+              💡 キャラクターと吹き出しが自動配置されます<br/>
+              🆕 恋愛・緊張・驚きは斜め方向対応
             </div>
           </div>
         </div>
