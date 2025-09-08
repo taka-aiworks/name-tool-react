@@ -102,16 +102,18 @@ body {
   height: 100%;
 }
 
-/* キャンバスエリア */
+
+/* キャンバスエリア - 縦並び修正 */
 .canvas-area {
   flex: 1;
   background-color: var(--bg-primary);
   display: flex;
-  justify-content: center;
-  align-items: flex-start;
+  flex-direction: column; /* ← これを追加！縦並びにする */
+  align-items: center;
   padding: 20px;
   overflow: auto;
 }
+
 
 /* セクション */
 .section {
@@ -385,12 +387,8 @@ body {
     border: none;
     border-bottom: 1px solid var(--border-color);
   }
-  
-  .canvas-controls {
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-  
+
+
   .undo-redo-buttons {
     order: 2;
   }
@@ -444,4 +442,124 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--accent-color);
+}
+
+/* キャンバスコントロール - コンパクト化 */
+.canvas-controls {
+  width: auto;
+  max-width: 600px;
+  min-width: 400px;
+  margin-bottom: 0.75rem; /* 1rem → 0.5rem に縮小 */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem; /* 1rem → 0.75rem に縮小 */
+  padding: 0.5rem 1rem; /* 1rem → 0.5rem 1rem に縮小 */
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 3px; /* 8px → 6px に縮小 */
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1); /* 影も小さく */
+}
+
+/* ボタンもコンパクトに */
+.control-btn {
+  padding: 0.4rem 0.8rem; /* 0.5rem 1rem → 0.4rem 0.8rem */
+  border: 1px solid var(--border-color);
+  border-radius: 4px; /* 6px → 4px */
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s;
+  font-size: 0.85rem; /* 0.9rem → 0.85rem */
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.2rem; /* 0.25rem → 0.2rem */
+}
+/* ボタングループ */
+.undo-redo-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+
+/* 通常のコントロールボタン（戻る・進む） */
+.control-btn:not(.delete-btn):hover:not(:disabled) {
+  background-color: var(--accent-color);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.control-btn:not(.delete-btn):disabled {
+  background-color: var(--bg-tertiary);
+  color: var(--text-muted);
+  cursor: not-allowed;
+  border-color: var(--border-color);
+}
+
+/* 削除ボタン */
+.control-btn.delete-btn {
+  background-color: var(--bg-primary);
+  border-color: var(--danger-color);
+  color: var(--danger-color);
+}
+
+.control-btn.delete-btn:hover:not(:disabled) {
+  background-color: var(--danger-color);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(244, 67, 54, 0.3);
+}
+
+.control-btn.delete-btn:disabled {
+  background-color: var(--bg-tertiary);
+  color: var(--text-muted);
+  border-color: var(--border-color);
+  cursor: not-allowed;
+}
+
+/* キャンバス情報もコンパクトに */
+.canvas-info {
+  font-size: 0.75rem; /* 0.8rem → 0.75rem */
+  color: var(--text-muted);
+  text-align: right;
+  flex: 1;
+}
+
+  /* レスポンシブ対応 */
+  @media (max-width: 768px) {
+    .canvas-controls {
+      width: calc(100% - 2rem);
+      min-width: auto;
+      padding: 0.4rem 0.8rem; /* さらに小さく */
+    }
+  
+  .undo-redo-buttons {
+    order: 2;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  
+  .canvas-info {
+    order: 1;
+    text-align: center;
+    flex: none;
+  }
+  
+  .control-btn {
+    min-width: 80px;
+  }
+}
+
+@media (max-width: 480px) {
+  .undo-redo-buttons {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .control-btn {
+    width: 100%;
+    justify-content: center;
+  }
 }

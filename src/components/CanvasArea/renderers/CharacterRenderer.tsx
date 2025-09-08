@@ -1,4 +1,4 @@
-// src/components/CanvasArea/renderers/CharacterRenderer.tsx (座標系統一版)
+// src/components/CanvasArea/renderers/CharacterRenderer.tsx (完全修正版)
 import { Character, Panel } from "../../../types";
 
 export class CharacterRenderer {
@@ -116,7 +116,7 @@ export class CharacterRenderer {
     return baseHeight * character.scale * typeMultiplier;
   }
 
-  // キャラクター本体描画（表示タイプ対応）
+  // キャラクター本体描画（向き対応版）
   static drawCharacterBody(
     ctx: CanvasRenderingContext2D,
     character: Character,
@@ -148,7 +148,7 @@ export class CharacterRenderer {
     }
   }
 
-  // 顔のみ描画
+  // 顔のみ描画（向き対応）
   static drawFaceOnly(
     ctx: CanvasRenderingContext2D,
     character: Character,
@@ -174,30 +174,11 @@ export class CharacterRenderer {
     ctx.fill();
     ctx.stroke();
 
-    // 目
-    const eyeSize = headSize * 0.1;
-    ctx.fillStyle = "#333";
-    ctx.beginPath();
-    ctx.arc(
-      headX + headSize * 0.3,
-      headY + headSize * 0.4,
-      eyeSize,
-      0,
-      Math.PI * 2
-    );
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(
-      headX + headSize * 0.7,
-      headY + headSize * 0.4,
-      eyeSize,
-      0,
-      Math.PI * 2
-    );
-    ctx.fill();
+    // 向きに応じて顔の特徴を描画
+    CharacterRenderer.drawFaceFeatures(ctx, character, headX, headY, headSize);
   }
 
-  // 上半身描画
+  // 上半身描画（向き対応）
   static drawHalfBody(
     ctx: CanvasRenderingContext2D,
     character: Character,
@@ -223,39 +204,36 @@ export class CharacterRenderer {
     ctx.fill();
     ctx.stroke();
 
-    // 目
-    const eyeSize = headSize * 0.1;
-    ctx.fillStyle = "#333";
-    ctx.beginPath();
-    ctx.arc(
-      headX + headSize * 0.3,
-      headY + headSize * 0.4,
-      eyeSize,
-      0,
-      Math.PI * 2
-    );
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(
-      headX + headSize * 0.7,
-      headY + headSize * 0.4,
-      eyeSize,
-      0,
-      Math.PI * 2
-    );
-    ctx.fill();
+    // 向きに応じて顔の特徴を描画
+    CharacterRenderer.drawFaceFeatures(ctx, character, headX, headY, headSize);
 
-    // 体（上半身）
+    // 体（上半身）- 向きに応じて調整
     const bodyWidth = charWidth * 0.6;
     const bodyHeight = charHeight * 0.5;
     const bodyX = charX + charWidth / 2 - bodyWidth / 2;
     const bodyY = headY + headSize;
-    ctx.fillStyle = "#4CAF50";
+    
+    // 向きに応じて体の色を変更
+    ctx.fillStyle = character.faceAngle === "back" ? "#2E7D32" : "#4CAF50";
     ctx.fillRect(bodyX, bodyY, bodyWidth, bodyHeight);
     ctx.strokeRect(bodyX, bodyY, bodyWidth, bodyHeight);
+
+    // 肩や腕の表現（簡略化）
+    if (character.faceAngle !== "back") {
+      // 正面・横向きの場合は腕を描画
+      const armWidth = bodyWidth * 0.2;
+      const armHeight = bodyHeight * 0.8;
+      
+      // 左腕
+      ctx.fillStyle = "#ffcc99";
+      ctx.fillRect(bodyX - armWidth / 2, bodyY + 10, armWidth, armHeight);
+      
+      // 右腕
+      ctx.fillRect(bodyX + bodyWidth - armWidth / 2, bodyY + 10, armWidth, armHeight);
+    }
   }
 
-  // 全身描画
+  // 全身描画（向き対応）
   static drawFullBody(
     ctx: CanvasRenderingContext2D,
     character: Character,
@@ -281,34 +259,16 @@ export class CharacterRenderer {
     ctx.fill();
     ctx.stroke();
 
-    // 目
-    const eyeSize = headSize * 0.1;
-    ctx.fillStyle = "#333";
-    ctx.beginPath();
-    ctx.arc(
-      headX + headSize * 0.3,
-      headY + headSize * 0.4,
-      eyeSize,
-      0,
-      Math.PI * 2
-    );
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(
-      headX + headSize * 0.7,
-      headY + headSize * 0.4,
-      eyeSize,
-      0,
-      Math.PI * 2
-    );
-    ctx.fill();
+    // 向きに応じて顔の特徴を描画
+    CharacterRenderer.drawFaceFeatures(ctx, character, headX, headY, headSize);
 
     // 体（上半身）
     const bodyWidth = charWidth * 0.5;
     const bodyHeight = charHeight * 0.3;
     const bodyX = charX + charWidth / 2 - bodyWidth / 2;
     const bodyY = headY + headSize;
-    ctx.fillStyle = "#4CAF50";
+    
+    ctx.fillStyle = character.faceAngle === "back" ? "#2E7D32" : "#4CAF50";
     ctx.fillRect(bodyX, bodyY, bodyWidth, bodyHeight);
     ctx.strokeRect(bodyX, bodyY, bodyWidth, bodyHeight);
 
@@ -320,6 +280,129 @@ export class CharacterRenderer {
     ctx.fillStyle = "#2196F3";
     ctx.fillRect(legX, legY, legWidth, legHeight);
     ctx.strokeRect(legX, legY, legWidth, legHeight);
+  }
+
+  // 顔の特徴描画（向き・視線対応）
+  static drawFaceFeatures(
+    ctx: CanvasRenderingContext2D,
+    character: Character,
+    headX: number,
+    headY: number,
+    headSize: number
+  ) {
+    if (character.faceAngle === "back") {
+      // 後ろ向きの場合は髪の毛だけ描画
+      ctx.fillStyle = "#8B4513";
+      ctx.fillRect(headX + headSize * 0.2, headY + headSize * 0.1, headSize * 0.6, headSize * 0.3);
+      return;
+    }
+
+    const eyeSize = headSize * 0.08;
+    let leftEyeX, rightEyeX, eyeY;
+
+    // 顔の向きに応じて目の位置を調整
+    switch (character.faceAngle) {
+      case "left":
+        leftEyeX = headX + headSize * 0.25;
+        rightEyeX = headX + headSize * 0.5;
+        eyeY = headY + headSize * 0.4;
+        break;
+      case "right":
+        leftEyeX = headX + headSize * 0.5;
+        rightEyeX = headX + headSize * 0.75;
+        eyeY = headY + headSize * 0.4;
+        break;
+      case "front":
+      default:
+        leftEyeX = headX + headSize * 0.3;
+        rightEyeX = headX + headSize * 0.7;
+        eyeY = headY + headSize * 0.4;
+        break;
+    }
+
+    // 目を描画
+    ctx.fillStyle = "#333";
+    
+    // 左目 - 右向き以外で表示
+    if (character.faceAngle !== "right") {
+      ctx.beginPath();
+      ctx.arc(leftEyeX, eyeY, eyeSize, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    
+    // 右目 - 左向き以外で表示
+    if (character.faceAngle !== "left") {
+      ctx.beginPath();
+      ctx.arc(rightEyeX, eyeY, eyeSize, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // 視線方向の表現（瞳の位置調整）
+    if (character.eyeDirection !== "center") {
+      ctx.fillStyle = "#fff";
+      const pupilSize = eyeSize * 0.3;
+      let offsetX = 0, offsetY = 0;
+
+      switch (character.eyeDirection) {
+        case "left":
+          offsetX = -eyeSize * 0.3;
+          break;
+        case "right":
+          offsetX = eyeSize * 0.3;
+          break;
+        case "up":
+          offsetY = -eyeSize * 0.3;
+          break;
+        case "down":
+          offsetY = eyeSize * 0.3;
+          break;
+      }
+
+      // 瞳のハイライト - 左目
+      if (character.faceAngle !== "right") {
+        ctx.beginPath();
+        ctx.arc(leftEyeX + offsetX, eyeY + offsetY, pupilSize, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      
+      // 瞳のハイライト - 右目
+      if (character.faceAngle !== "left") {
+        ctx.beginPath();
+        ctx.arc(rightEyeX + offsetX, eyeY + offsetY, pupilSize, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // 鼻（簡略化）
+    if (character.faceAngle === "front") {
+      ctx.fillStyle = "#ffaa88";
+      ctx.fillRect(
+        headX + headSize * 0.48,
+        headY + headSize * 0.5,
+        headSize * 0.04,
+        headSize * 0.08
+      );
+    }
+
+    // 口（簡略化）
+    ctx.strokeStyle = "#333";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    const mouthY = headY + headSize * 0.65;
+    
+    switch (character.faceAngle) {
+      case "left":
+        ctx.arc(headX + headSize * 0.4, mouthY, headSize * 0.06, 0, Math.PI);
+        break;
+      case "right":
+        ctx.arc(headX + headSize * 0.6, mouthY, headSize * 0.06, 0, Math.PI);
+        break;
+      case "front":
+      default:
+        ctx.arc(headX + headSize * 0.5, mouthY, headSize * 0.08, 0, Math.PI);
+        break;
+    }
+    ctx.stroke();
   }
 
   // リサイズハンドル描画（吹き出しと同じ方式）

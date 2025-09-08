@@ -1,4 +1,3 @@
-// src/components/CanvasComponent.tsx (キャラクター絶対座標対応版)
 import React, { useRef, useEffect, useState } from "react";
 import { Panel, Character, SpeechBubble, CanvasComponentProps } from "../types";
 import { BubbleRenderer } from "./CanvasArea/renderers/BubbleRenderer";
@@ -18,6 +17,8 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
   onCharacterAdd,
   onBubbleAdd,
   onPanelSelect,
+  onCharacterSelect,
+  onCharacterRightClick, // ← この行を追加
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   
@@ -36,33 +37,57 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
   // 編集モーダル管理
   const [editingBubble, setEditingBubble] = useState<SpeechBubble | null>(null);
   const [editText, setEditText] = useState("");
-  
-  // キャラクター追加機能（絶対座標対応）
+
+  // 右クリックメニュー管理
+  const [contextMenu, setContextMenu] = useState<{
+    visible: boolean;
+    x: number;
+    y: number;
+    target: 'character' | 'bubble' | 'panel' | null;
+    targetElement: Character | SpeechBubble | Panel | null;
+  }>({
+    visible: false,
+    x: 0,
+    y: 0,
+    target: null,
+    targetElement: null,
+  });
+
+  // キャラクター追加機能（テンプレート強制読み込み対応）
   const addCharacter = (type: string) => {
-    if (!selectedPanel) {
-      console.log("⚠️ パネルが選択されていません");
+    // パネルが存在しない場合は、選択されたテンプレートから取得
+    let availablePanels = panels;
+    if (availablePanels.length === 0 && selectedTemplate && templates[selectedTemplate]) {
+      availablePanels = templates[selectedTemplate].panels;
+    }
+    
+    // パネル未選択の場合は最初のパネルを使用
+    const targetPanel = selectedPanel || availablePanels[0];
+    
+    if (!targetPanel) {
+      console.log("⚠️ 利用可能なパネルがありません");
       return;
     }
 
     const characterNames: Record<string, string> = {
       hero: "主人公",
-      heroine: "ヒロイン",
+      heroine: "ヒロイン", 
       rival: "ライバル",
       friend: "友人",
     };
 
     // 絶対座標で作成（パネル中央下）
-    const absoluteX = selectedPanel.x + selectedPanel.width * 0.5;
-    const absoluteY = selectedPanel.y + selectedPanel.height * 0.7;
+    const absoluteX = targetPanel.x + targetPanel.width * 0.5;
+    const absoluteY = targetPanel.y + targetPanel.height * 0.7;
 
     const newCharacter: Character = {
       id: `char_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-      panelId: selectedPanel.id,
+      panelId: targetPanel.id,
       type: type,
       name: characterNames[type] || "キャラクター",
-      x: absoluteX,  // 絶対座標
-      y: absoluteY,  // 絶対座標
-      scale: 1.0,
+      x: absoluteX,
+      y: absoluteY,
+      scale: 2.0,
       facing: "front",
       gaze: "center",
       pose: "standing",
@@ -70,18 +95,28 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
       viewType: "halfBody",
       faceAngle: "front",
       eyeDirection: "center",
-      isGlobalPosition: true,  // 新規キャラクターは自由移動
+      isGlobalPosition: true,
     };
 
     setCharacters([...characters, newCharacter]);
     setSelectedCharacter(newCharacter);
-    console.log("✅ キャラクター追加（絶対座標）:", newCharacter.name, "位置:", absoluteX, absoluteY);
+    if (onCharacterSelect) onCharacterSelect(newCharacter);
+    console.log("✅ キャラクター追加成功:", newCharacter.name, "パネル:", targetPanel.id);
   };
 
-  // 吹き出し追加機能（変更なし）
+  // 吹き出し追加機能（テンプレート強制読み込み対応）
   const addBubble = (type: string, text: string) => {
-    if (!selectedPanel) {
-      console.log("⚠️ パネルが選択されていません");
+    // パネルが存在しない場合は、選択されたテンプレートから取得
+    let availablePanels = panels;
+    if (availablePanels.length === 0 && selectedTemplate && templates[selectedTemplate]) {
+      availablePanels = templates[selectedTemplate].panels;
+    }
+    
+    // パネル未選択の場合は最初のパネルを使用
+    const targetPanel = selectedPanel || availablePanels[0];
+    
+    if (!targetPanel) {
+      console.log("⚠️ 利用可能なパネルがありません");
       return;
     }
 
@@ -89,12 +124,12 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
     const baseWidth = Math.max(60, textLength * 8 + 20);
     const baseHeight = Math.max(80, Math.ceil(textLength / 4) * 20 + 40);
 
-    const absoluteX = selectedPanel.x + selectedPanel.width * 0.5;
-    const absoluteY = selectedPanel.y + selectedPanel.height * 0.3;
+    const absoluteX = targetPanel.x + targetPanel.width * 0.5;
+    const absoluteY = targetPanel.y + targetPanel.height * 0.3;
 
     const newBubble: SpeechBubble = {
       id: `bubble_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-      panelId: selectedPanel.id,
+      panelId: targetPanel.id,
       type: type,
       text: text || "ダブルクリックで編集",
       x: absoluteX,
@@ -107,10 +142,27 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
     };
 
     setSpeechBubbles([...speechBubbles, newBubble]);
-    console.log("✅ 吹き出し追加:", type, text, "絶対座標:", absoluteX, absoluteY);
+    console.log("✅ 吹き出し追加成功:", type, text, "パネル:", targetPanel.id);
   };
 
-  // 編集機能（変更なし）
+  // 削除機能（拡張版）
+  const deleteElement = (type: 'character' | 'bubble', element: Character | SpeechBubble) => {
+    if (type === 'character') {
+      const newCharacters = characters.filter(char => char.id !== element.id);
+      setCharacters(newCharacters);
+      setSelectedCharacter(null);
+      if (onCharacterSelect) onCharacterSelect(null);
+      console.log("🗑️ キャラクター削除:", (element as Character).name);
+    } else if (type === 'bubble') {
+      const newBubbles = speechBubbles.filter(bubble => bubble.id !== element.id);
+      setSpeechBubbles(newBubbles);
+      setSelectedBubble(null);
+      console.log("🗑️ 吹き出し削除:", (element as SpeechBubble).text);
+    }
+    setContextMenu({ ...contextMenu, visible: false });
+  };
+
+  // 編集機能
   const handleEditComplete = () => {
     if (editingBubble && editText.trim()) {
       const textLength = editText.length;
@@ -143,7 +195,51 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
     console.log("❌ 吹き出し編集キャンセル");
   };
 
-  // Canvas描画関数（変更なし）
+  // 右クリックメニューの処理
+  const handleContextMenuAction = (action: string) => {
+    const { target, targetElement } = contextMenu;
+    
+    switch (action) {
+      case 'edit':
+        if (target === 'bubble' && targetElement) {
+          setEditingBubble(targetElement as SpeechBubble);
+          setEditText((targetElement as SpeechBubble).text);
+        }
+        break;
+      case 'delete':
+        if (target && targetElement) {
+          deleteElement(target as 'character' | 'bubble', targetElement as Character | SpeechBubble);
+        }
+        break;
+      case 'select':
+        if (target === 'character' && targetElement) {
+          setSelectedCharacter(targetElement as Character);
+          setSelectedBubble(null);
+          if (onCharacterSelect) onCharacterSelect(targetElement as Character);
+        } else if (target === 'bubble' && targetElement) {
+          setSelectedBubble(targetElement as SpeechBubble);
+          setSelectedCharacter(null);
+          if (onCharacterSelect) onCharacterSelect(null);
+        }
+        break;
+      case 'characterPanel':
+        if (target === 'character' && targetElement && onCharacterRightClick) {
+          onCharacterRightClick(targetElement as Character);
+        }
+        break;
+      case 'deselect':
+        setSelectedCharacter(null);
+        setSelectedBubble(null);
+        setSelectedPanel(null);
+        if (onCharacterSelect) onCharacterSelect(null);
+        if (onPanelSelect) onPanelSelect(null);
+        break;
+    }
+    
+    setContextMenu({ ...contextMenu, visible: false });
+  };
+
+  // Canvas描画関数
   const drawCanvas = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -161,7 +257,7 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
     BubbleRenderer.drawBubbles(ctx, speechBubbles, panels, selectedBubble);
   };
 
-  // マウスイベント処理（変更なし）
+  // 左クリック処理
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -169,12 +265,16 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
+    // コンテキストメニューを閉じる
+    setContextMenu({ ...contextMenu, visible: false });
+
     const clickedBubble = BubbleRenderer.findBubbleAt(x, y, speechBubbles, panels);
     if (clickedBubble) {
       setSelectedBubble(clickedBubble);
       setSelectedCharacter(null);
       setSelectedPanel(null);
       if (onPanelSelect) onPanelSelect(null);
+      if (onCharacterSelect) onCharacterSelect(null);
       console.log("💬 吹き出し選択:", clickedBubble.text);
       return;
     }
@@ -185,6 +285,7 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
       setSelectedBubble(null);
       setSelectedPanel(null);
       if (onPanelSelect) onPanelSelect(null);
+      if (onCharacterSelect) onCharacterSelect(clickedCharacter);
       console.log("👤 キャラクター選択:", clickedCharacter.name);
       return;
     }
@@ -194,7 +295,65 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
     setSelectedCharacter(null);
     setSelectedBubble(null);
     if (onPanelSelect) onPanelSelect(clickedPanel || null);
+    if (onCharacterSelect) onCharacterSelect(null);
     console.log("📐 パネル選択:", clickedPanel?.id || "なし");
+  };
+
+  // 右クリック処理（新機能）
+  const handleCanvasContextMenu = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    // 右クリックされた要素を特定
+    const clickedBubble = BubbleRenderer.findBubbleAt(x, y, speechBubbles, panels);
+    if (clickedBubble) {
+      setContextMenu({
+        visible: true,
+        x: e.clientX,
+        y: e.clientY,
+        target: 'bubble',
+        targetElement: clickedBubble,
+      });
+      return;
+    }
+
+    const clickedCharacter = CharacterRenderer.findCharacterAt(x, y, characters, panels);
+    if (clickedCharacter) {
+      setContextMenu({
+        visible: true,
+        x: e.clientX,
+        y: e.clientY,
+        target: 'character',
+        targetElement: clickedCharacter,
+      });
+      return;
+    }
+
+    const clickedPanel = PanelRenderer.findPanelAt(x, y, panels);
+    if (clickedPanel) {
+      setContextMenu({
+        visible: true,
+        x: e.clientX,
+        y: e.clientY,
+        target: 'panel',
+        targetElement: clickedPanel,
+      });
+      return;
+    }
+
+    // 空白エリアの右クリック
+    setContextMenu({
+      visible: true,
+      x: e.clientX,
+      y: e.clientY,
+      target: null,
+      targetElement: null,
+    });
   };
 
   const handleCanvasDoubleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -213,8 +372,11 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
     }
   };
 
-  // マウスダウン処理（キャラクター対応強化）
+  // マウスダウン処理（既存のコードをそのまま維持）
   const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    // コンテキストメニューを閉じる
+    setContextMenu({ ...contextMenu, visible: false });
+    
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
@@ -258,10 +420,9 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
       return;
     }
 
-    // キャラクター操作チェック（改良版）
+    // キャラクター操作チェック
     const clickedCharacter = CharacterRenderer.findCharacterAt(mouseX, mouseY, characters, panels);
     if (clickedCharacter) {
-      console.log("キャラクタークリック検出:", clickedCharacter.name);
       setSelectedCharacter(clickedCharacter);
       setSelectedBubble(null);
       setSelectedPanel(null);
@@ -269,7 +430,6 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
       const panel = panels.find((p) => p.id === clickedCharacter.panelId);
       if (!panel) return;
       
-      // リサイズハンドルチェック（新しい方式）
       const resizeResult = CharacterRenderer.isCharacterResizeHandleClicked(mouseX, mouseY, clickedCharacter, panel);
       
       if (resizeResult.isClicked) {
@@ -279,14 +439,12 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
       } else {
         setIsDragging(true);
         
-        // 絶対座標か相対座標かで分岐
         if (clickedCharacter.isGlobalPosition) {
           setDragOffset({
             x: mouseX - clickedCharacter.x,
             y: mouseY - clickedCharacter.y,
           });
         } else {
-          // 相対座標の場合の従来処理
           const charWidth = CharacterRenderer.getCharacterWidth(clickedCharacter);
           const charHeight = CharacterRenderer.getCharacterHeight(clickedCharacter);
           const charX = panel.x + panel.width * clickedCharacter.x - charWidth / 2;
@@ -302,7 +460,7 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
     }
   };
 
-  // マウス移動処理（キャラクター対応強化）
+  // マウス移動・アップ処理（既存コードをそのまま維持）
   const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!isDragging && !isCharacterResizing && !isBubbleResizing) {
       return;
@@ -360,7 +518,7 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
       return;
     }
 
-    // キャラクターリサイズ処理（新方式）
+    // キャラクターリサイズ処理
     if (selectedCharacter && isCharacterResizing) {
       const panel = panels.find((p) => p.id === selectedCharacter.panelId);
       if (!panel) return;
@@ -375,23 +533,19 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
         charCenterY = panel.y + panel.height * selectedCharacter.y;
       }
 
-      // 方向に応じたリサイズ
       let newScale = selectedCharacter.scale;
       
       if (resizeDirection.includes("e") || resizeDirection.includes("w")) {
-        // 横方向のリサイズ
         const distance = Math.abs(mouseX - charCenterX);
-        newScale = Math.max(0.3, Math.min(3.0, distance / 50));
+        newScale = Math.max(0.3, Math.min(10.0, distance / 50));
       } else if (resizeDirection.includes("n") || resizeDirection.includes("s")) {
-        // 縦方向のリサイズ
         const distance = Math.abs(mouseY - charCenterY);
-        newScale = Math.max(0.3, Math.min(3.0, distance / 50));
+        newScale = Math.max(0.3, Math.min(10.0, distance / 50));
       } else {
-        // 対角線方向（比例リサイズ）
         const distance = Math.sqrt(
           Math.pow(mouseX - charCenterX, 2) + Math.pow(mouseY - charCenterY, 2)
         );
-        newScale = Math.max(0.3, Math.min(3.0, distance / 50));
+        newScale = Math.max(0.3, Math.min(10.0, distance / 50));
       }
       
       const updatedCharacter = { ...selectedCharacter, scale: newScale };
@@ -401,16 +555,16 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
         )
       );
       setSelectedCharacter(updatedCharacter);
+      if (onCharacterSelect) onCharacterSelect(updatedCharacter);
       return;
     }
 
-    // キャラクタードラッグ処理（絶対座標対応）
+    // キャラクタードラッグ処理
     if (selectedCharacter && isDragging) {
       const panel = panels.find((p) => p.id === selectedCharacter.panelId);
       if (!panel) return;
 
       if (selectedCharacter.isGlobalPosition) {
-        // 絶対座標での移動（自由移動）
         const newX = mouseX - dragOffset.x;
         const newY = mouseY - dragOffset.y;
         
@@ -426,8 +580,8 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
           )
         );
         setSelectedCharacter(updatedCharacter);
+        if (onCharacterSelect) onCharacterSelect(updatedCharacter);
       } else {
-        // 相対座標での移動（パネル内制限）
         const newX = (mouseX - dragOffset.x - panel.x) / panel.width;
         const newY = (mouseY - dragOffset.y - panel.y) / panel.height;
         
@@ -443,27 +597,34 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
           )
         );
         setSelectedCharacter(updatedCharacter);
+        if (onCharacterSelect) onCharacterSelect(updatedCharacter);
       }
     }
   };
 
-  // マウスアップ処理（状態リセット）
   const handleCanvasMouseUp = () => {
-    if (isDragging) {
-      console.log("ドラッグ終了");
-    }
-    if (isBubbleResizing) {
-      console.log("吹き出しリサイズ終了");
-    }
-    if (isCharacterResizing) {
-      console.log("キャラクターリサイズ終了");
-    }
-    
     setIsDragging(false);
     setIsBubbleResizing(false);
     setIsCharacterResizing(false);
     setResizeDirection("");
   };
+
+  // キーボードイベント処理（削除機能強化）
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Backspace' || e.key === 'Delete') {
+        e.preventDefault();
+        if (selectedCharacter) {
+          deleteElement('character', selectedCharacter);
+        } else if (selectedBubble) {
+          deleteElement('bubble', selectedBubble);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedCharacter, selectedBubble]);
 
   // 機能提供用useEffect
   useEffect(() => {
@@ -482,6 +643,7 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
       setSelectedCharacter(null);
       setSelectedBubble(null);
       if (onPanelSelect) onPanelSelect(null);
+      if (onCharacterSelect) onCharacterSelect(null);
     }
   }, [selectedTemplate, setPanels]);
 
@@ -501,13 +663,33 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
     return () => observer.disconnect();
   }, []);
 
+  // 外部クリックでコンテキストメニューを閉じる
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setContextMenu({ ...contextMenu, visible: false });
+    };
+
+    if (contextMenu.visible) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [contextMenu.visible]);
+
   return (
-    <div style={{ position: "relative", display: "flex", justifyContent: "center", alignItems: "flex-start", minHeight: "100vh", padding: "20px" }}>
+    <div style={{ 
+      position: "relative", 
+      display: "flex", 
+      justifyContent: "center", 
+      alignItems: "flex-start", 
+      minHeight: "100vh", 
+      padding: "0px"
+    }}>
       <canvas
         ref={canvasRef}
         width={600}
         height={800}
         onClick={handleCanvasClick}
+        onContextMenu={handleCanvasContextMenu}
         onDoubleClick={handleCanvasDoubleClick}
         onMouseDown={handleCanvasMouseDown}
         onMouseMove={handleCanvasMouseMove}
@@ -522,9 +704,180 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
             ? "grabbing"
             : "pointer",
           boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
-          borderRadius: "8px", // 角を少し丸く
+          borderRadius: "8px",
+          marginTop: "0px",
         }}
       />
+
+{/* 右クリックコンテキストメニュー - ダークモード対応 */}
+      {contextMenu.visible && (
+        <div
+          style={{
+            position: "fixed",
+            top: contextMenu.y,
+            left: contextMenu.x,
+            background: document.documentElement.getAttribute("data-theme") === "dark" ? "#2d2d2d" : "white",
+            border: `1px solid ${document.documentElement.getAttribute("data-theme") === "dark" ? "#555555" : "#ccc"}`,
+            borderRadius: "4px",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+            zIndex: 1000,
+            minWidth: "120px",
+            color: document.documentElement.getAttribute("data-theme") === "dark" ? "#ffffff" : "#333333",
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {contextMenu.target === 'character' && (
+            <>
+              <div
+                style={{
+                  padding: "8px 12px",
+                  cursor: "pointer",
+                  borderBottom: `1px solid ${document.documentElement.getAttribute("data-theme") === "dark" ? "#555555" : "#eee"}`,
+                  transition: "background-color 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  const target = e.target as HTMLElement;
+                  target.style.backgroundColor = document.documentElement.getAttribute("data-theme") === "dark" ? "#3d3d3d" : "#f5f5f5";
+                }}
+                onMouseLeave={(e) => {
+                  const target = e.target as HTMLElement;
+                  target.style.backgroundColor = "transparent";
+                }}
+                onClick={() => handleContextMenuAction('characterPanel')}
+              >
+                🎛️ 詳細設定
+              </div>
+              <div
+                style={{
+                  padding: "8px 12px",
+                  cursor: "pointer",
+                  color: "#ff4444",
+                  transition: "background-color 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  const target = e.target as HTMLElement;
+                  target.style.backgroundColor = document.documentElement.getAttribute("data-theme") === "dark" ? "#3d3d3d" : "#f5f5f5";
+                }}
+                onMouseLeave={(e) => {
+                  const target = e.target as HTMLElement;
+                  target.style.backgroundColor = "transparent";
+                }}
+                onClick={() => handleContextMenuAction('delete')}
+              >
+                🗑️ 削除
+              </div>
+            </>
+          )}
+          
+          {contextMenu.target === 'bubble' && (
+            <>
+              <div
+                style={{
+                  padding: "8px 12px",
+                  cursor: "pointer",
+                  borderBottom: `1px solid ${document.documentElement.getAttribute("data-theme") === "dark" ? "#555555" : "#eee"}`,
+                  transition: "background-color 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  const target = e.target as HTMLElement;
+                  target.style.backgroundColor = document.documentElement.getAttribute("data-theme") === "dark" ? "#3d3d3d" : "#f5f5f5";
+                }}
+                onMouseLeave={(e) => {
+                  const target = e.target as HTMLElement;
+                  target.style.backgroundColor = "transparent";
+                }}
+                onClick={() => handleContextMenuAction('select')}
+              >
+                📌 選択
+              </div>
+              <div
+                style={{
+                  padding: "8px 12px",
+                  cursor: "pointer",
+                  borderBottom: `1px solid ${document.documentElement.getAttribute("data-theme") === "dark" ? "#555555" : "#eee"}`,
+                  transition: "background-color 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  const target = e.target as HTMLElement;
+                  target.style.backgroundColor = document.documentElement.getAttribute("data-theme") === "dark" ? "#3d3d3d" : "#f5f5f5";
+                }}
+                onMouseLeave={(e) => {
+                  const target = e.target as HTMLElement;
+                  target.style.backgroundColor = "transparent";
+                }}
+                onClick={() => handleContextMenuAction('edit')}
+              >
+                ✏️ 編集
+              </div>
+              <div
+                style={{
+                  padding: "8px 12px",
+                  cursor: "pointer",
+                  color: "#ff4444",
+                  transition: "background-color 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  const target = e.target as HTMLElement;
+                  target.style.backgroundColor = document.documentElement.getAttribute("data-theme") === "dark" ? "#3d3d3d" : "#f5f5f5";
+                }}
+                onMouseLeave={(e) => {
+                  const target = e.target as HTMLElement;
+                  target.style.backgroundColor = "transparent";
+                }}
+                onClick={() => handleContextMenuAction('delete')}
+              >
+                🗑️ 削除
+              </div>
+            </>
+          )}
+          
+          {contextMenu.target === 'panel' && (
+            <>
+              <div
+                style={{
+                  padding: "8px 12px",
+                  cursor: "pointer",
+                  transition: "background-color 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  const target = e.target as HTMLElement;
+                  target.style.backgroundColor = document.documentElement.getAttribute("data-theme") === "dark" ? "#3d3d3d" : "#f5f5f5";
+                }}
+                onMouseLeave={(e) => {
+                  const target = e.target as HTMLElement;
+                  target.style.backgroundColor = "transparent";
+                }}
+                onClick={() => handleContextMenuAction('select')}
+              >
+                📌 選択
+              </div>
+            </>
+          )}
+          
+          {!contextMenu.target && (
+            <>
+              <div
+                style={{
+                  padding: "8px 12px",
+                  cursor: "pointer",
+                  transition: "background-color 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  const target = e.target as HTMLElement;
+                  target.style.backgroundColor = document.documentElement.getAttribute("data-theme") === "dark" ? "#3d3d3d" : "#f5f5f5";
+                }}
+                onMouseLeave={(e) => {
+                  const target = e.target as HTMLElement;
+                  target.style.backgroundColor = "transparent";
+                }}
+                onClick={() => handleContextMenuAction('deselect')}
+              >
+                ❌ 選択解除
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       {/* 編集モーダル */}
       <EditBubbleModal
@@ -609,9 +962,7 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
           "💬 " + selectedBubble.text}
           <br/>
           <small>
-            {isBubbleResizing ? "ドラッグでサイズ変更" : 
-            isDragging ? "ドラッグで移動" : 
-            "四隅でリサイズ・中央で移動"}
+            右クリックで編集・削除
           </small>
         </div>
       )}

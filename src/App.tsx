@@ -26,6 +26,7 @@ function App() {
   // UI状態管理
   const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
   const [selectedScene, setSelectedScene] = useState<string>("");
+  const [showCharacterPanel, setShowCharacterPanel] = useState<boolean>(false);
 
   // 機能コールバック用の状態
   const [addCharacterFunc, setAddCharacterFunc] = useState<((type: string) => void) | null>(null);
@@ -42,15 +43,16 @@ function App() {
     currentIndex: 0,
   });
 
-  // アンドゥ/リドゥ機能の実装
+  // アンドゥ/リドゥ機能の実装（改良版）
   const saveToHistory = (newCharacters: Character[], newBubbles: SpeechBubble[]) => {
     setOperationHistory(prev => {
       const newHistory = {
-        characters: [...prev.characters.slice(0, prev.currentIndex + 1), newCharacters],
-        speechBubbles: [...prev.speechBubbles.slice(0, prev.currentIndex + 1), newBubbles],
+        characters: [...prev.characters.slice(0, prev.currentIndex + 1), [...newCharacters]], // 深いコピー
+        speechBubbles: [...prev.speechBubbles.slice(0, prev.currentIndex + 1), [...newBubbles]], // 深いコピー
         currentIndex: prev.currentIndex + 1,
       };
       
+      // 履歴上限管理
       if (newHistory.characters.length > 50) {
         newHistory.characters = newHistory.characters.slice(1);
         newHistory.speechBubbles = newHistory.speechBubbles.slice(1);
@@ -64,8 +66,8 @@ function App() {
   const handleUndo = () => {
     if (operationHistory.currentIndex > 0) {
       const newIndex = operationHistory.currentIndex - 1;
-      setCharacters(operationHistory.characters[newIndex]);
-      setSpeechBubbles(operationHistory.speechBubbles[newIndex]);
+      setCharacters([...operationHistory.characters[newIndex]]); // 深いコピー
+      setSpeechBubbles([...operationHistory.speechBubbles[newIndex]]); // 深いコピー
       setOperationHistory(prev => ({ ...prev, currentIndex: newIndex }));
       console.log("⬅️ アンドゥ実行");
     }
@@ -74,12 +76,29 @@ function App() {
   const handleRedo = () => {
     if (operationHistory.currentIndex < operationHistory.characters.length - 1) {
       const newIndex = operationHistory.currentIndex + 1;
-      setCharacters(operationHistory.characters[newIndex]);
-      setSpeechBubbles(operationHistory.speechBubbles[newIndex]);
+      setCharacters([...operationHistory.characters[newIndex]]); // 深いコピー
+      setSpeechBubbles([...operationHistory.speechBubbles[newIndex]]); // 深いコピー
       setOperationHistory(prev => ({ ...prev, currentIndex: newIndex }));
       console.log("➡️ リドゥ実行");
     }
   };
+
+  // 履歴保存のタイミングを改良（移動・リサイズも含める）
+  useEffect(() => {
+    // デバウンス処理で頻繁な保存を防ぐ
+    const timeoutId = setTimeout(() => {
+      if (characters.length > 0 || speechBubbles.length > 0) {
+        saveToHistory(characters, speechBubbles);
+      }
+    }, 300); // 300ms後に保存
+
+    return () => clearTimeout(timeoutId);
+  }, [
+    characters.map(char => `${char.id}-${char.x}-${char.y}-${char.scale}`).join(','), // 位置・スケール変更を検知
+    speechBubbles.map(bubble => `${bubble.id}-${bubble.x}-${bubble.y}-${bubble.width}-${bubble.height}`).join(','), // 位置・サイズ変更を検知
+    characters.length, // 追加・削除
+    speechBubbles.length // 追加・削除
+  ]);
 
   // バックスペースキーで要素削除機能
   const handleDeleteSelected = () => {
@@ -152,7 +171,8 @@ function App() {
       sceneType,
       panels,
       characters,
-      speechBubbles
+      speechBubbles,
+      selectedPanel // 選択パネル情報を渡す
     );
     
     setCharacters(newCharacters);
@@ -189,11 +209,33 @@ function App() {
     setSelectedCharacter(updatedCharacter);
   };
 
+  // キャラクター削除機能（新機能）
+  const handleCharacterDelete = (characterToDelete: Character) => {
+    const newCharacters = characters.filter(char => char.id !== characterToDelete.id);
+    setCharacters(newCharacters);
+    setSelectedCharacter(null);
+    console.log("🗑️ キャラクター削除:", characterToDelete.name);
+  };
+
+  // キャラクター詳細パネルを閉じる
+  const handleCharacterPanelClose = () => {
+    setSelectedCharacter(null);
+  };
+
   // エクスポート機能
   const handleExport = (format: string) => {
     console.log(`📤 ${format}でエクスポート開始`);
     alert(`${format}でのエクスポート機能は実装予定です`);
   };
+
+
+// 関数を追加
+const handleCharacterRightClick = (character: Character) => {
+  setSelectedCharacter(character);
+  setShowCharacterPanel(true);
+};
+
+
 
   return (
     <div className={`app ${isDarkMode ? 'dark' : 'light'}`}>
@@ -266,7 +308,7 @@ function App() {
 
         {/* メインエリア */}
         <div className="canvas-area">
-          {/* キャンバス上部コントロール */}
+          {/* キャンバス上部コントロール - ここに移動 */}
           <div className="canvas-controls">
             <div className="undo-redo-buttons">
               <button 
@@ -297,6 +339,7 @@ function App() {
             <div className="canvas-info">
               操作履歴: {operationHistory.currentIndex + 1} / {operationHistory.characters.length}
               {selectedCharacter && <span> | 選択中: {selectedCharacter.name}</span>}
+              {selectedPanel && <span> | パネル{selectedPanel.id}選択中</span>}
             </div>
           </div>
 
@@ -313,6 +356,7 @@ function App() {
             onBubbleAdd={(func) => setAddBubbleFunc(() => func)}
             onPanelSelect={(panel) => setSelectedPanel(panel)}
             onCharacterSelect={(character) => setSelectedCharacter(character)}
+            onCharacterRightClick={handleCharacterRightClick}
           />
         </div>
 
@@ -402,10 +446,13 @@ function App() {
       </div>
 
       {/* キャラクター詳細パネル */}
-      {selectedCharacter && (
+      // 最下部のCharacterDetailPanelを条件変更
+      {showCharacterPanel && selectedCharacter && (
         <CharacterDetailPanel
           selectedCharacter={selectedCharacter}
           onCharacterUpdate={handleCharacterUpdate}
+          onCharacterDelete={handleCharacterDelete}
+          onClose={handleCharacterPanelClose}
         />
       )}
     </div>

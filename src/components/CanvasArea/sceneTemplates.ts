@@ -1,4 +1,4 @@
-// src/components/CanvasArea/sceneTemplates.ts
+// src/components/CanvasArea/sceneTemplates.ts (間隔調整版)
 import { Character, SpeechBubble } from "../../types";
 
 export interface SceneTemplate {
@@ -13,9 +13,9 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         panelId: 1,
         type: "hero",
         name: "主人公",
-        x: 0.3,
-        y: 0.7,
-        scale: 1.0,
+        x: 120, // 左に移動
+        y: 130, // 下に移動
+        scale: 2.0,
         facing: "front",
         gaze: "center",
         pose: "standing",
@@ -23,15 +23,15 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         viewType: "halfBody",
         faceAngle: "front",
         eyeDirection: "center",
-        isGlobalPosition: false,
+        isGlobalPosition: true,
       },
       {
         panelId: 1,
         type: "heroine",
         name: "ヒロイン",
-        x: 0.7,
-        y: 0.7,
-        scale: 1.0,
+        x: 430, // 右に移動
+        y: 130, // 下に移動
+        scale: 2.0,
         facing: "front",
         gaze: "left",
         pose: "standing",
@@ -39,7 +39,7 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         viewType: "halfBody",
         faceAngle: "left",
         eyeDirection: "left",
-        isGlobalPosition: false,
+        isGlobalPosition: true,
       },
     ],
     speechBubbles: [
@@ -47,25 +47,25 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         panelId: 1,
         type: "普通",
         text: "おはよう！",
-        x: 0.3,
-        y: 0.2,
+        x: 80, // 左キャラから離す
+        y: 70, // 上に配置
         scale: 1.0,
         width: 80,
         height: 60,
         vertical: true,
-        isGlobalPosition: false,
+        isGlobalPosition: true,
       },
       {
         panelId: 1,
         type: "普通",
         text: "おはよう",
-        x: 0.7,
-        y: 0.3,
+        x: 480, // 右キャラから離す
+        y: 65, // 上に配置
         scale: 1.0,
         width: 70,
         height: 50,
         vertical: true,
-        isGlobalPosition: false,
+        isGlobalPosition: true,
       },
     ],
   },
@@ -75,9 +75,9 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         panelId: 1,
         type: "hero",
         name: "主人公",
-        x: 0.2,
-        y: 0.6,
-        scale: 1.2,
+        x: 100, // 左端寄り
+        y: 120,
+        scale: 2.2,
         facing: "front",
         gaze: "right",
         pose: "standing",
@@ -85,15 +85,15 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         viewType: "face",
         faceAngle: "right",
         eyeDirection: "right",
-        isGlobalPosition: false,
+        isGlobalPosition: true,
       },
       {
         panelId: 1,
         type: "heroine",
         name: "ヒロイン",
-        x: 0.8,
-        y: 0.6,
-        scale: 1.2,
+        x: 480, // 右端寄り
+        y: 120,
+        scale: 2.2,
         facing: "front",
         gaze: "left",
         pose: "standing",
@@ -101,7 +101,7 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         viewType: "face",
         faceAngle: "left",
         eyeDirection: "left",
-        isGlobalPosition: false,
+        isGlobalPosition: true,
       },
     ],
     speechBubbles: [
@@ -109,25 +109,25 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         panelId: 1,
         type: "普通",
         text: "何か話そうか",
-        x: 0.2,
-        y: 0.2,
+        x: 60, // 左キャラから離す
+        y: 60,
         scale: 1.0,
         width: 90,
         height: 70,
         vertical: true,
-        isGlobalPosition: false,
+        isGlobalPosition: true,
       },
       {
         panelId: 1,
         type: "普通",
         text: "そうね",
-        x: 0.8,
-        y: 0.3,
+        x: 520, // 右キャラから離す
+        y: 55,
         scale: 1.0,
         width: 60,
         height: 50,
         vertical: true,
-        isGlobalPosition: false,
+        isGlobalPosition: true,
       },
     ],
   },
@@ -137,9 +137,9 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         panelId: 1,
         type: "hero",
         name: "主人公",
-        x: 0.5,
-        y: 0.7,
-        scale: 1.5,
+        x: 300, // 中央
+        y: 140, // 下寄り
+        scale: 2.5,
         facing: "front",
         gaze: "center",
         pose: "standing",
@@ -147,7 +147,7 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         viewType: "fullBody",
         faceAngle: "front",
         eyeDirection: "center",
-        isGlobalPosition: false,
+        isGlobalPosition: true,
       },
     ],
     speechBubbles: [
@@ -155,13 +155,13 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         panelId: 1,
         type: "叫び",
         text: "いくぞ！",
-        x: 0.3,
-        y: 0.2,
+        x: 150, // 中央キャラから大きく離す
+        y: 60, // 上に配置
         scale: 1.0,
         width: 80,
         height: 60,
         vertical: true,
-        isGlobalPosition: false,
+        isGlobalPosition: true,
       },
     ],
   },
@@ -171,9 +171,9 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         panelId: 1,
         type: "heroine",
         name: "ヒロイン",
-        x: 0.5,
-        y: 0.6,
-        scale: 1.3,
+        x: 250, // 中央左寄り
+        y: 120,
+        scale: 2.3,
         facing: "front",
         gaze: "down",
         pose: "standing",
@@ -181,7 +181,7 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         viewType: "face",
         faceAngle: "front",
         eyeDirection: "down",
-        isGlobalPosition: false,
+        isGlobalPosition: true,
       },
     ],
     speechBubbles: [
@@ -189,13 +189,13 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         panelId: 1,
         type: "心の声",
         text: "どうしよう...",
-        x: 0.7,
-        y: 0.2,
+        x: 380, // キャラから離す
+        y: 60, // 上に配置
         scale: 1.0,
         width: 90,
         height: 70,
         vertical: true,
-        isGlobalPosition: false,
+        isGlobalPosition: true,
       },
     ],
   },
@@ -205,9 +205,9 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         panelId: 1,
         type: "hero",
         name: "主人公",
-        x: 0.3,
-        y: 0.7,
-        scale: 1.2,
+        x: 140, // 左寄り
+        y: 130,
+        scale: 2.2,
         facing: "front",
         gaze: "center",
         pose: "standing",
@@ -215,15 +215,15 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         viewType: "halfBody",
         faceAngle: "front",
         eyeDirection: "center",
-        isGlobalPosition: false,
+        isGlobalPosition: true,
       },
       {
         panelId: 1,
         type: "friend",
         name: "友人",
-        x: 0.7,
-        y: 0.7,
-        scale: 1.2,
+        x: 410, // 右寄り
+        y: 130,
+        scale: 2.2,
         facing: "front",
         gaze: "left",
         pose: "standing",
@@ -231,7 +231,7 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         viewType: "halfBody",
         faceAngle: "left",
         eyeDirection: "left",
-        isGlobalPosition: false,
+        isGlobalPosition: true,
       },
     ],
     speechBubbles: [
@@ -239,55 +239,69 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         panelId: 1,
         type: "叫び",
         text: "なんてこった！",
-        x: 0.3,
-        y: 0.2,
+        x: 80, // 左キャラから離す
+        y: 60,
         scale: 1.0,
         width: 100,
         height: 80,
         vertical: true,
-        isGlobalPosition: false,
+        isGlobalPosition: true,
       },
       {
         panelId: 1,
         type: "普通",
         text: "まあまあ",
-        x: 0.7,
-        y: 0.3,
+        x: 460, // 右キャラから離す
+        y: 65,
         scale: 1.0,
         width: 70,
         height: 50,
         vertical: true,
-        isGlobalPosition: false,
+        isGlobalPosition: true,
       },
     ],
   },
 };
 
-// シーンテンプレート適用関数
+// シーンテンプレート適用関数（選択パネル対応・絶対座標調整）
 export const applySceneTemplate = (
   sceneType: string,
   panels: any[],
   existingCharacters: Character[],
-  existingSpeechBubbles: SpeechBubble[]
+  existingSpeechBubbles: SpeechBubble[],
+  selectedPanel?: any // 選択パネル情報を追加
 ): { characters: Character[], speechBubbles: SpeechBubble[] } => {
   const template = sceneTemplates[sceneType];
   if (!template || panels.length === 0) {
     return { characters: existingCharacters, speechBubbles: existingSpeechBubbles };
   }
 
-  // 新しいキャラクターを作成
+  // 配置先パネルの決定（選択パネル優先、なければ最初のパネル）
+  const targetPanel = selectedPanel || panels[0];
+  const panelOffsetX = targetPanel.x;
+  const panelOffsetY = targetPanel.y;
+
+  console.log(`🎭 シーンテンプレート適用: ${sceneType} → パネル${targetPanel.id}`);
+
+  // 新しいキャラクターを作成（選択パネルの座標に調整）
   const newCharacters = template.characters.map((char) => ({
     ...char,
     id: `char_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-    panelId: panels[0].id, // 最初のパネルに配置
+    panelId: targetPanel.id, // 選択パネルに配置
+    x: char.x + panelOffsetX, // パネル位置に合わせて調整
+    y: char.y + panelOffsetY, // パネル位置に合わせて調整
   }));
 
-  // 新しい吹き出しを作成
+  // 新しい吹き出しを作成（選択パネルの座標に調整）
   const newSpeechBubbles = template.speechBubbles.map((bubble) => ({
     ...bubble,
     id: `bubble_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-    panelId: panels[0].id, // 最初のパネルに配置
+    panelId: targetPanel.id, // 選択パネルに配置
+    x: bubble.x + panelOffsetX, // パネル位置に合わせて調整
+    y: bubble.y + panelOffsetY, // パネル位置に合わせて調整
   }));
+
+  console.log(`✅ 新規要素追加: キャラクター${newCharacters.length}個、吹き出し${newSpeechBubbles.length}個`);
 
   return {
     characters: [...existingCharacters, ...newCharacters],

@@ -8,20 +8,6 @@ export interface Panel {
   height: number;
 }
 
-export interface Character {
-  id: string;
-  panelId: number;
-  type: string;
-  name: string;
-  x: number; // パネル内の相対位置 (0-1)
-  y: number; // パネル内の相対位置 (0-1)
-  scale: number;
-  facing: string;
-  gaze: string;
-  pose: string;
-  expression: string;
-}
-
 export interface SpeechBubble {
   id: string;
   panelId: number;
@@ -42,11 +28,13 @@ export interface CanvasComponentProps {
   setPanels: (panels: Panel[]) => void;
   characters: Character[];
   setCharacters: (characters: Character[]) => void;
-  onCharacterAdd: (addCharacterFunc: (type: string) => void) => void;
-  onPanelSelect?: (panel: Panel | null) => void;
   speechBubbles: SpeechBubble[];
-  setSpeechBubbles: (bubbles: SpeechBubble[]) => void;
-  onBubbleAdd: (addBubbleFunc: (type: string, text: string) => void) => void;
+  setSpeechBubbles: (speechBubbles: SpeechBubble[]) => void;
+  onCharacterAdd: (func: (type: string) => void) => void;
+  onBubbleAdd: (func: (type: string, text: string) => void) => void;
+  onPanelSelect?: (panel: Panel | null) => void;
+  onCharacterSelect?: (character: Character | null) => void;
+  onCharacterRightClick?: (character: Character) => void; // 新追加
 }
 
 // テンプレート定義の型
@@ -107,8 +95,8 @@ export interface Character {
   expression: string;
   // 新機能追加
   viewType: "face" | "halfBody" | "fullBody"; // 顔アップ/半身/全身
-  faceAngle: "front" | "left" | "right" | "back"; // 顔の角度
-  eyeDirection: "center" | "left" | "right" | "up" | "down"; // 視線
+  faceAngle: "front" | "left" | "right" | "back" | "leftFront" | "rightFront" | "leftBack" | "rightBack"; // 8方向に拡張
+  eyeDirection: "center" | "left" | "right" | "up" | "down" | "leftUp" | "rightUp" | "leftDown" | "rightDown"; // 9方向に拡張
   isGlobalPosition: boolean; // 自由移動モード（パネル外移動可能）
 }
 
