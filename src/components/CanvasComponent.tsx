@@ -1,4 +1,4 @@
-// src/components/CanvasComponent.tsx (分割後・簡潔版)
+// src/components/CanvasComponent.tsx (キャラクター絶対座標対応版)
 import React, { useRef, useEffect, useState } from "react";
 import { Panel, Character, SpeechBubble, CanvasComponentProps } from "../types";
 import { BubbleRenderer } from "./CanvasArea/renderers/BubbleRenderer";
@@ -28,17 +28,16 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
   
   // ドラッグ&リサイズ管理
   const [isDragging, setIsDragging] = useState(false);
-  const [isResizing, setIsResizing] = useState(false);
+  const [isCharacterResizing, setIsCharacterResizing] = useState(false);
+  const [isBubbleResizing, setIsBubbleResizing] = useState(false);
+  const [resizeDirection, setResizeDirection] = useState<string>("");
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   
   // 編集モーダル管理
   const [editingBubble, setEditingBubble] = useState<SpeechBubble | null>(null);
   const [editText, setEditText] = useState("");
-
-  const [isBubbleResizing, setIsBubbleResizing] = useState(false);
-  const [resizeDirection, setResizeDirection] = useState<string>(""); // この行を追加
   
-  // キャラクター追加機能
+  // キャラクター追加機能（絶対座標対応）
   const addCharacter = (type: string) => {
     if (!selectedPanel) {
       console.log("⚠️ パネルが選択されていません");
@@ -52,64 +51,66 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
       friend: "友人",
     };
 
+    // 絶対座標で作成（パネル中央下）
+    const absoluteX = selectedPanel.x + selectedPanel.width * 0.5;
+    const absoluteY = selectedPanel.y + selectedPanel.height * 0.7;
+
     const newCharacter: Character = {
       id: `char_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
       panelId: selectedPanel.id,
       type: type,
       name: characterNames[type] || "キャラクター",
-      x: 0.5,
-      y: 0.6,
-      scale: 0.8,
+      x: absoluteX,  // 絶対座標
+      y: absoluteY,  // 絶対座標
+      scale: 1.0,
       facing: "front",
       gaze: "center",
       pose: "standing",
       expression: "neutral",
-      // 新機能のデフォルト値
       viewType: "halfBody",
       faceAngle: "front",
       eyeDirection: "center",
-      isGlobalPosition: false,
+      isGlobalPosition: true,  // 新規キャラクターは自由移動
     };
 
     setCharacters([...characters, newCharacter]);
     setSelectedCharacter(newCharacter);
-    console.log("✅ キャラクター追加:", newCharacter.name, "パネル", selectedPanel.id);
+    console.log("✅ キャラクター追加（絶対座標）:", newCharacter.name, "位置:", absoluteX, absoluteY);
   };
 
-  // 吹き出し追加機能
+  // 吹き出し追加機能（変更なし）
   const addBubble = (type: string, text: string) => {
-  if (!selectedPanel) {
-    console.log("⚠️ パネルが選択されていません");
-    return;
-  }
+    if (!selectedPanel) {
+      console.log("⚠️ パネルが選択されていません");
+      return;
+    }
 
-  const textLength = text.length;
-  const baseWidth = Math.max(60, textLength * 8 + 20);
-  const baseHeight = Math.max(80, Math.ceil(textLength / 4) * 20 + 40);
+    const textLength = text.length;
+    const baseWidth = Math.max(60, textLength * 8 + 20);
+    const baseHeight = Math.max(80, Math.ceil(textLength / 4) * 20 + 40);
 
-  // 絶対座標で作成
-  const absoluteX = selectedPanel.x + selectedPanel.width * 0.5;
-  const absoluteY = selectedPanel.y + selectedPanel.height * 0.3;
+    const absoluteX = selectedPanel.x + selectedPanel.width * 0.5;
+    const absoluteY = selectedPanel.y + selectedPanel.height * 0.3;
 
-  const newBubble: SpeechBubble = {
-    id: `bubble_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-    panelId: selectedPanel.id,
-    type: type,
-    text: text || "ダブルクリックで編集",
-    x: absoluteX,  // 絶対座標
-    y: absoluteY,  // 絶対座標
-    scale: 1.0,
-    width: baseWidth,
-    height: baseHeight,
-    vertical: true,
-    isGlobalPosition: true,  // 常に自由移動
+    const newBubble: SpeechBubble = {
+      id: `bubble_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+      panelId: selectedPanel.id,
+      type: type,
+      text: text || "ダブルクリックで編集",
+      x: absoluteX,
+      y: absoluteY,
+      scale: 1.0,
+      width: baseWidth,
+      height: baseHeight,
+      vertical: true,
+      isGlobalPosition: true,
+    };
+
+    setSpeechBubbles([...speechBubbles, newBubble]);
+    console.log("✅ 吹き出し追加:", type, text, "絶対座標:", absoluteX, absoluteY);
   };
 
-  setSpeechBubbles([...speechBubbles, newBubble]);
-  console.log("✅ 吹き出し追加:", type, text, "絶対座標:", absoluteX, absoluteY);
-};
-
-  // 編集機能
+  // 編集機能（変更なし）
   const handleEditComplete = () => {
     if (editingBubble && editText.trim()) {
       const textLength = editText.length;
@@ -142,7 +143,7 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
     console.log("❌ 吹き出し編集キャンセル");
   };
 
-  // Canvas描画関数
+  // Canvas描画関数（変更なし）
   const drawCanvas = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -151,18 +152,16 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
 
     const isDarkMode = document.documentElement.getAttribute("data-theme") === "dark";
 
-    // キャンバスクリア
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = isDarkMode ? "#404040" : "#ffffff";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // 各要素を描画
     PanelRenderer.drawPanels(ctx, panels, selectedPanel, isDarkMode);
     CharacterRenderer.drawCharacters(ctx, characters, panels, selectedCharacter);
     BubbleRenderer.drawBubbles(ctx, speechBubbles, panels, selectedBubble);
   };
 
-  // マウスイベント処理
+  // マウスイベント処理（変更なし）
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -170,7 +169,6 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    // 優先順位: 吹き出し > キャラクター > パネル
     const clickedBubble = BubbleRenderer.findBubbleAt(x, y, speechBubbles, panels);
     if (clickedBubble) {
       setSelectedBubble(clickedBubble);
@@ -199,7 +197,6 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
     console.log("📐 パネル選択:", clickedPanel?.id || "なし");
   };
 
-  // ダブルクリック処理
   const handleCanvasDoubleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -216,21 +213,17 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
     }
   };
 
-  // マウスダウン処理（ドラッグ開始）
+  // マウスダウン処理（キャラクター対応強化）
   const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    console.log("マウスダウン開始時の状態:", { isDragging, isBubbleResizing, isResizing });
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
 
-
-    // 吹き出し操作チェック（シンプル版）
+    // 吹き出し操作チェック
     const clickedBubble = BubbleRenderer.findBubbleAt(mouseX, mouseY, speechBubbles, panels);
     if (clickedBubble) {
-      console.log("吹き出しクリック検出:", clickedBubble.text);
-      
       setSelectedBubble(clickedBubble);
       setSelectedCharacter(null);
       setSelectedPanel(null);
@@ -238,74 +231,82 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
       const bubbleX = clickedBubble.x - clickedBubble.width / 2;
       const bubbleY = clickedBubble.y - clickedBubble.height / 2;
       
-      // 簡単な領域判定
       const isTopBottom = mouseY < bubbleY + 20 || mouseY > bubbleY + clickedBubble.height - 20;
       const isLeftRight = mouseX < bubbleX + 20 || mouseX > bubbleX + clickedBubble.width - 20;
       
       if (isTopBottom && !isLeftRight) {
-        // 上下の端：縦リサイズ
         setIsBubbleResizing(true);
         setResizeDirection("vertical");
-        console.log("縦リサイズ開始");
+        console.log("吹き出し縦リサイズ開始");
       } else if (isLeftRight && !isTopBottom) {
-        // 左右の端：横リサイズ
         setIsBubbleResizing(true);
         setResizeDirection("horizontal");
-        console.log("横リサイズ開始");
+        console.log("吹き出し横リサイズ開始");
       } else if (isTopBottom && isLeftRight) {
-        // 角：比例リサイズ
         setIsBubbleResizing(true);
         setResizeDirection("proportional");
-        console.log("比例リサイズ開始");
+        console.log("吹き出し比例リサイズ開始");
       } else {
-        // 中央：移動
         setIsDragging(true);
         setDragOffset({
           x: mouseX - clickedBubble.x,
           y: mouseY - clickedBubble.y,
         });
-        console.log("移動開始");
+        console.log("吹き出し移動開始");
       }
-      
       e.preventDefault();
       return;
     }
 
-    // キャラクター操作チェック
+    // キャラクター操作チェック（改良版）
     const clickedCharacter = CharacterRenderer.findCharacterAt(mouseX, mouseY, characters, panels);
     if (clickedCharacter) {
       console.log("キャラクタークリック検出:", clickedCharacter.name);
       setSelectedCharacter(clickedCharacter);
       setSelectedBubble(null);
-      const panel = panels.find((p) => p.id === clickedCharacter.panelId);
+      setSelectedPanel(null);
       
-      if (panel) {
-        const isResizeHandle = CharacterRenderer.isResizeHandleClicked(mouseX, mouseY, clickedCharacter, panel);
-        console.log("キャラクターリサイズハンドル判定:", isResizeHandle);
+      const panel = panels.find((p) => p.id === clickedCharacter.panelId);
+      if (!panel) return;
+      
+      // リサイズハンドルチェック（新しい方式）
+      const resizeResult = CharacterRenderer.isCharacterResizeHandleClicked(mouseX, mouseY, clickedCharacter, panel);
+      
+      if (resizeResult.isClicked) {
+        setIsCharacterResizing(true);
+        setResizeDirection(resizeResult.direction);
+        console.log("キャラクターリサイズ開始:", resizeResult.direction);
+      } else {
+        setIsDragging(true);
         
-        if (isResizeHandle) {
-          setIsResizing(true);
-          console.log("キャラクターリサイズ開始:", clickedCharacter.name);
+        // 絶対座標か相対座標かで分岐
+        if (clickedCharacter.isGlobalPosition) {
+          setDragOffset({
+            x: mouseX - clickedCharacter.x,
+            y: mouseY - clickedCharacter.y,
+          });
         } else {
-          setIsDragging(true);
-          // ドラッグ処理...
-          console.log("キャラクタードラッグ開始:", clickedCharacter.name);
+          // 相対座標の場合の従来処理
+          const charWidth = CharacterRenderer.getCharacterWidth(clickedCharacter);
+          const charHeight = CharacterRenderer.getCharacterHeight(clickedCharacter);
+          const charX = panel.x + panel.width * clickedCharacter.x - charWidth / 2;
+          const charY = panel.y + panel.height * clickedCharacter.y - charHeight / 2;
+          setDragOffset({
+            x: mouseX - charX,
+            y: mouseY - charY,
+          });
         }
+        console.log("キャラクタードラッグ開始:", clickedCharacter.name);
       }
       e.preventDefault();
     }
   };
 
-   // マウス移動処理
+  // マウス移動処理（キャラクター対応強化）
   const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    console.log("🖱️ マウス移動イベント発生");
-    
-    if (!isDragging && !isResizing && !isBubbleResizing) {
-      console.log("❌ 移動処理スキップ:", { isDragging, isResizing, isBubbleResizing });
+    if (!isDragging && !isCharacterResizing && !isBubbleResizing) {
       return;
     }
-    
-    console.log("✅ マウス移動処理中:", { isDragging, isResizing, isBubbleResizing });
     
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -313,21 +314,16 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
 
-    // 吹き出しリサイズ処理（感度向上版）
+    // 吹き出しリサイズ処理
     if (selectedBubble && isBubbleResizing) {
-      console.log("吹き出しリサイズ処理中:", mouseX, mouseY);
-      
       const bubbleCenterX = selectedBubble.x;
       const bubbleCenterY = selectedBubble.y;
       
-      // より敏感な計算：距離を直接使用
       const distanceX = Math.abs(mouseX - bubbleCenterX);
       const distanceY = Math.abs(mouseY - bubbleCenterY);
       
       const newWidth = Math.max(30, distanceX * 2);
       const newHeight = Math.max(20, distanceY * 2);
-      
-      console.log("新しいサイズ:", { newWidth, newHeight, distanceX, distanceY });
       
       const updatedBubble = {
         ...selectedBubble,
@@ -344,10 +340,8 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
       return;
     }
 
-    // 吹き出しドラッグ処理（絶対座標に簡素化）
+    // 吹き出しドラッグ処理
     if (selectedBubble && isDragging) {
-      console.log("吹き出しドラッグ処理中:", mouseX, mouseY);
-      
       const newX = mouseX - dragOffset.x;
       const newY = mouseY - dragOffset.y;
       
@@ -366,12 +360,74 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
       return;
     }
 
-    // キャラクター操作
-    if (selectedCharacter) {
+    // キャラクターリサイズ処理（新方式）
+    if (selectedCharacter && isCharacterResizing) {
       const panel = panels.find((p) => p.id === selectedCharacter.panelId);
       if (!panel) return;
 
-      if (isDragging) {
+      let charCenterX, charCenterY;
+      
+      if (selectedCharacter.isGlobalPosition) {
+        charCenterX = selectedCharacter.x;
+        charCenterY = selectedCharacter.y;
+      } else {
+        charCenterX = panel.x + panel.width * selectedCharacter.x;
+        charCenterY = panel.y + panel.height * selectedCharacter.y;
+      }
+
+      // 方向に応じたリサイズ
+      let newScale = selectedCharacter.scale;
+      
+      if (resizeDirection.includes("e") || resizeDirection.includes("w")) {
+        // 横方向のリサイズ
+        const distance = Math.abs(mouseX - charCenterX);
+        newScale = Math.max(0.3, Math.min(3.0, distance / 50));
+      } else if (resizeDirection.includes("n") || resizeDirection.includes("s")) {
+        // 縦方向のリサイズ
+        const distance = Math.abs(mouseY - charCenterY);
+        newScale = Math.max(0.3, Math.min(3.0, distance / 50));
+      } else {
+        // 対角線方向（比例リサイズ）
+        const distance = Math.sqrt(
+          Math.pow(mouseX - charCenterX, 2) + Math.pow(mouseY - charCenterY, 2)
+        );
+        newScale = Math.max(0.3, Math.min(3.0, distance / 50));
+      }
+      
+      const updatedCharacter = { ...selectedCharacter, scale: newScale };
+      setCharacters(
+        characters.map((char) =>
+          char.id === selectedCharacter.id ? updatedCharacter : char
+        )
+      );
+      setSelectedCharacter(updatedCharacter);
+      return;
+    }
+
+    // キャラクタードラッグ処理（絶対座標対応）
+    if (selectedCharacter && isDragging) {
+      const panel = panels.find((p) => p.id === selectedCharacter.panelId);
+      if (!panel) return;
+
+      if (selectedCharacter.isGlobalPosition) {
+        // 絶対座標での移動（自由移動）
+        const newX = mouseX - dragOffset.x;
+        const newY = mouseY - dragOffset.y;
+        
+        const updatedCharacter = {
+          ...selectedCharacter,
+          x: newX,
+          y: newY,
+        };
+        
+        setCharacters(
+          characters.map((char) =>
+            char.id === selectedCharacter.id ? updatedCharacter : char
+          )
+        );
+        setSelectedCharacter(updatedCharacter);
+      } else {
+        // 相対座標での移動（パネル内制限）
         const newX = (mouseX - dragOffset.x - panel.x) / panel.width;
         const newY = (mouseY - dragOffset.y - panel.y) / panel.height;
         
@@ -388,28 +444,10 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
         );
         setSelectedCharacter(updatedCharacter);
       }
-
-      if (isResizing) {
-        const charCenterX = panel.x + panel.width * selectedCharacter.x;
-        const charCenterY = panel.y + panel.height * selectedCharacter.y;
-        const distance = Math.sqrt(
-          Math.pow(mouseX - charCenterX, 2) + Math.pow(mouseY - charCenterY, 2)
-        );
-        const newScale = Math.max(0.3, Math.min(2.0, distance / 50));
-        
-        const updatedCharacter = { ...selectedCharacter, scale: newScale };
-        setCharacters(
-          characters.map((char) =>
-            char.id === selectedCharacter.id ? updatedCharacter : char
-          )
-        );
-        setSelectedCharacter(updatedCharacter);
-      }
     }
   };
 
-
-  // マウスアップ処理
+  // マウスアップ処理（状態リセット）
   const handleCanvasMouseUp = () => {
     if (isDragging) {
       console.log("ドラッグ終了");
@@ -417,14 +455,13 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
     if (isBubbleResizing) {
       console.log("吹き出しリサイズ終了");
     }
-    if (isResizing) {
+    if (isCharacterResizing) {
       console.log("キャラクターリサイズ終了");
     }
     
-    // 全ての状態を確実にリセット
     setIsDragging(false);
     setIsBubbleResizing(false);
-    setIsResizing(false);
+    setIsCharacterResizing(false);
     setResizeDirection("");
   };
 
@@ -465,30 +502,29 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
   }, []);
 
   return (
-    <div style={{ position: "relative" }}>
+    <div style={{ position: "relative", display: "flex", justifyContent: "center", alignItems: "flex-start", minHeight: "100vh", padding: "20px" }}>
       <canvas
-      ref={canvasRef}
-      width={600}
-      height={800}
-      onClick={handleCanvasClick}
-      onDoubleClick={handleCanvasDoubleClick}
-      onMouseDown={handleCanvasMouseDown}
-      onMouseMove={handleCanvasMouseMove}
-      onMouseUp={handleCanvasMouseUp}
-      onMouseLeave={handleCanvasMouseUp} // マウスがキャンバス外に出た時も状態リセット
-      style={{
-        border: "2px solid #ddd",
-        background: "white",
-        cursor: isBubbleResizing 
-          ? "nw-resize"     // リサイズ中
-          : isDragging 
-          ? "grabbing"      // ドラッグ中
-          : (selectedBubble && "Shift+クリックでリサイズ")
-          ? "crosshair"     // 吹き出し選択中（リサイズ可能）
-          : "pointer",      // 通常
-        boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
-      }}
-    />
+        ref={canvasRef}
+        width={600}
+        height={800}
+        onClick={handleCanvasClick}
+        onDoubleClick={handleCanvasDoubleClick}
+        onMouseDown={handleCanvasMouseDown}
+        onMouseMove={handleCanvasMouseMove}
+        onMouseUp={handleCanvasMouseUp}
+        onMouseLeave={handleCanvasMouseUp}
+        style={{
+          border: "2px solid #ddd",
+          background: "white",
+          cursor: isBubbleResizing || isCharacterResizing
+            ? "nw-resize"
+            : isDragging 
+            ? "grabbing"
+            : "pointer",
+          boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
+          borderRadius: "8px", // 角を少し丸く
+        }}
+      />
 
       {/* 編集モーダル */}
       <EditBubbleModal
@@ -524,7 +560,11 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
             position: "absolute",
             top: "40px",
             right: "10px",
-            background: "rgba(0, 102, 255, 0.9)",
+            background: isCharacterResizing 
+              ? "rgba(255, 0, 0, 0.9)"
+              : isDragging 
+              ? "rgba(0, 150, 255, 0.9)"
+              : "rgba(0, 102, 255, 0.9)",
             color: "white",
             padding: "8px 12px",
             borderRadius: "4px",
@@ -532,7 +572,17 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
             fontWeight: "bold",
           }}
         >
-          {selectedCharacter.name}選択中
+          {isCharacterResizing ? "🔧 サイズ変更中" : 
+          isDragging ? "🚀 移動中" : 
+          "👤 " + selectedCharacter.name}
+          <br/>
+          <small>
+            {selectedCharacter.isGlobalPosition ? "🆓 自由移動" : "📐 パネル内"}
+            {" | "}
+            {selectedCharacter.viewType}
+            {" | "}
+            {selectedCharacter.scale.toFixed(1)}x
+          </small>
         </div>
       )}
       
@@ -543,10 +593,10 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
             top: "70px",
             right: "10px",
             background: isBubbleResizing 
-              ? "rgba(255, 0, 0, 0.9)"      // リサイズ中は赤
+              ? "rgba(255, 0, 0, 0.9)"
               : isDragging 
-              ? "rgba(0, 150, 255, 0.9)"    // 移動中は青
-              : "rgba(255, 20, 147, 0.9)",  // 待機中はピンク
+              ? "rgba(0, 150, 255, 0.9)"
+              : "rgba(255, 20, 147, 0.9)",
             color: "white",
             padding: "8px 12px",
             borderRadius: "4px",
@@ -559,9 +609,9 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
           "💬 " + selectedBubble.text}
           <br/>
           <small>
-          {isBubbleResizing ? "ドラッグでサイズ変更" : 
-          isDragging ? "ドラッグで移動" : 
-          "四隅でリサイズ・中央で移動"}
+            {isBubbleResizing ? "ドラッグでサイズ変更" : 
+            isDragging ? "ドラッグで移動" : 
+            "四隅でリサイズ・中央で移動"}
           </small>
         </div>
       )}
