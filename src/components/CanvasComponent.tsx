@@ -1,3 +1,4 @@
+// src/components/CanvasComponent.tsx (コマ操作機能完全対応版)
 import React, { useRef, useEffect, useState } from "react";
 import { Panel, Character, SpeechBubble, CanvasComponentProps } from "../types";
 import { BubbleRenderer } from "./CanvasArea/renderers/BubbleRenderer";
@@ -18,7 +19,9 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
   onBubbleAdd,
   onPanelSelect,
   onCharacterSelect,
-  onCharacterRightClick, // ← この行を追加
+  onCharacterRightClick,
+  isPanelEditMode = false, // 🆕 コマ編集モード
+  onPanelSplit, // 🆕 分割ハンドラー
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   
@@ -31,6 +34,8 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [isCharacterResizing, setIsCharacterResizing] = useState(false);
   const [isBubbleResizing, setIsBubbleResizing] = useState(false);
+  const [isPanelResizing, setIsPanelResizing] = useState(false); // 🆕
+  const [isPanelMoving, setIsPanelMoving] = useState(false); // 🆕
   const [resizeDirection, setResizeDirection] = useState<string>("");
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   
@@ -53,16 +58,13 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
     targetElement: null,
   });
 
-  // キャラクター追加機能（テンプレート強制読み込み対応）
   // キャラクター追加機能（新システム対応）
   const addCharacter = (type: string) => {
-    // パネルが存在しない場合は、選択されたテンプレートから取得
     let availablePanels = panels;
     if (availablePanels.length === 0 && selectedTemplate && templates[selectedTemplate]) {
       availablePanels = templates[selectedTemplate].panels;
     }
     
-    // パネル未選択の場合は最初のパネルを使用
     const targetPanel = selectedPanel || availablePanels[0];
     
     if (!targetPanel) {
@@ -77,7 +79,6 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
       friend: "友人",
     };
 
-    // 絶対座標で作成（パネル中央下）
     const absoluteX = targetPanel.x + targetPanel.width * 0.5;
     const absoluteY = targetPanel.y + targetPanel.height * 0.7;
 
@@ -101,7 +102,7 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
       bodyDirection: "front",
       faceExpression: "normal",
       bodyPose: "standing",
-      eyeDirection: "front", // center → front に変更
+      eyeDirection: "front",
       
       viewType: "halfBody",
       isGlobalPosition: true,
@@ -113,15 +114,13 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
     console.log("✅ キャラクター追加成功:", newCharacter.name, "パネル:", targetPanel.id);
   };
 
-  // 吹き出し追加機能（テンプレート強制読み込み対応）
+  // 吹き出し追加機能
   const addBubble = (type: string, text: string) => {
-    // パネルが存在しない場合は、選択されたテンプレートから取得
     let availablePanels = panels;
     if (availablePanels.length === 0 && selectedTemplate && templates[selectedTemplate]) {
       availablePanels = templates[selectedTemplate].panels;
     }
     
-    // パネル未選択の場合は最初のパネルを使用
     const targetPanel = selectedPanel || availablePanels[0];
     
     if (!targetPanel) {
@@ -154,7 +153,7 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
     console.log("✅ 吹き出し追加成功:", type, text, "パネル:", targetPanel.id);
   };
 
-  // 削除機能（拡張版）
+  // 削除機能
   const deleteElement = (type: 'character' | 'bubble', element: Character | SpeechBubble) => {
     if (type === 'character') {
       const newCharacters = characters.filter(char => char.id !== element.id);
@@ -224,16 +223,36 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
         if (target === 'character' && targetElement) {
           setSelectedCharacter(targetElement as Character);
           setSelectedBubble(null);
+          setSelectedPanel(null);
           if (onCharacterSelect) onCharacterSelect(targetElement as Character);
+          if (onPanelSelect) onPanelSelect(null);
         } else if (target === 'bubble' && targetElement) {
           setSelectedBubble(targetElement as SpeechBubble);
           setSelectedCharacter(null);
+          setSelectedPanel(null);
+          if (onCharacterSelect) onCharacterSelect(null);
+          if (onPanelSelect) onPanelSelect(null);
+        } else if (target === 'panel' && targetElement) {
+          setSelectedPanel(targetElement as Panel);
+          setSelectedCharacter(null);
+          setSelectedBubble(null);
+          if (onPanelSelect) onPanelSelect(targetElement as Panel);
           if (onCharacterSelect) onCharacterSelect(null);
         }
         break;
       case 'characterPanel':
         if (target === 'character' && targetElement && onCharacterRightClick) {
           onCharacterRightClick(targetElement as Character);
+        }
+        break;
+      case 'splitHorizontal':
+        if (target === 'panel' && targetElement && onPanelSplit) {
+          onPanelSplit((targetElement as Panel).id, 'horizontal');
+        }
+        break;
+      case 'splitVertical':
+        if (target === 'panel' && targetElement && onPanelSplit) {
+          onPanelSplit((targetElement as Panel).id, 'vertical');
         }
         break;
       case 'deselect':
@@ -261,7 +280,8 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
     ctx.fillStyle = isDarkMode ? "#404040" : "#ffffff";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    PanelRenderer.drawPanels(ctx, panels, selectedPanel, isDarkMode);
+    // 🆕 パネル描画でコマ編集モードを渡す
+    PanelRenderer.drawPanels(ctx, panels, selectedPanel, isDarkMode, isPanelEditMode);
     CharacterRenderer.drawCharacters(ctx, characters, panels, selectedCharacter);
     BubbleRenderer.drawBubbles(ctx, speechBubbles, panels, selectedBubble);
   };
@@ -274,7 +294,6 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    // コンテキストメニューを閉じる
     setContextMenu({ ...contextMenu, visible: false });
 
     const clickedBubble = BubbleRenderer.findBubbleAt(x, y, speechBubbles, panels);
@@ -308,7 +327,7 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
     console.log("📐 パネル選択:", clickedPanel?.id || "なし");
   };
 
-  // 右クリック処理（新機能）
+  // 右クリック処理
   const handleCanvasContextMenu = (e: React.MouseEvent<HTMLCanvasElement>) => {
     e.preventDefault();
     
@@ -318,7 +337,6 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    // 右クリックされた要素を特定
     const clickedBubble = BubbleRenderer.findBubbleAt(x, y, speechBubbles, panels);
     if (clickedBubble) {
       setContextMenu({
@@ -355,7 +373,6 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
       return;
     }
 
-    // 空白エリアの右クリック
     setContextMenu({
       visible: true,
       x: e.clientX,
@@ -381,9 +398,8 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
     }
   };
 
-  // マウスダウン処理（既存のコードをそのまま維持）
+  // マウスダウン処理（🆕 パネル操作対応）
   const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    // コンテキストメニューを閉じる
     setContextMenu({ ...contextMenu, visible: false });
     
     const canvas = canvasRef.current;
@@ -391,6 +407,38 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
     const rect = canvas.getBoundingClientRect();
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
+
+    // 🆕 パネル編集モード時のパネル操作チェック
+    if (isPanelEditMode && selectedPanel) {
+      const panelHandle = PanelRenderer.getPanelHandleAt(mouseX, mouseY, selectedPanel);
+      
+      if (panelHandle) {
+        if (panelHandle.type === "resize") {
+          setIsPanelResizing(true);
+          setResizeDirection(panelHandle.direction || "");
+          console.log(`🔧 パネルリサイズ開始: ${panelHandle.direction}`);
+          e.preventDefault();
+          return;
+        } else if (panelHandle.type === "move") {
+          setIsPanelMoving(true);
+          setDragOffset({
+            x: mouseX - selectedPanel.x,
+            y: mouseY - selectedPanel.y,
+          });
+          console.log("🚀 パネル移動開始");
+          e.preventDefault();
+          return;
+        } else if (panelHandle.type === "split" && onPanelSplit) {
+          const direction = window.confirm("水平分割（上下）しますか？\nキャンセルで垂直分割（左右）") 
+            ? "horizontal" 
+            : "vertical";
+          onPanelSplit(selectedPanel.id, direction);
+          console.log(`✂️ パネル分割: ${direction}`);
+          e.preventDefault();
+          return;
+        }
+      }
+    }
 
     // 吹き出し操作チェック
     const clickedBubble = BubbleRenderer.findBubbleAt(mouseX, mouseY, speechBubbles, panels);
@@ -469,9 +517,9 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
     }
   };
 
-  // マウス移動・アップ処理（既存コードをそのまま維持）
+  // マウス移動処理（🆕 パネル操作対応）
   const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDragging && !isCharacterResizing && !isBubbleResizing) {
+    if (!isDragging && !isCharacterResizing && !isBubbleResizing && !isPanelResizing && !isPanelMoving) {
       return;
     }
     
@@ -480,6 +528,35 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
     const rect = canvas.getBoundingClientRect();
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
+
+    // 🆕 パネルリサイズ処理
+    if (selectedPanel && isPanelResizing) {
+      const deltaX = mouseX - (selectedPanel.x + selectedPanel.width / 2);
+      const deltaY = mouseY - (selectedPanel.y + selectedPanel.height / 2);
+      
+      const updatedPanel = PanelRenderer.resizePanel(
+        selectedPanel,
+        resizeDirection,
+        deltaX,
+        deltaY
+      );
+      
+      setPanels(panels.map(p => p.id === selectedPanel.id ? updatedPanel : p));
+      setSelectedPanel(updatedPanel);
+      return;
+    }
+
+    // 🆕 パネル移動処理
+    if (selectedPanel && isPanelMoving) {
+      const newX = mouseX - dragOffset.x;
+      const newY = mouseY - dragOffset.y;
+      
+      const updatedPanel = PanelRenderer.movePanel(selectedPanel, newX - selectedPanel.x, newY - selectedPanel.y);
+      
+      setPanels(panels.map(p => p.id === selectedPanel.id ? updatedPanel : p));
+      setSelectedPanel(updatedPanel);
+      return;
+    }
 
     // 吹き出しリサイズ処理
     if (selectedBubble && isBubbleResizing) {
@@ -615,10 +692,12 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
     setIsDragging(false);
     setIsBubbleResizing(false);
     setIsCharacterResizing(false);
+    setIsPanelResizing(false); // 🆕
+    setIsPanelMoving(false); // 🆕
     setResizeDirection("");
   };
 
-  // キーボードイベント処理（削除機能強化）
+  // キーボードイベント処理
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Backspace' || e.key === 'Delete') {
@@ -659,7 +738,7 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
   // 再描画
   useEffect(() => {
     drawCanvas();
-  }, [panels, selectedPanel, characters, selectedCharacter, speechBubbles, selectedBubble]);
+  }, [panels, selectedPanel, characters, selectedCharacter, speechBubbles, selectedBubble, isPanelEditMode]);
 
   // ダークモード監視
   useEffect(() => {
@@ -707,9 +786,9 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
         style={{
           border: "2px solid #ddd",
           background: "white",
-          cursor: isBubbleResizing || isCharacterResizing
+          cursor: isBubbleResizing || isCharacterResizing || isPanelResizing
             ? "nw-resize"
-            : isDragging 
+            : isDragging || isPanelMoving
             ? "grabbing"
             : "pointer",
           boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
@@ -718,7 +797,7 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
         }}
       />
 
-{/* 右クリックコンテキストメニュー - ダークモード対応 */}
+      {/* 右クリックコンテキストメニュー - ダークモード対応 */}
       {contextMenu.visible && (
         <div
           style={{
@@ -754,7 +833,7 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
                 }}
                 onClick={() => handleContextMenuAction('characterPanel')}
               >
-                🎛️ 詳細設定
+                詳細設定
               </div>
               <div
                 style={{
@@ -773,7 +852,7 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
                 }}
                 onClick={() => handleContextMenuAction('delete')}
               >
-                🗑️ 削除
+                削除
               </div>
             </>
           )}
@@ -797,7 +876,7 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
                 }}
                 onClick={() => handleContextMenuAction('select')}
               >
-                📌 選択
+                選択
               </div>
               <div
                 style={{
@@ -816,7 +895,7 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
                 }}
                 onClick={() => handleContextMenuAction('edit')}
               >
-                ✏️ 編集
+                編集
               </div>
               <div
                 style={{
@@ -835,13 +914,51 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
                 }}
                 onClick={() => handleContextMenuAction('delete')}
               >
-                🗑️ 削除
+                削除
               </div>
             </>
           )}
           
           {contextMenu.target === 'panel' && (
             <>
+              <div
+                style={{
+                  padding: "8px 12px",
+                  cursor: "pointer",
+                  borderBottom: `1px solid ${document.documentElement.getAttribute("data-theme") === "dark" ? "#555555" : "#eee"}`,
+                  transition: "background-color 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  const target = e.target as HTMLElement;
+                  target.style.backgroundColor = document.documentElement.getAttribute("data-theme") === "dark" ? "#3d3d3d" : "#f5f5f5";
+                }}
+                onMouseLeave={(e) => {
+                  const target = e.target as HTMLElement;
+                  target.style.backgroundColor = "transparent";
+                }}
+                onClick={() => handleContextMenuAction('select')}
+              >
+                選択
+              </div>
+              <div
+                style={{
+                  padding: "8px 12px",
+                  cursor: "pointer",
+                  borderBottom: `1px solid ${document.documentElement.getAttribute("data-theme") === "dark" ? "#555555" : "#eee"}`,
+                  transition: "background-color 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  const target = e.target as HTMLElement;
+                  target.style.backgroundColor = document.documentElement.getAttribute("data-theme") === "dark" ? "#3d3d3d" : "#f5f5f5";
+                }}
+                onMouseLeave={(e) => {
+                  const target = e.target as HTMLElement;
+                  target.style.backgroundColor = "transparent";
+                }}
+                onClick={() => handleContextMenuAction('splitHorizontal')}
+              >
+                水平分割
+              </div>
               <div
                 style={{
                   padding: "8px 12px",
@@ -856,9 +973,9 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
                   const target = e.target as HTMLElement;
                   target.style.backgroundColor = "transparent";
                 }}
-                onClick={() => handleContextMenuAction('select')}
+                onClick={() => handleContextMenuAction('splitVertical')}
               >
-                📌 選択
+                垂直分割
               </div>
             </>
           )}
@@ -881,7 +998,7 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
                 }}
                 onClick={() => handleContextMenuAction('deselect')}
               >
-                ❌ 選択解除
+                選択解除
               </div>
             </>
           )}
@@ -913,6 +1030,7 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
           }}
         >
           パネル{selectedPanel.id}選択中
+          {isPanelEditMode && <span> | 編集モード</span>}
         </div>
       )}
       
@@ -934,12 +1052,12 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
             fontWeight: "bold",
           }}
         >
-          {isCharacterResizing ? "🔧 サイズ変更中" : 
-          isDragging ? "🚀 移動中" : 
-          "👤 " + selectedCharacter.name}
+          {isCharacterResizing ? "サイズ変更中" : 
+          isDragging ? "移動中" : 
+          selectedCharacter.name}
           <br/>
           <small>
-            {selectedCharacter.isGlobalPosition ? "🆓 自由移動" : "📐 パネル内"}
+            {selectedCharacter.isGlobalPosition ? "自由移動" : "パネル内"}
             {" | "}
             {selectedCharacter.viewType}
             {" | "}
@@ -966,9 +1084,9 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
             fontWeight: "bold",
           }}
         >
-          {isBubbleResizing ? "🔧 サイズ変更中" : 
-          isDragging ? "🚀 移動中" : 
-          "💬 " + selectedBubble.text}
+          {isBubbleResizing ? "サイズ変更中" : 
+          isDragging ? "移動中" : 
+          selectedBubble.text}
           <br/>
           <small>
             右クリックで編集・削除

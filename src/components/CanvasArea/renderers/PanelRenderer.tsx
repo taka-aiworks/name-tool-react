@@ -1,8 +1,8 @@
-// src/components/CanvasArea/renderers/PanelRenderer.tsx (コマ操作機能追加版)
+// src/components/CanvasArea/renderers/PanelRenderer.tsx (最適化版)
 import { Panel } from "../../../types";
 
 export class PanelRenderer {
-  // パネル群描画（コマ操作機能追加）
+  // パネル群描画（デバッグログ削除）
   static drawPanels(
     ctx: CanvasRenderingContext2D,
     panels: Panel[],
@@ -15,7 +15,7 @@ export class PanelRenderer {
     });
   }
 
-  // パネル描画関数（コマ操作ハンドル追加）
+  // パネル描画関数（デバッグログ削除）
   static drawPanel(
     ctx: CanvasRenderingContext2D,
     panel: Panel,
@@ -28,41 +28,40 @@ export class PanelRenderer {
       ? isDarkMode 
       : document.documentElement.getAttribute("data-theme") === "dark";
 
-    // パネル背景（より明確な色分け）
+    // パネル背景
     if (darkMode) {
-      ctx.fillStyle = "rgba(80, 80, 80, 0.9)";  // ダークモード：濃いグレー
+      ctx.fillStyle = "rgba(80, 80, 80, 0.9)";
     } else {
-      ctx.fillStyle = "rgba(255, 255, 255, 0.95)";  // ライトモード：ほぼ白
+      ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
     }
     ctx.fillRect(panel.x, panel.y, panel.width, panel.height);
 
-    // パネル枠線（より強調）
+    // パネル枠線
     if (isSelected) {
       ctx.strokeStyle = "#ff8833";
-      ctx.lineWidth = 4;  // 選択時は太く
+      ctx.lineWidth = 4;
     } else {
-      ctx.strokeStyle = darkMode ? "#ffffff" : "#333333";  // より明確なコントラスト
-      ctx.lineWidth = 3;  // 通常時も少し太く
+      ctx.strokeStyle = darkMode ? "#ffffff" : "#333333";
+      ctx.lineWidth = 3;
     }
     ctx.strokeRect(panel.x, panel.y, panel.width, panel.height);
 
-    // パネル番号（より見やすく）
+    // パネル番号
     ctx.fillStyle = isSelected 
       ? "#ff8833" 
       : darkMode 
-      ? "#ffffff"   // ダークモード：白文字
-      : "#333333";  // ライトモード：黒文字
-    ctx.font = "bold 18px Arial";  // サイズを大きく
+      ? "#ffffff"
+      : "#333333";
+    ctx.font = "bold 18px Arial";
     ctx.textAlign = "left";
     ctx.textBaseline = "top";
     
-    // 背景付きテキスト（視認性向上）
+    // テキスト背景
     const textX = panel.x + 12;
     const textY = panel.y + 12;
     const textWidth = 30;
     const textHeight = 25;
     
-    // テキスト背景
     ctx.fillStyle = isSelected 
       ? "rgba(255, 136, 51, 0.8)" 
       : darkMode 
@@ -78,7 +77,7 @@ export class PanelRenderer {
       : "#333333";
     ctx.fillText(`${panel.id}`, textX, textY);
 
-    // 選択時の追加表示（より目立つように）
+    // 選択時の追加表示
     if (isSelected) {
       ctx.fillStyle = "#ff8833";
       ctx.font = "bold 14px Arial";
@@ -94,17 +93,14 @@ export class PanelRenderer {
       ctx.fillStyle = "#ffffff";
       ctx.fillText("選択中", panel.x + panel.width - 15, panel.y + 12);
 
-      // 🆕 コマ操作ハンドル描画（編集モード時）
+      // コマ操作ハンドル描画（編集モード時）
       if (isEditMode) {
         PanelRenderer.drawPanelEditHandles(ctx, panel, darkMode);
       }
     }
-
-    // デバッグ用：描画確認
-    console.log(`Panel ${panel.id} 描画完了 - ダークモード: ${darkMode}`);
   }
 
-  // 🆕 コマ操作ハンドル描画
+  // コマ操作ハンドル描画
   static drawPanelEditHandles(
     ctx: CanvasRenderingContext2D,
     panel: Panel,
@@ -116,14 +112,14 @@ export class PanelRenderer {
     
     // 8方向のリサイズハンドル
     const resizeHandles = [
-      { x: panel.x - handleSize/2, y: panel.y - handleSize/2, type: "nw", cursor: "nw-resize" }, // 左上
-      { x: panel.x + panel.width/2 - handleSize/2, y: panel.y - handleSize/2, type: "n", cursor: "n-resize" }, // 上
-      { x: panel.x + panel.width - handleSize/2, y: panel.y - handleSize/2, type: "ne", cursor: "ne-resize" }, // 右上
-      { x: panel.x + panel.width - handleSize/2, y: panel.y + panel.height/2 - handleSize/2, type: "e", cursor: "e-resize" }, // 右
-      { x: panel.x + panel.width - handleSize/2, y: panel.y + panel.height - handleSize/2, type: "se", cursor: "se-resize" }, // 右下
-      { x: panel.x + panel.width/2 - handleSize/2, y: panel.y + panel.height - handleSize/2, type: "s", cursor: "s-resize" }, // 下
-      { x: panel.x - handleSize/2, y: panel.y + panel.height - handleSize/2, type: "sw", cursor: "sw-resize" }, // 左下
-      { x: panel.x - handleSize/2, y: panel.y + panel.height/2 - handleSize/2, type: "w", cursor: "w-resize" }, // 左
+      { x: panel.x - handleSize/2, y: panel.y - handleSize/2, type: "nw" },
+      { x: panel.x + panel.width/2 - handleSize/2, y: panel.y - handleSize/2, type: "n" },
+      { x: panel.x + panel.width - handleSize/2, y: panel.y - handleSize/2, type: "ne" },
+      { x: panel.x + panel.width - handleSize/2, y: panel.y + panel.height/2 - handleSize/2, type: "e" },
+      { x: panel.x + panel.width - handleSize/2, y: panel.y + panel.height - handleSize/2, type: "se" },
+      { x: panel.x + panel.width/2 - handleSize/2, y: panel.y + panel.height - handleSize/2, type: "s" },
+      { x: panel.x - handleSize/2, y: panel.y + panel.height - handleSize/2, type: "sw" },
+      { x: panel.x - handleSize/2, y: panel.y + panel.height/2 - handleSize/2, type: "w" },
     ];
 
     // リサイズハンドル描画
@@ -138,7 +134,7 @@ export class PanelRenderer {
       } 
       // 辺のハンドル：円形
       else {
-        ctx.fillStyle = "#4CAF50"; // 緑色で区別
+        ctx.fillStyle = "#4CAF50";
         ctx.strokeStyle = handleBorder;
         ctx.lineWidth = 2;
         ctx.beginPath();
@@ -153,7 +149,7 @@ export class PanelRenderer {
     const moveX = panel.x + panel.width/2 - moveHandleSize/2;
     const moveY = panel.y + panel.height/2 - moveHandleSize/2;
     
-    ctx.fillStyle = "#2196F3"; // 青色で移動ハンドル
+    ctx.fillStyle = "#2196F3";
     ctx.strokeStyle = handleBorder;
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -173,7 +169,7 @@ export class PanelRenderer {
     const splitX = panel.x + panel.width - splitHandleSize - 5;
     const splitY = panel.y + panel.height - splitHandleSize - 5;
     
-    ctx.fillStyle = "#9C27B0"; // 紫色で分割ハンドル
+    ctx.fillStyle = "#9C27B0";
     ctx.strokeStyle = handleBorder;
     ctx.lineWidth = 2;
     ctx.fillRect(splitX, splitY, splitHandleSize, splitHandleSize);
@@ -187,7 +183,7 @@ export class PanelRenderer {
     ctx.fillText("✂", splitX + splitHandleSize/2, splitY + splitHandleSize/2);
   }
 
-  // 🆕 パネル操作ハンドルのクリック判定
+  // パネル操作ハンドルのクリック判定
   static getPanelHandleAt(
     mouseX: number,
     mouseY: number,
@@ -250,7 +246,7 @@ export class PanelRenderer {
     return null;
   }
 
-  // 🆕 パネルリサイズ処理
+  // パネルリサイズ処理
   static resizePanel(
     panel: Panel,
     direction: string,
@@ -261,44 +257,37 @@ export class PanelRenderer {
     const newPanel = { ...panel };
     
     switch (direction) {
-      case "nw": // 左上
+      case "nw":
         newPanel.x += deltaX;
         newPanel.y += deltaY;
         newPanel.width = Math.max(minSize, newPanel.width - deltaX);
         newPanel.height = Math.max(minSize, newPanel.height - deltaY);
         break;
-        
-      case "n": // 上
+      case "n":
         newPanel.y += deltaY;
         newPanel.height = Math.max(minSize, newPanel.height - deltaY);
         break;
-        
-      case "ne": // 右上
+      case "ne":
         newPanel.y += deltaY;
         newPanel.width = Math.max(minSize, newPanel.width + deltaX);
         newPanel.height = Math.max(minSize, newPanel.height - deltaY);
         break;
-        
-      case "e": // 右
+      case "e":
         newPanel.width = Math.max(minSize, newPanel.width + deltaX);
         break;
-        
-      case "se": // 右下
+      case "se":
         newPanel.width = Math.max(minSize, newPanel.width + deltaX);
         newPanel.height = Math.max(minSize, newPanel.height + deltaY);
         break;
-        
-      case "s": // 下
+      case "s":
         newPanel.height = Math.max(minSize, newPanel.height + deltaY);
         break;
-        
-      case "sw": // 左下
+      case "sw":
         newPanel.x += deltaX;
         newPanel.width = Math.max(minSize, newPanel.width - deltaX);
         newPanel.height = Math.max(minSize, newPanel.height + deltaY);
         break;
-        
-      case "w": // 左
+      case "w":
         newPanel.x += deltaX;
         newPanel.width = Math.max(minSize, newPanel.width - deltaX);
         break;
@@ -307,19 +296,18 @@ export class PanelRenderer {
     return newPanel;
   }
 
-  // 🆕 パネル移動処理
+  // パネル移動処理
   static movePanel(panel: Panel, deltaX: number, deltaY: number): Panel {
     return {
       ...panel,
-      x: Math.max(0, panel.x + deltaX), // 画面外に出ないように
+      x: Math.max(0, panel.x + deltaX),
       y: Math.max(0, panel.y + deltaY),
     };
   }
 
-  // 🆕 パネル分割処理
+  // パネル分割処理
   static splitPanel(panel: Panel, direction: "horizontal" | "vertical"): Panel[] {
     if (direction === "horizontal") {
-      // 水平分割（上下に分ける）
       const topPanel: Panel = {
         ...panel,
         id: panel.id,
@@ -328,14 +316,13 @@ export class PanelRenderer {
       
       const bottomPanel: Panel = {
         ...panel,
-        id: panel.id + 1000, // 仮のID（実際は最大ID+1にする）
+        id: panel.id + 1000,
         y: panel.y + panel.height / 2,
         height: panel.height / 2,
       };
       
       return [topPanel, bottomPanel];
     } else {
-      // 垂直分割（左右に分ける）
       const leftPanel: Panel = {
         ...panel,
         id: panel.id,
@@ -344,7 +331,7 @@ export class PanelRenderer {
       
       const rightPanel: Panel = {
         ...panel,
-        id: panel.id + 1000, // 仮のID（実際は最大ID+1にする）
+        id: panel.id + 1000,
         x: panel.x + panel.width / 2,
         width: panel.width / 2,
       };
@@ -353,7 +340,7 @@ export class PanelRenderer {
     }
   }
 
-  // 既存のメソッド（変更なし）
+  // パネル検索
   static findPanelAt(
     mouseX: number,
     mouseY: number,
