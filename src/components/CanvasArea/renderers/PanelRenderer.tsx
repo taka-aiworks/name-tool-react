@@ -348,15 +348,14 @@ export class PanelRenderer {
     return newPanel;
   }
 
-  // 🆕 パネル移動処理（改良版・スナップ機能付き）
-  static movePanel(
+    static movePanel(
     panel: Panel,
     deltaX: number,
     deltaY: number,
     canvasWidth: number = 1200,
     canvasHeight: number = 800,
     snapThreshold: number = 10,
-    allPanels: Panel[] = [] // 🆕 他のパネルとのスナップ用
+    allPanels: Panel[] = []
   ): { panel: Panel; snapLines: Array<{x1: number, y1: number, x2: number, y2: number, type: 'vertical' | 'horizontal'}> } {
     let newX = panel.x + deltaX;
     let newY = panel.y + deltaY;
@@ -366,117 +365,106 @@ export class PanelRenderer {
     newY = Math.max(0, Math.min(canvasHeight - panel.height, newY));
     
     const snapLines: Array<{x1: number, y1: number, x2: number, y2: number, type: 'vertical' | 'horizontal'}> = [];
-    
-    // 🆕 他のパネルとのスナップ判定
     const otherPanels = allPanels.filter(p => p.id !== panel.id);
     
+    // 🔧 修正: パネル本体の境界線でスナップ判定
     for (const otherPanel of otherPanels) {
-      // 水平方向のスナップ（左端、右端、中央）
-      const leftToLeft = Math.abs(newX - otherPanel.x);
-      const leftToRight = Math.abs(newX - (otherPanel.x + otherPanel.width));
-      const rightToLeft = Math.abs((newX + panel.width) - otherPanel.x);
-      const rightToRight = Math.abs((newX + panel.width) - (otherPanel.x + otherPanel.width));
-      const centerToCenter = Math.abs((newX + panel.width/2) - (otherPanel.x + otherPanel.width/2));
+      // 水平方向のスナップ（パネル本体の境界線）
       
-      if (leftToLeft < snapThreshold) {
+      // 左端同士（パネル本体の左端）
+      if (Math.abs(newX - otherPanel.x) < snapThreshold) {
         newX = otherPanel.x;
         snapLines.push({
           x1: otherPanel.x + 0.5, y1: Math.min(newY, otherPanel.y) - 20,
           x2: otherPanel.x + 0.5, y2: Math.max(newY + panel.height, otherPanel.y + otherPanel.height) + 20,
           type: 'vertical'
         });
-      } else if (leftToRight < snapThreshold) {
-        newX = otherPanel.x + otherPanel.width;
-        snapLines.push({
-          x1: otherPanel.x + otherPanel.width + 0.5, y1: Math.min(newY, otherPanel.y) - 20,
-          x2: otherPanel.x + otherPanel.width + 0.5, y2: Math.max(newY + panel.height, otherPanel.y + otherPanel.height) + 20,
-          type: 'vertical'
-        });
-      } else if (rightToLeft < snapThreshold) {
-        newX = otherPanel.x - panel.width;
-        snapLines.push({
-          x1: otherPanel.x + 0.5, y1: Math.min(newY, otherPanel.y) - 20,
-          x2: otherPanel.x + 0.5, y2: Math.max(newY + panel.height, otherPanel.y + otherPanel.height) + 20,
-          type: 'vertical'
-        });
-      } else if (rightToRight < snapThreshold) {
+        break;
+      }
+      
+      // 右端同士（パネル本体の右端）
+      if (Math.abs((newX + panel.width) - (otherPanel.x + otherPanel.width)) < snapThreshold) {
         newX = otherPanel.x + otherPanel.width - panel.width;
         snapLines.push({
           x1: otherPanel.x + otherPanel.width + 0.5, y1: Math.min(newY, otherPanel.y) - 20,
           x2: otherPanel.x + otherPanel.width + 0.5, y2: Math.max(newY + panel.height, otherPanel.y + otherPanel.height) + 20,
           type: 'vertical'
         });
-      } else if (centerToCenter < snapThreshold) {
-        newX = otherPanel.x + otherPanel.width/2 - panel.width/2;
-        const centerX = otherPanel.x + otherPanel.width/2;
-        snapLines.push({
-          x1: centerX + 0.5, y1: Math.min(newY, otherPanel.y) - 20,
-          x2: centerX + 0.5, y2: Math.max(newY + panel.height, otherPanel.y + otherPanel.height) + 20,
-          type: 'vertical'
-        });
+        break;
       }
       
-      // 垂直方向のスナップ（上端、下端、中央）
-      const topToTop = Math.abs(newY - otherPanel.y);
-      const topToBottom = Math.abs(newY - (otherPanel.y + otherPanel.height));
-      const bottomToTop = Math.abs((newY + panel.height) - otherPanel.y);
-      const bottomToBottom = Math.abs((newY + panel.height) - (otherPanel.y + otherPanel.height));
-      const centerToCenterV = Math.abs((newY + panel.height/2) - (otherPanel.y + otherPanel.height/2));
+      // 左端を右端に隣接（パネル本体同士）
+      if (Math.abs(newX - (otherPanel.x + otherPanel.width)) < snapThreshold) {
+        newX = otherPanel.x + otherPanel.width;
+        snapLines.push({
+          x1: otherPanel.x + otherPanel.width + 0.5, y1: Math.min(newY, otherPanel.y) - 20,
+          x2: otherPanel.x + otherPanel.width + 0.5, y2: Math.max(newY + panel.height, otherPanel.y + otherPanel.height) + 20,
+          type: 'vertical'
+        });
+        break;
+      }
       
-      if (topToTop < snapThreshold) {
-        newY = otherPanel.y;
+      // 右端を左端に隣接（パネル本体同士）
+      if (Math.abs((newX + panel.width) - otherPanel.x) < snapThreshold) {
+        newX = otherPanel.x - panel.width;
         snapLines.push({
-          x1: Math.min(newX, otherPanel.x) - 20, y1: otherPanel.y,
-          x2: Math.max(newX + panel.width, otherPanel.x + otherPanel.width) + 20, y2: otherPanel.y,
-          type: 'horizontal'
+          x1: otherPanel.x + 0.5, y1: Math.min(newY, otherPanel.y) - 20,
+          x2: otherPanel.x + 0.5, y2: Math.max(newY + panel.height, otherPanel.y + otherPanel.height) + 20,
+          type: 'vertical'
         });
-      } else if (topToBottom < snapThreshold) {
-        newY = otherPanel.y + otherPanel.height;
-        snapLines.push({
-          x1: Math.min(newX, otherPanel.x) - 20, y1: otherPanel.y + otherPanel.height,
-          x2: Math.max(newX + panel.width, otherPanel.x + otherPanel.width) + 20, y2: otherPanel.y + otherPanel.height,
-          type: 'horizontal'
-        });
-      } else if (bottomToTop < snapThreshold) {
-        newY = otherPanel.y - panel.height;
-        snapLines.push({
-          x1: Math.min(newX, otherPanel.x) - 20, y1: otherPanel.y,
-          x2: Math.max(newX + panel.width, otherPanel.x + otherPanel.width) + 20, y2: otherPanel.y,
-          type: 'horizontal'
-        });
-      } else if (bottomToBottom < snapThreshold) {
-        newY = otherPanel.y + otherPanel.height - panel.height;
-        snapLines.push({
-          x1: Math.min(newX, otherPanel.x) - 20, y1: otherPanel.y + otherPanel.height,
-          x2: Math.max(newX + panel.width, otherPanel.x + otherPanel.width) + 20, y2: otherPanel.y + otherPanel.height,
-          type: 'horizontal'
-        });
-      } else if (centerToCenterV < snapThreshold) {
-        newY = otherPanel.y + otherPanel.height/2 - panel.height/2;
-        const centerY = otherPanel.y + otherPanel.height/2;
-        snapLines.push({
-          x1: Math.min(newX, otherPanel.x) - 20, y1: centerY,
-          x2: Math.max(newX + panel.width, otherPanel.x + otherPanel.width) + 20, y2: centerY,
-          type: 'horizontal'
-        });
+        break;
       }
     }
     
-    // グリッドスナップ（オプション）
-    const gridSize = 20;
-    if (Math.abs(newX % gridSize) < snapThreshold) {
-      newX = Math.round(newX / gridSize) * gridSize;
-    }
-    if (Math.abs(newY % gridSize) < snapThreshold) {
-      newY = Math.round(newY / gridSize) * gridSize;
+    // 垂直方向のスナップ（パネル本体の境界線）
+    for (const otherPanel of otherPanels) {
+      // 上端同士（パネル本体の上端）
+      if (Math.abs(newY - otherPanel.y) < snapThreshold) {
+        newY = otherPanel.y;
+        snapLines.push({
+          x1: Math.min(newX, otherPanel.x) - 20, y1: otherPanel.y + 0.5,
+          x2: Math.max(newX + panel.width, otherPanel.x + otherPanel.width) + 20, y2: otherPanel.y + 0.5,
+          type: 'horizontal'
+        });
+        break;
+      }
+      
+      // 下端同士（パネル本体の下端）
+      if (Math.abs((newY + panel.height) - (otherPanel.y + otherPanel.height)) < snapThreshold) {
+        newY = otherPanel.y + otherPanel.height - panel.height;
+        snapLines.push({
+          x1: Math.min(newX, otherPanel.x) - 20, y1: otherPanel.y + otherPanel.height + 0.5,
+          x2: Math.max(newX + panel.width, otherPanel.x + otherPanel.width) + 20, y2: otherPanel.y + otherPanel.height + 0.5,
+          type: 'horizontal'
+        });
+        break;
+      }
+      
+      // 上端を下端に隣接（パネル本体同士）
+      if (Math.abs(newY - (otherPanel.y + otherPanel.height)) < snapThreshold) {
+        newY = otherPanel.y + otherPanel.height;
+        snapLines.push({
+          x1: Math.min(newX, otherPanel.x) - 20, y1: otherPanel.y + otherPanel.height + 0.5,
+          x2: Math.max(newX + panel.width, otherPanel.x + otherPanel.width) + 20, y2: otherPanel.y + otherPanel.height + 0.5,
+          type: 'horizontal'
+        });
+        break;
+      }
+      
+      // 下端を上端に隣接（パネル本体同士）
+      if (Math.abs((newY + panel.height) - otherPanel.y) < snapThreshold) {
+        newY = otherPanel.y - panel.height;
+        snapLines.push({
+          x1: Math.min(newX, otherPanel.x) - 20, y1: otherPanel.y + 0.5,
+          x2: Math.max(newX + panel.width, otherPanel.x + otherPanel.width) + 20, y2: otherPanel.y + 0.5,
+          type: 'horizontal'
+        });
+        break;
+      }
     }
     
     return {
-      panel: {
-        ...panel,
-        x: newX,
-        y: newY,
-      },
+      panel: { ...panel, x: newX, y: newY },
       snapLines
     };
   }
