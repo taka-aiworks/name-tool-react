@@ -1,4 +1,4 @@
-// src/components/CanvasComponent.tsx (コマ操作機能完全対応版)
+// src/components/CanvasComponent.tsx (パネル移動・削除機能修正版)
 import React, { useRef, useEffect, useState } from "react";
 import { Panel, Character, SpeechBubble, CanvasComponentProps } from "../types";
 import { BubbleRenderer } from "./CanvasArea/renderers/BubbleRenderer";
@@ -170,6 +170,50 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
     setContextMenu({ ...contextMenu, visible: false });
   };
 
+  // 🆕 パネル削除機能
+  const deletePanelWithConfirmation = (panel: Panel) => {
+    // 削除確認ダイアログ
+    const confirmed = PanelRenderer.showDeleteConfirmation(panel.id);
+    if (!confirmed) {
+      setContextMenu({ ...contextMenu, visible: false });
+      return;
+    }
+
+    // 子要素（キャラクター・吹き出し）のIDを取得
+    const { characterIdsToDelete, bubbleIdsToDelete } = PanelRenderer.deletePanelAndGetChildIds(
+      panel,
+      characters,
+      speechBubbles
+    );
+
+    // 子要素を削除
+    if (characterIdsToDelete.length > 0) {
+      const newCharacters = characters.filter(char => !characterIdsToDelete.includes(char.id));
+      setCharacters(newCharacters);
+      console.log(`🗑️ キャラクター ${characterIdsToDelete.length} 個削除`);
+    }
+
+    if (bubbleIdsToDelete.length > 0) {
+      const newBubbles = speechBubbles.filter(bubble => !bubbleIdsToDelete.includes(bubble.id));
+      setSpeechBubbles(newBubbles);
+      console.log(`🗑️ 吹き出し ${bubbleIdsToDelete.length} 個削除`);
+    }
+
+    // パネルを削除
+    const newPanels = panels.filter(p => p.id !== panel.id);
+    setPanels(newPanels);
+
+    // 選択状態をクリア
+    setSelectedPanel(null);
+    setSelectedCharacter(null);
+    setSelectedBubble(null);
+    if (onPanelSelect) onPanelSelect(null);
+    if (onCharacterSelect) onCharacterSelect(null);
+
+    console.log(`🗑️ パネル ${panel.id} を削除（子要素含む）`);
+    setContextMenu({ ...contextMenu, visible: false });
+  };
+
   // 編集機能
   const handleEditComplete = () => {
     if (editingBubble && editText.trim()) {
@@ -215,7 +259,9 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
         }
         break;
       case 'delete':
-        if (target && targetElement) {
+        if (target === 'panel' && targetElement) {
+          deletePanelWithConfirmation(targetElement as Panel);
+        } else if (target && targetElement) {
           deleteElement(target as 'character' | 'bubble', targetElement as Character | SpeechBubble);
         }
         break;
@@ -327,7 +373,7 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
     console.log("📐 パネル選択:", clickedPanel?.id || "なし");
   };
 
-  // 右クリック処理
+  // 右クリック処理（🆕 パネル削除メニュー追加）
   const handleCanvasContextMenu = (e: React.MouseEvent<HTMLCanvasElement>) => {
     e.preventDefault();
     
@@ -362,7 +408,7 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
     }
 
     const clickedPanel = PanelRenderer.findPanelAt(x, y, panels);
-    if (clickedPanel) {
+    if (clickedPanel && PanelRenderer.shouldShowContextMenu(x, y, clickedPanel, isPanelEditMode)) {
       setContextMenu({
         visible: true,
         x: e.clientX,
@@ -398,7 +444,7 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
     }
   };
 
-  // マウスダウン処理（🆕 パネル操作対応）
+  // マウスダウン処理（🆕 パネル削除ハンドル対応）
   const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     setContextMenu({ ...contextMenu, visible: false });
     
@@ -413,9 +459,15 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
       const panelHandle = PanelRenderer.getPanelHandleAt(mouseX, mouseY, selectedPanel);
       
       if (panelHandle) {
-        if (panelHandle.type === "resize") {
+        if (panelHandle.type === "delete") {
+          // 🆕 削除ハンドルクリック
+          deletePanelWithConfirmation(selectedPanel);
+          e.preventDefault();
+          return;
+        } else if (panelHandle.type === "resize") {
           setIsPanelResizing(true);
           setResizeDirection(panelHandle.direction || "");
+          setDragOffset({ x: mouseX, y: mouseY }); // 🔧 開始位置を記録
           console.log(`🔧 パネルリサイズ開始: ${panelHandle.direction}`);
           e.preventDefault();
           return;
@@ -429,6 +481,7 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
           e.preventDefault();
           return;
         } else if (panelHandle.type === "split" && onPanelSplit) {
+          // 🆕 分割ハンドルクリック（修正版）
           const direction = window.confirm("水平分割（上下）しますか？\nキャンセルで垂直分割（左右）") 
             ? "horizontal" 
             : "vertical";
@@ -517,7 +570,7 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
     }
   };
 
-  // マウス移動処理（🆕 パネル操作対応）
+  // マウス移動処理（🔧 完全修正版）
   const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!isDragging && !isCharacterResizing && !isBubbleResizing && !isPanelResizing && !isPanelMoving) {
       return;
@@ -529,10 +582,12 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
 
-    // 🆕 パネルリサイズ処理
+    // 🔧 パネルリサイズ処理（完全修正）
     if (selectedPanel && isPanelResizing) {
-      const deltaX = mouseX - (selectedPanel.x + selectedPanel.width / 2);
-      const deltaY = mouseY - (selectedPanel.y + selectedPanel.height / 2);
+      const startX = dragOffset.x;
+      const startY = dragOffset.y;
+      const deltaX = mouseX - startX;
+      const deltaY = mouseY - startY;
       
       const updatedPanel = PanelRenderer.resizePanel(
         selectedPanel,
@@ -546,12 +601,20 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
       return;
     }
 
-    // 🆕 パネル移動処理
+    // 🚀 パネル移動処理（完全修正）
     if (selectedPanel && isPanelMoving) {
       const newX = mouseX - dragOffset.x;
       const newY = mouseY - dragOffset.y;
       
-      const updatedPanel = PanelRenderer.movePanel(selectedPanel, newX - selectedPanel.x, newY - selectedPanel.y);
+      // キャンバス範囲内に制限
+      const clampedX = Math.max(0, Math.min(canvas.width - selectedPanel.width, newX));
+      const clampedY = Math.max(0, Math.min(canvas.height - selectedPanel.height, newY));
+      
+      const updatedPanel = {
+        ...selectedPanel,
+        x: clampedX,
+        y: clampedY,
+      };
       
       setPanels(panels.map(p => p.id === selectedPanel.id ? updatedPanel : p));
       setSelectedPanel(updatedPanel);
@@ -697,12 +760,15 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
     setResizeDirection("");
   };
 
-  // キーボードイベント処理
+  // 🆕 キーボードイベント処理（パネル削除対応）
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Backspace' || e.key === 'Delete') {
         e.preventDefault();
-        if (selectedCharacter) {
+        if (selectedPanel && isPanelEditMode) {
+          // パネル削除（編集モード時のみ）
+          deletePanelWithConfirmation(selectedPanel);
+        } else if (selectedCharacter) {
           deleteElement('character', selectedCharacter);
         } else if (selectedBubble) {
           deleteElement('bubble', selectedBubble);
@@ -712,7 +778,7 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedCharacter, selectedBubble]);
+  }, [selectedCharacter, selectedBubble, selectedPanel, isPanelEditMode]);
 
   // 機能提供用useEffect
   useEffect(() => {
@@ -963,6 +1029,7 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
                 style={{
                   padding: "8px 12px",
                   cursor: "pointer",
+                  borderBottom: `1px solid ${document.documentElement.getAttribute("data-theme") === "dark" ? "#555555" : "#eee"}`,
                   transition: "background-color 0.2s",
                 }}
                 onMouseEnter={(e) => {
@@ -976,6 +1043,26 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
                 onClick={() => handleContextMenuAction('splitVertical')}
               >
                 垂直分割
+              </div>
+              {/* 🆕 パネル削除メニュー項目 */}
+              <div
+                style={{
+                  padding: "8px 12px",
+                  cursor: "pointer",
+                  color: "#ff4444",
+                  transition: "background-color 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  const target = e.target as HTMLElement;
+                  target.style.backgroundColor = document.documentElement.getAttribute("data-theme") === "dark" ? "#3d3d3d" : "#f5f5f5";
+                }}
+                onMouseLeave={(e) => {
+                  const target = e.target as HTMLElement;
+                  target.style.backgroundColor = "transparent";
+                }}
+                onClick={() => handleContextMenuAction('delete')}
+              >
+                🗑️ コマ削除
               </div>
             </>
           )}
@@ -1031,6 +1118,9 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
         >
           パネル{selectedPanel.id}選択中
           {isPanelEditMode && <span> | 編集モード</span>}
+          {/* 🆕 移動状態表示 */}
+          {isPanelMoving && <span> | 移動中</span>}
+          {isPanelResizing && <span> | リサイズ中</span>}
         </div>
       )}
       

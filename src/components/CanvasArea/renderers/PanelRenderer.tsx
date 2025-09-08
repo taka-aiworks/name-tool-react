@@ -1,4 +1,4 @@
-// src/components/CanvasArea/renderers/PanelRenderer.tsx (最適化版)
+// src/components/CanvasArea/renderers/PanelRenderer.tsx (コマ移動・削除機能追加版)
 import { Panel } from "../../../types";
 
 export class PanelRenderer {
@@ -181,6 +181,24 @@ export class PanelRenderer {
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText("✂", splitX + splitHandleSize/2, splitY + splitHandleSize/2);
+
+    // 🆕 削除ハンドル（左上角）
+    const deleteHandleSize = 24;
+    const deleteX = panel.x - deleteHandleSize/2;
+    const deleteY = panel.y - deleteHandleSize/2;
+    
+    ctx.fillStyle = "#f44336";
+    ctx.strokeStyle = handleBorder;
+    ctx.lineWidth = 2;
+    ctx.fillRect(deleteX, deleteY, deleteHandleSize, deleteHandleSize);
+    ctx.strokeRect(deleteX, deleteY, deleteHandleSize, deleteHandleSize);
+    
+    // 削除アイコン
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 16px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("×", deleteX + deleteHandleSize/2, deleteY + deleteHandleSize/2);
   }
 
   // パネル操作ハンドルのクリック判定
@@ -192,6 +210,20 @@ export class PanelRenderer {
     const handleSize = 20;
     const tolerance = 5;
     
+    // 🆕 削除ハンドル判定（最優先）
+    const deleteHandleSize = 24;
+    const deleteX = panel.x - deleteHandleSize/2;
+    const deleteY = panel.y - deleteHandleSize/2;
+    
+    if (
+      mouseX >= deleteX - tolerance &&
+      mouseX <= deleteX + deleteHandleSize + tolerance &&
+      mouseY >= deleteY - tolerance &&
+      mouseY <= deleteY + deleteHandleSize + tolerance
+    ) {
+      return { type: "delete" };
+    }
+
     // リサイズハンドル判定
     const resizeHandles = [
       { x: panel.x - handleSize/2, y: panel.y - handleSize/2, type: "resize", direction: "nw" },
@@ -296,8 +328,40 @@ export class PanelRenderer {
     return newPanel;
   }
 
-  // パネル移動処理
-  static movePanel(panel: Panel, deltaX: number, deltaY: number): Panel {
+  // 🆕 パネル移動処理（改良版・スナップ機能付き）
+  static movePanel(
+    panel: Panel,
+    deltaX: number,
+    deltaY: number,
+    canvasWidth: number = 1200,
+    canvasHeight: number = 800,
+    snapThreshold: number = 10
+  ): Panel {
+    let newX = panel.x + deltaX;
+    let newY = panel.y + deltaY;
+    
+    // キャンバス範囲制限
+    newX = Math.max(0, Math.min(canvasWidth - panel.width, newX));
+    newY = Math.max(0, Math.min(canvasHeight - panel.height, newY));
+    
+    // グリッドスナップ（オプション）
+    const gridSize = 20;
+    if (Math.abs(newX % gridSize) < snapThreshold) {
+      newX = Math.round(newX / gridSize) * gridSize;
+    }
+    if (Math.abs(newY % gridSize) < snapThreshold) {
+      newY = Math.round(newY / gridSize) * gridSize;
+    }
+    
+    return {
+      ...panel,
+      x: newX,
+      y: newY,
+    };
+  }
+
+  // 🆕 パネル移動処理（シンプル版）
+  static movePanelSimple(panel: Panel, deltaX: number, deltaY: number): Panel {
     return {
       ...panel,
       x: Math.max(0, panel.x + deltaX),
@@ -338,6 +402,69 @@ export class PanelRenderer {
       
       return [leftPanel, rightPanel];
     }
+  }
+
+  // 🆕 コマ削除時の確認ダイアログ
+  static showDeleteConfirmation(panelId: number): boolean {
+    return window.confirm(
+      `コマ ${panelId} を削除しますか？\n` +
+      `コマ内のキャラクターと吹き出しも一緒に削除されます。\n\n` +
+      `この操作は取り消せません。`
+    );
+  }
+
+  // 🆕 パネル削除処理（子要素のIDリストを返す）
+  static deletePanelAndGetChildIds(
+    panel: Panel,
+    characters: any[],
+    bubbles: any[]
+  ): {
+    characterIdsToDelete: string[];
+    bubbleIdsToDelete: string[];
+  } {
+    // パネル内のキャラクターを検索
+    const characterIdsToDelete = characters
+      .filter(char => 
+        char.x >= panel.x && 
+        char.x <= panel.x + panel.width &&
+        char.y >= panel.y && 
+        char.y <= panel.y + panel.height
+      )
+      .map(char => char.id);
+
+    // パネル内の吹き出しを検索
+    const bubbleIdsToDelete = bubbles
+      .filter(bubble => 
+        bubble.x >= panel.x && 
+        bubble.x <= panel.x + panel.width &&
+        bubble.y >= panel.y && 
+        bubble.y <= panel.y + panel.height
+      )
+      .map(bubble => bubble.id);
+
+    return {
+      characterIdsToDelete,
+      bubbleIdsToDelete
+    };
+  }
+
+  // 🆕 右クリックメニュー表示判定
+  static shouldShowContextMenu(
+    mouseX: number,
+    mouseY: number,
+    panel: Panel,
+    isEditMode: boolean
+  ): boolean {
+    // 編集モード時のみ右クリックメニューを表示
+    if (!isEditMode) return false;
+    
+    // パネル内でのクリックかチェック
+    return (
+      mouseX >= panel.x &&
+      mouseX <= panel.x + panel.width &&
+      mouseY >= panel.y &&
+      mouseY <= panel.y + panel.height
+    );
   }
 
   // パネル検索
