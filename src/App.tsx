@@ -1,9 +1,9 @@
-// src/App.tsx (完全最新版 - エラー修正済み)
+// src/App.tsx (コマ操作・自動配置機能追加版)
 import React, { useState, useEffect } from "react";
 import CanvasComponent from "./components/CanvasComponent";
 import CharacterDetailPanel from "./components/UI/CharacterDetailPanel";
 import { Panel, Character, SpeechBubble } from "./types";
-import { templates } from "./components/CanvasArea/templates";
+import { templates, applyTemplateDefaults } from "./components/CanvasArea/templates";
 import { sceneTemplates, applySceneTemplate } from "./components/CanvasArea/sceneTemplates";
 import "./App.css";
 
@@ -27,6 +27,9 @@ function App() {
   const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
   const [selectedScene, setSelectedScene] = useState<string>("");
   const [showCharacterPanel, setShowCharacterPanel] = useState<boolean>(false);
+  
+  // 🆕 コマ編集モード
+  const [isPanelEditMode, setIsPanelEditMode] = useState<boolean>(false);
 
   // 機能コールバック用の状態
   const [addCharacterFunc, setAddCharacterFunc] = useState<((type: string) => void) | null>(null);
@@ -36,19 +39,22 @@ function App() {
   const [operationHistory, setOperationHistory] = useState<{
     characters: Character[][];
     speechBubbles: SpeechBubble[][];
+    panels: Panel[][]; // 🆕 パネル履歴も追加
     currentIndex: number;
   }>({
     characters: [[]],
     speechBubbles: [[]],
+    panels: [[]],
     currentIndex: 0,
   });
 
-  // アンドゥ/リドゥ機能の実装（改良版）
-  const saveToHistory = (newCharacters: Character[], newBubbles: SpeechBubble[]) => {
+  // アンドゥ/リドゥ機能の実装（パネル対応版）
+  const saveToHistory = (newCharacters: Character[], newBubbles: SpeechBubble[], newPanels: Panel[]) => {
     setOperationHistory(prev => {
       const newHistory = {
-        characters: [...prev.characters.slice(0, prev.currentIndex + 1), [...newCharacters]], // 深いコピー
-        speechBubbles: [...prev.speechBubbles.slice(0, prev.currentIndex + 1), [...newBubbles]], // 深いコピー
+        characters: [...prev.characters.slice(0, prev.currentIndex + 1), [...newCharacters]],
+        speechBubbles: [...prev.speechBubbles.slice(0, prev.currentIndex + 1), [...newBubbles]],
+        panels: [...prev.panels.slice(0, prev.currentIndex + 1), [...newPanels]], // 🆕
         currentIndex: prev.currentIndex + 1,
       };
       
@@ -56,6 +62,7 @@ function App() {
       if (newHistory.characters.length > 50) {
         newHistory.characters = newHistory.characters.slice(1);
         newHistory.speechBubbles = newHistory.speechBubbles.slice(1);
+        newHistory.panels = newHistory.panels.slice(1); // 🆕
         newHistory.currentIndex = Math.max(0, newHistory.currentIndex - 1);
       }
       
@@ -66,8 +73,9 @@ function App() {
   const handleUndo = () => {
     if (operationHistory.currentIndex > 0) {
       const newIndex = operationHistory.currentIndex - 1;
-      setCharacters([...operationHistory.characters[newIndex]]); // 深いコピー
-      setSpeechBubbles([...operationHistory.speechBubbles[newIndex]]); // 深いコピー
+      setCharacters([...operationHistory.characters[newIndex]]);
+      setSpeechBubbles([...operationHistory.speechBubbles[newIndex]]);
+      setPanels([...operationHistory.panels[newIndex]]); // 🆕
       setOperationHistory(prev => ({ ...prev, currentIndex: newIndex }));
       console.log("⬅️ アンドゥ実行");
     }
@@ -76,28 +84,30 @@ function App() {
   const handleRedo = () => {
     if (operationHistory.currentIndex < operationHistory.characters.length - 1) {
       const newIndex = operationHistory.currentIndex + 1;
-      setCharacters([...operationHistory.characters[newIndex]]); // 深いコピー
-      setSpeechBubbles([...operationHistory.speechBubbles[newIndex]]); // 深いコピー
+      setCharacters([...operationHistory.characters[newIndex]]);
+      setSpeechBubbles([...operationHistory.speechBubbles[newIndex]]);
+      setPanels([...operationHistory.panels[newIndex]]); // 🆕
       setOperationHistory(prev => ({ ...prev, currentIndex: newIndex }));
       console.log("➡️ リドゥ実行");
     }
   };
 
-  // 履歴保存のタイミングを改良（移動・リサイズも含める）
+  // 履歴保存のタイミング（パネル変更も含める）
   useEffect(() => {
-    // デバウンス処理で頻繁な保存を防ぐ
     const timeoutId = setTimeout(() => {
-      if (characters.length > 0 || speechBubbles.length > 0) {
-        saveToHistory(characters, speechBubbles);
+      if (characters.length > 0 || speechBubbles.length > 0 || panels.length > 0) {
+        saveToHistory(characters, speechBubbles, panels);
       }
-    }, 300); // 300ms後に保存
+    }, 300);
 
     return () => clearTimeout(timeoutId);
   }, [
-    characters.map(char => `${char.id}-${char.x}-${char.y}-${char.scale}`).join(','), // 位置・スケール変更を検知
-    speechBubbles.map(bubble => `${bubble.id}-${bubble.x}-${bubble.y}-${bubble.width}-${bubble.height}`).join(','), // 位置・サイズ変更を検知
-    characters.length, // 追加・削除
-    speechBubbles.length // 追加・削除
+    characters.map(char => `${char.id}-${char.x}-${char.y}-${char.scale}`).join(','),
+    speechBubbles.map(bubble => `${bubble.id}-${bubble.x}-${bubble.y}-${bubble.width}-${bubble.height}`).join(','),
+    panels.map(panel => `${panel.id}-${panel.x}-${panel.y}-${panel.width}-${panel.height}`).join(','), // 🆕
+    characters.length,
+    speechBubbles.length,
+    panels.length, // 🆕
   ]);
 
   // バックスペースキーで要素削除機能
@@ -127,18 +137,25 @@ function App() {
         e.preventDefault();
         handleRedo();
       }
+      
+      // 🆕 コマ編集モード切り替え
+      if (e.key === 'e' && e.ctrlKey) {
+        e.preventDefault();
+        setIsPanelEditMode(!isPanelEditMode);
+        console.log(`🔧 コマ編集モード: ${!isPanelEditMode ? 'ON' : 'OFF'}`);
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedCharacter, operationHistory]);
+  }, [selectedCharacter, operationHistory, isPanelEditMode]);
 
   // 履歴保存
   useEffect(() => {
-    if (characters.length > 0 || speechBubbles.length > 0) {
-      saveToHistory(characters, speechBubbles);
+    if (characters.length > 0 || speechBubbles.length > 0 || panels.length > 0) {
+      saveToHistory(characters, speechBubbles, panels);
     }
-  }, [characters.length, speechBubbles.length]);
+  }, [characters.length, speechBubbles.length, panels.length]);
 
   // ダークモード切り替え
   const toggleTheme = () => {
@@ -148,14 +165,22 @@ function App() {
     console.log(`🎨 テーマ切り替え: ${newTheme}モード`);
   };
 
-  // テンプレート変更処理
+  // 🆕 テンプレート変更処理（自動配置対応）
   const handleTemplateClick = (template: string) => {
     setSelectedTemplate(template);
-    setCharacters([]);
-    setSpeechBubbles([]);
     setSelectedCharacter(null);
     setSelectedPanel(null);
-    console.log(`✅ ${template}テンプレート適用完了`);
+    
+    // パネルをセット
+    const newPanels = [...templates[template].panels];
+    setPanels(newPanels);
+    
+    // 🆕 デフォルトシーンの自動適用
+    const { characters: defaultCharacters, speechBubbles: defaultBubbles } = applyTemplateDefaults(template, newPanels);
+    setCharacters(defaultCharacters);
+    setSpeechBubbles(defaultBubbles);
+    
+    console.log(`✅ ${template}テンプレート適用完了 - キャラクター${defaultCharacters.length}個、吹き出し${defaultBubbles.length}個を自動配置`);
   };
 
   // シーンテンプレート適用
@@ -172,7 +197,7 @@ function App() {
       panels,
       characters,
       speechBubbles,
-      selectedPanel // 選択パネル情報を渡す
+      selectedPanel
     );
     
     setCharacters(newCharacters);
@@ -209,7 +234,7 @@ function App() {
     setSelectedCharacter(updatedCharacter);
   };
 
-  // キャラクター削除機能（新機能）
+  // キャラクター削除機能
   const handleCharacterDelete = (characterToDelete: Character) => {
     const newCharacters = characters.filter(char => char.id !== characterToDelete.id);
     setCharacters(newCharacters);
@@ -222,33 +247,104 @@ function App() {
     setSelectedCharacter(null);
   };
 
+  // 🆕 パネル操作ハンドラー
+  const handlePanelUpdate = (updatedPanels: Panel[]) => {
+    setPanels(updatedPanels);
+    console.log("📐 パネル更新:", updatedPanels.length);
+  };
+
+  // 🆕 パネル分割機能
+  const handlePanelSplit = (panelId: number, direction: "horizontal" | "vertical") => {
+    const panelToSplit = panels.find(p => p.id === panelId);
+    if (!panelToSplit) return;
+
+    // 新しいIDを生成（最大ID + 1）
+    const maxId = Math.max(...panels.map(p => p.id), 0);
+    const newId = maxId + 1;
+
+    let newPanels: Panel[];
+    if (direction === "horizontal") {
+      // 水平分割（上下）
+      const topPanel: Panel = {
+        ...panelToSplit,
+        height: panelToSplit.height / 2,
+      };
+      const bottomPanel: Panel = {
+        ...panelToSplit,
+        id: newId,
+        y: panelToSplit.y + panelToSplit.height / 2,
+        height: panelToSplit.height / 2,
+      };
+      newPanels = panels.map(p => p.id === panelId ? topPanel : p).concat([bottomPanel]);
+    } else {
+      // 垂直分割（左右）
+      const leftPanel: Panel = {
+        ...panelToSplit,
+        width: panelToSplit.width / 2,
+      };
+      const rightPanel: Panel = {
+        ...panelToSplit,
+        id: newId,
+        x: panelToSplit.x + panelToSplit.width / 2,
+        width: panelToSplit.width / 2,
+      };
+      newPanels = panels.map(p => p.id === panelId ? leftPanel : p).concat([rightPanel]);
+    }
+
+    setPanels(newPanels);
+    console.log(`✂️ パネル${panelId}を${direction === "horizontal" ? "水平" : "垂直"}分割`);
+  };
+
+  // 🆕 全てクリア機能
+  const handleClearAll = () => {
+    if (window.confirm("全ての要素をクリアしますか？")) {
+      setCharacters([]);
+      setSpeechBubbles([]);
+      setSelectedCharacter(null);
+      setSelectedPanel(null);
+      console.log("🧹 全要素クリア完了");
+    }
+  };
+
   // エクスポート機能
   const handleExport = (format: string) => {
     console.log(`📤 ${format}でエクスポート開始`);
     alert(`${format}でのエクスポート機能は実装予定です`);
   };
 
-
-// 関数を追加
-const handleCharacterRightClick = (character: Character) => {
-  setSelectedCharacter(character);
-  setShowCharacterPanel(true);
-};
-
-
+  const handleCharacterRightClick = (character: Character) => {
+    setSelectedCharacter(character);
+    setShowCharacterPanel(true);
+  };
 
   return (
     <div className={`app ${isDarkMode ? 'dark' : 'light'}`}>
       {/* ヘッダー */}
       <header className="header">
         <h1>📖 ネーム制作ツール</h1>
-        <button 
-          className="theme-toggle"
-          onClick={toggleTheme}
-          title={`${isDarkMode ? 'ライト' : 'ダーク'}モードに切り替え`}
-        >
-          {isDarkMode ? '☀️' : '🌙'}
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+          {/* 🆕 コマ編集モードトグル */}
+          <button 
+            className={`control-btn ${isPanelEditMode ? 'active' : ''}`}
+            onClick={() => setIsPanelEditMode(!isPanelEditMode)}
+            title="コマ編集モード (Ctrl+E)"
+            style={{
+              background: isPanelEditMode ? "#ff8833" : "var(--bg-tertiary)",
+              color: isPanelEditMode ? "white" : "var(--text-primary)",
+              border: `1px solid ${isPanelEditMode ? "#ff8833" : "var(--border-color)"}`,
+            }}
+          >
+            🔧 {isPanelEditMode ? "編集中" : "編集"}
+          </button>
+          
+          <button 
+            className="theme-toggle"
+            onClick={toggleTheme}
+            title={`${isDarkMode ? 'ライト' : 'ダーク'}モードに切り替え`}
+          >
+            {isDarkMode ? '☀️' : '🌙'}
+          </button>
+        </div>
       </header>
 
       <div className="main-content">
@@ -271,7 +367,42 @@ const handleCharacterRightClick = (character: Character) => {
                 </div>
               ))}
             </div>
+            <div className="section-info">
+              ✨ キャラクターと吹き出しも自動配置されます
+            </div>
           </div>
+
+          {/* 🆕 コマ操作パネル */}
+          {isPanelEditMode && (
+            <div className="section" style={{ 
+              border: "2px solid #ff8833",
+              background: "var(--bg-tertiary)",
+            }}>
+              <h3>🔧 コマ操作</h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                <button 
+                  className="btn btn-secondary"
+                  onClick={handleClearAll}
+                  title="全要素をクリア"
+                >
+                  🧹 全クリア
+                </button>
+                <div style={{ 
+                  fontSize: "11px", 
+                  color: "var(--text-muted)",
+                  padding: "8px",
+                  background: "var(--bg-primary)",
+                  borderRadius: "4px",
+                  lineHeight: "1.4",
+                }}>
+                  <strong>操作方法:</strong><br/>
+                  • コマを選択してハンドルで操作<br/>
+                  • 🔵 移動 / 🟧 リサイズ / 🟣 分割<br/>
+                  • Ctrl+E でモード切替
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* シーンテンプレート */}
           <div className="section">
@@ -309,7 +440,7 @@ const handleCharacterRightClick = (character: Character) => {
 
         {/* メインエリア */}
         <div className="canvas-area">
-          {/* キャンバス上部コントロール - ここに移動 */}
+          {/* キャンバス上部コントロール */}
           <div className="canvas-controls">
             <div className="undo-redo-buttons">
               <button 
@@ -341,6 +472,7 @@ const handleCharacterRightClick = (character: Character) => {
               操作履歴: {operationHistory.currentIndex + 1} / {operationHistory.characters.length}
               {selectedCharacter && <span> | 選択中: {selectedCharacter.name}</span>}
               {selectedPanel && <span> | パネル{selectedPanel.id}選択中</span>}
+              {isPanelEditMode && <span> | 🔧 コマ編集モード</span>}
             </div>
           </div>
 
@@ -348,7 +480,7 @@ const handleCharacterRightClick = (character: Character) => {
           <CanvasComponent
             selectedTemplate={selectedTemplate}
             panels={panels}
-            setPanels={setPanels}
+            setPanels={handlePanelUpdate} // 🆕 パネル更新対応
             characters={characters}
             setCharacters={setCharacters}
             speechBubbles={speechBubbles}
@@ -358,6 +490,8 @@ const handleCharacterRightClick = (character: Character) => {
             onPanelSelect={(panel) => setSelectedPanel(panel)}
             onCharacterSelect={(character) => setSelectedCharacter(character)}
             onCharacterRightClick={handleCharacterRightClick}
+            isPanelEditMode={isPanelEditMode} // 🆕 編集モード渡し
+            onPanelSplit={handlePanelSplit} // 🆕 分割ハンドラー渡し
           />
         </div>
 
@@ -447,7 +581,6 @@ const handleCharacterRightClick = (character: Character) => {
       </div>
 
       {/* キャラクター詳細パネル */}
-      // 最下部のCharacterDetailPanelを条件変更
       {showCharacterPanel && selectedCharacter && (
         <CharacterDetailPanel
           selectedCharacter={selectedCharacter}
