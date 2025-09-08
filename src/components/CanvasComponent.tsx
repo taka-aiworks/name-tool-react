@@ -45,6 +45,11 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
   // 編集モーダル管理
   const [editingBubble, setEditingBubble] = useState<SpeechBubble | null>(null);
   const [editText, setEditText] = useState("");
+  
+  // 🆕 グリッド表示とスナップ設定
+  const [showGrid, setShowGrid] = useState(true); // グリッド表示フラグ
+  const [gridSize] = useState(20); // グリッドサイズ
+  const [snapSensitivity] = useState(12); // スナップ感度（以前は15px）
 
   // 右クリックメニュー管理
   const [contextMenu, setContextMenu] = useState<{
@@ -339,9 +344,13 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
     ctx.fillStyle = isDarkMode ? "#404040" : "#ffffff";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+    // 🆕 グリッド描画（編集モード時のみ）
+    if (showGrid && isPanelEditMode) {
+      PanelRenderer.drawGrid(ctx, canvas.width, canvas.height, gridSize, isDarkMode);
+    }
+
     // 🆕 パネル描画でコマ編集モードを渡す
     PanelRenderer.drawPanels(ctx, panels, selectedPanel, isDarkMode, isPanelEditMode);
-    CharacterRenderer.drawCharacters(ctx, characters, panels, selectedCharacter);
     BubbleRenderer.drawBubbles(ctx, speechBubbles, panels, selectedBubble);
     // 🆕 スナップライン描画
     if (snapLines.length > 0) {
@@ -640,23 +649,25 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
       return;
     }
 
-    // 🚀 パネル移動処理（完全修正）
+    // 🚀 パネル移動処理（スナップ機能付き）
     if (selectedPanel && isPanelMoving) {
-      const newX = mouseX - dragOffset.x;
-      const newY = mouseY - dragOffset.y;
+      const deltaX = mouseX - dragOffset.x - selectedPanel.x;
+      const deltaY = mouseY - dragOffset.y - selectedPanel.y;
       
-      // キャンバス範囲内に制限
-      const clampedX = Math.max(0, Math.min(canvas.width - selectedPanel.width, newX));
-      const clampedY = Math.max(0, Math.min(canvas.height - selectedPanel.height, newY));
+      // スナップ機能付き移動
+      const moveResult = PanelRenderer.movePanel(
+        selectedPanel,
+        deltaX,
+        deltaY,
+        canvas.width,
+        canvas.height,
+        snapSensitivity, // スナップ感度
+        panels // 他のパネル情報
+      );
       
-      const updatedPanel = {
-        ...selectedPanel,
-        x: clampedX,
-        y: clampedY,
-      };
-      
-      setPanels(panels.map(p => p.id === selectedPanel.id ? updatedPanel : p));
-      setSelectedPanel(updatedPanel);
+      setPanels(panels.map(p => p.id === selectedPanel.id ? moveResult.panel : p));
+      setSelectedPanel(moveResult.panel);
+      setSnapLines(moveResult.snapLines); // スナップライン更新
       return;
     }
 
@@ -844,7 +855,7 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
   // 再描画
   useEffect(() => {
     drawCanvas();
-  }, [panels, selectedPanel, characters, selectedCharacter, speechBubbles, selectedBubble, isPanelEditMode, snapLines.length]);
+  }, [panels, selectedPanel, characters, selectedCharacter, speechBubbles, selectedBubble, isPanelEditMode, snapLines.length, showGrid]);
 
   // ダークモード監視
   useEffect(() => {

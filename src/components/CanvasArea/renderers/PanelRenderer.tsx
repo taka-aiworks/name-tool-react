@@ -381,37 +381,37 @@ export class PanelRenderer {
       if (leftToLeft < snapThreshold) {
         newX = otherPanel.x;
         snapLines.push({
-          x1: otherPanel.x, y1: Math.min(newY, otherPanel.y) - 20,
-          x2: otherPanel.x, y2: Math.max(newY + panel.height, otherPanel.y + otherPanel.height) + 20,
+          x1: otherPanel.x + 0.5, y1: Math.min(newY, otherPanel.y) - 20,
+          x2: otherPanel.x + 0.5, y2: Math.max(newY + panel.height, otherPanel.y + otherPanel.height) + 20,
           type: 'vertical'
         });
       } else if (leftToRight < snapThreshold) {
         newX = otherPanel.x + otherPanel.width;
         snapLines.push({
-          x1: otherPanel.x + otherPanel.width, y1: Math.min(newY, otherPanel.y) - 20,
-          x2: otherPanel.x + otherPanel.width, y2: Math.max(newY + panel.height, otherPanel.y + otherPanel.height) + 20,
+          x1: otherPanel.x + otherPanel.width + 0.5, y1: Math.min(newY, otherPanel.y) - 20,
+          x2: otherPanel.x + otherPanel.width + 0.5, y2: Math.max(newY + panel.height, otherPanel.y + otherPanel.height) + 20,
           type: 'vertical'
         });
       } else if (rightToLeft < snapThreshold) {
         newX = otherPanel.x - panel.width;
         snapLines.push({
-          x1: otherPanel.x, y1: Math.min(newY, otherPanel.y) - 20,
-          x2: otherPanel.x, y2: Math.max(newY + panel.height, otherPanel.y + otherPanel.height) + 20,
+          x1: otherPanel.x + 0.5, y1: Math.min(newY, otherPanel.y) - 20,
+          x2: otherPanel.x + 0.5, y2: Math.max(newY + panel.height, otherPanel.y + otherPanel.height) + 20,
           type: 'vertical'
         });
       } else if (rightToRight < snapThreshold) {
         newX = otherPanel.x + otherPanel.width - panel.width;
         snapLines.push({
-          x1: otherPanel.x + otherPanel.width, y1: Math.min(newY, otherPanel.y) - 20,
-          x2: otherPanel.x + otherPanel.width, y2: Math.max(newY + panel.height, otherPanel.y + otherPanel.height) + 20,
+          x1: otherPanel.x + otherPanel.width + 0.5, y1: Math.min(newY, otherPanel.y) - 20,
+          x2: otherPanel.x + otherPanel.width + 0.5, y2: Math.max(newY + panel.height, otherPanel.y + otherPanel.height) + 20,
           type: 'vertical'
         });
       } else if (centerToCenter < snapThreshold) {
         newX = otherPanel.x + otherPanel.width/2 - panel.width/2;
         const centerX = otherPanel.x + otherPanel.width/2;
         snapLines.push({
-          x1: centerX, y1: Math.min(newY, otherPanel.y) - 20,
-          x2: centerX, y2: Math.max(newY + panel.height, otherPanel.y + otherPanel.height) + 20,
+          x1: centerX + 0.5, y1: Math.min(newY, otherPanel.y) - 20,
+          x2: centerX + 0.5, y2: Math.max(newY + panel.height, otherPanel.y + otherPanel.height) + 20,
           type: 'vertical'
         });
       }
@@ -481,15 +481,15 @@ export class PanelRenderer {
     };
   }
 
-  // 🆕 スナップライン描画
-  static drawSnapLines(
+
+    static drawSnapLines(
     ctx: CanvasRenderingContext2D,
     snapLines: Array<{x1: number, y1: number, x2: number, y2: number, type: 'vertical' | 'horizontal'}>,
     isDarkMode: boolean
   ) {
-    ctx.strokeStyle = isDarkMode ? "#00ff88" : "#ff6600";
-    ctx.lineWidth = 2;
-    ctx.setLineDash([5, 5]); // 破線
+    ctx.strokeStyle = isDarkMode ? "#00ff00" : "#ff0000";
+    ctx.lineWidth = 1; // 細い線
+    ctx.setLineDash([4, 2]); // 短い破線
     
     snapLines.forEach(line => {
       ctx.beginPath();
@@ -498,7 +498,36 @@ export class PanelRenderer {
       ctx.stroke();
     });
     
-    ctx.setLineDash([]); // 破線をリセット
+    ctx.setLineDash([]);
+  }
+
+  // 🆕 グリッド描画機能
+  static drawGrid(
+    ctx: CanvasRenderingContext2D,
+    canvasWidth: number,
+    canvasHeight: number,
+    gridSize: number = 20,
+    isDarkMode: boolean = false
+  ) {
+    ctx.strokeStyle = isDarkMode ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.1)";
+    ctx.lineWidth = 1;
+    ctx.setLineDash([]);
+
+    // 垂直線
+    for (let x = 0; x <= canvasWidth; x += gridSize) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, canvasHeight);
+      ctx.stroke();
+    }
+
+    // 水平線
+    for (let y = 0; y <= canvasHeight; y += gridSize) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(canvasWidth, y);
+      ctx.stroke();
+    }
   }
 
   // 🆕 パネル移動処理（シンプル版）
