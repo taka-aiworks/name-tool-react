@@ -175,3 +175,17 @@ export interface TemplateInfo {
   title: string;
   desc: string;
 }
+
+export interface CanvasComponentProps {
+  selectedTemplate: string;
+  panels: Panel[];
+  setPanels: (panels: Panel[]) => void;
+  characters: Character[];
+  setCharacters: (characters: Character[]) => void;
+  onCharacterAdd: (addCharacterFunc: (type: string) => void) => void;
+  onPanelSelect?: (panel: Panel | null) => void;
+  speechBubbles: SpeechBubble[];
+  setSpeechBubbles: (bubbles: SpeechBubble[]) => void;
+  onBubbleAdd: (addBubbleFunc: (type: string, text: string) => void) => void;
+  onCharacterSelect?: (character: Character | null) => void; // この行を追加
+}

@@ -1,437 +1,376 @@
-import React, { useState } from "react";
+// src/App.tsx (完全最新版 - エラー修正済み)
+import React, { useState, useEffect } from "react";
 import CanvasComponent from "./components/CanvasComponent";
-import "./legacy.css";
-import { 
-  Panel, 
-  Character, 
-  SpeechBubble, 
-  SceneInfo, 
-  CharacterInfo, 
-  BubbleInfo, 
-  TemplateInfo 
-} from "./types"; // ← 型定義をインポート
-
-// 型定義を削除（types.tsに移動済み）
-// interface Panel { ... } ← 削除
-// interface Character { ... } ← 削除  
-// interface SpeechBubble { ... } ← 削除
-
+import CharacterDetailPanel from "./components/UI/CharacterDetailPanel";
+import { Panel, Character, SpeechBubble } from "./types";
+import { templates } from "./components/CanvasArea/templates";
+import { sceneTemplates, applySceneTemplate } from "./components/CanvasArea/sceneTemplates";
+import "./App.css";
 
 function App() {
-  // 状態管理
-  const [selectedTemplate, setSelectedTemplate] = useState("4koma");
-  const [dialogueText, setDialogueText] = useState("");
-  const [plotText, setPlotText] = useState("");
+  // デフォルトダークモード設定
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", "dark");
+    console.log("🌙 デフォルトダークモード設定完了");
+  }, []);
+
+  // 基本状態管理
+  const [selectedTemplate, setSelectedTemplate] = useState<string>("4koma");
   const [panels, setPanels] = useState<Panel[]>([]);
   const [characters, setCharacters] = useState<Character[]>([]);
   const [speechBubbles, setSpeechBubbles] = useState<SpeechBubble[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [isDarkMode, setIsDarkMode] = useState(false);
-  const [selectedScene, setSelectedScene] = useState("daily");
+  const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
+  const [selectedPanel, setSelectedPanel] = useState<Panel | null>(null);
+  const [dialogueText, setDialogueText] = useState<string>("");
 
-  // キャラクター追加機能（Canvasから提供される）
-  const [addCharacterFunc, setAddCharacterFunc] = useState<
-    ((type: string) => void) | null
-  >(null);
-  // 吹き出し追加機能（Canvasから提供される） ← これを追加
-  const [addBubbleFunc, setAddBubbleFunc] = useState<
-    ((type: string, text: string) => void) | null
-  >(null);
-  // 選択されたパネル情報を取得
-  const [selectedPanelFromCanvas, setSelectedPanelFromCanvas] =
-    useState<Panel | null>(null);
+  // UI状態管理
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
+  const [selectedScene, setSelectedScene] = useState<string>("");
 
-  // ダークモード切り替え
-  const toggleDarkMode = () => {
-    setIsDarkMode(!isDarkMode);
-    document.documentElement.setAttribute(
-      "data-theme",
-      isDarkMode ? "light" : "dark"
-    );
-    console.log("🌙 ダークモード切り替え:", !isDarkMode ? "ON" : "OFF");
-  };
+  // 機能コールバック用の状態
+  const [addCharacterFunc, setAddCharacterFunc] = useState<((type: string) => void) | null>(null);
+  const [addBubbleFunc, setAddBubbleFunc] = useState<((type: string, text: string) => void) | null>(null);
 
-  // イベントハンドラー
-  const handleTemplateClick = (template: string) => {
-    setSelectedTemplate(template);
-    console.log(`✅ ${template}テンプレート適用完了`);
-  };
+  // アンドゥ/リドゥ機能
+  const [operationHistory, setOperationHistory] = useState<{
+    characters: Character[][];
+    speechBubbles: SpeechBubble[][];
+    currentIndex: number;
+  }>({
+    characters: [[]],
+    speechBubbles: [[]],
+    currentIndex: 0,
+  });
 
-  const handleCharacterClick = (charType: string) => {
-    console.log(
-      "🎭 キャラクター追加試行:",
-      charType,
-      "パネル選択状態:",
-      !!selectedPanelFromCanvas
-    );
-
-    if (addCharacterFunc && selectedPanelFromCanvas) {
-      addCharacterFunc(charType);
-      console.log(`✅ ${charType}をパネル${selectedPanelFromCanvas.id}に追加`);
-    } else if (!selectedPanelFromCanvas) {
-      console.log("⚠️ パネル未選択");
-      // 一時的なメッセージ表示（ポップアップではなく）
-      const statusElement = document.querySelector(".status-right");
-      if (statusElement) {
-        const originalText = statusElement.textContent;
-        statusElement.textContent = "⚠️ まずパネルを選択してください";
-        setTimeout(() => {
-          statusElement.textContent = originalText;
-        }, 2000);
+  // アンドゥ/リドゥ機能の実装
+  const saveToHistory = (newCharacters: Character[], newBubbles: SpeechBubble[]) => {
+    setOperationHistory(prev => {
+      const newHistory = {
+        characters: [...prev.characters.slice(0, prev.currentIndex + 1), newCharacters],
+        speechBubbles: [...prev.speechBubbles.slice(0, prev.currentIndex + 1), newBubbles],
+        currentIndex: prev.currentIndex + 1,
+      };
+      
+      if (newHistory.characters.length > 50) {
+        newHistory.characters = newHistory.characters.slice(1);
+        newHistory.speechBubbles = newHistory.speechBubbles.slice(1);
+        newHistory.currentIndex = Math.max(0, newHistory.currentIndex - 1);
       }
-    } else {
-      console.log("⚠️ キャラクター追加機能が準備できていません");
-    }
-  };
-
-  const handleBubbleClick = (bubbleType: string) => {
-  // 空でも吹き出し作成可能に変更
-  const textToUse = dialogueText.trim() || "ダブルクリックで編集";  // ← メッセージ変更
-  
-  if (addBubbleFunc && selectedPanelFromCanvas) {
-    addBubbleFunc(bubbleType, textToUse);
-    console.log(`💬 吹き出し追加: ${bubbleType} - "${textToUse}"`);
-    setDialogueText(""); // 入力欄をクリア
-  } else if (!selectedPanelFromCanvas) {
-    console.log("⚠️ パネル未選択");
-  } else {
-    console.log("⚠️ 吹き出し追加機能が準備できていません");
-  }
-};
-
-  const handleExport = (type: string) => {
-    console.log(`📤 ${type}エクスポート`, {
-      panels: panels.length,
-      characters: characters.length,
-      speechBubbles: speechBubbles.length,
+      
+      return newHistory;
     });
   };
 
-  const handleSceneChange = (scene: string) => {
-    setSelectedScene(scene);
-    console.log("🎭 シーン選択:", scene);
-  };
-
-  const addPage = () => {
-    const newPage = currentPage + 1;
-    setCurrentPage(newPage);
-    console.log("📄 ページ追加:", newPage);
-  };
-
-  const switchPage = (page: number) => {
-    setCurrentPage(page);
-    console.log("📄 ページ切り替え:", page);
-  };
-
-  // Undo/Redo（簡易版）
   const handleUndo = () => {
-    console.log("⏪ Undo（実装予定）");
+    if (operationHistory.currentIndex > 0) {
+      const newIndex = operationHistory.currentIndex - 1;
+      setCharacters(operationHistory.characters[newIndex]);
+      setSpeechBubbles(operationHistory.speechBubbles[newIndex]);
+      setOperationHistory(prev => ({ ...prev, currentIndex: newIndex }));
+      console.log("⬅️ アンドゥ実行");
+    }
   };
 
   const handleRedo = () => {
-    console.log("⏩ Redo（実装予定）");
+    if (operationHistory.currentIndex < operationHistory.characters.length - 1) {
+      const newIndex = operationHistory.currentIndex + 1;
+      setCharacters(operationHistory.characters[newIndex]);
+      setSpeechBubbles(operationHistory.speechBubbles[newIndex]);
+      setOperationHistory(prev => ({ ...prev, currentIndex: newIndex }));
+      console.log("➡️ リドゥ実行");
+    }
   };
 
-  const showHelp = () => {
-    alert(`📚 ネーム制作支援ツール ヘルプ
+  // バックスペースキーで要素削除機能
+  const handleDeleteSelected = () => {
+    if (selectedCharacter) {
+      const newCharacters = characters.filter(char => char.id !== selectedCharacter.id);
+      setCharacters(newCharacters);
+      setSelectedCharacter(null);
+      console.log("🗑️ キャラクター削除:", selectedCharacter.name);
+    }
+  };
 
-🎬 使い方:
-1. シーンテンプレートを選択
-2. パネルをクリックして選択
-3. キャラクターを追加
-4. セリフを入力して吹き出し追加
-5. 完成したらエクスポート
+  // キーボードイベント処理
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Backspace' || e.key === 'Delete') {
+        e.preventDefault();
+        handleDeleteSelected();
+      }
+      
+      if (e.ctrlKey && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        handleUndo();
+      }
+      
+      if ((e.ctrlKey && e.key === 'y') || (e.ctrlKey && e.shiftKey && e.key === 'z')) {
+        e.preventDefault();
+        handleRedo();
+      }
+    };
 
-⌨️ キーボードショートカット:
-- F1: ヘルプ表示
-- Ctrl+Z: 元に戻す（予定）
-- Ctrl+Y: やり直し（予定）
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedCharacter, operationHistory]);
 
-🎯 パネルの操作:
-- クリック: 選択
-- ドラッグ: キャラクター移動
-- 四隅ドラッグ: サイズ変更`);
+  // 履歴保存
+  useEffect(() => {
+    if (characters.length > 0 || speechBubbles.length > 0) {
+      saveToHistory(characters, speechBubbles);
+    }
+  }, [characters.length, speechBubbles.length]);
+
+  // ダークモード切り替え
+  const toggleTheme = () => {
+    const newTheme = isDarkMode ? "light" : "dark";
+    setIsDarkMode(!isDarkMode);
+    document.documentElement.setAttribute("data-theme", newTheme);
+    console.log(`🎨 テーマ切り替え: ${newTheme}モード`);
+  };
+
+  // テンプレート変更処理
+  const handleTemplateClick = (template: string) => {
+    setSelectedTemplate(template);
+    setCharacters([]);
+    setSpeechBubbles([]);
+    setSelectedCharacter(null);
+    setSelectedPanel(null);
+    console.log(`✅ ${template}テンプレート適用完了`);
+  };
+
+  // シーンテンプレート適用
+  const handleSceneClick = (sceneType: string) => {
+    if (!panels || panels.length === 0) {
+      console.log("⚠️ パネルが存在しません");
+      return;
+    }
+
+    setSelectedScene(sceneType);
+    
+    const { characters: newCharacters, speechBubbles: newBubbles } = applySceneTemplate(
+      sceneType,
+      panels,
+      characters,
+      speechBubbles
+    );
+    
+    setCharacters(newCharacters);
+    setSpeechBubbles(newBubbles);
+    
+    console.log(`🎭 シーンテンプレート「${sceneType}」適用完了`);
+  };
+
+  // キャラクター操作
+  const handleCharacterClick = (charType: string) => {
+    if (addCharacterFunc) {
+      addCharacterFunc(charType);
+    } else {
+      console.log("⚠️ キャラクター追加機能が利用できません");
+    }
+  };
+
+  // 吹き出し操作
+  const handleBubbleClick = (bubbleType: string) => {
+    if (addBubbleFunc) {
+      const text = dialogueText || "ダブルクリックで編集";
+      addBubbleFunc(bubbleType, text);
+      setDialogueText("");
+    } else {
+      console.log("⚠️ 吹き出し追加機能が利用できません");
+    }
+  };
+
+  // キャラクター詳細更新
+  const handleCharacterUpdate = (updatedCharacter: Character) => {
+    setCharacters(characters.map(char => 
+      char.id === updatedCharacter.id ? updatedCharacter : char
+    ));
+    setSelectedCharacter(updatedCharacter);
+  };
+
+  // エクスポート機能
+  const handleExport = (format: string) => {
+    console.log(`📤 ${format}でエクスポート開始`);
+    alert(`${format}でのエクスポート機能は実装予定です`);
   };
 
   return (
-    <div className="App">
+    <div className={`app ${isDarkMode ? 'dark' : 'light'}`}>
       {/* ヘッダー */}
-      <div className="header">
-        <h1>📚 ネーム制作支援ツール</h1>
-        <p>コマ割り・キャラ配置・セリフを統合した漫画ネーム作成ツール</p>
+      <header className="header">
+        <h1>📖 ネーム制作ツール</h1>
+        <button 
+          className="theme-toggle"
+          onClick={toggleTheme}
+          title={`${isDarkMode ? 'ライト' : 'ダーク'}モードに切り替え`}
+        >
+          {isDarkMode ? '☀️' : '🌙'}
+        </button>
+      </header>
 
-        {/* 操作ボタンエリア */}
-        <div className="header-controls">
-          <div className="undo-redo-group">
-            <button
-              className="control-btn undo-btn"
-              onClick={handleUndo}
-              title="元に戻す (Ctrl+Z)"
-            >
-              <span className="btn-icon">⏪</span>
-              <span className="btn-text">元に戻す</span>
-            </button>
-            <button
-              className="control-btn redo-btn"
-              onClick={handleRedo}
-              title="やり直し (Ctrl+Y)"
-            >
-              <span className="btn-icon">⏩</span>
-              <span className="btn-text">やり直し</span>
-            </button>
-          </div>
-
-          <div className="quick-actions">
-            <button
-              className="control-btn help-btn"
-              onClick={showHelp}
-              title="キーボードショートカット (F1)"
-            >
-              <span className="btn-icon">❓</span>
-              <span className="btn-text">ヘルプ</span>
-            </button>
-
-            <button className="control-btn" onClick={toggleDarkMode}>
-              {isDarkMode ? "☀️ ライトモード" : "🌙 ダークモード"}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* 操作状況表示バー */}
-      <div className="operation-status">
-        <div className="status-left">
-          <span id="operationStatus">準備完了</span>
-          <span id="historyStatus">履歴: 0/0</span>
-        </div>
-        <div className="status-right">
-          <span>
-            選択中: {selectedTemplate}テンプレート | パネル:{" "}
-            {selectedPanelFromCanvas
-              ? `P${selectedPanelFromCanvas.id}選択中`
-              : "未選択"}{" "}
-            | キャラクター数: {characters.length}
-          </span>
-        </div>
-      </div>
-
-      {/* メインコンテンツ */}
-      <div className="container">
-        {/* 左パネル：ストーリー構成 */}
-        <div className="story-panel">
-          {/* ストーリー構成 */}
+      <div className="main-content">
+        {/* 左サイドバー */}
+        <div className="sidebar left-sidebar">
+          {/* パネルテンプレート */}
           <div className="section">
-            <h3>📖 ストーリー構成</h3>
-            <div className="story-timeline">
-              <div className="timeline-step active">導入</div>
-              <div className="timeline-step">展開</div>
-              <div className="timeline-step">転</div>
-              <div className="timeline-step">結</div>
-            </div>
-            <textarea
-              placeholder="プロット・あらすじを入力..."
-              className="plot-input"
-              value={plotText}
-              onChange={(e) => setPlotText(e.target.value)}
-            />
-          </div>
-
-          {/* シーン選択 */}
-          <div className="section">
-            <h3>🎭 シーン選択</h3>
-            <div className="scene-buttons">
-              {[
-                { id: "daily", icon: "🌸", name: "日常シーン" },
-                { id: "dialogue", icon: "💬", name: "会話シーン" },
-                { id: "action", icon: "⚡", name: "アクションシーン" },
-                { id: "emotional", icon: "😢", name: "感情シーン" },
-                { id: "comedy", icon: "😂", name: "ギャグシーン" },
-              ].map((scene) => (
+            <h3>📐 パネルテンプレート</h3>
+            <div className="template-grid">
+              {Object.keys(templates).map((template) => (
                 <div
-                  key={scene.id}
-                  className={`scene-btn ${
-                    selectedScene === scene.id ? "active" : ""
-                  }`}
-                  onClick={() => handleSceneChange(scene.id)}
+                  key={template}
+                  className={`template-card ${selectedTemplate === template ? 'selected' : ''}`}
+                  onClick={() => handleTemplateClick(template)}
                 >
-                  {scene.icon} {scene.name}
+                  <div className="template-preview">
+                    {templates[template].panels.length}コマ
+                  </div>
+                  <span>{template}</span>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* ページ管理 */}
-          <div className="section">
-            <h3>📄 ページ管理</h3>
-            <div className="page-tabs">
-              <button
-                className={`page-tab ${currentPage === 1 ? "active" : ""}`}
-                onClick={() => switchPage(1)}
-              >
-                P1
-              </button>
-              <button
-                className={`page-tab ${currentPage === 2 ? "active" : ""}`}
-                onClick={() => switchPage(2)}
-              >
-                P2
-              </button>
-              <button className="page-tab" onClick={addPage}>
-                +
-              </button>
-            </div>
-            <div className="page-info">
-              現在: {currentPage}ページ目 / 全2ページ
-            </div>
-          </div>
-        </div>
-
-        {/* メインキャンバス */}
-        <div className="main-canvas">
-          <div className="canvas-info">
-            <strong>📐 ネームキャンバス:</strong> React版 |
-            <strong>🎯 選択中:</strong>{" "}
-            <span>{selectedTemplate}テンプレート</span> |
-            <strong>📊 パネル数:</strong> <span>{panels.length}</span> |
-            <strong>👥 キャラクター数:</strong> <span>{characters.length}</span>
-          </div>
-
-          <div className="canvas-container">
-            <CanvasComponent
-              selectedTemplate={selectedTemplate}
-              panels={panels}
-              setPanels={setPanels}
-              characters={characters}
-              setCharacters={setCharacters}
-              speechBubbles={speechBubbles} // ← これを追加
-              setSpeechBubbles={setSpeechBubbles} // ← これを追加
-              onCharacterAdd={(func) => setAddCharacterFunc(() => func)}
-              onBubbleAdd={(func) => setAddBubbleFunc(() => func)} // ← これを追加
-              onPanelSelect={(panel) => setSelectedPanelFromCanvas(panel)}
-            />
-          </div>
-
-          {plotText && (
-            <div
-              style={{
-                marginTop: "15px",
-                padding: "15px",
-                background: "#e8f4f8",
-                borderRadius: "8px",
-                fontSize: "12px",
-                border: "1px solid #bee5eb",
-              }}
-            >
-              <strong>📝 現在のプロット:</strong>
-              <p style={{ marginTop: "5px", lineHeight: "1.4" }}>{plotText}</p>
-            </div>
-          )}
-        </div>
-
-        {/* 右パネル：制作ツール */}
-        <div className="tools-panel">
           {/* シーンテンプレート */}
           <div className="section">
-            <h3>🎬 シーンテンプレート</h3>
-            <div className="template-grid">
-              {[
-                { id: "4koma", title: "4コマ", desc: "基本構成" },
-                { id: "dialogue", title: "会話", desc: "2人の対話" },
-                { id: "action", title: "アクション", desc: "動きのシーン" },
-                { id: "emotional", title: "感情", desc: "表情重視" },
-                { id: "gag", title: "ギャグ", desc: "5コマ構成" },
-                { id: "custom", title: "カスタム", desc: "自由作成" },
-              ].map((template) => (
+            <h3>🎭 シーンテンプレート</h3>
+            <div className="scene-grid">
+              {Object.keys(sceneTemplates).map((sceneType) => (
                 <div
-                  key={template.id}
-                  className={`template-card ${
-                    selectedTemplate === template.id ? "active" : ""
-                  }`}
-                  onClick={() => handleTemplateClick(template.id)}
+                  key={sceneType}
+                  className={`scene-card ${selectedScene === sceneType ? 'selected' : ''}`}
+                  onClick={() => handleSceneClick(sceneType)}
                 >
-                  <div className="template-title">{template.title}</div>
-                  <div className="template-desc">{template.desc}</div>
+                  <div className="scene-icon">
+                    {sceneType === 'daily' && '🌅'}
+                    {sceneType === 'dialogue' && '💬'}
+                    {sceneType === 'action' && '⚡'}
+                    {sceneType === 'emotional' && '😢'}
+                    {sceneType === 'comedy' && '😄'}
+                  </div>
+                  <span>
+                    {sceneType === 'daily' && '日常'}
+                    {sceneType === 'dialogue' && '会話'}
+                    {sceneType === 'action' && 'アクション'}
+                    {sceneType === 'emotional' && '感情'}
+                    {sceneType === 'comedy' && 'コメディ'}
+                  </span>
                 </div>
               ))}
             </div>
+            <div className="scene-info">
+              💡 キャラクターと吹き出しが自動配置されます
+            </div>
+          </div>
+        </div>
 
-            <div className="template-info">
-              <div
-                style={{ fontSize: "10px", color: "#666", marginTop: "8px" }}
+        {/* メインエリア */}
+        <div className="canvas-area">
+          {/* キャンバス上部コントロール */}
+          <div className="canvas-controls">
+            <div className="undo-redo-buttons">
+              <button 
+                className="control-btn"
+                onClick={handleUndo}
+                disabled={operationHistory.currentIndex <= 0}
+                title="元に戻す (Ctrl+Z)"
               >
-                📝 テンプレートクリックでパネルレイアウトが変更されます
-              </div>
+                ↶ 戻す
+              </button>
+              <button 
+                className="control-btn"
+                onClick={handleRedo}
+                disabled={operationHistory.currentIndex >= operationHistory.characters.length - 1}
+                title="やり直し (Ctrl+Y)"
+              >
+                ↷ 進む
+              </button>
+              <button 
+                className="control-btn delete-btn"
+                onClick={handleDeleteSelected}
+                disabled={!selectedCharacter}
+                title="選択要素を削除 (Backspace)"
+              >
+                🗑️ 削除
+              </button>
+            </div>
+            <div className="canvas-info">
+              操作履歴: {operationHistory.currentIndex + 1} / {operationHistory.characters.length}
+              {selectedCharacter && <span> | 選択中: {selectedCharacter.name}</span>}
             </div>
           </div>
 
-          {/* キャラ配置 */}
+          {/* キャンバス */}
+          <CanvasComponent
+            selectedTemplate={selectedTemplate}
+            panels={panels}
+            setPanels={setPanels}
+            characters={characters}
+            setCharacters={setCharacters}
+            speechBubbles={speechBubbles}
+            setSpeechBubbles={setSpeechBubbles}
+            onCharacterAdd={(func) => setAddCharacterFunc(() => func)}
+            onBubbleAdd={(func) => setAddBubbleFunc(() => func)}
+            onPanelSelect={(panel) => setSelectedPanel(panel)}
+            onCharacterSelect={(character) => setSelectedCharacter(character)}
+          />
+        </div>
+
+        {/* 右サイドバー */}
+        <div className="sidebar right-sidebar">
+          {/* キャラクター */}
           <div className="section">
-            <h3>👥 キャラ配置</h3>
-            <div className="character-list">
+            <h3>👥 キャラクター</h3>
+            <div className="character-grid">
               {[
-                { id: "hero", icon: "主", name: "主人公" },
-                { id: "heroine", icon: "ヒ", name: "ヒロイン" },
-                { id: "rival", icon: "敵", name: "ライバル" },
-                { id: "friend", icon: "友", name: "友人" },
+                { type: 'hero', icon: '🦸‍♂️', name: '主人公' },
+                { type: 'heroine', icon: '🦸‍♀️', name: 'ヒロイン' },
+                { type: 'rival', icon: '😤', name: 'ライバル' },
+                { type: 'friend', icon: '😊', name: '友人' }
               ].map((char) => (
                 <div
-                  key={char.id}
-                  className={`char-item ${
-                    !selectedPanelFromCanvas ? "disabled" : ""
-                  }`}
-                  onClick={() => handleCharacterClick(char.id)}
-                  style={{
-                    opacity: selectedPanelFromCanvas ? 1 : 0.5,
-                    cursor: selectedPanelFromCanvas ? "pointer" : "not-allowed",
-                  }}
+                  key={char.type}
+                  className="char-btn"
+                  onClick={() => handleCharacterClick(char.type)}
                 >
                   <div className="char-icon">{char.icon}</div>
                   <span>{char.name}</span>
                 </div>
               ))}
             </div>
-
-            <div
-              style={{
-                marginTop: "10px",
-                padding: "8px",
-                background: selectedPanelFromCanvas ? "#f0fff0" : "#fff8dc",
-                borderRadius: "4px",
-                fontSize: "10px",
-                color: "#666",
-              }}
-            >
-              {selectedPanelFromCanvas
-                ? `🎯 パネル${selectedPanelFromCanvas.id}が選択されています`
-                : "📍 まずパネルを選択してください"}
+            <div className="section-info">
+              🎯 パネル未選択でも追加可能
             </div>
           </div>
 
           {/* セリフ・吹き出し */}
           <div className="section">
             <h3>💬 セリフ・吹き出し</h3>
-            <textarea
-              className="dialogue-input"
+            <textarea 
+              className="dialogue-input" 
               placeholder="セリフを入力してください..."
               value={dialogueText}
               onChange={(e) => setDialogueText(e.target.value)}
             />
-
+            
             <div className="bubble-types">
               {[
-                { id: "normal", icon: "💬", name: "普通" },
-                { id: "shout", icon: "❗", name: "叫び" },
-                { id: "whisper", icon: "💭", name: "小声" },
-                { id: "thought", icon: "☁️", name: "心の声" },
-              ].map((bubble) => (
-                <div
+                { id: 'normal', icon: '💬', name: '普通' },
+                { id: 'shout', icon: '❗', name: '叫び' },
+                { id: 'whisper', icon: '💭', name: '小声' },
+                { id: 'thought', icon: '☁️', name: '心の声' }
+              ].map(bubble => (
+                <div 
                   key={bubble.id}
                   className="bubble-btn"
-                  onClick={() => handleBubbleClick(bubble.id)} // ← bubble.name から bubble.id に修正
+                  onClick={() => handleBubbleClick(bubble.name)}
                 >
                   {bubble.icon} {bubble.name}
                 </div>
               ))}
+            </div>
+            <div className="section-info">
+              🎯 パネル未選択でも追加可能
             </div>
           </div>
 
@@ -439,21 +378,21 @@ function App() {
           <div className="section">
             <h3>📤 出力</h3>
             <div className="export-buttons">
-              <button
+              <button 
                 className="btn btn-primary"
-                onClick={() => handleExport("クリスタ用データ")}
+                onClick={() => handleExport('クリスタ用データ')}
               >
                 🎨 クリスタ用データ
               </button>
-              <button
+              <button 
                 className="btn btn-success"
-                onClick={() => handleExport("PDF")}
+                onClick={() => handleExport('PDF')}
               >
                 📄 PDF (ネーム用)
               </button>
-              <button
+              <button 
                 className="btn btn-secondary"
-                onClick={() => handleExport("PNG画像")}
+                onClick={() => handleExport('PNG画像')}
               >
                 🖼️ PNG画像
               </button>
@@ -462,15 +401,13 @@ function App() {
         </div>
       </div>
 
-      {/* ステータスバー */}
-      <div className="status-bar">
-        <div>
-          <span>React版ネーム制作ツール</span> |
-          <span>パネル数: {panels.length}</span> |
-          <span>要素数: {characters.length + speechBubbles.length}</span>
-        </div>
-        <div>📏 Canvas描画機能 ✅ | 💾 キャラクター機能 🔄</div>
-      </div>
+      {/* キャラクター詳細パネル */}
+      {selectedCharacter && (
+        <CharacterDetailPanel
+          selectedCharacter={selectedCharacter}
+          onCharacterUpdate={handleCharacterUpdate}
+        />
+      )}
     </div>
   );
 }
