@@ -1,289 +1,560 @@
 /* ===== 基本リセット ===== */
-* { 
-    margin: 0; 
-    padding: 0; 
-    box-sizing: border-box; 
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-body { 
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-    background: #f0f0f0; 
+body {
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background: #f0f0f0;
 }
 
 /* ===== ヘッダー ===== */
 .header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 20px;
-    text-align: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 20px;
+  text-align: center;
 }
 
-.header h1 { 
-    font-size: 28px; 
-    margin-bottom: 8px; 
+.header h1 {
+  font-size: 28px;
+  margin-bottom: 8px;
 }
 
-.header p { 
-    font-size: 16px; 
-    opacity: 0.9; 
+.header p {
+  font-size: 16px;
+  opacity: 0.9;
 }
 
 /* ===== メインレイアウト ===== */
 .container {
-    display: flex;
-    max-width: 1600px;
-    margin: 0 auto;
-    background: white;
-    min-height: calc(100vh - 120px);
+  display: flex;
+  max-width: 1600px;
+  margin: 0 auto;
+  background: white;
+  min-height: calc(100vh - 120px);
 }
 
 /* 左パネル：ストーリー構成 */
 .story-panel {
-    width: 250px;
-    background: #f8f9fa;
-    border-right: 1px solid #ddd;
-    padding: 15px;
-    overflow-y: auto;
+  width: 250px;
+  background: #f8f9fa;
+  border-right: 1px solid #ddd;
+  padding: 15px;
+  overflow-y: auto;
 }
 
 /* メインキャンバス */
 .main-canvas {
-    flex: 1;
-    padding: 20px;
-    background: #fafafa;
-    position: relative;
+  flex: 1;
+  padding: 20px;
+  background: #fafafa;
+  position: relative;
 }
 
 /* 右パネル：制作ツール */
 .tools-panel {
-    width: 350px;
-    background: white;
-    border-left: 1px solid #ddd;
-    padding: 15px;
-    overflow-y: auto;
+  width: 350px;
+  background: white;
+  border-left: 1px solid #ddd;
+  padding: 15px;
+  overflow-y: auto;
 }
 
 /* ===== UI セクション ===== */
 .section {
-    margin-bottom: 20px;
-    padding: 12px;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    background: white;
+  margin-bottom: 20px;
+  padding: 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background: white;
 }
 
 .section h3 {
-    margin-bottom: 10px;
-    color: #333;
-    border-bottom: 2px solid #667eea;
-    padding-bottom: 4px;
-    font-size: 14px;
+  margin-bottom: 10px;
+  color: #333;
+  border-bottom: 2px solid #667eea;
+  padding-bottom: 4px;
+  font-size: 14px;
 }
 
 /* ===== テンプレート関連 ===== */
 .template-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
 }
 
 .template-card {
-    padding: 8px;
-    border: 2px solid #ddd;
-    border-radius: 6px;
-    cursor: pointer;
-    text-align: center;
-    transition: all 0.2s ease;
-    background: white;
-    font-size: 11px;
+  padding: 8px;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s ease;
+  background: white;
+  font-size: 11px;
 }
 
 .template-card:hover {
-    border-color: #667eea;
-    transform: translateY(-1px);
+  border-color: #667eea;
+  transform: translateY(-1px);
 }
 
 .template-card.active {
-    border-color: #667eea;
-    background: #f0f4ff;
+  border-color: #667eea;
+  background: #f0f4ff;
 }
 
 .template-title {
-    font-weight: bold;
-    font-size: 11px;
+  font-weight: bold;
+  font-size: 11px;
 }
 
 .template-desc {
-    font-size: 9px;
-    color: #666;
-    opacity: 0.8;
+  font-size: 9px;
+  color: #666;
+  opacity: 0.8;
 }
 
 /* ===== キャラ配置 ===== */
 .character-list {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 6px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
 }
 
 .char-item {
-    display: flex;
-    align-items: center;
-    padding: 6px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    background: white;
-    font-size: 11px;
+  display: flex;
+  align-items: center;
+  padding: 6px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: white;
+  font-size: 11px;
 }
 
 .char-item:hover {
-    border-color: #0066ff;
-    background: #f0f8ff;
+  border-color: #0066ff;
+  background: #f0f8ff;
 }
 
 .char-icon {
-    width: 24px;
-    height: 24px;
-    background: #667eea;
-    border-radius: 50%;
-    margin-right: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 10px;
-    font-weight: bold;
+  width: 24px;
+  height: 24px;
+  background: #667eea;
+  border-radius: 50%;
+  margin-right: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 10px;
+  font-weight: bold;
 }
 
 /* ===== セリフ・吹き出し ===== */
 .dialogue-input {
-    width: 100%;
-    height: 60px;
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 12px;
-    resize: vertical;
-    margin-bottom: 8px;
+  width: 100%;
+  height: 60px;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 12px;
+  resize: vertical;
+  margin-bottom: 8px;
 }
 
 .bubble-types {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 4px;
-    margin: 8px 0;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4px;
+  margin: 8px 0;
 }
 
 .bubble-btn {
-    padding: 6px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    cursor: pointer;
-    background: white;
-    font-size: 10px;
-    transition: all 0.2s ease;
-    text-align: center;
+  padding: 6px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  background: white;
+  font-size: 10px;
+  transition: all 0.2s ease;
+  text-align: center;
 }
 
 .bubble-btn:hover {
-    border-color: #28a745;
-    background: #f8fff9;
+  border-color: #28a745;
+  background: #f8fff9;
 }
 
 /* ===== ボタン ===== */
 .btn {
-    padding: 8px 12px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 11px;
-    transition: all 0.2s ease;
-    margin-bottom: 4px;
-    width: 100%;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  transition: all 0.2s ease;
+  margin-bottom: 4px;
+  width: 100%;
 }
 
-.btn-primary { 
-    background: #667eea; 
-    color: white; 
+.btn-primary {
+  background: #667eea;
+  color: white;
 }
 
-.btn-primary:hover { 
-    background: #5a6fd8; 
+.btn-primary:hover {
+  background: #5a6fd8;
 }
 
-.btn-secondary { 
-    background: #6c757d; 
-    color: white; 
+.btn-secondary {
+  background: #6c757d;
+  color: white;
 }
 
-.btn-secondary:hover { 
-    background: #5a6268; 
+.btn-secondary:hover {
+  background: #5a6268;
 }
 
-.btn-success { 
-    background: #28a745; 
-    color: white; 
+.btn-success {
+  background: #28a745;
+  color: white;
 }
 
-.btn-success:hover { 
-    background: #218838; 
+.btn-success:hover {
+  background: #218838;
 }
 
 /* 出力ボタン */
 .export-buttons {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 /* ===== ストーリー関連 ===== */
 .story-timeline {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    margin: 10px 0;
-    font-size: 10px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 10px 0;
+  font-size: 10px;
 }
 
 .timeline-step {
-    padding: 4px 8px;
-    background: #e9ecef;
-    border-radius: 12px;
-    font-size: 9px;
+  padding: 4px 8px;
+  background: #e9ecef;
+  border-radius: 12px;
+  font-size: 9px;
 }
 
 .timeline-step.active {
-    background: #667eea;
-    color: white;
+  background: #667eea;
+  color: white;
 }
 
 .plot-input {
-    width: 100%; 
-    height: 60px; 
-    font-size: 11px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    padding: 8px;
-    resize: vertical;
+  width: 100%;
+  height: 60px;
+  font-size: 11px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 8px;
+  resize: vertical;
 }
 
 /* ===== キャンバス関連 ===== */
 .canvas-container {
-    position: relative;
-    display: inline-block;
-    border: 2px solid #ddd;
-    background: white;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    width: 100%;
-    min-height: 400px;
+  position: relative;
+  display: inline-block;
+  border: 2px solid #ddd;
+  background: white;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  min-height: 400px;
 }
 
 .canvas-info {
-    margin-bottom: 12px;
-    padding: 8px;
-    background: #e8f4f8;
-    border-radius: 4px;
-    font-size: 11px;
+  margin-bottom: 12px;
+  padding: 8px;
+  background: #e8f4f8;
+  border-radius: 4px;
+  font-size: 11px;
+}
+
+/* ===== ダークモード対応 ===== */
+[data-theme="dark"] {
+  --bg-primary: #1a1a1a;
+  --bg-secondary: #2d2d2d;
+  --bg-tertiary: #404040;
+  --text-primary: #ffffff;
+  --text-secondary: #e0e0e0;
+  --text-tertiary: #b0b0b0;
+  --border-color: #555555;
+  --accent-color: #667eea;
+}
+
+/* ダークモード時の基本要素 */
+[data-theme="dark"] body {
+  background-color: #1a1a1a !important;
+  color: #e0e0e0 !important;
+}
+
+[data-theme="dark"] .container {
+  background-color: #2d2d2d !important;
+}
+
+[data-theme="dark"] .story-panel,
+[data-theme="dark"] .tools-panel {
+  background-color: #363636 !important;
+  border-color: #555 !important;
+}
+
+[data-theme="dark"] .main-canvas {
+  background-color: #1a1a1a !important;
+}
+
+[data-theme="dark"] .section {
+  background-color: #2d2d2d !important;
+  border-color: #444 !important;
+}
+
+[data-theme="dark"] .section h3 {
+  color: #ffffff !important;
+  border-bottom-color: #667eea !important;
+}
+
+/* ダークモード時のキャンバス */
+[data-theme="dark"] .canvas-container {
+  border-color: #555 !important;
+  background-color: #404040 !important;
+}
+
+[data-theme="dark"] .canvas-info {
+  background-color: #363636 !important;
+  border-color: #444 !important;
+  color: #e0e0e0 !important;
+}
+
+/* ダークモード時のボタン・カード類 */
+[data-theme="dark"] .template-card,
+[data-theme="dark"] .pattern-card,
+[data-theme="dark"] .char-item,
+[data-theme="dark"] .bubble-btn,
+[data-theme="dark"] .scene-btn {
+  background-color: #404040 !important;
+  color: #e0e0e0 !important;
+  border-color: #666666 !important;
+}
+
+[data-theme="dark"] .template-card:hover,
+[data-theme="dark"] .pattern-card:hover,
+[data-theme="dark"] .char-item:hover,
+[data-theme="dark"] .bubble-btn:hover,
+[data-theme="dark"] .scene-btn:hover {
+  background-color: #505050 !important;
+  border-color: #888888 !important;
+}
+
+[data-theme="dark"] .template-card.active,
+[data-theme="dark"] .scene-btn.active {
+  background-color: #667eea !important;
+  color: #ffffff !important;
+  border-color: #8899ff !important;
+}
+
+/* ダークモード時の入力フィールド */
+[data-theme="dark"] .dialogue-input,
+[data-theme="dark"] .plot-input,
+[data-theme="dark"] .direction-memo {
+  background-color: #2d2d2d !important;
+  color: #e0e0e0 !important;
+  border-color: #666666 !important;
+}
+
+[data-theme="dark"] .dialogue-input::placeholder,
+[data-theme="dark"] .plot-input::placeholder,
+[data-theme="dark"] .direction-memo::placeholder {
+  color: #888888 !important;
+}
+
+[data-theme="dark"] select,
+[data-theme="dark"] input[type="range"] {
+  background-color: #404040 !important;
+  color: #e0e0e0 !important;
+  border-color: #666666 !important;
+}
+
+/* ダークモード時のボタン */
+[data-theme="dark"] .btn {
+  background-color: #404040 !important;
+  color: #e0e0e0 !important;
+  border: 1px solid #666666 !important;
+}
+
+[data-theme="dark"] .btn:hover {
+  background-color: #505050 !important;
+  border-color: #888888 !important;
+}
+
+[data-theme="dark"] .btn-primary {
+  background-color: #667eea !important;
+  border-color: #8899ff !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .btn-primary:hover {
+  background-color: #5a7bc8 !important;
+}
+
+[data-theme="dark"] .btn-success {
+  background-color: #28a745 !important;
+  border-color: #34ce57 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .btn-secondary {
+  background-color: #6c757d !important;
+  border-color: #868e96 !important;
+  color: #ffffff !important;
+}
+
+/* ダークモード時のタイムライン */
+[data-theme="dark"] .timeline-step {
+  background-color: #404040 !important;
+  color: #e0e0e0 !important;
+  border: 1px solid #666666 !important;
+}
+
+[data-theme="dark"] .timeline-step.active {
+  background-color: #667eea !important;
+  color: #ffffff !important;
+}
+
+/* ダークモード時のページタブ */
+[data-theme="dark"] .page-tab {
+  background-color: #404040 !important;
+  color: #e0e0e0 !important;
+  border: 1px solid #666666 !important;
+}
+
+[data-theme="dark"] .page-tab.active {
+  background-color: #667eea !important;
+  color: #ffffff !important;
+  border-color: #8899ff !important;
+}
+
+[data-theme="dark"] .page-info {
+  color: #b0b0b0 !important;
+}
+
+/* ダークモード時の推奨パネル */
+[data-theme="dark"] .recommendation-panel {
+  background-color: #2d2d2d !important;
+  color: #e0e0e0 !important;
+  border-color: #555555 !important;
+}
+
+/* ダークモード時のキャラクターアイコン */
+[data-theme="dark"] .char-icon {
+  background-color: #667eea !important;
+  color: #ffffff !important;
+  border: 1px solid #8899ff !important;
+}
+
+/* ダークモード時のヘッダー */
+[data-theme="dark"] .header {
+  background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%) !important;
+  color: #e0e0e0 !important;
+}
+
+[data-theme="dark"] .header h1 {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .header p {
+  color: #b0b0b0 !important;
+}
+
+/* ダークモード時のコントロール */
+[data-theme="dark"] .control-group label {
+  color: #e0e0e0 !important;
+}
+
+/* ダークモード時の操作状況バー */
+[data-theme="dark"] .operation-status {
+  background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%) !important;
+  border-color: #444 !important;
+  color: #e0e0e0 !important;
+}
+
+[data-theme="dark"] .status-right {
+  color: #b0b0b0 !important;
+}
+
+[data-theme="dark"] #operationStatus {
+  color: #40c966 !important;
+}
+
+[data-theme="dark"] #historyStatus {
+  color: #b0b0b0 !important;
+  background: #363636 !important;
+  border-color: #555 !important;
+}
+
+/* ダークモード時のステータスバー */
+[data-theme="dark"] .status-bar {
+  background-color: #2d2d2d !important;
+  border-color: #555 !important;
+  color: #e0e0e0 !important;
+}
+
+/* ダークモード時のキャンバス要素 */
+[data-theme="dark"] .character-placeholder {
+  border-color: #0088ff !important;
+  background: rgba(0, 136, 255, 0.15) !important;
+  color: #0088ff !important;
+}
+
+[data-theme="dark"] .character-placeholder.selected {
+  border-color: #ff8833 !important;
+  background: rgba(255, 136, 51, 0.2) !important;
+}
+
+[data-theme="dark"] .speech-bubble {
+  background: #2d2d2d !important;
+  color: #ffffff !important;
+  border-color: #666666 !important;
+}
+
+[data-theme="dark"] .speech-bubble.selected {
+  background: #3d2d1d !important;
+  border-color: #ff8833 !important;
+}
+
+/* ダークモード時のスクロールバー */
+[data-theme="dark"] ::-webkit-scrollbar {
+  width: 8px;
+  background: #2d2d2d;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: #666666;
+  border-radius: 4px;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: #888888;
+}
+
+/* ダークモード時の選択状態をより明確に */
+[data-theme="dark"] .selected {
+  box-shadow: 0 0 15px rgba(255, 136, 51, 0.8) !important;
+  border-color: #ff8833 !important;
 }
