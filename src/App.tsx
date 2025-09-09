@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import CanvasComponent from "./components/CanvasComponent";
 import CharacterDetailPanel from "./components/UI/CharacterDetailPanel";
 import { Panel, Character, SpeechBubble } from "./types";
-import { templates, applyTemplateDefaults } from "./components/CanvasArea/templates";
+import { templates } from "./components/CanvasArea/templates";
 import { sceneTemplates, applySceneTemplate } from "./components/CanvasArea/sceneTemplates";
 import "./App.css";
 
@@ -169,9 +169,8 @@ function App() {
     const newPanels = [...templates[template].panels];
     setPanels(newPanels);
     
-    const { characters: defaultCharacters, speechBubbles: defaultBubbles } = applyTemplateDefaults(template, newPanels);
-    setCharacters(defaultCharacters);
-    setSpeechBubbles(defaultBubbles);
+    setCharacters([]);
+    setSpeechBubbles([]);
   }, []);
 
   // シーンテンプレート適用

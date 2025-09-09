@@ -2,7 +2,7 @@
 import { Character, Panel } from "../../../types";
 
 export class CharacterRenderer {
-  // キャラクター群描画
+  // キャラクター群描画（🔧 修正版）
   static drawCharacters(
     ctx: CanvasRenderingContext2D,
     characters: Character[],
@@ -10,8 +10,27 @@ export class CharacterRenderer {
     selectedCharacter: Character | null
   ) {
     characters.forEach((character) => {
-      const panel = panels.find((p) => p.id === character.panelId);
-      if (!panel) return;
+      // 🔧 パネルID照合を厳格にチェック
+      const panel = panels.find((p) => {
+        // 数値と文字列の両方に対応
+        return String(p.id) === String(character.panelId);
+      });
+      
+      // 🔧 デバッグログ追加
+      if (!panel) {
+        console.warn(`⚠️ パネルが見つかりません - キャラクター: ${character.name}, パネルID: ${character.panelId}`);
+        console.log("利用可能なパネル:", panels.map(p => ({ id: p.id, type: typeof p.id })));
+        console.log("キャラクターのパネルID:", character.panelId, typeof character.panelId);
+        
+        // 🆕 緊急回避：最初のパネルを使用
+        const fallbackPanel = panels[0];
+        if (fallbackPanel) {
+          console.log(`🚑 緊急回避: パネル${fallbackPanel.id}を使用`);
+          CharacterRenderer.drawCharacter(ctx, character, fallbackPanel, selectedCharacter);
+        }
+        return;
+      }
+      
       CharacterRenderer.drawCharacter(ctx, character, panel, selectedCharacter);
     });
   }

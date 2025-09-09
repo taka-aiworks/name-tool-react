@@ -332,31 +332,35 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
   };
 
   // Canvas描画関数
-  const drawCanvas = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+const drawCanvas = () => {
+  const canvas = canvasRef.current;
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
 
-    const isDarkMode = document.documentElement.getAttribute("data-theme") === "dark";
+  const isDarkMode = document.documentElement.getAttribute("data-theme") === "dark";
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = isDarkMode ? "#404040" : "#ffffff";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = isDarkMode ? "#404040" : "#ffffff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // 🆕 グリッド描画（編集モード時のみ）
-    if (showGrid && isPanelEditMode) {
-      PanelRenderer.drawGrid(ctx, canvas.width, canvas.height, gridSize, isDarkMode);
-    }
+  // 🆕 グリッド描画（編集モード時のみ）
+  if (showGrid && isPanelEditMode) {
+    PanelRenderer.drawGrid(ctx, canvas.width, canvas.height, gridSize, isDarkMode);
+  }
 
-    // 🆕 パネル描画でコマ編集モードを渡す
-    PanelRenderer.drawPanels(ctx, panels, selectedPanel, isDarkMode, isPanelEditMode);
-    BubbleRenderer.drawBubbles(ctx, speechBubbles, panels, selectedBubble);
-    // 🆕 スナップライン描画
-    if (snapLines.length > 0) {
-      PanelRenderer.drawSnapLines(ctx, snapLines, isDarkMode);
-    }
-  };
+  // 🆕 パネル描画でコマ編集モードを渡す
+  PanelRenderer.drawPanels(ctx, panels, selectedPanel, isDarkMode, isPanelEditMode);
+  
+  // 🔥 ★★★ この行を追加 ★★★
+  CharacterRenderer.drawCharacters(ctx, characters, panels, selectedCharacter);
+  
+  BubbleRenderer.drawBubbles(ctx, speechBubbles, panels, selectedBubble);
+  // 🆕 スナップライン描画
+  if (snapLines.length > 0) {
+    PanelRenderer.drawSnapLines(ctx, snapLines, isDarkMode);
+  }
+};
 
   // 左クリック処理
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
