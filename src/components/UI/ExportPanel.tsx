@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { ExportService, ExportOptions, ExportProgress } from '../../services/ExportService';
-// ✅ これに変更
 import { Panel, Character, SpeechBubble } from '../../types';
 
+// ExportPanel.tsx のインターフェース部分
 interface ExportPanelProps {
   panels: Panel[];
   characters: Character[];
   bubbles: SpeechBubble[];
-  canvasRef: React.RefObject<HTMLCanvasElement | null>;
+  canvasRef: React.RefObject<HTMLCanvasElement | null>; // null を許可
 }
 
 export const ExportPanel: React.FC<ExportPanelProps> = ({
@@ -83,75 +83,82 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
     }
   };
 
-  const getFormatDescription = (format: string): string => {
+  const getFormatIcon = (format: string): string => {
     switch (format) {
-      case 'pdf':
-        return 'PDF形式（印刷・共有用）';
-      case 'png':
-        return 'PNG画像（各コマ個別 + 全体）';
-      case 'psd':
-        return 'クリスタ用データ（レイヤー情報付き）';
-      default:
-        return '';
+      case 'pdf': return '📄';
+      case 'png': return '🖼️';
+      case 'psd': return '🎨';
+      default: return '📁';
     }
   };
 
-  const getQualityDescription = (quality: string): string => {
+  const getQualityIcon = (quality: string): string => {
     switch (quality) {
-      case 'high':
-        return '高品質（3倍サイズ）';
-      case 'medium':
-        return '標準品質（2倍サイズ）';
-      case 'low':
-        return '低品質（等倍サイズ）';
-      default:
-        return '';
+      case 'high': return '⭐';
+      case 'medium': return '⚡';
+      case 'low': return '💨';
+      default: return '⚡';
     }
   };
 
   return (
     <div className="export-panel">
-      {/* エクスポートボタン */}
+      {/* 大きなエクスポートボタン */}
       <button
         onClick={() => setIsOpen(true)}
-        className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+        className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-6 py-4 rounded-xl flex items-center justify-center gap-3 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
         disabled={isExporting || panels.length === 0}
       >
-        <span>📁</span>
-        エクスポート
+        <span className="text-2xl">📁</span>
+        <div className="text-left">
+          <div className="font-bold text-lg">エクスポート</div>
+          <div className="text-sm opacity-90">PDF・PNG・PSD出力</div>
+        </div>
       </button>
 
       {/* エクスポート設定モーダル */}
       {isOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-96 max-h-screen overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 w-full max-w-lg max-h-screen overflow-y-auto shadow-2xl">
+            {/* ヘッダー */}
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                 📁 エクスポート設定
               </h3>
               <button
                 onClick={() => setIsOpen(false)}
-                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-2xl"
                 disabled={isExporting}
               >
                 ✕
               </button>
             </div>
 
-            <div className="space-y-4">
-              {/* 出力形式 */}
+            <div className="space-y-6">
+              {/* 出力形式 - カード形式 */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  出力形式
+                <label className="block text-lg font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                  📋 出力形式
                 </label>
-                <div className="space-y-2">
-                  {(['pdf', 'png', 'psd'] as const).map((format) => (
-                    <label key={format} className="flex items-center">
+                <div className="grid grid-cols-1 gap-3">
+                  {([
+                    { format: 'pdf', name: 'PDF', desc: '印刷・共有用' },
+                    { format: 'png', name: 'PNG', desc: '画像ファイル（各コマ別＋全体）' },
+                    { format: 'psd', name: 'PSD', desc: 'クリスタ用レイヤー情報' }
+                  ] as const).map((item) => (
+                    <label 
+                      key={item.format} 
+                      className={`flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                        exportOptions.format === item.format
+                          ? 'border-green-500 bg-green-50 dark:bg-green-900/20' 
+                          : 'border-gray-200 dark:border-gray-600 hover:border-green-300'
+                      }`}
+                    >
                       <input
                         type="radio"
                         name="format"
-                        value={format}
-                        checked={exportOptions.format === format}
+                        value={item.format}
+                        checked={exportOptions.format === item.format}
                         onChange={(e) =>
                           setExportOptions({
                             ...exportOptions,
@@ -159,29 +166,48 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
                           })
                         }
                         disabled={isExporting}
-                        className="mr-2"
+                        className="sr-only"
                       />
-                      <span className="text-sm text-gray-900 dark:text-white">
-                        {format.toUpperCase()} - {getFormatDescription(format)}
-                      </span>
+                      <div className="flex items-center gap-3 w-full">
+                        <span className="text-2xl">{getFormatIcon(item.format)}</span>
+                        <div>
+                          <div className="font-semibold text-gray-900 dark:text-white">
+                            {item.name}
+                          </div>
+                          <div className="text-sm text-gray-600 dark:text-gray-400">
+                            {item.desc}
+                          </div>
+                        </div>
+                      </div>
                     </label>
                   ))}
                 </div>
               </div>
 
-              {/* 品質設定 */}
+              {/* 品質設定 - カード形式 */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  品質設定
+                <label className="block text-lg font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                  ⭐ 品質設定
                 </label>
-                <div className="space-y-2">
-                  {(['high', 'medium', 'low'] as const).map((quality) => (
-                    <label key={quality} className="flex items-center">
+                <div className="grid grid-cols-1 gap-3">
+                  {([
+                    { quality: 'high', name: '高品質', desc: '3倍サイズ・最高画質' },
+                    { quality: 'medium', name: '標準品質', desc: '2倍サイズ・バランス重視' },
+                    { quality: 'low', name: '低品質', desc: '等倍サイズ・軽量' }
+                  ] as const).map((item) => (
+                    <label 
+                      key={item.quality} 
+                      className={`flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                        exportOptions.quality === item.quality
+                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
+                          : 'border-gray-200 dark:border-gray-600 hover:border-blue-300'
+                      }`}
+                    >
                       <input
                         type="radio"
                         name="quality"
-                        value={quality}
-                        checked={exportOptions.quality === quality}
+                        value={item.quality}
+                        checked={exportOptions.quality === item.quality}
                         onChange={(e) =>
                           setExportOptions({
                             ...exportOptions,
@@ -189,109 +215,133 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
                           })
                         }
                         disabled={isExporting}
-                        className="mr-2"
+                        className="sr-only"
                       />
-                      <span className="text-sm text-gray-900 dark:text-white">
-                        {getQualityDescription(quality)}
-                      </span>
+                      <div className="flex items-center gap-3 w-full">
+                        <span className="text-2xl">{getQualityIcon(item.quality)}</span>
+                        <div>
+                          <div className="font-semibold text-gray-900 dark:text-white">
+                            {item.name}
+                          </div>
+                          <div className="text-sm text-gray-600 dark:text-gray-400">
+                            {item.desc}
+                          </div>
+                        </div>
+                      </div>
                     </label>
                   ))}
                 </div>
               </div>
 
-              {/* 解像度設定 */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  解像度 (DPI)
-                </label>
-                <input
-                  type="number"
-                  min="72"
-                  max="600"
-                  step="1"
-                  value={exportOptions.resolution}
-                  onChange={(e) =>
-                    setExportOptions({
-                      ...exportOptions,
-                      resolution: parseInt(e.target.value)
-                    })
-                  }
-                  disabled={isExporting}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                />
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  推奨: 印刷用300DPI、Web用72DPI
-                </p>
-              </div>
-
-              {/* 背景設定 */}
-              <div>
-                <label className="flex items-center">
+              {/* 詳細設定 */}
+              <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-xl">
+                <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  🔧 詳細設定
+                </h4>
+                
+                {/* 解像度設定 */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    解像度 (DPI)
+                  </label>
                   <input
-                    type="checkbox"
-                    checked={exportOptions.includeBackground}
+                    type="number"
+                    min="72"
+                    max="600"
+                    step="1"
+                    value={exportOptions.resolution}
                     onChange={(e) =>
                       setExportOptions({
                         ...exportOptions,
-                        includeBackground: e.target.checked
+                        resolution: parseInt(e.target.value)
                       })
                     }
                     disabled={isExporting}
-                    className="mr-2"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-lg"
                   />
-                  <span className="text-sm text-gray-900 dark:text-white">
-                    白背景を含める
-                  </span>
-                </label>
-              </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    推奨: 印刷用300DPI、Web用72DPI
+                  </p>
+                </div>
 
-              {/* PDF専用オプション */}
-              {exportOptions.format === 'pdf' && (
-                <div>
-                  <label className="flex items-center">
+                {/* チェックボックス設定 */}
+                <div className="space-y-3">
+                  <label className="flex items-center gap-3 cursor-pointer">
                     <input
                       type="checkbox"
-                      checked={exportOptions.separatePages}
+                      checked={exportOptions.includeBackground}
                       onChange={(e) =>
                         setExportOptions({
                           ...exportOptions,
-                          separatePages: e.target.checked
+                          includeBackground: e.target.checked
                         })
                       }
                       disabled={isExporting}
-                      className="mr-2"
+                      className="w-5 h-5 text-green-600 rounded"
                     />
                     <span className="text-sm text-gray-900 dark:text-white">
-                      各コマを別ページにする
+                      🎨 白背景を含める
                     </span>
                   </label>
+
+                  {/* PDF専用オプション */}
+                  {exportOptions.format === 'pdf' && (
+                    <label className="flex items-center gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={exportOptions.separatePages}
+                        onChange={(e) =>
+                          setExportOptions({
+                            ...exportOptions,
+                            separatePages: e.target.checked
+                          })
+                        }
+                        disabled={isExporting}
+                        className="w-5 h-5 text-green-600 rounded"
+                      />
+                      <span className="text-sm text-gray-900 dark:text-white">
+                        📑 各コマを別ページにする
+                      </span>
+                    </label>
+                  )}
                 </div>
-              )}
+              </div>
 
               {/* プレビュー情報 */}
-              <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-md">
-                <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
+              <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/30 dark:to-purple-900/30 p-4 rounded-xl border border-blue-200 dark:border-blue-800">
+                <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
                   📊 出力プレビュー
                 </h4>
-                <div className="text-xs text-gray-600 dark:text-gray-300 space-y-1">
-                  <p>• コマ数: {panels.length}個</p>
-                  <p>• キャラクター数: {characters.length}個</p>
-                  <p>• 吹き出し数: {bubbles.length}個</p>
-                  <p>• 形式: {getFormatDescription(exportOptions.format)}</p>
-                  <p>• 品質: {getQualityDescription(exportOptions.quality)}</p>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="text-gray-600 dark:text-gray-300">
+                    <div className="font-medium">📐 コマ数</div>
+                    <div className="text-lg font-bold text-blue-600">{panels.length}個</div>
+                  </div>
+                  <div className="text-gray-600 dark:text-gray-300">
+                    <div className="font-medium">👥 キャラクター</div>
+                    <div className="text-lg font-bold text-green-600">{characters.length}個</div>
+                  </div>
+                  <div className="text-gray-600 dark:text-gray-300">
+                    <div className="font-medium">💬 吹き出し</div>
+                    <div className="text-lg font-bold text-purple-600">{bubbles.length}個</div>
+                  </div>
+                  <div className="text-gray-600 dark:text-gray-300">
+                    <div className="font-medium">📝 形式</div>
+                    <div className="text-lg font-bold text-orange-600">{exportOptions.format.toUpperCase()}</div>
+                  </div>
                 </div>
               </div>
 
               {/* プログレスバー */}
               {isExporting && exportProgress && (
-                <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-md">
-                  <div className="flex justify-between text-sm text-gray-900 dark:text-white mb-2">
-                    <span>{exportProgress.message}</span>
-                    <span>{Math.round(exportProgress.progress)}%</span>
+                <div className="bg-gray-100 dark:bg-gray-700 p-4 rounded-xl">
+                  <div className="flex justify-between text-sm text-gray-900 dark:text-white mb-3">
+                    <span className="font-medium">{exportProgress.message}</span>
+                    <span className="font-bold">{Math.round(exportProgress.progress)}%</span>
                   </div>
-                  <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+                  <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-3">
                     <div
-                      className="bg-green-600 h-2 rounded-full transition-all duration-300"
+                      className="bg-gradient-to-r from-green-500 to-blue-500 h-3 rounded-full transition-all duration-300"
                       style={{ width: `${exportProgress.progress}%` }}
                     />
                   </div>
@@ -299,25 +349,28 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
               )}
 
               {/* アクションボタン */}
-              <div className="flex gap-3 pt-4">
+              <div className="flex gap-4 pt-4">
                 <button
                   onClick={handleExport}
                   disabled={isExporting || panels.length === 0}
-                  className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg transition-colors"
+                  className="flex-1 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 disabled:from-gray-400 disabled:to-gray-500 text-white px-6 py-4 rounded-xl font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl"
                 >
                   {isExporting ? (
                     <span className="flex items-center justify-center gap-2">
-                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
                       出力中...
                     </span>
                   ) : (
-                    '📁 エクスポート開始'
+                    <span className="flex items-center justify-center gap-2">
+                      <span className="text-xl">🚀</span>
+                      エクスポート開始
+                    </span>
                   )}
                 </button>
                 <button
                   onClick={() => setIsOpen(false)}
                   disabled={isExporting}
-                  className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+                  className="px-6 py-4 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors rounded-xl border border-gray-300 dark:border-gray-600"
                 >
                   キャンセル
                 </button>
