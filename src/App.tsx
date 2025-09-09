@@ -241,7 +241,54 @@ function App() {
     setPanels(updatedPanels);
   }, []);
 
+// 🆕 コマ追加機能
+const handlePanelAdd = useCallback((targetPanelId: string, position: 'above' | 'below' | 'left' | 'right') => {
+  const targetPanel = panels.find(p => p.id.toString() === targetPanelId);
+  if (!targetPanel) return;
 
+  const maxId = Math.max(...panels.map(p => typeof p.id === 'string' ? parseInt(p.id) : p.id), 0);
+  const newPanelId = maxId + 1;
+
+  let newPanel: Panel;
+  const spacing = 10;
+
+  switch (position) {
+    case 'above':
+      newPanel = { id: newPanelId, x: targetPanel.x, y: targetPanel.y - targetPanel.height - spacing, width: targetPanel.width, height: targetPanel.height };
+      break;
+    case 'below':
+      newPanel = { id: newPanelId, x: targetPanel.x, y: targetPanel.y + targetPanel.height + spacing, width: targetPanel.width, height: targetPanel.height };
+      break;
+    case 'left':
+      newPanel = { id: newPanelId, x: targetPanel.x - targetPanel.width - spacing, y: targetPanel.y, width: targetPanel.width, height: targetPanel.height };
+      break;
+    case 'right':
+      newPanel = { id: newPanelId, x: targetPanel.x + targetPanel.width + spacing, y: targetPanel.y, width: targetPanel.width, height: targetPanel.height };
+      break;
+    default:
+      return;
+  }
+
+  setPanels(prevPanels => [...prevPanels, newPanel]);
+  console.log(`✅ コマ追加完了: ${newPanelId} (${position})`);
+}, [panels]);
+
+// 🆕 コマ削除機能
+const handlePanelDelete = useCallback((panelId: string) => {
+  if (panels.length <= 1) {
+    console.log(`⚠️ 最後のコマは削除できません`);
+    return;
+  }
+
+  if (window.confirm(`コマ${panelId}を削除しますか？`)) {
+    const panelIdNum = parseInt(panelId);
+    setCharacters(prev => prev.filter(char => char.panelId !== panelIdNum));
+    setSpeechBubbles(prev => prev.filter(bubble => bubble.panelId !== panelIdNum));
+    setPanels(prev => prev.filter(panel => panel.id !== panelIdNum));
+    setSelectedPanel(null);
+    console.log(`🗑️ コマ削除: ${panelId}`);
+  }
+}, [panels.length]);
 
   // パネル分割機能（隙間付き版）
   const handlePanelSplit = useCallback((panelId: number, direction: "horizontal" | "vertical") => {
@@ -492,6 +539,8 @@ const handlePanelEditModeToggle = (enabled: boolean) => {
             isPanelEditMode={isPanelEditMode}
             onPanelSplit={handlePanelSplit}
             onPanelEditModeToggle={handlePanelEditModeToggle} // 🆕 この行を追加
+            onPanelAdd={handlePanelAdd}  // 🆕 この行を追加
+            onPanelDelete={handlePanelDelete}  // 🆕 この行を追加
           />
         </div>
 

@@ -68,6 +68,8 @@ export interface CanvasComponentProps {
   isPanelEditMode?: boolean; // コマ編集モード
   onPanelSplit?: (panelId: number, direction: "horizontal" | "vertical") => void; // 分割ハンドラー
   onPanelEditModeToggle?: (enabled: boolean) => void; // 🆕 この行を追加
+  onPanelAdd?: (targetPanelId: string, position: 'above' | 'below' | 'left' | 'right') => void;
+  onPanelDelete?: (panelId: string) => void;
 }
 
 // テンプレート定義の型
