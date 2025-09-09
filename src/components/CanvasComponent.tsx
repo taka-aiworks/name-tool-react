@@ -1,4 +1,4 @@
-// src/components/CanvasComponent.tsx (PanelRenderer互換修正版)
+// src/components/CanvasComponent.tsx (完全版・コマ複製機能付き)
 import React, { useRef, useEffect, useState, forwardRef, useImperativeHandle } from "react";
 import { Panel, Character, SpeechBubble, CanvasComponentProps } from "../types";
 import { BubbleRenderer } from "./CanvasArea/renderers/BubbleRenderer";
@@ -51,6 +51,7 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
   const [gridSize] = useState(20);
   const [snapSensitivity] = useState(12);
 
+
   // 右クリックメニュー状態
   const [contextMenu, setContextMenu] = useState<{
     visible: boolean;
@@ -66,7 +67,139 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
     targetElement: null,
   });
 
-  // 🆕 パネル操作用のヘルパー関数（staticメソッドの代替）
+      // 1. 状態変数に追加（既存のuseStateの後に追加）
+    const [clipboard, setClipboard] = useState<{
+      type: 'panel' | 'character' | 'bubble';
+      data: Panel | Character | SpeechBubble;
+    } | null>(null);
+
+  // 🆕 コマ複製機能（完全版）
+  const duplicatePanel = (originalPanel: Panel) => {
+    console.log("🔍 複製開始 - 元パネル:", originalPanel);
+    
+    // 新しいパネルID生成
+    const maxId = Math.max(...panels.map(p => p.id), 0);
+    const newPanelId = maxId + 1;
+    console.log("🔍 新しいパネルID:", newPanelId);
+    
+    // パネルを右側に複製（重複しないよう調整）
+    const newPanel: Panel = {
+      ...originalPanel,
+      id: newPanelId,
+      x: originalPanel.x + originalPanel.width + 10, // 10px間隔
+      y: originalPanel.y
+    };
+    
+    // キャンバス範囲チェック
+    const canvas = canvasRef.current;
+    if (canvas && newPanel.x + newPanel.width > canvas.width) {
+      console.log("🔍 右に配置できないため下に配置");
+      newPanel.x = originalPanel.x;
+      newPanel.y = originalPanel.y + originalPanel.height + 10;
+      
+      if (newPanel.y + newPanel.height > canvas.height) {
+        console.log("🔍 下にも配置できないため左に配置");
+        newPanel.x = Math.max(0, originalPanel.x - originalPanel.width - 10);
+        newPanel.y = originalPanel.y;
+      }
+    }
+    
+    // パネル内のキャラクターを複製
+    const panelCharacters = characters.filter(char => {
+      const isInPanel = char.x >= originalPanel.x && 
+        char.x <= originalPanel.x + originalPanel.width &&
+        char.y >= originalPanel.y && 
+        char.y <= originalPanel.y + originalPanel.height;
+      return isInPanel;
+    });
+    
+    const duplicatedCharacters = panelCharacters.map(char => {
+      const offsetX = newPanel.x - originalPanel.x;
+      const offsetY = newPanel.y - originalPanel.y;
+      
+      return {
+        ...char,
+        id: `char_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+        panelId: newPanelId,
+        x: char.x + offsetX,
+        y: char.y + offsetY
+      };
+    });
+    
+    // パネル内の吹き出しを複製
+    const panelBubbles = speechBubbles.filter(bubble => {
+      const isInPanel = bubble.x >= originalPanel.x && 
+        bubble.x <= originalPanel.x + originalPanel.width &&
+        bubble.y >= originalPanel.y && 
+        bubble.y <= originalPanel.y + originalPanel.height;
+      return isInPanel;
+    });
+    
+    const duplicatedBubbles = panelBubbles.map(bubble => {
+      const offsetX = newPanel.x - originalPanel.x;
+      const offsetY = newPanel.y - originalPanel.y;
+      
+      return {
+        ...bubble,
+        id: `bubble_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+        panelId: newPanelId,
+        x: bubble.x + offsetX,
+        y: bubble.y + offsetY
+      };
+    });
+    
+    // 状態更新
+    setPanels([...panels, newPanel]);
+    setCharacters([...characters, ...duplicatedCharacters]);
+    setSpeechBubbles([...speechBubbles, ...duplicatedBubbles]);
+    
+    // 新しいパネルを選択
+    setSelectedPanel(newPanel);
+    setSelectedCharacter(null);
+    setSelectedBubble(null);
+    if (onPanelSelect) onPanelSelect(newPanel);
+    if (onCharacterSelect) onCharacterSelect(null);
+    
+    console.log(`✅ コマ ${originalPanel.id} を複製 → コマ ${newPanelId}`);
+    setContextMenu({ ...contextMenu, visible: false });
+  };
+
+
+  // 2. キャラクター複製機能を追加（duplicatePanelの後に追加）
+const duplicateCharacter = (originalCharacter: Character) => {
+  console.log("🔍 キャラクター複製開始:", originalCharacter.name);
+  
+  const newCharacter: Character = {
+    ...originalCharacter,
+    id: `char_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+    name: `${originalCharacter.name}(コピー)`,
+    x: originalCharacter.x + 50, // 50px右にずらして配置
+    y: originalCharacter.y + 20, // 20px下にずらして配置
+  };
+  
+  // キャンバス範囲チェック
+  const canvas = canvasRef.current;
+  if (canvas && newCharacter.x + 60 > canvas.width) {
+    newCharacter.x = originalCharacter.x - 50; // 左にずらす
+    if (newCharacter.x < 0) {
+      newCharacter.x = 20;
+      newCharacter.y = originalCharacter.y + 60; // 下にずらす
+    }
+  }
+  if (canvas && newCharacter.y + 60 > canvas.height) {
+    newCharacter.y = Math.max(20, originalCharacter.y - 60);
+  }
+  
+  setCharacters([...characters, newCharacter]);
+  setSelectedCharacter(newCharacter);
+  if (onCharacterSelect) onCharacterSelect(newCharacter);
+  
+  console.log(`✅ キャラクター複製完了: ${originalCharacter.name} → ${newCharacter.name}`);
+  setContextMenu({ ...contextMenu, visible: false });
+};
+
+
+  // パネル操作用のヘルパー関数（完全版）
 
   // グリッド描画
   const drawGrid = (ctx: CanvasRenderingContext2D, canvasWidth: number, canvasHeight: number, gridSize: number, isDarkMode: boolean) => {
@@ -74,7 +207,6 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
     ctx.lineWidth = 1;
     ctx.setLineDash([]);
 
-    // 垂直線
     for (let x = 0; x <= canvasWidth; x += gridSize) {
       ctx.beginPath();
       ctx.moveTo(x, 0);
@@ -82,7 +214,6 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
       ctx.stroke();
     }
 
-    // 水平線
     for (let y = 0; y <= canvasHeight; y += gridSize) {
       ctx.beginPath();
       ctx.moveTo(0, y);
@@ -141,7 +272,7 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
     }
   };
 
-  // パネル編集ハンドル描画
+  // パネル編集ハンドル描画（完全版）
   const drawPanelEditHandles = (ctx: CanvasRenderingContext2D, panel: Panel, isDarkMode: boolean) => {
     const handleSize = 20;
     const handleColor = "#ff8833";
@@ -259,7 +390,7 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
     ) || null;
   };
 
-  // パネルハンドル判定
+  // パネルハンドル判定（完全版）
   const getPanelHandleAt = (mouseX: number, mouseY: number, panel: Panel): { type: string; direction?: string } | null => {
     const handleSize = 20;
     const tolerance = 5;
@@ -332,7 +463,7 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
     return null;
   };
 
-  // パネルリサイズ
+  // パネルリサイズ（完全版）
   const resizePanel = (panel: Panel, direction: string, deltaX: number, deltaY: number, minSize: number = 50): Panel => {
     const newPanel = { ...panel };
     const sensitivityFactor = 0.5;
@@ -386,7 +517,7 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
     return newPanel;
   };
 
-  // パネル移動
+  // パネル移動（完全版・スナップ機能付き）
   const movePanel = (
     panel: Panel,
     deltaX: number,
@@ -405,8 +536,9 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
     const snapLines: Array<{x1: number, y1: number, x2: number, y2: number, type: 'vertical' | 'horizontal'}> = [];
     const otherPanels = allPanels.filter(p => p.id !== panel.id);
     
-    // スナップ判定（簡略化）
+    // パネル本体の境界線でスナップ判定
     for (const otherPanel of otherPanels) {
+      // 水平方向のスナップ
       if (Math.abs(newX - otherPanel.x) < snapThreshold) {
         newX = otherPanel.x;
         snapLines.push({
@@ -416,14 +548,35 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
         });
         break;
       }
+      
+      if (Math.abs((newX + panel.width) - (otherPanel.x + otherPanel.width)) < snapThreshold) {
+        newX = otherPanel.x + otherPanel.width - panel.width;
+        snapLines.push({
+          x1: otherPanel.x + otherPanel.width + 0.5, y1: Math.min(newY, otherPanel.y) - 20,
+          x2: otherPanel.x + otherPanel.width + 0.5, y2: Math.max(newY + panel.height, otherPanel.y + otherPanel.height) + 20,
+          type: 'vertical'
+        });
+        break;
+      }
     }
     
+    // 垂直方向のスナップ
     for (const otherPanel of otherPanels) {
       if (Math.abs(newY - otherPanel.y) < snapThreshold) {
         newY = otherPanel.y;
         snapLines.push({
           x1: Math.min(newX, otherPanel.x) - 20, y1: otherPanel.y + 0.5,
           x2: Math.max(newX + panel.width, otherPanel.x + otherPanel.width) + 20, y2: otherPanel.y + 0.5,
+          type: 'horizontal'
+        });
+        break;
+      }
+      
+      if (Math.abs((newY + panel.height) - (otherPanel.y + otherPanel.height)) < snapThreshold) {
+        newY = otherPanel.y + otherPanel.height - panel.height;
+        snapLines.push({
+          x1: Math.min(newX, otherPanel.x) - 20, y1: otherPanel.y + otherPanel.height + 0.5,
+          x2: Math.max(newX + panel.width, otherPanel.x + otherPanel.width) + 20, y2: otherPanel.y + otherPanel.height + 0.5,
           type: 'horizontal'
         });
         break;
@@ -436,7 +589,7 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
     };
   };
 
-  // 🆕 キャラクター追加機能
+  // キャラクター追加機能
   const addCharacter = (type: string) => {
     let availablePanels = panels;
     if (availablePanels.length === 0 && selectedTemplate && templates[selectedTemplate]) {
@@ -483,7 +636,7 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
     console.log("✅ キャラクター追加:", newCharacter.name);
   };
 
-  // 🆕 吹き出し追加機能
+  // 吹き出し追加機能
   const addBubble = (type: string, text: string) => {
     let availablePanels = panels;
     if (availablePanels.length === 0 && selectedTemplate && templates[selectedTemplate]) {
@@ -518,7 +671,7 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
     console.log("✅ 吹き出し追加:", type);
   };
 
-  // 🆕 要素削除機能
+  // 要素削除機能
   const deleteElement = (type: 'character' | 'bubble', element: Character | SpeechBubble) => {
     if (type === 'character') {
       const newCharacters = characters.filter(char => char.id !== element.id);
@@ -535,7 +688,7 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
     setContextMenu({ ...contextMenu, visible: false });
   };
 
-  // 🆕 パネル削除機能
+  // パネル削除機能
   const deletePanelWithConfirmation = (panel: Panel) => {
     const confirmed = window.confirm(
       `コマ ${panel.id} を削除しますか？\n` +
@@ -548,7 +701,6 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
       return;
     }
 
-    // パネル内の要素を検索して削除
     const characterIdsToDelete = characters
       .filter(char => 
         char.x >= panel.x && 
@@ -567,7 +719,6 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
       )
       .map(bubble => bubble.id);
 
-    // 子要素削除
     if (characterIdsToDelete.length > 0) {
       const newCharacters = characters.filter(char => !characterIdsToDelete.includes(char.id));
       setCharacters(newCharacters);
@@ -578,11 +729,9 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
       setSpeechBubbles(newBubbles);
     }
 
-    // パネル削除
     const newPanels = panels.filter(p => p.id !== panel.id);
     setPanels(newPanels);
 
-    // 選択状態クリア
     setSelectedPanel(null);
     setSelectedCharacter(null);
     setSelectedBubble(null);
@@ -593,11 +742,42 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
     setContextMenu({ ...contextMenu, visible: false });
   };
 
-  // 🆕 右クリックメニュー処理
+  // 右クリックメニュー処理（完全版）
   const handleContextMenuAction = (action: string) => {
+    console.log("🔍 右クリックアクション実行:", action);
+    
     const { target, targetElement } = contextMenu;
     
     switch (action) {
+      case 'duplicateCharacter':
+        if (target === 'character' && targetElement) {
+          duplicateCharacter(targetElement as Character);
+        }
+        break;
+
+      case 'copy':
+        if (target === 'panel' && targetElement) {
+          copyToClipboard('panel', targetElement as Panel);
+        } else if (target === 'character' && targetElement) {
+          copyToClipboard('character', targetElement as Character);
+        } else if (target === 'bubble' && targetElement) {
+          copyToClipboard('bubble', targetElement as SpeechBubble);
+        }
+        break;
+
+      case 'paste':
+        pasteFromClipboard();
+        break;
+      case 'duplicate':
+        console.log("🔍 コマ複製アクション開始");
+        if (target === 'panel' && targetElement) {
+          console.log("🔍 複製対象パネル:", targetElement);
+          duplicatePanel(targetElement as Panel);
+        } else {
+          console.log("❌ 複製失敗 - target:", target, "targetElement:", targetElement);
+        }
+        break;
+
       case 'flipHorizontal':
         if (canvasRef.current) {
           const flippedPanels = panels.map(panel => ({
@@ -712,7 +892,49 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
     setContextMenu({ ...contextMenu, visible: false });
   };
 
-  // 🆕 編集機能
+  // 3. コピー機能（handleContextMenuActionの前に追加）
+  const copyToClipboard = (type: 'panel' | 'character' | 'bubble', element: Panel | Character | SpeechBubble) => {
+    setClipboard({ type, data: element });
+    console.log(`📋 ${type}をクリップボードにコピー:`, element);
+  };
+
+  // 4. ペースト機能
+const pasteFromClipboard = () => {
+  if (!clipboard) {
+    console.log("❌ クリップボードが空です");
+    return;
+  }
+
+  const { type, data } = clipboard;
+  
+  switch (type) {
+    case 'panel':
+      duplicatePanel(data as Panel);
+      break;
+      
+    case 'character':
+      duplicateCharacter(data as Character);
+      break;
+      
+    case 'bubble':
+      const originalBubble = data as SpeechBubble;
+      const newBubble: SpeechBubble = {
+        ...originalBubble,
+        id: `bubble_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+        text: `${originalBubble.text}(コピー)`,
+        x: originalBubble.x + 30,
+        y: originalBubble.y + 30,
+      };
+      
+      setSpeechBubbles([...speechBubbles, newBubble]);
+      setSelectedBubble(newBubble);
+      console.log(`✅ 吹き出し複製完了: ${originalBubble.text} → ${newBubble.text}`);
+      break;
+  }
+};
+
+
+  // 編集機能
   const handleEditComplete = () => {
     if (editingBubble && editText.trim()) {
       const textLength = editText.length;
@@ -745,7 +967,7 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
     console.log("❌ 吹き出し編集キャンセル");
   };
 
-  // 🎨 Canvas描画関数
+  // Canvas描画関数
   const drawCanvas = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -758,23 +980,20 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
     ctx.fillStyle = isDarkMode ? "#404040" : "#ffffff";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // グリッド描画（編集モード時のみ）
     if (showGrid && isPanelEditMode) {
       drawGrid(ctx, canvas.width, canvas.height, gridSize, isDarkMode);
     }
 
-    // 要素描画
     drawPanels(ctx, panels, selectedPanel, isDarkMode, isPanelEditMode);
     BubbleRenderer.drawBubbles(ctx, speechBubbles, panels, selectedBubble);
     CharacterRenderer.drawCharacters(ctx, characters, panels, selectedCharacter);
 
-    // スナップライン描画
     if (snapLines.length > 0) {
       drawSnapLines(ctx, snapLines, isDarkMode);
     }
   };
 
-  // 🖱️ マウスイベント処理
+  // マウスイベント処理（完全版）
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -847,6 +1066,7 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
 
     const clickedPanel = findPanelAt(x, y, panels);
     if (clickedPanel) {
+      console.log("🔍 パネル右クリック検出:", clickedPanel);
       setContextMenu({
         visible: true,
         x: e.clientX,
@@ -891,7 +1111,7 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
 
-    // パネル編集モード時の操作
+    // パネル編集モード時の操作（完全版）
     if (isPanelEditMode && selectedPanel) {
       const panelHandle = getPanelHandleAt(mouseX, mouseY, selectedPanel);
       
@@ -960,7 +1180,7 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
 
-    // パネルリサイズ
+    // パネルリサイズ（完全版）
     if (selectedPanel && isPanelResizing) {
       const deltaX = mouseX - dragOffset.x;
       const deltaY = mouseY - dragOffset.y;
@@ -978,7 +1198,7 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
       return;
     }
 
-    // パネル移動
+    // パネル移動（完全版）
     if (selectedPanel && isPanelMoving) {
       const deltaX = mouseX - dragOffset.x - selectedPanel.x;
       const deltaY = mouseY - dragOffset.y - selectedPanel.y;
@@ -1050,7 +1270,52 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
     setSnapLines([]);
   };
 
-  // 🔧 機能提供用useEffect
+
+  // 5. キーボードイベントハンドラー（useEffectの前に追加）
+const handleKeyDown = (e: KeyboardEvent) => {
+  // Ctrl+C: コピー
+  if (e.ctrlKey && e.key === 'c') {
+    e.preventDefault();
+    
+    if (selectedPanel) {
+      copyToClipboard('panel', selectedPanel);
+    } else if (selectedCharacter) {
+      copyToClipboard('character', selectedCharacter);
+    } else if (selectedBubble) {
+      copyToClipboard('bubble', selectedBubble);
+    }
+  }
+  
+  // Ctrl+V: ペースト
+  if (e.ctrlKey && e.key === 'v') {
+    e.preventDefault();
+    pasteFromClipboard();
+  }
+  
+  // Delete: 削除
+  if (e.key === 'Delete') {
+    e.preventDefault();
+    
+    if (selectedPanel) {
+      deletePanelWithConfirmation(selectedPanel);
+    } else if (selectedCharacter) {
+      deleteElement('character', selectedCharacter);
+    } else if (selectedBubble) {
+      deleteElement('bubble', selectedBubble);
+    }
+  }
+};
+
+
+ // 7. キーボードイベント監視用useEffect（既存のuseEffectの後に追加）
+      useEffect(() => {
+        document.addEventListener('keydown', handleKeyDown);
+        return () => {
+          document.removeEventListener('keydown', handleKeyDown);
+        };
+      }, [selectedPanel, selectedCharacter, selectedBubble, clipboard]);
+
+  // 機能提供用useEffect
   useEffect(() => {
     onCharacterAdd(addCharacter);
   }, [selectedPanel, characters]);
@@ -1122,7 +1387,7 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
         }}
       />
 
-      {/* 🆕 右クリックコンテキストメニュー */}
+      {/* 右クリックコンテキストメニュー（完全版・コピペ機能付き） */}
       {contextMenu.visible && (
         <div
           style={{
@@ -1159,6 +1424,44 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
                 onClick={() => handleContextMenuAction('characterPanel')}
               >
                 詳細設定
+              </div>
+              <div
+                style={{
+                  padding: "8px 12px",
+                  cursor: "pointer",
+                  borderBottom: `1px solid ${document.documentElement.getAttribute("data-theme") === "dark" ? "#555555" : "#eee"}`,
+                  transition: "background-color 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  const target = e.target as HTMLElement;
+                  target.style.backgroundColor = document.documentElement.getAttribute("data-theme") === "dark" ? "#3d3d3d" : "#f5f5f5";
+                }}
+                onMouseLeave={(e) => {
+                  const target = e.target as HTMLElement;
+                  target.style.backgroundColor = "transparent";
+                }}
+                onClick={() => handleContextMenuAction('duplicateCharacter')}
+              >
+                👥 キャラクター複製
+              </div>
+              <div
+                style={{
+                  padding: "8px 12px",
+                  cursor: "pointer",
+                  borderBottom: `1px solid ${document.documentElement.getAttribute("data-theme") === "dark" ? "#555555" : "#eee"}`,
+                  transition: "background-color 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  const target = e.target as HTMLElement;
+                  target.style.backgroundColor = document.documentElement.getAttribute("data-theme") === "dark" ? "#3d3d3d" : "#f5f5f5";
+                }}
+                onMouseLeave={(e) => {
+                  const target = e.target as HTMLElement;
+                  target.style.backgroundColor = "transparent";
+                }}
+                onClick={() => handleContextMenuAction('copy')}
+              >
+                📋 コピー (Ctrl+C)
               </div>
               <div
                 style={{
@@ -1207,6 +1510,25 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
                 style={{
                   padding: "8px 12px",
                   cursor: "pointer",
+                  borderBottom: `1px solid ${document.documentElement.getAttribute("data-theme") === "dark" ? "#555555" : "#eee"}`,
+                  transition: "background-color 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  const target = e.target as HTMLElement;
+                  target.style.backgroundColor = document.documentElement.getAttribute("data-theme") === "dark" ? "#3d3d3d" : "#f5f5f5";
+                }}
+                onMouseLeave={(e) => {
+                  const target = e.target as HTMLElement;
+                  target.style.backgroundColor = "transparent";
+                }}
+                onClick={() => handleContextMenuAction('copy')}
+              >
+                📋 コピー (Ctrl+C)
+              </div>
+              <div
+                style={{
+                  padding: "8px 12px",
+                  cursor: "pointer",
                   color: "#ff4444",
                   transition: "background-color 0.2s",
                 }}
@@ -1250,7 +1572,7 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
                 </div>
               )}
 
-              {/* 🆕 コマ複製（常に表示） */}
+              {/* コマ複製（常に表示） */}
               <div
                 style={{
                   padding: "8px 12px",
@@ -1266,9 +1588,33 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
                   const target = e.target as HTMLElement;
                   target.style.backgroundColor = "transparent";
                 }}
-                onClick={() => handleContextMenuAction('duplicate')}
+                onClick={() => {
+                  console.log("📋 コマ複製ボタンクリック！");
+                  handleContextMenuAction('duplicate');
+                }}
               >
                 📋 コマ複製
+              </div>
+
+              {/* コピー機能追加 */}
+              <div
+                style={{
+                  padding: "8px 12px",
+                  cursor: "pointer",
+                  borderBottom: `1px solid ${document.documentElement.getAttribute("data-theme") === "dark" ? "#555555" : "#eee"}`,
+                  transition: "background-color 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  const target = e.target as HTMLElement;
+                  target.style.backgroundColor = document.documentElement.getAttribute("data-theme") === "dark" ? "#3d3d3d" : "#f5f5f5";
+                }}
+                onMouseLeave={(e) => {
+                  const target = e.target as HTMLElement;
+                  target.style.backgroundColor = "transparent";
+                }}
+                onClick={() => handleContextMenuAction('copy')}
+              >
+                📋 コピー (Ctrl+C)
               </div>
 
               {/* 反転メニュー（編集モード時のみ表示） */}
@@ -1382,6 +1728,29 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
           
           {!contextMenu.target && (
             <>
+              {/* ペースト機能（クリップボードに何かあるときのみ表示） */}
+              {clipboard && (
+                <div
+                  style={{
+                    padding: "8px 12px",
+                    cursor: "pointer",
+                    borderBottom: `1px solid ${document.documentElement.getAttribute("data-theme") === "dark" ? "#555555" : "#eee"}`,
+                    transition: "background-color 0.2s",
+                  }}
+                  onMouseEnter={(e) => {
+                    const target = e.target as HTMLElement;
+                    target.style.backgroundColor = document.documentElement.getAttribute("data-theme") === "dark" ? "#3d3d3d" : "#f5f5f5";
+                  }}
+                  onMouseLeave={(e) => {
+                    const target = e.target as HTMLElement;
+                    target.style.backgroundColor = "transparent";
+                  }}
+                  onClick={() => handleContextMenuAction('paste')}
+                >
+                  📌 ペースト (Ctrl+V) - {clipboard.type}
+                </div>
+              )}
+              
               <div
                 style={{
                   padding: "8px 12px",
@@ -1493,6 +1862,27 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
           <small>
             右クリックで編集・削除
           </small>
+        </div>
+      )}
+
+      {/* クリップボード状態表示 */}
+      {clipboard && (
+        <div
+          style={{
+            position: "absolute",
+            top: "100px",
+            right: "10px",
+            background: "rgba(128, 128, 128, 0.9)",
+            color: "white",
+            padding: "6px 10px",
+            borderRadius: "4px",
+            fontSize: "11px",
+            fontWeight: "bold",
+          }}
+        >
+          📋 クリップボード: {clipboard.type}
+          <br/>
+          <small>Ctrl+Vでペースト</small>
         </div>
       )}
     </div>
