@@ -1,5 +1,5 @@
 // src/components/CanvasArea/renderers/PanelRenderer.tsx (コマ移動・削除機能追加版)
-import { Panel } from "../../../types";
+import { Panel, Character, SpeechBubble } from "../../../types";
 
 export class PanelRenderer {
   // パネル群描画（デバッグログ削除）
@@ -528,39 +528,50 @@ export class PanelRenderer {
   }
 
   // パネル分割処理
-  static splitPanel(panel: Panel, direction: "horizontal" | "vertical"): Panel[] {
-    if (direction === "horizontal") {
-      const topPanel: Panel = {
-        ...panel,
-        id: panel.id,
-        height: panel.height / 2,
-      };
-      
-      const bottomPanel: Panel = {
-        ...panel,
-        id: panel.id + 1000,
-        y: panel.y + panel.height / 2,
-        height: panel.height / 2,
-      };
-      
-      return [topPanel, bottomPanel];
-    } else {
-      const leftPanel: Panel = {
-        ...panel,
-        id: panel.id,
-        width: panel.width / 2,
-      };
-      
-      const rightPanel: Panel = {
-        ...panel,
-        id: panel.id + 1000,
-        x: panel.x + panel.width / 2,
-        width: panel.width / 2,
-      };
-      
-      return [leftPanel, rightPanel];
-    }
+  // PanelRenderer.tsx の splitPanel メソッドを以下に置き換え
+
+// パネル分割処理（隙間付き版）
+static splitPanel(panel: Panel, direction: "horizontal" | "vertical", gap: number = 10): Panel[] {
+  if (direction === "horizontal") {
+    // 水平分割（上下）
+    const availableHeight = panel.height - gap;
+    const halfHeight = availableHeight / 2;
+    
+    const topPanel: Panel = {
+      ...panel,
+      id: panel.id,
+      height: halfHeight,
+    };
+    
+    const bottomPanel: Panel = {
+      ...panel,
+      id: panel.id + 1000,
+      y: panel.y + halfHeight + gap,
+      height: halfHeight,
+    };
+    
+    return [topPanel, bottomPanel];
+  } else {
+    // 垂直分割（左右）
+    const availableWidth = panel.width - gap;
+    const halfWidth = availableWidth / 2;
+    
+    const leftPanel: Panel = {
+      ...panel,
+      id: panel.id,
+      width: halfWidth,
+    };
+    
+    const rightPanel: Panel = {
+      ...panel,
+      id: panel.id + 1000,
+      x: panel.x + halfWidth + gap,
+      width: halfWidth,
+    };
+    
+    return [leftPanel, rightPanel];
   }
+}
 
   // 🆕 コマ削除時の確認ダイアログ
   static showDeleteConfirmation(panelId: number): boolean {
@@ -639,4 +650,183 @@ export class PanelRenderer {
         mouseY <= panel.y + panel.height
     ) || null;
   }
+
+// PanelRenderer.tsx の末尾（最後の } の直前）に追加するメソッド群
+
+  // 🆕 コマ反転機能
+
+  /**
+   * 水平反転（左右反転）
+   */
+  static flipPanelsHorizontal(panels: Panel[], canvasWidth: number): Panel[] {
+    console.log("↔️ パネル水平反転実行");
+    return panels.map(panel => ({
+      ...panel,
+      x: canvasWidth - panel.x - panel.width
+    }));
+  }
+
+  /**
+   * 垂直反転（上下反転）
+   */
+  static flipPanelsVertical(panels: Panel[], canvasHeight: number): Panel[] {
+    console.log("↕️ パネル垂直反転実行");
+    return panels.map(panel => ({
+      ...panel,
+      y: canvasHeight - panel.y - panel.height
+    }));
+  }
+
+  /**
+   * 対角反転（斜め反転）- 座標とサイズを入れ替え
+   */
+  static flipPanelsDiagonal(panels: Panel[], canvasWidth: number, canvasHeight: number): Panel[] {
+    console.log("↗️ パネル対角反転実行");
+    return panels.map(panel => {
+      // 座標とサイズを入れ替える
+      const newX = panel.y;
+      const newY = panel.x;
+      const newWidth = panel.height;
+      const newHeight = panel.width;
+      
+      // キャンバスサイズに収まるように調整
+      const adjustedX = Math.min(newX, canvasWidth - newWidth);
+      const adjustedY = Math.min(newY, canvasHeight - newHeight);
+      
+      return {
+        ...panel,
+        x: Math.max(0, adjustedX),
+        y: Math.max(0, adjustedY),
+        width: newWidth,
+        height: newHeight
+      };
+    });
+  }
+
+  /**
+   * 子要素（キャラクター）の座標も反転
+   */
+  static flipCharacterPositions(
+    characters: Character[], 
+    flipType: 'horizontal' | 'vertical' | 'diagonal',
+    canvasWidth: number,
+    canvasHeight: number
+  ): Character[] {
+    return characters.map(char => {
+      if (!char.isGlobalPosition) {
+        // 相対座標の場合はそのまま（パネル内の相対位置は保持）
+        return char;
+      }
+      
+      // 絶対座標の場合は座標を反転
+      let newX = char.x;
+      let newY = char.y;
+      
+      switch (flipType) {
+        case 'horizontal':
+          newX = canvasWidth - char.x;
+          break;
+        case 'vertical':
+          newY = canvasHeight - char.y;
+          break;
+        case 'diagonal':
+          const tempX = char.x;
+          newX = char.y;
+          newY = tempX;
+          break;
+      }
+      
+      return {
+        ...char,
+        x: newX,
+        y: newY
+      };
+    });
+  }
+
+  /**
+   * 子要素（吹き出し）の座標も反転
+   */
+  static flipBubblePositions(
+    bubbles: SpeechBubble[], 
+    flipType: 'horizontal' | 'vertical' | 'diagonal',
+    canvasWidth: number,
+    canvasHeight: number
+  ): SpeechBubble[] {
+    return bubbles.map(bubble => {
+      if (!bubble.isGlobalPosition) {
+        // 相対座標の場合はそのまま
+        return bubble;
+      }
+      
+      // 絶対座標の場合は座標を反転
+      let newX = bubble.x;
+      let newY = bubble.y;
+      
+      switch (flipType) {
+        case 'horizontal':
+          newX = canvasWidth - bubble.x;
+          break;
+        case 'vertical':
+          newY = canvasHeight - bubble.y;
+          break;
+        case 'diagonal':
+          const tempX = bubble.x;
+          newX = bubble.y;
+          newY = tempX;
+          break;
+      }
+      
+      return {
+        ...bubble,
+        x: newX,
+        y: newY
+      };
+    });
+  }
+
+  /**
+   * 全要素一括反転（パネル・キャラクター・吹き出し）
+   */
+  static flipAllElements(
+    panels: Panel[],
+    characters: Character[],
+    bubbles: SpeechBubble[],
+    flipType: 'horizontal' | 'vertical' | 'diagonal',
+    canvasWidth: number,
+    canvasHeight: number
+  ): { panels: Panel[], characters: Character[], bubbles: SpeechBubble[] } {
+    
+    let flippedPanels: Panel[];
+    
+    switch (flipType) {
+      case 'horizontal':
+        flippedPanels = PanelRenderer.flipPanelsHorizontal(panels, canvasWidth);
+        break;
+      case 'vertical':
+        flippedPanels = PanelRenderer.flipPanelsVertical(panels, canvasHeight);
+        break;
+      case 'diagonal':
+        flippedPanels = PanelRenderer.flipPanelsDiagonal(panels, canvasWidth, canvasHeight);
+        break;
+      default:
+        flippedPanels = panels;
+    }
+    
+    const flippedCharacters = PanelRenderer.flipCharacterPositions(
+      characters, flipType, canvasWidth, canvasHeight
+    );
+    
+    const flippedBubbles = PanelRenderer.flipBubblePositions(
+      bubbles, flipType, canvasWidth, canvasHeight
+    );
+    
+    console.log(`🔄 全要素反転完了: ${flipType}`);
+    return {
+      panels: flippedPanels,
+      characters: flippedCharacters,
+      bubbles: flippedBubbles
+    };
+  }
 }
+

@@ -260,6 +260,56 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
     const { target, targetElement } = contextMenu;
     
     switch (action) {
+        case 'flipHorizontal':
+        if (canvasRef.current) {
+          const result = PanelRenderer.flipAllElements(
+            panels,
+            characters,
+            speechBubbles,
+            'horizontal',
+            canvasRef.current.width,
+            canvasRef.current.height
+          );
+          setPanels(result.panels);
+          setCharacters(result.characters);
+          setSpeechBubbles(result.bubbles);
+          console.log("↔️ 水平反転完了");
+        }
+        break;
+
+      case 'flipVertical':
+        if (canvasRef.current) {
+          const result = PanelRenderer.flipAllElements(
+            panels,
+            characters,
+            speechBubbles,
+            'vertical',
+            canvasRef.current.width,
+            canvasRef.current.height
+          );
+          setPanels(result.panels);
+          setCharacters(result.characters);
+          setSpeechBubbles(result.bubbles);
+          console.log("↕️ 垂直反転完了");
+        }
+        break;
+
+      case 'flipDiagonal':
+        if (canvasRef.current) {
+          const result = PanelRenderer.flipAllElements(
+            panels,
+            characters,
+            speechBubbles,
+            'diagonal',
+            canvasRef.current.width,
+            canvasRef.current.height
+          );
+          setPanels(result.panels);
+          setCharacters(result.characters);
+          setSpeechBubbles(result.bubbles);
+          console.log("↗️ 対角反転完了");
+        }
+        break;
       case 'editPanel':
       if (target === 'panel' && targetElement) {
         setSelectedPanel(targetElement as Panel);
@@ -332,35 +382,31 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
   };
 
   // Canvas描画関数
-const drawCanvas = () => {
-  const canvas = canvasRef.current;
-  if (!canvas) return;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return;
+  const drawCanvas = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
 
-  const isDarkMode = document.documentElement.getAttribute("data-theme") === "dark";
+    const isDarkMode = document.documentElement.getAttribute("data-theme") === "dark";
 
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = isDarkMode ? "#404040" : "#ffffff";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = isDarkMode ? "#404040" : "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // 🆕 グリッド描画（編集モード時のみ）
-  if (showGrid && isPanelEditMode) {
-    PanelRenderer.drawGrid(ctx, canvas.width, canvas.height, gridSize, isDarkMode);
-  }
+    // 🆕 グリッド描画（編集モード時のみ）
+    if (showGrid && isPanelEditMode) {
+      PanelRenderer.drawGrid(ctx, canvas.width, canvas.height, gridSize, isDarkMode);
+    }
 
-  // 🆕 パネル描画でコマ編集モードを渡す
-  PanelRenderer.drawPanels(ctx, panels, selectedPanel, isDarkMode, isPanelEditMode);
-  
-  // 🔥 ★★★ この行を追加 ★★★
-  CharacterRenderer.drawCharacters(ctx, characters, panels, selectedCharacter);
-  
-  BubbleRenderer.drawBubbles(ctx, speechBubbles, panels, selectedBubble);
-  // 🆕 スナップライン描画
-  if (snapLines.length > 0) {
-    PanelRenderer.drawSnapLines(ctx, snapLines, isDarkMode);
-  }
-};
+    // 🆕 パネル描画でコマ編集モードを渡す
+    PanelRenderer.drawPanels(ctx, panels, selectedPanel, isDarkMode, isPanelEditMode);
+    BubbleRenderer.drawBubbles(ctx, speechBubbles, panels, selectedBubble);
+    // 🆕 スナップライン描画
+    if (snapLines.length > 0) {
+      PanelRenderer.drawSnapLines(ctx, snapLines, isDarkMode);
+    }
+  };
 
   // 左クリック処理
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -1041,27 +1087,9 @@ const drawCanvas = () => {
           )}
           
           {contextMenu.target === 'panel' && (
-            <>
-              <div
-                style={{
-                  padding: "8px 12px",
-                  cursor: "pointer",
-                  borderBottom: `1px solid ${document.documentElement.getAttribute("data-theme") === "dark" ? "#555555" : "#eee"}`,
-                  transition: "background-color 0.2s",
-                }}
-                onMouseEnter={(e) => {
-                  const target = e.target as HTMLElement;
-                  target.style.backgroundColor = document.documentElement.getAttribute("data-theme") === "dark" ? "#3d3d3d" : "#f5f5f5";
-                }}
-                onMouseLeave={(e) => {
-                  const target = e.target as HTMLElement;
-                  target.style.backgroundColor = "transparent";
-                }}
-                onClick={() => handleContextMenuAction('select')}
-              >
-                選択
-              </div>
-              {/* 🆕 コマ編集メニュー項目 */}
+          <>
+            {/* コマ編集（編集モードOFF時のみ表示） */}
+            {!isPanelEditMode && (
               <div
                 style={{
                   padding: "8px 12px",
@@ -1079,68 +1107,138 @@ const drawCanvas = () => {
                 }}
                 onClick={() => handleContextMenuAction('editPanel')}
               >
-                コマ編集
+                🔧 コマ編集
               </div>
-              <div
-                style={{
-                  padding: "8px 12px",
-                  cursor: "pointer",
-                  borderBottom: `1px solid ${document.documentElement.getAttribute("data-theme") === "dark" ? "#555555" : "#eee"}`,
-                  transition: "background-color 0.2s",
-                }}
-                onMouseEnter={(e) => {
-                  const target = e.target as HTMLElement;
-                  target.style.backgroundColor = document.documentElement.getAttribute("data-theme") === "dark" ? "#3d3d3d" : "#f5f5f5";
-                }}
-                onMouseLeave={(e) => {
-                  const target = e.target as HTMLElement;
-                  target.style.backgroundColor = "transparent";
-                }}
-                onClick={() => handleContextMenuAction('splitHorizontal')}
-              >
-                水平分割
-              </div>
-              <div
-                style={{
-                  padding: "8px 12px",
-                  cursor: "pointer",
-                  borderBottom: `1px solid ${document.documentElement.getAttribute("data-theme") === "dark" ? "#555555" : "#eee"}`,
-                  transition: "background-color 0.2s",
-                }}
-                onMouseEnter={(e) => {
-                  const target = e.target as HTMLElement;
-                  target.style.backgroundColor = document.documentElement.getAttribute("data-theme") === "dark" ? "#3d3d3d" : "#f5f5f5";
-                }}
-                onMouseLeave={(e) => {
-                  const target = e.target as HTMLElement;
-                  target.style.backgroundColor = "transparent";
-                }}
-                onClick={() => handleContextMenuAction('splitVertical')}
-              >
-                垂直分割
-              </div>
-              {/* 🆕 パネル削除メニュー項目 */}
-              <div
-                style={{
-                  padding: "8px 12px",
-                  cursor: "pointer",
-                  color: "#ff4444",
-                  transition: "background-color 0.2s",
-                }}
-                onMouseEnter={(e) => {
-                  const target = e.target as HTMLElement;
-                  target.style.backgroundColor = document.documentElement.getAttribute("data-theme") === "dark" ? "#3d3d3d" : "#f5f5f5";
-                }}
-                onMouseLeave={(e) => {
-                  const target = e.target as HTMLElement;
-                  target.style.backgroundColor = "transparent";
-                }}
-                onClick={() => handleContextMenuAction('delete')}
-              >
-                🗑️ コマ削除
-              </div>
-            </>
-          )}
+            )}
+
+            {/* 反転メニュー（編集モード時のみ表示） */}
+            {isPanelEditMode && (
+              <>
+                <div
+                  style={{
+                    padding: "8px 12px",
+                    cursor: "pointer",
+                    borderBottom: `1px solid ${document.documentElement.getAttribute("data-theme") === "dark" ? "#555555" : "#eee"}`,
+                    transition: "background-color 0.2s",
+                  }}
+                  onMouseEnter={(e) => {
+                    const target = e.target as HTMLElement;
+                    target.style.backgroundColor = document.documentElement.getAttribute("data-theme") === "dark" ? "#3d3d3d" : "#f5f5f5";
+                  }}
+                  onMouseLeave={(e) => {
+                    const target = e.target as HTMLElement;
+                    target.style.backgroundColor = "transparent";
+                  }}
+                  onClick={() => handleContextMenuAction('flipHorizontal')}
+                >
+                  ↔️ 水平反転
+                </div>
+
+                <div
+                  style={{
+                    padding: "8px 12px",
+                    cursor: "pointer",
+                    borderBottom: `1px solid ${document.documentElement.getAttribute("data-theme") === "dark" ? "#555555" : "#eee"}`,
+                    transition: "background-color 0.2s",
+                  }}
+                  onMouseEnter={(e) => {
+                    const target = e.target as HTMLElement;
+                    target.style.backgroundColor = document.documentElement.getAttribute("data-theme") === "dark" ? "#3d3d3d" : "#f5f5f5";
+                  }}
+                  onMouseLeave={(e) => {
+                    const target = e.target as HTMLElement;
+                    target.style.backgroundColor = "transparent";
+                  }}
+                  onClick={() => handleContextMenuAction('flipVertical')}
+                >
+                  ↕️ 垂直反転
+                </div>
+
+                <div
+                  style={{
+                    padding: "8px 12px",
+                    cursor: "pointer",
+                    borderBottom: `1px solid ${document.documentElement.getAttribute("data-theme") === "dark" ? "#555555" : "#eee"}`,
+                    transition: "background-color 0.2s",
+                  }}
+                  onMouseEnter={(e) => {
+                    const target = e.target as HTMLElement;
+                    target.style.backgroundColor = document.documentElement.getAttribute("data-theme") === "dark" ? "#3d3d3d" : "#f5f5f5";
+                  }}
+                  onMouseLeave={(e) => {
+                    const target = e.target as HTMLElement;
+                    target.style.backgroundColor = "transparent";
+                  }}
+                  onClick={() => handleContextMenuAction('flipDiagonal')}
+                >
+                  ↗️ 対角反転
+                </div>
+              </>
+            )}
+
+            {/* 分割メニュー（常に表示） */}
+            <div
+              style={{
+                padding: "8px 12px",
+                cursor: "pointer",
+                borderBottom: `1px solid ${document.documentElement.getAttribute("data-theme") === "dark" ? "#555555" : "#eee"}`,
+                transition: "background-color 0.2s",
+              }}
+              onMouseEnter={(e) => {
+                const target = e.target as HTMLElement;
+                target.style.backgroundColor = document.documentElement.getAttribute("data-theme") === "dark" ? "#3d3d3d" : "#f5f5f5";
+              }}
+              onMouseLeave={(e) => {
+                const target = e.target as HTMLElement;
+                target.style.backgroundColor = "transparent";
+              }}
+              onClick={() => handleContextMenuAction('splitHorizontal')}
+            >
+              ✂️ 水平分割
+            </div>
+
+            <div
+              style={{
+                padding: "8px 12px",
+                cursor: "pointer",
+                borderBottom: `1px solid ${document.documentElement.getAttribute("data-theme") === "dark" ? "#555555" : "#eee"}`,
+                transition: "background-color 0.2s",
+              }}
+              onMouseEnter={(e) => {
+                const target = e.target as HTMLElement;
+                target.style.backgroundColor = document.documentElement.getAttribute("data-theme") === "dark" ? "#3d3d3d" : "#f5f5f5";
+              }}
+              onMouseLeave={(e) => {
+                const target = e.target as HTMLElement;
+                target.style.backgroundColor = "transparent";
+              }}
+              onClick={() => handleContextMenuAction('splitVertical')}
+            >
+              ✂️ 垂直分割
+            </div>
+
+            {/* 削除（常に表示・危険色） */}
+            <div
+              style={{
+                padding: "8px 12px",
+                cursor: "pointer",
+                color: "#ff4444",
+                transition: "background-color 0.2s",
+              }}
+              onMouseEnter={(e) => {
+                const target = e.target as HTMLElement;
+                target.style.backgroundColor = document.documentElement.getAttribute("data-theme") === "dark" ? "#3d3d3d" : "#f5f5f5";
+              }}
+              onMouseLeave={(e) => {
+                const target = e.target as HTMLElement;
+                target.style.backgroundColor = "transparent";
+              }}
+              onClick={() => handleContextMenuAction('delete')}
+            >
+              🗑️ コマ削除
+            </div>
+          </>
+        )}
           
           {!contextMenu.target && (
             <>
