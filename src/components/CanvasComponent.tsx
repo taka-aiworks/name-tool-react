@@ -1,11 +1,11 @@
-// src/components/CanvasComponent.tsx (ContextMenuHandler統合版)
+// src/components/CanvasComponent.tsx (CanvasDrawing分離版)
 import React, { useRef, useEffect, useState, forwardRef, useImperativeHandle } from "react";
 import { Panel, Character, SpeechBubble, CanvasComponentProps } from "../types";
 import { BubbleRenderer } from "./CanvasArea/renderers/BubbleRenderer";
 import { CharacterRenderer } from "./CanvasArea/renderers/CharacterRenderer";
-import { PanelRenderer } from "./CanvasArea/renderers/PanelRenderer";
 import { PanelManager } from "./CanvasArea/PanelManager";
-import { ContextMenuHandler, ContextMenuState, ClipboardState, ContextMenuActions } from "./CanvasArea/ContextMenuHandler"; // 🆕 追加
+import { ContextMenuHandler, ContextMenuState, ClipboardState, ContextMenuActions } from "./CanvasArea/ContextMenuHandler";
+import { CanvasDrawing } from "./CanvasArea/CanvasDrawing";
 import EditBubbleModal from "./CanvasArea/EditBubbleModal";
 import { templates } from "./CanvasArea/templates";
 
@@ -61,7 +61,7 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
                   (snapSettings.gridDisplay === 'edit-only' && isPanelEditMode);
   const gridSize = snapSettings.gridSize;
 
-  // 🆕 ContextMenuHandler用の状態
+  // ContextMenuHandler用の状態
   const [contextMenu, setContextMenu] = useState<ContextMenuState>({
     visible: false,
     x: 0,
@@ -72,7 +72,7 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
 
   const [clipboard, setClipboard] = useState<ClipboardState | null>(null);
 
-  // 🆕 ContextMenuHandler用のアクション定義
+  // ContextMenuHandler用のアクション定義
   const contextMenuActions: ContextMenuActions = {
     onDuplicateCharacter: (character: Character) => {
       const canvas = canvasRef.current;
@@ -90,7 +90,7 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
       const canvas = canvasRef.current;
       if (!canvas) return;
 
-      const result = PanelManager.duplicatePanel(
+      const result = ContextMenuHandler.duplicatePanel(
         panel,
         panels,
         characters,
@@ -143,31 +143,51 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
         setCharacters(newCharacters);
         setSelectedCharacter(null);
         if (onCharacterSelect) onCharacterSelect(null);
-        console.log("🗑️ キャラクター削除:", (element as Character).name);
+        console.log("キャラクター削除:", (element as Character).name);
       } else if (type === 'bubble') {
         const newBubbles = speechBubbles.filter(bubble => bubble.id !== element.id);
         setSpeechBubbles(newBubbles);
         setSelectedBubble(null);
-        console.log("🗑️ 吹き出し削除:", (element as SpeechBubble).text);
+        console.log("吹き出し削除:", (element as SpeechBubble).text);
       }
     },
 
     onDeletePanel: (panel: Panel) => {
-      if (!PanelManager.confirmPanelDeletion(panel, characters, speechBubbles)) {
+      // 削除確認
+      const panelCharacters = characters.filter(char => char.panelId === panel.id);
+      const panelBubbles = speechBubbles.filter(bubble => bubble.panelId === panel.id);
+      
+      let confirmMessage = `コマ ${panel.id} を削除しますか？`;
+      if (panelCharacters.length > 0 || panelBubbles.length > 0) {
+        confirmMessage += `\n含まれる要素も一緒に削除されます:`;
+        if (panelCharacters.length > 0) {
+          confirmMessage += `\n・キャラクター: ${panelCharacters.length}体`;
+        }
+        if (panelBubbles.length > 0) {
+          confirmMessage += `\n・吹き出し: ${panelBubbles.length}個`;
+        }
+      }
+      
+      if (!window.confirm(confirmMessage)) {
         return;
       }
 
-      const result = PanelManager.deletePanel(panel, panels, characters, speechBubbles);
+      // 削除実行
+      const newPanels = panels.filter(p => p.id !== panel.id);
+      const newCharacters = characters.filter(char => char.panelId !== panel.id);
+      const newBubbles = speechBubbles.filter(bubble => bubble.panelId !== panel.id);
       
-      setPanels(result.newPanels);
-      setCharacters(result.newCharacters);
-      setSpeechBubbles(result.newBubbles);
+      setPanels(newPanels);
+      setCharacters(newCharacters);
+      setSpeechBubbles(newBubbles);
 
       setSelectedPanel(null);
       setSelectedCharacter(null);
       setSelectedBubble(null);
       if (onPanelSelect) onPanelSelect(null);
       if (onCharacterSelect) onCharacterSelect(null);
+      
+      console.log(`コマ${panel.id}を削除しました`);
     },
 
     onFlipHorizontal: () => {
@@ -259,190 +279,10 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
     },
   };
 
-  // 🆕 ContextMenuHandler統合版のアクション処理
+  // ContextMenuHandler統合版のアクション処理
   const handleContextMenuAction = (action: string) => {
     ContextMenuHandler.handleAction(action, contextMenu, contextMenuActions);
     setContextMenu({ ...contextMenu, visible: false });
-  };
-
-  // グリッド描画
-  const drawGrid = (ctx: CanvasRenderingContext2D, canvasWidth: number, canvasHeight: number, gridSize: number, isDarkMode: boolean) => {
-    if (!showGrid) return;
-    
-    ctx.strokeStyle = isDarkMode ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.1)";
-    ctx.lineWidth = 1;
-    ctx.setLineDash([]);
-
-    for (let x = 0; x <= canvasWidth; x += gridSize) {
-      ctx.beginPath();
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, canvasHeight);
-      ctx.stroke();
-    }
-
-    for (let y = 0; y <= canvasHeight; y += gridSize) {
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(canvasWidth, y);
-      ctx.stroke();
-    }
-  };
-
-  // パネル描画
-  const drawPanels = (ctx: CanvasRenderingContext2D, panels: Panel[], selectedPanel: Panel | null, isDarkMode: boolean, isEditMode: boolean) => {
-    panels.forEach((panel) => {
-      drawPanel(ctx, panel, panel === selectedPanel, isDarkMode, isEditMode);
-    });
-  };
-
-  // 単一パネル描画
-  const drawPanel = (ctx: CanvasRenderingContext2D, panel: Panel, isSelected: boolean, isDarkMode: boolean, isEditMode: boolean) => {
-    // パネル背景
-    if (isDarkMode) {
-      ctx.fillStyle = "rgba(80, 80, 80, 0.9)";
-    } else {
-      ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
-    }
-    ctx.fillRect(panel.x, panel.y, panel.width, panel.height);
-
-    // パネル枠線
-    if (isSelected) {
-      ctx.strokeStyle = "#ff8833";
-      ctx.lineWidth = 4;
-    } else {
-      ctx.strokeStyle = isDarkMode ? "#ffffff" : "#333333";
-      ctx.lineWidth = 3;
-    }
-    ctx.strokeRect(panel.x, panel.y, panel.width, panel.height);
-
-    // パネル番号
-    ctx.fillStyle = isSelected ? "#ff8833" : isDarkMode ? "#ffffff" : "#333333";
-    ctx.font = "bold 18px Arial";
-    ctx.textAlign = "left";
-    ctx.textBaseline = "top";
-    
-    const textX = panel.x + 12;
-    const textY = panel.y + 12;
-    const textWidth = 30;
-    const textHeight = 25;
-    
-    ctx.fillStyle = isSelected ? "rgba(255, 136, 51, 0.8)" : isDarkMode ? "rgba(0, 0, 0, 0.7)" : "rgba(255, 255, 255, 0.8)";
-    ctx.fillRect(textX - 4, textY - 2, textWidth, textHeight);
-    
-    ctx.fillStyle = isSelected ? "#ffffff" : isDarkMode ? "#ffffff" : "#333333";
-    ctx.fillText(`${panel.id}`, textX, textY);
-
-    // 編集モード時のハンドル描画
-    if (isSelected && isEditMode) {
-      drawPanelEditHandles(ctx, panel, isDarkMode);
-    }
-  };
-
-  // パネル編集ハンドル描画
-  const drawPanelEditHandles = (ctx: CanvasRenderingContext2D, panel: Panel, isDarkMode: boolean) => {
-    const handleSize = 20;
-    const handleColor = "#ff8833";
-    const handleBorder = "#ffffff";
-    
-    // 8方向のリサイズハンドル
-    const resizeHandles = [
-      { x: panel.x - handleSize/2, y: panel.y - handleSize/2, type: "nw" },
-      { x: panel.x + panel.width/2 - handleSize/2, y: panel.y - handleSize/2, type: "n" },
-      { x: panel.x + panel.width - handleSize/2, y: panel.y - handleSize/2, type: "ne" },
-      { x: panel.x + panel.width - handleSize/2, y: panel.y + panel.height/2 - handleSize/2, type: "e" },
-      { x: panel.x + panel.width - handleSize/2, y: panel.y + panel.height - handleSize/2, type: "se" },
-      { x: panel.x + panel.width/2 - handleSize/2, y: panel.y + panel.height - handleSize/2, type: "s" },
-      { x: panel.x - handleSize/2, y: panel.y + panel.height - handleSize/2, type: "sw" },
-      { x: panel.x - handleSize/2, y: panel.y + panel.height/2 - handleSize/2, type: "w" },
-    ];
-
-    // リサイズハンドル描画
-    resizeHandles.forEach((handle) => {
-      if (["nw", "ne", "se", "sw"].includes(handle.type)) {
-        ctx.fillStyle = handleColor;
-        ctx.strokeStyle = handleBorder;
-        ctx.lineWidth = 2;
-        ctx.fillRect(handle.x, handle.y, handleSize, handleSize);
-        ctx.strokeRect(handle.x, handle.y, handleSize, handleSize);
-      } else {
-        ctx.fillStyle = "#4CAF50";
-        ctx.strokeStyle = handleBorder;
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(handle.x + handleSize/2, handle.y + handleSize/2, handleSize/2, 0, 2 * Math.PI);
-        ctx.fill();
-        ctx.stroke();
-      }
-    });
-
-    // 移動ハンドル（パネル中央）
-    const moveHandleSize = 30;
-    const moveX = panel.x + panel.width/2 - moveHandleSize/2;
-    const moveY = panel.y + panel.height/2 - moveHandleSize/2;
-    
-    ctx.fillStyle = "#2196F3";
-    ctx.strokeStyle = handleBorder;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(moveX + moveHandleSize/2, moveY + moveHandleSize/2, moveHandleSize/2, 0, 2 * Math.PI);
-    ctx.fill();
-    ctx.stroke();
-    
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 16px Arial";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText("✋", moveX + moveHandleSize/2, moveY + moveHandleSize/2);
-
-    // 分割ハンドル（右下角）
-    const splitHandleSize = 24;
-    const splitX = panel.x + panel.width - splitHandleSize - 5;
-    const splitY = panel.y + panel.height - splitHandleSize - 5;
-    
-    ctx.fillStyle = "#9C27B0";
-    ctx.strokeStyle = handleBorder;
-    ctx.lineWidth = 2;
-    ctx.fillRect(splitX, splitY, splitHandleSize, splitHandleSize);
-    ctx.strokeRect(splitX, splitY, splitHandleSize, splitHandleSize);
-    
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 14px Arial";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText("✂", splitX + splitHandleSize/2, splitY + splitHandleSize/2);
-
-    // 削除ハンドル（左上角）
-    const deleteHandleSize = 24;
-    const deleteX = panel.x - deleteHandleSize/2;
-    const deleteY = panel.y - deleteHandleSize/2;
-    
-    ctx.fillStyle = "#f44336";
-    ctx.strokeStyle = handleBorder;
-    ctx.lineWidth = 2;
-    ctx.fillRect(deleteX, deleteY, deleteHandleSize, deleteHandleSize);
-    ctx.strokeRect(deleteX, deleteY, deleteHandleSize, deleteHandleSize);
-    
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 16px Arial";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText("×", deleteX + deleteHandleSize/2, deleteY + deleteHandleSize/2);
-  };
-
-  // スナップライン描画
-  const drawSnapLines = (ctx: CanvasRenderingContext2D, snapLines: Array<{x1: number, y1: number, x2: number, y2: number, type: 'vertical' | 'horizontal'}>, isDarkMode: boolean) => {
-    ctx.strokeStyle = isDarkMode ? "#00ff00" : "#ff0000";
-    ctx.lineWidth = 1;
-    ctx.setLineDash([4, 2]);
-    
-    snapLines.forEach(line => {
-      ctx.beginPath();
-      ctx.moveTo(line.x1, line.y1);
-      ctx.lineTo(line.x2, line.y2);
-      ctx.stroke();
-    });
-    
-    ctx.setLineDash([]);
   };
 
   // キャラクター追加機能
@@ -560,7 +400,7 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
     console.log("❌ 吹き出し編集キャンセル");
   };
 
-  // Canvas描画関数
+  // Canvas描画関数（CanvasDrawing使用版）
   const drawCanvas = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -569,20 +409,19 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
 
     const isDarkMode = document.documentElement.getAttribute("data-theme") === "dark";
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = isDarkMode ? "#404040" : "#ffffff";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    CanvasDrawing.clearCanvas(ctx, canvas.width, canvas.height);
+    CanvasDrawing.drawBackground(ctx, canvas.width, canvas.height, isDarkMode);
 
     if (showGrid) {
-      drawGrid(ctx, canvas.width, canvas.height, gridSize, isDarkMode);
+      CanvasDrawing.drawGrid(ctx, canvas.width, canvas.height, gridSize, isDarkMode);
     }
 
-    drawPanels(ctx, panels, selectedPanel, isDarkMode, isPanelEditMode);
+    CanvasDrawing.drawPanels(ctx, panels, selectedPanel, isDarkMode, isPanelEditMode);
     BubbleRenderer.drawBubbles(ctx, speechBubbles, panels, selectedBubble);
     CharacterRenderer.drawCharacters(ctx, characters, panels, selectedCharacter);
 
     if (snapLines.length > 0) {
-      drawSnapLines(ctx, snapLines, isDarkMode);
+      CanvasDrawing.drawSnapLines(ctx, snapLines, isDarkMode);
     }
   };
 
@@ -921,7 +760,7 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
 
   useEffect(() => {
     drawCanvas();
-  }, [panels, selectedPanel, characters, selectedCharacter, speechBubbles, selectedBubble, isPanelEditMode, snapLines.length, showGrid, snapSettings]);
+  }, [panels, selectedPanel, characters, selectedCharacter, speechBubbles, selectedBubble, isPanelEditMode, mouseState.snapLines.length, showGrid, snapSettings]);
 
   useEffect(() => {
     const handleThemeChange = () => drawCanvas();
@@ -960,7 +799,7 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
         style={{
           border: "2px solid #ddd",
           background: "white",
-          cursor: isPanelResizing || isDragging ? "grabbing" : "pointer",
+          cursor: mouseState.isPanelResizing || mouseState.isDragging ? "grabbing" : "pointer",
           boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
           borderRadius: "8px",
           marginTop: "0px",
@@ -976,7 +815,7 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
         onCancel={handleEditCancel}
       />
 
-      {/* 🆕 ContextMenuHandlerを使用した右クリックメニュー */}
+      {/* ContextMenuHandlerを使用した右クリックメニュー */}
       {ContextMenuHandler.renderContextMenu(
         contextMenu,
         clipboard,

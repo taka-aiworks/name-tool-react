@@ -176,187 +176,210 @@ export class ContextMenuHandler {
       target.style.backgroundColor = "transparent";
     };
 
-    return (
-      <div style={menuStyle} onClick={onStopPropagation}>
-        {contextMenu.target === 'character' && (
-          <>
-            <div
-              style={itemStyle}
-              onMouseEnter={handleMouseEnter}
-              onMouseLeave={handleMouseLeave}
-              onClick={() => onAction('characterPanel')}
-            >
-              詳細設定
-            </div>
-            <div
-              style={itemStyle}
-              onMouseEnter={handleMouseEnter}
-              onMouseLeave={handleMouseLeave}
-              onClick={() => onAction('duplicateCharacter')}
-            >
-              👥 キャラクター複製
-            </div>
-            <div
-              style={itemStyle}
-              onMouseEnter={handleMouseEnter}
-              onMouseLeave={handleMouseLeave}
-              onClick={() => onAction('copy')}
-            >
-              📋 コピー (Ctrl+C)
-            </div>
-            <div
-              style={dangerItemStyle}
-              onMouseEnter={handleMouseEnter}
-              onMouseLeave={handleMouseLeave}
-              onClick={() => onAction('delete')}
-            >
-              削除
-            </div>
-          </>
-        )}
-        
-        {contextMenu.target === 'bubble' && (
-          <>
-            <div
-              style={itemStyle}
-              onMouseEnter={handleMouseEnter}
-              onMouseLeave={handleMouseLeave}
-              onClick={() => onAction('select')}
-            >
-              選択
-            </div>
-            <div
-              style={itemStyle}
-              onMouseEnter={handleMouseEnter}
-              onMouseLeave={handleMouseLeave}
-              onClick={() => onAction('copy')}
-            >
-              📋 コピー (Ctrl+C)
-            </div>
-            <div
-              style={dangerItemStyle}
-              onMouseEnter={handleMouseEnter}
-              onMouseLeave={handleMouseLeave}
-              onClick={() => onAction('delete')}
-            >
-              削除
-            </div>
-          </>
-        )}
-        
-        {contextMenu.target === 'panel' && (
-          <>
-            {/* コマ編集（編集モードOFF時のみ表示） */}
-            {!isPanelEditMode && (
-              <div
-                style={itemStyle}
-                onMouseEnter={handleMouseEnter}
-                onMouseLeave={handleMouseLeave}
-                onClick={() => onAction('editPanel')}
-              >
-                🔧 コマ編集
-              </div>
-            )}
-
-            {/* コマ複製（常に表示） */}
-            <div
-              style={itemStyle}
-              onMouseEnter={handleMouseEnter}
-              onMouseLeave={handleMouseLeave}
-              onClick={() => onAction('duplicatePanel')}
-            >
-              📋 コマ複製
-            </div>
-
-            {/* コピー機能 */}
-            <div
-              style={itemStyle}
-              onMouseEnter={handleMouseEnter}
-              onMouseLeave={handleMouseLeave}
-              onClick={() => onAction('copy')}
-            >
-              📋 コピー (Ctrl+C)
-            </div>
-
-            {/* 反転メニュー（編集モード時のみ表示） */}
-            {isPanelEditMode && (
-              <>
-                <div
-                  style={itemStyle}
-                  onMouseEnter={handleMouseEnter}
-                  onMouseLeave={handleMouseLeave}
-                  onClick={() => onAction('flipHorizontal')}
-                >
-                  ↔️ 水平反転
-                </div>
-
-                <div
-                  style={itemStyle}
-                  onMouseEnter={handleMouseEnter}
-                  onMouseLeave={handleMouseLeave}
-                  onClick={() => onAction('flipVertical')}
-                >
-                  ↕️ 垂直反転
-                </div>
-              </>
-            )}
-
-            {/* 分割メニュー（常に表示） */}
-            <div
-              style={itemStyle}
-              onMouseEnter={handleMouseEnter}
-              onMouseLeave={handleMouseLeave}
-              onClick={() => onAction('splitHorizontal')}
-            >
-              ✂️ 水平分割
-            </div>
-
-            <div
-              style={itemStyle}
-              onMouseEnter={handleMouseEnter}
-              onMouseLeave={handleMouseLeave}
-              onClick={() => onAction('splitVertical')}
-            >
-              ✂️ 垂直分割
-            </div>
-
-            {/* 削除（常に表示・危険色） */}
-            <div
-              style={dangerItemStyle}
-              onMouseEnter={handleMouseEnter}
-              onMouseLeave={handleMouseLeave}
-              onClick={() => onAction('delete')}
-            >
-              🗑️ コマ削除
-            </div>
-          </>
-        )}
-        
-        {!contextMenu.target && (
-          <>
-            {/* ペースト機能（クリップボードに何かあるときのみ表示） */}
-            {clipboard && (
-              <div
-                style={itemStyle}
-                onMouseEnter={handleMouseEnter}
-                onMouseLeave={handleMouseLeave}
-                onClick={() => onAction('paste')}
-              >
-                📌 ペースト (Ctrl+V) - {clipboard.type}
-              </div>
-            )}
-            
-            <div
-              style={itemStyle}
-              onMouseEnter={handleMouseEnter}
-              onMouseLeave={handleMouseLeave}
-              onClick={() => onAction('deselect')}
-            >
-              選択解除
-            </div>
-          </>
-        )}
-      </div>
+    return React.createElement(
+      'div',
+      { 
+        style: menuStyle, 
+        onClick: onStopPropagation 
+      },
+      contextMenu.target === 'character' && [
+        React.createElement(
+          'div',
+          {
+            key: 'characterPanel',
+            style: itemStyle,
+            onMouseEnter: handleMouseEnter,
+            onMouseLeave: handleMouseLeave,
+            onClick: () => onAction('characterPanel')
+          },
+          '詳細設定'
+        ),
+        React.createElement(
+          'div',
+          {
+            key: 'duplicateCharacter',
+            style: itemStyle,
+            onMouseEnter: handleMouseEnter,
+            onMouseLeave: handleMouseLeave,
+            onClick: () => onAction('duplicateCharacter')
+          },
+          '👥 キャラクター複製'
+        ),
+        React.createElement(
+          'div',
+          {
+            key: 'copyCharacter',
+            style: itemStyle,
+            onMouseEnter: handleMouseEnter,
+            onMouseLeave: handleMouseLeave,
+            onClick: () => onAction('copy')
+          },
+          '📋 コピー (Ctrl+C)'
+        ),
+        React.createElement(
+          'div',
+          {
+            key: 'deleteCharacter',
+            style: dangerItemStyle,
+            onMouseEnter: handleMouseEnter,
+            onMouseLeave: handleMouseLeave,
+            onClick: () => onAction('delete')
+          },
+          '削除'
+        )
+      ],
+      
+      contextMenu.target === 'bubble' && [
+        React.createElement(
+          'div',
+          {
+            key: 'selectBubble',
+            style: itemStyle,
+            onMouseEnter: handleMouseEnter,
+            onMouseLeave: handleMouseLeave,
+            onClick: () => onAction('select')
+          },
+          '選択'
+        ),
+        React.createElement(
+          'div',
+          {
+            key: 'copyBubble',
+            style: itemStyle,
+            onMouseEnter: handleMouseEnter,
+            onMouseLeave: handleMouseLeave,
+            onClick: () => onAction('copy')
+          },
+          '📋 コピー (Ctrl+C)'
+        ),
+        React.createElement(
+          'div',
+          {
+            key: 'deleteBubble',
+            style: dangerItemStyle,
+            onMouseEnter: handleMouseEnter,
+            onMouseLeave: handleMouseLeave,
+            onClick: () => onAction('delete')
+          },
+          '削除'
+        )
+      ],
+      
+      contextMenu.target === 'panel' && [
+        !isPanelEditMode && React.createElement(
+          'div',
+          {
+            key: 'editPanel',
+            style: itemStyle,
+            onMouseEnter: handleMouseEnter,
+            onMouseLeave: handleMouseLeave,
+            onClick: () => onAction('editPanel')
+          },
+          '🔧 コマ編集'
+        ),
+        React.createElement(
+          'div',
+          {
+            key: 'duplicatePanel',
+            style: itemStyle,
+            onMouseEnter: handleMouseEnter,
+            onMouseLeave: handleMouseLeave,
+            onClick: () => onAction('duplicatePanel')
+          },
+          '📋 コマ複製'
+        ),
+        React.createElement(
+          'div',
+          {
+            key: 'copyPanel',
+            style: itemStyle,
+            onMouseEnter: handleMouseEnter,
+            onMouseLeave: handleMouseLeave,
+            onClick: () => onAction('copy')
+          },
+          '📋 コピー (Ctrl+C)'
+        ),
+        isPanelEditMode && React.createElement(
+          'div',
+          {
+            key: 'flipHorizontal',
+            style: itemStyle,
+            onMouseEnter: handleMouseEnter,
+            onMouseLeave: handleMouseLeave,
+            onClick: () => onAction('flipHorizontal')
+          },
+          '↔️ 水平反転'
+        ),
+        isPanelEditMode && React.createElement(
+          'div',
+          {
+            key: 'flipVertical',
+            style: itemStyle,
+            onMouseEnter: handleMouseEnter,
+            onMouseLeave: handleMouseLeave,
+            onClick: () => onAction('flipVertical')
+          },
+          '↕️ 垂直反転'
+        ),
+        React.createElement(
+          'div',
+          {
+            key: 'splitHorizontal',
+            style: itemStyle,
+            onMouseEnter: handleMouseEnter,
+            onMouseLeave: handleMouseLeave,
+            onClick: () => onAction('splitHorizontal')
+          },
+          '✂️ 水平分割'
+        ),
+        React.createElement(
+          'div',
+          {
+            key: 'splitVertical',
+            style: itemStyle,
+            onMouseEnter: handleMouseEnter,
+            onMouseLeave: handleMouseLeave,
+            onClick: () => onAction('splitVertical')
+          },
+          '✂️ 垂直分割'
+        ),
+        React.createElement(
+          'div',
+          {
+            key: 'deletePanel',
+            style: dangerItemStyle,
+            onMouseEnter: handleMouseEnter,
+            onMouseLeave: handleMouseLeave,
+            onClick: () => onAction('delete')
+          },
+          '🗑️ コマ削除'
+        )
+      ].filter(Boolean),
+      
+      !contextMenu.target && [
+        clipboard && React.createElement(
+          'div',
+          {
+            key: 'paste',
+            style: itemStyle,
+            onMouseEnter: handleMouseEnter,
+            onMouseLeave: handleMouseLeave,
+            onClick: () => onAction('paste')
+          },
+          `📌 ペースト (Ctrl+V) - ${clipboard.type}`
+        ),
+        React.createElement(
+          'div',
+          {
+            key: 'deselect',
+            style: itemStyle,
+            onMouseEnter: handleMouseEnter,
+            onMouseLeave: handleMouseLeave,
+            onClick: () => onAction('deselect')
+          },
+          '選択解除'
+        )
+      ].filter(Boolean)
     );
   }
 
