@@ -51,7 +51,7 @@ export interface SpeechBubble {
   isGlobalPosition: boolean;
 }
 
-// CanvasComponent のプロパティ型（コマ操作対応）
+// CanvasComponent のプロパティ型（スナップ設定対応）
 export interface CanvasComponentProps {
   selectedTemplate: string;
   panels: Panel[];
@@ -67,9 +67,11 @@ export interface CanvasComponentProps {
   onCharacterRightClick?: (character: Character) => void;
   isPanelEditMode?: boolean; // コマ編集モード
   onPanelSplit?: (panelId: number, direction: "horizontal" | "vertical") => void; // 分割ハンドラー
-  onPanelEditModeToggle?: (enabled: boolean) => void; // 🆕 この行を追加
+  onPanelEditModeToggle?: (enabled: boolean) => void;
   onPanelAdd?: (targetPanelId: string, position: 'above' | 'below' | 'left' | 'right') => void;
   onPanelDelete?: (panelId: string) => void;
+  // 🆕 スナップ設定を追加
+  snapSettings?: SnapSettings;
 }
 
 // テンプレート定義の型
@@ -127,4 +129,12 @@ export interface OperationHistory {
   speechBubbles: SpeechBubble[][];
   panels: Panel[][];
   currentIndex: number;
+}
+
+// 🆕 スナップ設定の型定義
+export interface SnapSettings {
+  enabled: boolean;
+  gridSize: number;
+  sensitivity: 'weak' | 'medium' | 'strong';
+  gridDisplay: 'always' | 'edit-only' | 'hidden';
 }

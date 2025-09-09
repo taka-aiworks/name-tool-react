@@ -1,14 +1,13 @@
-// src/App.tsx (無限ループ修正版)
+// src/App.tsx (スナップ設定UI追加版)
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import CanvasComponent from "./components/CanvasComponent";
 import CharacterDetailPanel from "./components/UI/CharacterDetailPanel";
-import { Panel, Character, SpeechBubble } from "./types";
+import { Panel, Character, SpeechBubble, SnapSettings } from "./types"; // 🆕 SnapSettings追加
 import { templates } from "./components/CanvasArea/templates";
 import { sceneTemplates, applySceneTemplate } from "./components/CanvasArea/sceneTemplates";
 import { ExportPanel } from './components/UI/ExportPanel';
-import { useRef } from 'react'; // 既存のReactインポートに追加
+import { useRef } from 'react';
 import "./App.css";
-
 
 function App() {
   // デフォルトダークモード設定
@@ -31,6 +30,14 @@ function App() {
   const [showCharacterPanel, setShowCharacterPanel] = useState<boolean>(false);
   const [isPanelEditMode, setIsPanelEditMode] = useState<boolean>(false);
 
+  // 🆕 スナップ設定の状態管理
+  const [snapSettings, setSnapSettings] = useState<SnapSettings>({
+    enabled: true,
+    gridSize: 20,
+    sensitivity: 'medium',
+    gridDisplay: 'edit-only'
+  });
+
   // 機能コールバック用の状態
   const [addCharacterFunc, setAddCharacterFunc] = useState<((type: string) => void) | null>(null);
   const [addBubbleFunc, setAddBubbleFunc] = useState<((type: string, text: string) => void) | null>(null);
@@ -48,8 +55,6 @@ function App() {
     currentIndex: 0,
   });
 
-
-  // 修正後
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   // 履歴保存の最適化 - 依存関係を文字列で管理
@@ -160,6 +165,23 @@ function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleDeleteSelected, handleUndo, handleRedo]);
 
+  // 🆕 スナップ設定ハンドラー
+  const handleSnapToggle = useCallback(() => {
+    setSnapSettings(prev => ({ ...prev, enabled: !prev.enabled }));
+  }, []);
+
+  const handleGridSizeChange = useCallback((size: number) => {
+    setSnapSettings(prev => ({ ...prev, gridSize: size }));
+  }, []);
+
+  const handleSensitivityChange = useCallback((sensitivity: 'weak' | 'medium' | 'strong') => {
+    setSnapSettings(prev => ({ ...prev, sensitivity }));
+  }, []);
+
+  const handleGridDisplayChange = useCallback((display: 'always' | 'edit-only' | 'hidden') => {
+    setSnapSettings(prev => ({ ...prev, gridDisplay: display }));
+  }, []);
+
   // ダークモード切り替え
   const toggleTheme = useCallback(() => {
     const newTheme = isDarkMode ? "light" : "dark";
@@ -241,54 +263,54 @@ function App() {
     setPanels(updatedPanels);
   }, []);
 
-// 🆕 コマ追加機能
-const handlePanelAdd = useCallback((targetPanelId: string, position: 'above' | 'below' | 'left' | 'right') => {
-  const targetPanel = panels.find(p => p.id.toString() === targetPanelId);
-  if (!targetPanel) return;
+  // コマ追加機能
+  const handlePanelAdd = useCallback((targetPanelId: string, position: 'above' | 'below' | 'left' | 'right') => {
+    const targetPanel = panels.find(p => p.id.toString() === targetPanelId);
+    if (!targetPanel) return;
 
-  const maxId = Math.max(...panels.map(p => typeof p.id === 'string' ? parseInt(p.id) : p.id), 0);
-  const newPanelId = maxId + 1;
+    const maxId = Math.max(...panels.map(p => typeof p.id === 'string' ? parseInt(p.id) : p.id), 0);
+    const newPanelId = maxId + 1;
 
-  let newPanel: Panel;
-  const spacing = 10;
+    let newPanel: Panel;
+    const spacing = 10;
 
-  switch (position) {
-    case 'above':
-      newPanel = { id: newPanelId, x: targetPanel.x, y: targetPanel.y - targetPanel.height - spacing, width: targetPanel.width, height: targetPanel.height };
-      break;
-    case 'below':
-      newPanel = { id: newPanelId, x: targetPanel.x, y: targetPanel.y + targetPanel.height + spacing, width: targetPanel.width, height: targetPanel.height };
-      break;
-    case 'left':
-      newPanel = { id: newPanelId, x: targetPanel.x - targetPanel.width - spacing, y: targetPanel.y, width: targetPanel.width, height: targetPanel.height };
-      break;
-    case 'right':
-      newPanel = { id: newPanelId, x: targetPanel.x + targetPanel.width + spacing, y: targetPanel.y, width: targetPanel.width, height: targetPanel.height };
-      break;
-    default:
+    switch (position) {
+      case 'above':
+        newPanel = { id: newPanelId, x: targetPanel.x, y: targetPanel.y - targetPanel.height - spacing, width: targetPanel.width, height: targetPanel.height };
+        break;
+      case 'below':
+        newPanel = { id: newPanelId, x: targetPanel.x, y: targetPanel.y + targetPanel.height + spacing, width: targetPanel.width, height: targetPanel.height };
+        break;
+      case 'left':
+        newPanel = { id: newPanelId, x: targetPanel.x - targetPanel.width - spacing, y: targetPanel.y, width: targetPanel.width, height: targetPanel.height };
+        break;
+      case 'right':
+        newPanel = { id: newPanelId, x: targetPanel.x + targetPanel.width + spacing, y: targetPanel.y, width: targetPanel.width, height: targetPanel.height };
+        break;
+      default:
+        return;
+    }
+
+    setPanels(prevPanels => [...prevPanels, newPanel]);
+    console.log(`✅ コマ追加完了: ${newPanelId} (${position})`);
+  }, [panels]);
+
+  // コマ削除機能
+  const handlePanelDelete = useCallback((panelId: string) => {
+    if (panels.length <= 1) {
+      console.log(`⚠️ 最後のコマは削除できません`);
       return;
-  }
+    }
 
-  setPanels(prevPanels => [...prevPanels, newPanel]);
-  console.log(`✅ コマ追加完了: ${newPanelId} (${position})`);
-}, [panels]);
-
-// 🆕 コマ削除機能
-const handlePanelDelete = useCallback((panelId: string) => {
-  if (panels.length <= 1) {
-    console.log(`⚠️ 最後のコマは削除できません`);
-    return;
-  }
-
-  if (window.confirm(`コマ${panelId}を削除しますか？`)) {
-    const panelIdNum = parseInt(panelId);
-    setCharacters(prev => prev.filter(char => char.panelId !== panelIdNum));
-    setSpeechBubbles(prev => prev.filter(bubble => bubble.panelId !== panelIdNum));
-    setPanels(prev => prev.filter(panel => panel.id !== panelIdNum));
-    setSelectedPanel(null);
-    console.log(`🗑️ コマ削除: ${panelId}`);
-  }
-}, [panels.length]);
+    if (window.confirm(`コマ${panelId}を削除しますか？`)) {
+      const panelIdNum = parseInt(panelId);
+      setCharacters(prev => prev.filter(char => char.panelId !== panelIdNum));
+      setSpeechBubbles(prev => prev.filter(bubble => bubble.panelId !== panelIdNum));
+      setPanels(prev => prev.filter(panel => panel.id !== panelIdNum));
+      setSelectedPanel(null);
+      console.log(`🗑️ コマ削除: ${panelId}`);
+    }
+  }, [panels.length]);
 
   // パネル分割機能（隙間付き版）
   const handlePanelSplit = useCallback((panelId: number, direction: "horizontal" | "vertical") => {
@@ -358,11 +380,10 @@ const handlePanelDelete = useCallback((panelId: string) => {
     setShowCharacterPanel(true);
   }, []);
 
-// 編集モード切り替え関数を追加（既存の編集モード管理の近くに）
-const handlePanelEditModeToggle = (enabled: boolean) => {
-  setIsPanelEditMode(enabled);
-};
-
+  // 編集モード切り替え関数を追加（既存の編集モード管理の近くに）
+  const handlePanelEditModeToggle = (enabled: boolean) => {
+    setIsPanelEditMode(enabled);
+  };
 
   return (
     <div className={`app ${isDarkMode ? 'dark' : 'light'}`}>
@@ -382,6 +403,74 @@ const handlePanelEditModeToggle = (enabled: boolean) => {
           >
             🔧 {isPanelEditMode ? "編集中" : "編集"}
           </button>
+
+          {/* 🆕 スナップ設定UI（インライン） */}
+          <button 
+            className={`control-btn ${snapSettings.enabled ? 'active' : ''}`}
+            onClick={handleSnapToggle}
+            title="スナップ機能のON/OFF"
+            style={{
+              background: snapSettings.enabled ? "#4CAF50" : "var(--bg-tertiary)",
+              color: snapSettings.enabled ? "white" : "var(--text-primary)",
+              border: `1px solid ${snapSettings.enabled ? "#4CAF50" : "var(--border-color)"}`,
+            }}
+          >
+            ✅ スナップ
+          </button>
+
+          <select 
+            value={snapSettings.gridSize}
+            onChange={(e) => handleGridSizeChange(Number(e.target.value))}
+            style={{
+              padding: "4px 8px",
+              borderRadius: "4px",
+              border: "1px solid var(--border-color)",
+              background: "var(--bg-tertiary)",
+              color: "var(--text-primary)",
+              fontSize: "12px",
+            }}
+            title="グリッドサイズ"
+          >
+            <option value={10}>10px</option>
+            <option value={20}>20px</option>
+            <option value={40}>40px</option>
+          </select>
+
+          <select 
+            value={snapSettings.sensitivity}
+            onChange={(e) => handleSensitivityChange(e.target.value as 'weak' | 'medium' | 'strong')}
+            style={{
+              padding: "4px 8px",
+              borderRadius: "4px",
+              border: "1px solid var(--border-color)",
+              background: "var(--bg-tertiary)",
+              color: "var(--text-primary)",
+              fontSize: "12px",
+            }}
+            title="スナップ感度"
+          >
+            <option value="weak">弱</option>
+            <option value="medium">中</option>
+            <option value="strong">強</option>
+          </select>
+
+          <select 
+            value={snapSettings.gridDisplay}
+            onChange={(e) => handleGridDisplayChange(e.target.value as 'always' | 'edit-only' | 'hidden')}
+            style={{
+              padding: "4px 8px",
+              borderRadius: "4px",
+              border: "1px solid var(--border-color)",
+              background: "var(--bg-tertiary)",
+              color: "var(--text-primary)",
+              fontSize: "12px",
+            }}
+            title="グリッド表示"
+          >
+            <option value="always">📐 常時</option>
+            <option value="edit-only">📐 編集時</option>
+            <option value="hidden">📐 非表示</option>
+          </select>
           
           <button 
             className="theme-toggle"
@@ -518,12 +607,14 @@ const handlePanelEditModeToggle = (enabled: boolean) => {
               {selectedCharacter && <span> | 選択中: {selectedCharacter.name}</span>}
               {selectedPanel && <span> | パネル{selectedPanel.id}選択中</span>}
               {isPanelEditMode && <span> | 🔧 コマ編集モード</span>}
+              {/* 🆕 スナップ状態表示 */}
+              {snapSettings.enabled && <span> | ⚙️ スナップ: {snapSettings.gridSize}px ({snapSettings.sensitivity})</span>}
             </div>
           </div>
 
           {/* キャンバス */}
           <CanvasComponent
-            ref={canvasRef}  // 👈 この行を追加
+            ref={canvasRef}
             selectedTemplate={selectedTemplate}
             panels={panels}
             setPanels={handlePanelUpdate}
@@ -538,9 +629,10 @@ const handlePanelEditModeToggle = (enabled: boolean) => {
             onCharacterRightClick={handleCharacterRightClick}
             isPanelEditMode={isPanelEditMode}
             onPanelSplit={handlePanelSplit}
-            onPanelEditModeToggle={handlePanelEditModeToggle} // 🆕 この行を追加
-            onPanelAdd={handlePanelAdd}  // 🆕 この行を追加
-            onPanelDelete={handlePanelDelete}  // 🆕 この行を追加
+            onPanelEditModeToggle={handlePanelEditModeToggle}
+            onPanelAdd={handlePanelAdd}
+            onPanelDelete={handlePanelDelete}
+            snapSettings={snapSettings} // 🆕 スナップ設定を渡す
           />
         </div>
 
