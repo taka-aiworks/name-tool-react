@@ -234,42 +234,54 @@ function App() {
     setPanels(updatedPanels);
   }, []);
 
-  // パネル分割機能
+
+
+  // パネル分割機能（隙間付き版）
   const handlePanelSplit = useCallback((panelId: number, direction: "horizontal" | "vertical") => {
     const panelToSplit = panels.find(p => p.id === panelId);
     if (!panelToSplit) return;
 
+    const gap = 10; // 隙間サイズ
     const maxId = Math.max(...panels.map(p => p.id), 0);
     const newId = maxId + 1;
 
     let newPanels: Panel[];
     if (direction === "horizontal") {
+      // 水平分割（上下）- 隙間付き
+      const availableHeight = panelToSplit.height - gap;
+      const halfHeight = availableHeight / 2;
+      
       const topPanel: Panel = {
         ...panelToSplit,
-        height: panelToSplit.height / 2,
+        height: halfHeight,
       };
       const bottomPanel: Panel = {
         ...panelToSplit,
         id: newId,
-        y: panelToSplit.y + panelToSplit.height / 2,
-        height: panelToSplit.height / 2,
+        y: panelToSplit.y + halfHeight + gap,
+        height: halfHeight,
       };
       newPanels = panels.map(p => p.id === panelId ? topPanel : p).concat([bottomPanel]);
     } else {
+      // 垂直分割（左右）- 隙間付き
+      const availableWidth = panelToSplit.width - gap;
+      const halfWidth = availableWidth / 2;
+      
       const leftPanel: Panel = {
         ...panelToSplit,
-        width: panelToSplit.width / 2,
+        width: halfWidth,
       };
       const rightPanel: Panel = {
         ...panelToSplit,
         id: newId,
-        x: panelToSplit.x + panelToSplit.width / 2,
-        width: panelToSplit.width / 2,
+        x: panelToSplit.x + halfWidth + gap,
+        width: halfWidth,
       };
       newPanels = panels.map(p => p.id === panelId ? leftPanel : p).concat([rightPanel]);
     }
 
     setPanels(newPanels);
+    console.log(`${direction}分割完了（隙間: ${gap}px）`);
   }, [panels]);
 
   // 全てクリア機能
