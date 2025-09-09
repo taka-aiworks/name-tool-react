@@ -1,5 +1,5 @@
 // src/components/CanvasComponent.tsx (パネル移動・削除機能修正版)
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState, forwardRef, useImperativeHandle } from "react";
 import { Panel, Character, SpeechBubble, CanvasComponentProps } from "../types";
 import { BubbleRenderer } from "./CanvasArea/renderers/BubbleRenderer";
 import { CharacterRenderer } from "./CanvasArea/renderers/CharacterRenderer";
@@ -7,24 +7,27 @@ import { PanelRenderer } from "./CanvasArea/renderers/PanelRenderer";
 import EditBubbleModal from "./CanvasArea/EditBubbleModal";
 import { templates } from "./CanvasArea/templates";
 
-const CanvasComponent: React.FC<CanvasComponentProps> = ({
-  selectedTemplate,
-  panels,
-  setPanels,
-  characters,
-  setCharacters,
-  speechBubbles,
-  setSpeechBubbles,
-  onCharacterAdd,
-  onBubbleAdd,
-  onPanelSelect,
-  onCharacterSelect,
-  onCharacterRightClick,
-  isPanelEditMode = false, // 🆕 コマ編集モード
-  onPanelSplit, // 🆕 分割ハンドラー
-  onPanelEditModeToggle, // 🆕 この行を追加
-}) => {
+const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((props, ref) => {
+  const {
+    selectedTemplate,
+    panels,
+    setPanels,
+    characters,
+    setCharacters,
+    speechBubbles,
+    setSpeechBubbles,
+    onCharacterAdd,
+    onBubbleAdd,
+    onPanelSelect,
+    onCharacterSelect,
+    onCharacterRightClick,
+    isPanelEditMode = false,
+    onPanelSplit,
+    onPanelEditModeToggle,
+  } = props;
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  useImperativeHandle(ref, () => canvasRef.current!, []);
+
   
   // 選択状態管理
   const [selectedPanel, setSelectedPanel] = useState<Panel | null>(null);
@@ -1358,6 +1361,7 @@ const CanvasComponent: React.FC<CanvasComponentProps> = ({
       )}
     </div>
   );
-};
+});
 
+CanvasComponent.displayName = 'CanvasComponent';
 export default CanvasComponent;

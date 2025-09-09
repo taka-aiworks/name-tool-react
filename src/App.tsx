@@ -5,7 +5,10 @@ import CharacterDetailPanel from "./components/UI/CharacterDetailPanel";
 import { Panel, Character, SpeechBubble } from "./types";
 import { templates } from "./components/CanvasArea/templates";
 import { sceneTemplates, applySceneTemplate } from "./components/CanvasArea/sceneTemplates";
+import { ExportPanel } from './components/UI/ExportPanel';
+import { useRef } from 'react'; // 既存のReactインポートに追加
 import "./App.css";
+
 
 function App() {
   // デフォルトダークモード設定
@@ -44,6 +47,10 @@ function App() {
     panels: [[]],
     currentIndex: 0,
   });
+
+
+  // 修正後
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   // 履歴保存の最適化 - 依存関係を文字列で管理
   const charactersSignature = useMemo(() => 
@@ -469,6 +476,7 @@ const handlePanelEditModeToggle = (enabled: boolean) => {
 
           {/* キャンバス */}
           <CanvasComponent
+            ref={canvasRef}  // 👈 この行を追加
             selectedTemplate={selectedTemplate}
             panels={panels}
             setPanels={handlePanelUpdate}
@@ -542,26 +550,12 @@ const handlePanelEditModeToggle = (enabled: boolean) => {
           {/* 出力 */}
           <div className="section">
             <h3>📤 出力</h3>
-            <div className="export-buttons">
-              <button 
-                className="btn btn-primary"
-                onClick={() => handleExport('クリスタ用データ')}
-              >
-                🎨 クリスタ用データ
-              </button>
-              <button 
-                className="btn btn-success"
-                onClick={() => handleExport('PDF')}
-              >
-                📄 PDF (ネーム用)
-              </button>
-              <button 
-                className="btn btn-secondary"
-                onClick={() => handleExport('PNG画像')}
-              >
-                🖼️ PNG画像
-              </button>
-            </div>
+            <ExportPanel
+              panels={panels}
+              characters={characters}
+              bubbles={speechBubbles}
+              canvasRef={canvasRef}
+            />
           </div>
         </div>
       </div>
