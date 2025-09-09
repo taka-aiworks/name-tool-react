@@ -2,12 +2,37 @@ import React, { useState } from 'react';
 import { ExportService, ExportOptions, ExportProgress } from '../../services/ExportService';
 import { Panel, Character, SpeechBubble } from '../../types';
 
-// ExportPanel.tsx のインターフェース部分
+type ExportPurpose = 'print' | 'image' | 'clipstudio';
+
+const purposeDefaults: Record<ExportPurpose, Partial<ExportOptions>> = {
+  print: {
+    format: 'pdf',
+    quality: 'high',
+    resolution: 300,
+    includeBackground: true,
+    separatePages: false
+  },
+  image: {
+    format: 'png',
+    quality: 'medium',
+    resolution: 150,
+    includeBackground: true,
+    separatePages: false
+  },
+  clipstudio: {
+    format: 'psd',
+    quality: 'high',
+    resolution: 300,
+    includeBackground: false,
+    separatePages: false
+  }
+};
+
 interface ExportPanelProps {
   panels: Panel[];
   characters: Character[];
   bubbles: SpeechBubble[];
-  canvasRef: React.RefObject<HTMLCanvasElement | null>; // null を許可
+  canvasRef: React.RefObject<HTMLCanvasElement | null>;
 }
 
 export const ExportPanel: React.FC<ExportPanelProps> = ({
@@ -16,7 +41,7 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
   bubbles,
   canvasRef
 }) => {
-  const [isOpen, setIsOpen] = useState(false);
+  const [selectedPurpose, setSelectedPurpose] = useState<ExportPurpose | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState<ExportProgress | null>(null);
   const [exportOptions, setExportOptions] = useState<ExportOptions>({
@@ -29,13 +54,27 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
 
   const exportService = ExportService.getInstance();
 
+  // ダークモード検出
+  const isDarkMode = document.documentElement.getAttribute("data-theme") === "dark";
+
+  const handlePurposeClick = (purpose: ExportPurpose) => {
+    if (selectedPurpose === purpose) {
+      setSelectedPurpose(null);
+    } else {
+      setSelectedPurpose(purpose);
+      setExportOptions({
+        ...exportOptions,
+        ...purposeDefaults[purpose]
+      });
+    }
+  };
+
   const handleExport = async () => {
-    if (!canvasRef.current) {
-      alert('キャンバスが見つかりません');
+    if (!canvasRef.current || !selectedPurpose) {
+      alert('設定に問題があります');
       return;
     }
 
-    // バリデーション
     const errors = exportService.validateExportOptions(exportOptions);
     if (errors.length > 0) {
       alert(errors.join('\n'));
@@ -48,30 +87,13 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
     try {
       switch (exportOptions.format) {
         case 'pdf':
-          await exportService.exportToPDF(
-            canvasRef.current,
-            panels,
-            exportOptions,
-            setExportProgress
-          );
+          await exportService.exportToPDF(canvasRef.current, panels, exportOptions, setExportProgress);
           break;
         case 'png':
-          await exportService.exportToPNG(
-            canvasRef.current,
-            panels,
-            exportOptions,
-            setExportProgress
-          );
+          await exportService.exportToPNG(canvasRef.current, panels, exportOptions, setExportProgress);
           break;
         case 'psd':
-          await exportService.exportToPSD(
-            canvasRef.current,
-            panels,
-            characters,
-            bubbles,
-            exportOptions,
-            setExportProgress
-          );
+          await exportService.exportToPSD(canvasRef.current, panels, characters, bubbles, exportOptions, setExportProgress);
           break;
       }
     } catch (error) {
@@ -80,305 +102,429 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
     } finally {
       setIsExporting(false);
       setExportProgress(null);
+      setSelectedPurpose(null);
     }
   };
 
-  const getFormatIcon = (format: string): string => {
-    switch (format) {
-      case 'pdf': return '📄';
-      case 'png': return '🖼️';
-      case 'psd': return '🎨';
-      default: return '📁';
+  const purposes = [
+    {
+      id: 'print' as ExportPurpose,
+      icon: '📄',
+      title: '印刷用PDF',
+      desc: 'ネーム印刷・共有用'
+    },
+    {
+      id: 'image' as ExportPurpose,
+      icon: '🖼️',
+      title: '画像保存',
+      desc: 'SNS・Web用'
+    },
+    {
+      id: 'clipstudio' as ExportPurpose,
+      icon: '🎨',
+      title: 'クリスタ用',
+      desc: 'レイヤー分け'
     }
-  };
-
-  const getQualityIcon = (quality: string): string => {
-    switch (quality) {
-      case 'high': return '⭐';
-      case 'medium': return '⚡';
-      case 'low': return '💨';
-      default: return '⚡';
-    }
-  };
+  ];
 
   return (
-    <div className="export-panel">
-      {/* 大きなエクスポートボタン */}
-      <button
-        onClick={() => setIsOpen(true)}
-        className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-6 py-4 rounded-xl flex items-center justify-center gap-3 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
-        disabled={isExporting || panels.length === 0}
+    <div 
+      style={{
+        background: isDarkMode ? "#2d2d2d" : "white",
+        padding: "16px",
+        borderRadius: "8px",
+        boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
+      }}
+    >
+      {/* セクションヘッダー */}
+      <h3 
+        style={{
+          color: isDarkMode ? "#ffffff" : "#333333",
+          fontSize: "14px",
+          fontWeight: "bold",
+          marginBottom: "12px",
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+        }}
       >
-        <span className="text-2xl">📁</span>
-        <div className="text-left">
-          <div className="font-bold text-lg">エクスポート</div>
-          <div className="text-sm opacity-90">PDF・PNG・PSD出力</div>
-        </div>
-      </button>
+        <span style={{ color: "#ff8833" }}>📁</span>
+        出力
+      </h3>
+      
+      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+        {purposes.map((purpose) => (
+          <div key={purpose.id}>
+            <button
+              onClick={() => handlePurposeClick(purpose.id)}
+              disabled={panels.length === 0 || isExporting}
+              style={{
+                width: "100%",
+                padding: "12px",
+                textAlign: "left",
+                borderRadius: "4px",
+                border: selectedPurpose === purpose.id 
+                  ? "2px solid #ff8833" 
+                  : `1px solid ${isDarkMode ? "#555555" : "#ddd"}`,
+                background: selectedPurpose === purpose.id
+                  ? (isDarkMode ? "rgba(255, 136, 51, 0.1)" : "rgba(255, 136, 51, 0.05)")
+                  : (isDarkMode ? "#404040" : "#f9f9f9"),
+                color: isDarkMode ? "#ffffff" : "#333333",
+                cursor: panels.length === 0 || isExporting ? "not-allowed" : "pointer",
+                opacity: panels.length === 0 || isExporting ? 0.5 : 1,
+                transition: "all 0.2s",
+                fontFamily: "inherit",
+                fontSize: "12px",
+              }}
+              onMouseEnter={(e) => {
+                if (panels.length > 0 && !isExporting) {
+                  const target = e.target as HTMLElement;
+                  target.style.background = selectedPurpose === purpose.id
+                    ? (isDarkMode ? "rgba(255, 136, 51, 0.2)" : "rgba(255, 136, 51, 0.1)")
+                    : (isDarkMode ? "#505050" : "#f0f0f0");
+                }
+              }}
+              onMouseLeave={(e) => {
+                const target = e.target as HTMLElement;
+                target.style.background = selectedPurpose === purpose.id
+                  ? (isDarkMode ? "rgba(255, 136, 51, 0.1)" : "rgba(255, 136, 51, 0.05)")
+                  : (isDarkMode ? "#404040" : "#f9f9f9");
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <span style={{ fontSize: "16px" }}>{purpose.icon}</span>
+                <div>
+                  <div style={{ 
+                    fontWeight: "600", 
+                    fontSize: "12px",
+                    marginBottom: "2px"
+                  }}>
+                    {purpose.title}
+                  </div>
+                  <div style={{ 
+                    fontSize: "10px", 
+                    opacity: 0.7
+                  }}>
+                    {purpose.desc}
+                  </div>
+                </div>
+              </div>
+            </button>
 
-      {/* エクスポート設定モーダル */}
-      {isOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 w-full max-w-lg max-h-screen overflow-y-auto shadow-2xl">
-            {/* ヘッダー */}
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                📁 エクスポート設定
-              </h3>
-              <button
-                onClick={() => setIsOpen(false)}
-                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-2xl"
-                disabled={isExporting}
+            {/* 設定パネル */}
+            {selectedPurpose === purpose.id && (
+              <div 
+                style={{
+                  marginTop: "8px",
+                  padding: "12px",
+                  background: isDarkMode ? "#404040" : "white",
+                  border: `1px solid ${isDarkMode ? "#666666" : "#ddd"}`,
+                  borderRadius: "4px",
+                  fontSize: "12px",
+                }}
               >
-                ✕
-              </button>
-            </div>
-
-            <div className="space-y-6">
-              {/* 出力形式 - カード形式 */}
-              <div>
-                <label className="block text-lg font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                  📋 出力形式
-                </label>
-                <div className="grid grid-cols-1 gap-3">
-                  {([
-                    { format: 'pdf', name: 'PDF', desc: '印刷・共有用' },
-                    { format: 'png', name: 'PNG', desc: '画像ファイル（各コマ別＋全体）' },
-                    { format: 'psd', name: 'PSD', desc: 'クリスタ用レイヤー情報' }
-                  ] as const).map((item) => (
-                    <label 
-                      key={item.format} 
-                      className={`flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all ${
-                        exportOptions.format === item.format
-                          ? 'border-green-500 bg-green-50 dark:bg-green-900/20' 
-                          : 'border-gray-200 dark:border-gray-600 hover:border-green-300'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="format"
-                        value={item.format}
-                        checked={exportOptions.format === item.format}
-                        onChange={(e) =>
-                          setExportOptions({
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  {/* 印刷用設定 */}
+                  {selectedPurpose === 'print' && (
+                    <>
+                      <div>
+                        <label 
+                          style={{
+                            display: "block",
+                            fontSize: "11px",
+                            fontWeight: "600",
+                            color: isDarkMode ? "#ffffff" : "#333333",
+                            marginBottom: "4px",
+                          }}
+                        >
+                          解像度
+                        </label>
+                        <select
+                          value={exportOptions.resolution}
+                          onChange={(e) => setExportOptions({
                             ...exportOptions,
-                            format: e.target.value as any
-                          })
-                        }
-                        disabled={isExporting}
-                        className="sr-only"
-                      />
-                      <div className="flex items-center gap-3 w-full">
-                        <span className="text-2xl">{getFormatIcon(item.format)}</span>
-                        <div>
-                          <div className="font-semibold text-gray-900 dark:text-white">
-                            {item.name}
-                          </div>
-                          <div className="text-sm text-gray-600 dark:text-gray-400">
-                            {item.desc}
-                          </div>
-                        </div>
+                            resolution: parseInt(e.target.value)
+                          })}
+                          disabled={isExporting}
+                          style={{
+                            width: "100%",
+                            padding: "6px 8px",
+                            border: `1px solid ${isDarkMode ? "#666666" : "#ddd"}`,
+                            borderRadius: "4px",
+                            background: isDarkMode ? "#2d2d2d" : "white",
+                            color: isDarkMode ? "#ffffff" : "#333333",
+                            fontSize: "11px",
+                            fontFamily: "inherit",
+                          }}
+                        >
+                          <option value={150}>150 DPI (標準)</option>
+                          <option value={300}>300 DPI (高品質)</option>
+                          <option value={600}>600 DPI (最高品質)</option>
+                        </select>
                       </div>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* 品質設定 - カード形式 */}
-              <div>
-                <label className="block text-lg font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                  ⭐ 品質設定
-                </label>
-                <div className="grid grid-cols-1 gap-3">
-                  {([
-                    { quality: 'high', name: '高品質', desc: '3倍サイズ・最高画質' },
-                    { quality: 'medium', name: '標準品質', desc: '2倍サイズ・バランス重視' },
-                    { quality: 'low', name: '低品質', desc: '等倍サイズ・軽量' }
-                  ] as const).map((item) => (
-                    <label 
-                      key={item.quality} 
-                      className={`flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all ${
-                        exportOptions.quality === item.quality
-                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
-                          : 'border-gray-200 dark:border-gray-600 hover:border-blue-300'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="quality"
-                        value={item.quality}
-                        checked={exportOptions.quality === item.quality}
-                        onChange={(e) =>
-                          setExportOptions({
-                            ...exportOptions,
-                            quality: e.target.value as any
-                          })
-                        }
-                        disabled={isExporting}
-                        className="sr-only"
-                      />
-                      <div className="flex items-center gap-3 w-full">
-                        <span className="text-2xl">{getQualityIcon(item.quality)}</span>
-                        <div>
-                          <div className="font-semibold text-gray-900 dark:text-white">
-                            {item.name}
-                          </div>
-                          <div className="text-sm text-gray-600 dark:text-gray-400">
-                            {item.desc}
-                          </div>
-                        </div>
-                      </div>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* 詳細設定 */}
-              <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-xl">
-                <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  🔧 詳細設定
-                </h4>
-                
-                {/* 解像度設定 */}
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    解像度 (DPI)
-                  </label>
-                  <input
-                    type="number"
-                    min="72"
-                    max="600"
-                    step="1"
-                    value={exportOptions.resolution}
-                    onChange={(e) =>
-                      setExportOptions({
-                        ...exportOptions,
-                        resolution: parseInt(e.target.value)
-                      })
-                    }
-                    disabled={isExporting}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-lg"
-                  />
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    推奨: 印刷用300DPI、Web用72DPI
-                  </p>
-                </div>
-
-                {/* チェックボックス設定 */}
-                <div className="space-y-3">
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={exportOptions.includeBackground}
-                      onChange={(e) =>
-                        setExportOptions({
-                          ...exportOptions,
-                          includeBackground: e.target.checked
-                        })
-                      }
-                      disabled={isExporting}
-                      className="w-5 h-5 text-green-600 rounded"
-                    />
-                    <span className="text-sm text-gray-900 dark:text-white">
-                      🎨 白背景を含める
-                    </span>
-                  </label>
-
-                  {/* PDF専用オプション */}
-                  {exportOptions.format === 'pdf' && (
-                    <label className="flex items-center gap-3 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={exportOptions.separatePages}
-                        onChange={(e) =>
-                          setExportOptions({
+                      
+                      <label style={{ 
+                        display: "flex", 
+                        alignItems: "center", 
+                        gap: "6px",
+                        fontSize: "11px",
+                        color: isDarkMode ? "#ffffff" : "#333333",
+                        cursor: "pointer"
+                      }}>
+                        <input
+                          type="checkbox"
+                          checked={exportOptions.separatePages}
+                          onChange={(e) => setExportOptions({
                             ...exportOptions,
                             separatePages: e.target.checked
-                          })
-                        }
-                        disabled={isExporting}
-                        className="w-5 h-5 text-green-600 rounded"
-                      />
-                      <span className="text-sm text-gray-900 dark:text-white">
-                        📑 各コマを別ページにする
+                          })}
+                          disabled={isExporting}
+                          style={{ margin: 0 }}
+                        />
+                        各コマを別ページにする
+                      </label>
+                    </>
+                  )}
+
+                  {/* 画像用設定 */}
+                  {selectedPurpose === 'image' && (
+                    <>
+                      <div>
+                        <label 
+                          style={{
+                            display: "block",
+                            fontSize: "11px",
+                            fontWeight: "600",
+                            color: isDarkMode ? "#ffffff" : "#333333",
+                            marginBottom: "6px",
+                          }}
+                        >
+                          品質
+                        </label>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                          {[
+                            { value: 'high', label: '高品質' },
+                            { value: 'medium', label: '標準' },
+                            { value: 'low', label: '軽量' }
+                          ].map((item) => (
+                            <label 
+                              key={item.value} 
+                              style={{ 
+                                display: "flex", 
+                                alignItems: "center", 
+                                gap: "6px",
+                                fontSize: "11px",
+                                color: isDarkMode ? "#ffffff" : "#333333",
+                                cursor: "pointer"
+                              }}
+                            >
+                              <input
+                                type="radio"
+                                name="quality"
+                                value={item.value}
+                                checked={exportOptions.quality === item.value}
+                                onChange={(e) => setExportOptions({
+                                  ...exportOptions,
+                                  quality: e.target.value as any
+                                })}
+                                disabled={isExporting}
+                                style={{ margin: 0 }}
+                              />
+                              {item.label}
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
+                      <label style={{ 
+                        display: "flex", 
+                        alignItems: "center", 
+                        gap: "6px",
+                        fontSize: "11px",
+                        color: isDarkMode ? "#ffffff" : "#333333",
+                        cursor: "pointer"
+                      }}>
+                        <input
+                          type="checkbox"
+                          checked={!exportOptions.includeBackground}
+                          onChange={(e) => setExportOptions({
+                            ...exportOptions,
+                            includeBackground: !e.target.checked
+                          })}
+                          disabled={isExporting}
+                          style={{ margin: 0 }}
+                        />
+                        背景を透明にする
+                      </label>
+                    </>
+                  )}
+
+                  {/* クリスタ用設定 */}
+                  {selectedPurpose === 'clipstudio' && (
+                    <>
+                      <div 
+                        style={{
+                          background: isDarkMode ? "rgba(59, 130, 246, 0.1)" : "rgba(59, 130, 246, 0.05)",
+                          padding: "8px",
+                          borderRadius: "4px",
+                          textAlign: "center",
+                        }}
+                      >
+                        <p 
+                          style={{
+                            fontSize: "10px",
+                            color: isDarkMode ? "#93c5fd" : "#3b82f6",
+                            margin: 0,
+                          }}
+                        >
+                          レイヤー構造のJSONファイルと各要素のPNG画像を出力
+                        </p>
+                      </div>
+                      
+                      <div>
+                        <label 
+                          style={{
+                            display: "block",
+                            fontSize: "11px",
+                            fontWeight: "600",
+                            color: isDarkMode ? "#ffffff" : "#333333",
+                            marginBottom: "4px",
+                          }}
+                        >
+                          解像度
+                        </label>
+                        <select
+                          value={exportOptions.resolution}
+                          onChange={(e) => setExportOptions({
+                            ...exportOptions,
+                            resolution: parseInt(e.target.value)
+                          })}
+                          disabled={isExporting}
+                          style={{
+                            width: "100%",
+                            padding: "6px 8px",
+                            border: `1px solid ${isDarkMode ? "#666666" : "#ddd"}`,
+                            borderRadius: "4px",
+                            background: isDarkMode ? "#2d2d2d" : "white",
+                            color: isDarkMode ? "#ffffff" : "#333333",
+                            fontSize: "11px",
+                            fontFamily: "inherit",
+                          }}
+                        >
+                          <option value={300}>300 DPI (推奨)</option>
+                          <option value={600}>600 DPI (高品質)</option>
+                        </select>
+                      </div>
+                    </>
+                  )}
+
+                  {/* プログレス */}
+                  {isExporting && exportProgress && (
+                    <div 
+                      style={{
+                        background: isDarkMode ? "#404040" : "#f5f5f5",
+                        padding: "8px",
+                        borderRadius: "4px",
+                      }}
+                    >
+                      <div 
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          fontSize: "10px",
+                          marginBottom: "4px",
+                          color: isDarkMode ? "#ffffff" : "#333333",
+                        }}
+                      >
+                        <span>{exportProgress.message}</span>
+                        <span style={{ fontWeight: "bold" }}>
+                          {Math.round(exportProgress.progress)}%
+                        </span>
+                      </div>
+                      <div 
+                        style={{
+                          width: "100%",
+                          height: "4px",
+                          background: isDarkMode ? "#666666" : "#e0e0e0",
+                          borderRadius: "2px",
+                          overflow: "hidden",
+                        }}
+                      >
+                        <div
+                          style={{
+                            height: "100%",
+                            background: "#ff8833",
+                            borderRadius: "2px",
+                            transition: "width 0.3s",
+                            width: `${exportProgress.progress}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 出力ボタン */}
+                  <button
+                    onClick={handleExport}
+                    disabled={isExporting || panels.length === 0}
+                    style={{
+                      width: "100%",
+                      background: isExporting || panels.length === 0 ? "#999999" : "#ff8833",
+                      color: "white",
+                      padding: "8px 12px",
+                      borderRadius: "4px",
+                      border: "none",
+                      fontSize: "11px",
+                      fontWeight: "600",
+                      cursor: isExporting || panels.length === 0 ? "not-allowed" : "pointer",
+                      transition: "background-color 0.2s",
+                      fontFamily: "inherit",
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isExporting && panels.length > 0) {
+                        const target = e.target as HTMLElement;
+                        target.style.background = "#e6771f";
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isExporting && panels.length > 0) {
+                        const target = e.target as HTMLElement;
+                        target.style.background = "#ff8833";
+                      }
+                    }}
+                  >
+                    {isExporting ? (
+                      <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+                        <div 
+                          style={{
+                            width: "12px",
+                            height: "12px",
+                            border: "2px solid white",
+                            borderTop: "2px solid transparent",
+                            borderRadius: "50%",
+                            animation: "spin 1s linear infinite",
+                          }}
+                        />
+                        出力中...
                       </span>
-                    </label>
-                  )}
+                    ) : (
+                      '出力する'
+                    )}
+                  </button>
                 </div>
               </div>
-
-              {/* プレビュー情報 */}
-              <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/30 dark:to-purple-900/30 p-4 rounded-xl border border-blue-200 dark:border-blue-800">
-                <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                  📊 出力プレビュー
-                </h4>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div className="text-gray-600 dark:text-gray-300">
-                    <div className="font-medium">📐 コマ数</div>
-                    <div className="text-lg font-bold text-blue-600">{panels.length}個</div>
-                  </div>
-                  <div className="text-gray-600 dark:text-gray-300">
-                    <div className="font-medium">👥 キャラクター</div>
-                    <div className="text-lg font-bold text-green-600">{characters.length}個</div>
-                  </div>
-                  <div className="text-gray-600 dark:text-gray-300">
-                    <div className="font-medium">💬 吹き出し</div>
-                    <div className="text-lg font-bold text-purple-600">{bubbles.length}個</div>
-                  </div>
-                  <div className="text-gray-600 dark:text-gray-300">
-                    <div className="font-medium">📝 形式</div>
-                    <div className="text-lg font-bold text-orange-600">{exportOptions.format.toUpperCase()}</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* プログレスバー */}
-              {isExporting && exportProgress && (
-                <div className="bg-gray-100 dark:bg-gray-700 p-4 rounded-xl">
-                  <div className="flex justify-between text-sm text-gray-900 dark:text-white mb-3">
-                    <span className="font-medium">{exportProgress.message}</span>
-                    <span className="font-bold">{Math.round(exportProgress.progress)}%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-3">
-                    <div
-                      className="bg-gradient-to-r from-green-500 to-blue-500 h-3 rounded-full transition-all duration-300"
-                      style={{ width: `${exportProgress.progress}%` }}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* アクションボタン */}
-              <div className="flex gap-4 pt-4">
-                <button
-                  onClick={handleExport}
-                  disabled={isExporting || panels.length === 0}
-                  className="flex-1 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 disabled:from-gray-400 disabled:to-gray-500 text-white px-6 py-4 rounded-xl font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl"
-                >
-                  {isExporting ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
-                      出力中...
-                    </span>
-                  ) : (
-                    <span className="flex items-center justify-center gap-2">
-                      <span className="text-xl">🚀</span>
-                      エクスポート開始
-                    </span>
-                  )}
-                </button>
-                <button
-                  onClick={() => setIsOpen(false)}
-                  disabled={isExporting}
-                  className="px-6 py-4 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors rounded-xl border border-gray-300 dark:border-gray-600"
-                >
-                  キャンセル
-                </button>
-              </div>
-            </div>
+            )}
           </div>
-        </div>
-      )}
+        ))}
+      </div>
+
+      {/* アニメーション定義 */}
+      <style>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 };
