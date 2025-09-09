@@ -1,4 +1,4 @@
-// src/components/CanvasComponent.tsx (CanvasDrawing分離版)
+// src/components/CanvasComponent.tsx (完全修正版)
 import React, { useRef, useEffect, useState, forwardRef, useImperativeHandle } from "react";
 import { Panel, Character, SpeechBubble, CanvasComponentProps } from "../types";
 import { BubbleRenderer } from "./CanvasArea/renderers/BubbleRenderer";
@@ -76,17 +76,18 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
   const contextMenuActions: ContextMenuActions = {
     onDuplicateCharacter: (character: Character) => {
       const canvas = canvasRef.current;
-      const newCharacter = ContextMenuHandler.duplicateCharacter(
-        character,
-        canvas?.width || 600,
-        canvas?.height || 800
-      );
+      const newCharacter = {
+        ...character,
+        id: `char_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+        name: `${character.name}(コピー)`,
+        x: character.x + 30,
+        y: character.y + 30,
+      };
       setCharacters([...characters, newCharacter]);
       setSelectedCharacter(newCharacter);
       if (onCharacterSelect) onCharacterSelect(newCharacter);
     },
 
-    // 93行目付近の onDuplicatePanel を以下に置き換え:
     onDuplicatePanel: (panel: Panel) => {
       const canvas = canvasRef.current;
       if (!canvas) return;
@@ -103,13 +104,46 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
         y: panel.y
       };
       
+      // キャンバス範囲チェック
+      if (newPanel.x + newPanel.width > canvas.width) {
+        newPanel.x = panel.x;
+        newPanel.y = panel.y + panel.height + 10;
+        
+        if (newPanel.y + newPanel.height > canvas.height) {
+          newPanel.x = Math.max(0, panel.x - panel.width - 10);
+          newPanel.y = panel.y;
+        }
+      }
+      
+      // パネル内のキャラクターを複製
+      const panelCharacters = characters.filter(char => char.panelId === panel.id);
+      const newCharacters = panelCharacters.map(char => ({
+        ...char,
+        id: `char_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+        panelId: newPanelId,
+      }));
+      
+      // パネル内の吹き出しを複製
+      const panelBubbles = speechBubbles.filter(bubble => bubble.panelId === panel.id);
+      const newBubbles = panelBubbles.map(bubble => ({
+        ...bubble,
+        id: `bubble_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+        panelId: newPanelId,
+      }));
+      
       setPanels([...panels, newPanel]);
+      setCharacters([...characters, ...newCharacters]);
+      setSpeechBubbles([...speechBubbles, ...newBubbles]);
+      
       setSelectedPanel(newPanel);
+      setSelectedCharacter(null);
+      setSelectedBubble(null);
       if (onPanelSelect) onPanelSelect(newPanel);
+      if (onCharacterSelect) onCharacterSelect(null);
     },
 
     onCopyToClipboard: (type: 'panel' | 'character' | 'bubble', element: Panel | Character | SpeechBubble) => {
-      const newClipboard = ContextMenuHandler.copyToClipboard(type, element);
+      const newClipboard = { type, data: element };
       setClipboard(newClipboard);
     },
 
@@ -128,11 +162,20 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
           break;
           
         case 'bubble':
-          const newBubble = ContextMenuHandler.duplicateBubble(data as SpeechBubble);
+          const newBubble = {
+            ...data as SpeechBubble,
+            id: `bubble_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+            text: `${(data as SpeechBubble).text}(コピー)`,
+            x: (data as SpeechBubble).x + 30,
+            y: (data as SpeechBubble).y + 30,
+          };
           setSpeechBubbles([...speechBubbles, newBubble]);
           setSelectedBubble(newBubble);
           break;
       }
+      
+      // ペースト後にクリップボードをクリア
+      setClipboard(null);
     },
 
     onDeleteElement: (type: 'character' | 'bubble', element: Character | SpeechBubble) => {
@@ -192,36 +235,46 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
       const canvas = canvasRef.current;
       if (!canvas) return;
 
-      const result = ContextMenuHandler.flipElements(
-        'horizontal',
-        panels,
-        characters,
-        speechBubbles,
-        canvas.width,
-        canvas.height
-      );
+      // 水平反転処理
+      const flippedPanels = panels.map(panel => ({
+        ...panel,
+        x: canvas.width - panel.x - panel.width
+      }));
+      const flippedCharacters = characters.map(char => ({
+        ...char,
+        x: char.isGlobalPosition ? canvas.width - char.x : 1 - char.x
+      }));
+      const flippedBubbles = speechBubbles.map(bubble => ({
+        ...bubble,
+        x: bubble.isGlobalPosition ? canvas.width - bubble.x : bubble.x
+      }));
 
-      setPanels(result.panels);
-      setCharacters(result.characters);
-      setSpeechBubbles(result.speechBubbles);
+      setPanels(flippedPanels);
+      setCharacters(flippedCharacters);
+      setSpeechBubbles(flippedBubbles);
     },
 
     onFlipVertical: () => {
       const canvas = canvasRef.current;
       if (!canvas) return;
 
-      const result = ContextMenuHandler.flipElements(
-        'vertical',
-        panels,
-        characters,
-        speechBubbles,
-        canvas.width,
-        canvas.height
-      );
+      // 垂直反転処理
+      const flippedPanels = panels.map(panel => ({
+        ...panel,
+        y: canvas.height - panel.y - panel.height
+      }));
+      const flippedCharacters = characters.map(char => ({
+        ...char,
+        y: char.isGlobalPosition ? canvas.height - char.y : 1 - char.y
+      }));
+      const flippedBubbles = speechBubbles.map(bubble => ({
+        ...bubble,
+        y: bubble.isGlobalPosition ? canvas.height - bubble.y : bubble.y
+      }));
 
-      setPanels(result.panels);
-      setCharacters(result.characters);
-      setSpeechBubbles(result.speechBubbles);
+      setPanels(flippedPanels);
+      setCharacters(flippedCharacters);
+      setSpeechBubbles(flippedBubbles);
     },
 
     onEditPanel: (panel: Panel) => {
@@ -281,6 +334,47 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
   const handleContextMenuAction = (action: string) => {
     ContextMenuHandler.handleAction(action, contextMenu, contextMenuActions);
     setContextMenu({ ...contextMenu, visible: false });
+  };
+
+  // キーボードイベントハンドラー
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (e.ctrlKey && e.key === 'c') {
+      e.preventDefault();
+      if (selectedPanel) {
+        contextMenuActions.onCopyToClipboard('panel', selectedPanel);
+      } else if (selectedCharacter) {
+        contextMenuActions.onCopyToClipboard('character', selectedCharacter);
+      } else if (selectedBubble) {
+        contextMenuActions.onCopyToClipboard('bubble', selectedBubble);
+      }
+    }
+    
+    if (e.ctrlKey && e.key === 'v') {
+      e.preventDefault();
+      contextMenuActions.onPasteFromClipboard();
+    }
+    
+    if (e.key === 'Delete' || e.key === 'Backspace') {
+      e.preventDefault();
+      if (selectedPanel) {
+        contextMenuActions.onDeletePanel(selectedPanel);
+      } else if (selectedCharacter) {
+        contextMenuActions.onDeleteElement('character', selectedCharacter);
+      } else if (selectedBubble) {
+        contextMenuActions.onDeleteElement('bubble', selectedBubble);
+      }
+    }
+
+    // Escape: 選択解除＆クリップボードクリア
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      setSelectedPanel(null);
+      setSelectedCharacter(null);
+      setSelectedBubble(null);
+      setClipboard(null); // クリップボードをクリア
+      if (onPanelSelect) onPanelSelect(null);
+      if (onCharacterSelect) onCharacterSelect(null);
+    }
   };
 
   // キャラクター追加機能
@@ -423,51 +517,7 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
     }
   };
 
-  // 1. キーボードイベントハンドラーの修正
-  const handleKeyDown = (e: KeyboardEvent) => {
-    // Ctrl+C: コピー
-    if (e.ctrlKey && e.key === 'c') {
-      e.preventDefault();
-      if (selectedPanel) {
-        contextMenuActions.onCopyToClipboard('panel', selectedPanel);
-      } else if (selectedCharacter) {
-        contextMenuActions.onCopyToClipboard('character', selectedCharacter);
-      } else if (selectedBubble) {
-        contextMenuActions.onCopyToClipboard('bubble', selectedBubble);
-      }
-    }
-    
-    // Ctrl+V: ペースト
-    if (e.ctrlKey && e.key === 'v') {
-      e.preventDefault();
-      contextMenuActions.onPasteFromClipboard();
-    }
-    
-    // Delete/Backspace: 削除
-    if (e.key === 'Delete' || e.key === 'Backspace') {
-      e.preventDefault();
-      if (selectedPanel) {
-        contextMenuActions.onDeletePanel(selectedPanel);
-      } else if (selectedCharacter) {
-        contextMenuActions.onDeleteElement('character', selectedCharacter);
-      } else if (selectedBubble) {
-        contextMenuActions.onDeleteElement('bubble', selectedBubble);
-      }
-    }
-
-    // Escape: 選択解除＆クリップボードクリア
-    if (e.key === 'Escape') {
-      e.preventDefault();
-      setSelectedPanel(null);
-      setSelectedCharacter(null);
-      setSelectedBubble(null);
-      setClipboard(null); // ← これが重要！クリップボードをクリア
-      if (onPanelSelect) onPanelSelect(null);
-      if (onCharacterSelect) onCharacterSelect(null);
-    }
-  };
-
-  // マウスイベント処理（PanelManager使用版）
+  // マウスイベント処理
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -505,246 +555,287 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
     if (onCharacterSelect) onCharacterSelect(null);
   };
 
-  // 2. キャラクターリサイズハンドル検出の修正
-const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-  setContextMenu({ ...contextMenu, visible: false });
-  
-  const canvas = canvasRef.current;
-  if (!canvas) return;
-  const rect = canvas.getBoundingClientRect();
-  const mouseX = e.clientX - rect.left;
-  const mouseY = e.clientY - rect.top;
-
-  // パネル編集モード時の操作
-  if (isPanelEditMode && selectedPanel) {
-    const panelHandle = PanelManager.getPanelHandleAt(mouseX, mouseY, selectedPanel);
+  const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    setContextMenu({ ...contextMenu, visible: false });
     
-    if (panelHandle) {
-      if (panelHandle.type === "delete") {
-        contextMenuActions.onDeletePanel(selectedPanel);
-        e.preventDefault();
-        return;
-      } else if (panelHandle.type === "resize") {
-        setIsPanelResizing(true);
-        setResizeDirection(panelHandle.direction || "");
-        setDragOffset({ x: mouseX, y: mouseY });
-        e.preventDefault();
-        return;
-      } else if (panelHandle.type === "move") {
-        setIsPanelMoving(true);
-        setDragOffset({
-          x: mouseX - selectedPanel.x,
-          y: mouseY - selectedPanel.y,
-        });
-        e.preventDefault();
-        return;
-      } else if (panelHandle.type === "split" && onPanelSplit) {
-        const direction = window.confirm("水平分割（上下）しますか？\nキャンセルで垂直分割（左右）") 
-          ? "horizontal" 
-          : "vertical";
-        onPanelSplit(selectedPanel.id, direction);
-        e.preventDefault();
-        return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    // パネル編集モード時の操作
+    if (isPanelEditMode && selectedPanel) {
+      const panelHandle = PanelManager.getPanelHandleAt(mouseX, mouseY, selectedPanel);
+      
+      if (panelHandle) {
+        if (panelHandle.type === "delete") {
+          contextMenuActions.onDeletePanel(selectedPanel);
+          e.preventDefault();
+          return;
+        } else if (panelHandle.type === "resize") {
+          setIsPanelResizing(true);
+          setResizeDirection(panelHandle.direction || "");
+          setDragOffset({ x: mouseX, y: mouseY });
+          e.preventDefault();
+          return;
+        } else if (panelHandle.type === "move") {
+          setIsPanelMoving(true);
+          setDragOffset({
+            x: mouseX - selectedPanel.x,
+            y: mouseY - selectedPanel.y,
+          });
+          e.preventDefault();
+          return;
+        } else if (panelHandle.type === "split" && onPanelSplit) {
+          const direction = window.confirm("水平分割（上下）しますか？\nキャンセルで垂直分割（左右）") 
+            ? "horizontal" 
+            : "vertical";
+          onPanelSplit(selectedPanel.id, direction);
+          e.preventDefault();
+          return;
+        }
       }
     }
-  }
 
-  // 吹き出し操作
-  const clickedBubble = BubbleRenderer.findBubbleAt(mouseX, mouseY, speechBubbles, panels);
-  if (clickedBubble) {
-    setSelectedBubble(clickedBubble);
-    setSelectedCharacter(null);
-    setSelectedPanel(null);
-    setIsDragging(true);
-    setDragOffset({
-      x: mouseX - clickedBubble.x,
-      y: mouseY - clickedBubble.y,
-    });
-    e.preventDefault();
-    return;
-  }
-
-  // キャラクター操作（リサイズハンドル検出を修正）
-  const clickedCharacter = CharacterRenderer.findCharacterAt(mouseX, mouseY, characters, panels);
-  if (clickedCharacter) {
-    setSelectedCharacter(clickedCharacter);
-    setSelectedBubble(null);
-    setSelectedPanel(null);
-    
-    // キャラクターリサイズハンドル判定を追加
-    const panel = panels.find(p => p.id === clickedCharacter.panelId);
-    if (panel) {
-      // キャラクターの描画位置を計算
-      const charWidth = 80 * clickedCharacter.scale;
-      const charHeight = 120 * clickedCharacter.scale;
-      let charX, charY;
+    // 吹き出し操作（デバッグ版）
+    const clickedBubble = BubbleRenderer.findBubbleAt(mouseX, mouseY, speechBubbles, panels);
+    if (clickedBubble) {
+      console.log("🎯 吹き出しクリック検出:", clickedBubble.text);
       
-      if (clickedCharacter.isGlobalPosition) {
-        charX = clickedCharacter.x - charWidth / 2;
-        charY = clickedCharacter.y - charHeight / 2;
-      } else {
-        charX = panel.x + panel.width * clickedCharacter.x - charWidth / 2;
-        charY = panel.y + panel.height * clickedCharacter.y - charHeight / 2;
-      }
+      setSelectedBubble(clickedBubble);
+      setSelectedCharacter(null);
+      setSelectedPanel(null);
       
-      // リサイズハンドル領域判定（四隅と辺の中央）
-      const handleSize = 8;
-      const isOnHandle = 
-        // 四隅
-        (mouseX >= charX - handleSize && mouseX <= charX + handleSize && 
-         mouseY >= charY - handleSize && mouseY <= charY + handleSize) ||
-        (mouseX >= charX + charWidth - handleSize && mouseX <= charX + charWidth + handleSize && 
-         mouseY >= charY - handleSize && mouseY <= charY + handleSize) ||
-        (mouseX >= charX - handleSize && mouseX <= charX + handleSize && 
-         mouseY >= charY + charHeight - handleSize && mouseY <= charY + charHeight + handleSize) ||
-        (mouseX >= charX + charWidth - handleSize && mouseX <= charX + charWidth + handleSize && 
-         mouseY >= charY + charHeight - handleSize && mouseY <= charY + charHeight + handleSize) ||
-        // 辺の中央
-        (mouseX >= charX + charWidth/2 - handleSize && mouseX <= charX + charWidth/2 + handleSize && 
-         mouseY >= charY - handleSize && mouseY <= charY + handleSize) ||
-        (mouseX >= charX + charWidth/2 - handleSize && mouseX <= charX + charWidth/2 + handleSize && 
-         mouseY >= charY + charHeight - handleSize && mouseY <= charY + charHeight + handleSize) ||
-        (mouseX >= charX - handleSize && mouseX <= charX + handleSize && 
-         mouseY >= charY + charHeight/2 - handleSize && mouseY <= charY + charHeight/2 + handleSize) ||
-        (mouseX >= charX + charWidth - handleSize && mouseX <= charX + charWidth + handleSize && 
-         mouseY >= charY + charHeight/2 - handleSize && mouseY <= charY + charHeight/2 + handleSize);
+      // BubbleRenderer の関数を使用してリサイズハンドル判定
+      const panel = panels.find(p => p.id === clickedBubble.panelId) || panels[0];
+      const resizeResult = BubbleRenderer.isBubbleResizeHandleClicked(mouseX, mouseY, clickedBubble, panel);
       
-      if (isOnHandle) {
-        setIsCharacterResizing(true);
-        setResizeDirection("proportional");
+      console.log("🔍 リサイズハンドル判定結果:", resizeResult);
+      console.log("🔍 マウス座標:", { mouseX, mouseY });
+      console.log("🔍 吹き出し情報:", { 
+        x: clickedBubble.x, 
+        y: clickedBubble.y, 
+        width: clickedBubble.width, 
+        height: clickedBubble.height 
+      });
+      
+      if (resizeResult.isClicked) {
+        console.log("✅ リサイズモード開始:", resizeResult.direction);
+        setIsBubbleResizing(true);
+        setResizeDirection(resizeResult.direction);
         setDragOffset({ x: mouseX, y: mouseY });
       } else {
+        console.log("📱 ドラッグモード開始");
         setIsDragging(true);
         setDragOffset({
-          x: mouseX - clickedCharacter.x,
-          y: mouseY - clickedCharacter.y,
+          x: mouseX - clickedBubble.x,
+          y: mouseY - clickedBubble.y,
         });
       }
+      e.preventDefault();
+      return;
     }
-    
-    if (onCharacterSelect) onCharacterSelect(clickedCharacter);
-    e.preventDefault();
-  }
-};
-const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-  if (!isDragging && !isPanelResizing && !isPanelMoving && !isCharacterResizing) return;
-  
-  const canvas = canvasRef.current;
-  if (!canvas) return;
-  const rect = canvas.getBoundingClientRect();
-  const mouseX = e.clientX - rect.left;
-  const mouseY = e.clientY - rect.top;
 
-  // キャラクターリサイズ処理
-  if (selectedCharacter && isCharacterResizing) {
-    const deltaX = mouseX - dragOffset.x;
-    const deltaY = mouseY - dragOffset.y;
-    const scaleDelta = (deltaX + deltaY) / 200;
-    
-    const newScale = Math.max(0.5, Math.min(5.0, selectedCharacter.scale + scaleDelta));
-    
-    const updatedCharacter = {
-      ...selectedCharacter,
-      scale: newScale,
-    };
-    
-    setCharacters(
-      characters.map((char) =>
-        char.id === selectedCharacter.id ? updatedCharacter : char
-      )
-    );
-    setSelectedCharacter(updatedCharacter);
-    if (onCharacterSelect) onCharacterSelect(updatedCharacter);
-    
-    setDragOffset({ x: mouseX, y: mouseY });
-    return;
-  }
+    // キャラクター操作（デバッグ版）
+    const clickedCharacter = CharacterRenderer.findCharacterAt(mouseX, mouseY, characters, panels);
+    if (clickedCharacter) {
+      console.log("👤 キャラクタークリック検出:", clickedCharacter.name);
+      
+      setSelectedCharacter(clickedCharacter);
+      setSelectedBubble(null);
+      setSelectedPanel(null);
+      
+      // キャラクターリサイズハンドル判定
+      const panel = panels.find(p => p.id === clickedCharacter.panelId);
+      if (panel) {
+        const resizeResult = CharacterRenderer.isCharacterResizeHandleClicked(mouseX, mouseY, clickedCharacter, panel);
+        
+        console.log("🔍 キャラリサイズハンドル判定結果:", resizeResult);
+        
+        if (resizeResult.isClicked) {
+          console.log("✅ キャラリサイズモード開始:", resizeResult.direction);
+          setIsCharacterResizing(true);
+          setResizeDirection(resizeResult.direction);
+          setDragOffset({ x: mouseX, y: mouseY });
+        } else {
+          console.log("📱 キャラドラッグモード開始");
+          setIsDragging(true);
+          setDragOffset({
+            x: mouseX - clickedCharacter.x,
+            y: mouseY - clickedCharacter.y,
+          });
+        }
+      }
+      
+      if (onCharacterSelect) onCharacterSelect(clickedCharacter);
+      e.preventDefault();
+    }
+  };
 
-  // パネルリサイズ
-  if (selectedPanel && isPanelResizing) {
-    const deltaX = mouseX - dragOffset.x;
-    const deltaY = mouseY - dragOffset.y;
+  const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isDragging && !isPanelResizing && !isPanelMoving && !isCharacterResizing && !isBubbleResizing) return;
     
-    const updatedPanel = PanelManager.resizePanel(
-      selectedPanel,
-      resizeDirection,
-      deltaX,
-      deltaY
-    );
-    
-    setPanels(panels.map(p => p.id === selectedPanel.id ? updatedPanel : p));
-    setSelectedPanel(updatedPanel);
-    setDragOffset({ x: mouseX, y: mouseY });
-    return;
-  }
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
 
-  // パネル移動
-  if (selectedPanel && isPanelMoving) {
-    const deltaX = mouseX - dragOffset.x - selectedPanel.x;
-    const deltaY = mouseY - dragOffset.y - selectedPanel.y;
-    
-    const moveResult = PanelManager.movePanel(
-      selectedPanel,
-      deltaX,
-      deltaY,
-      canvas.width,
-      canvas.height,
-      snapSettings,
-      panels
-    );
-    
-    setPanels(panels.map(p => p.id === selectedPanel.id ? moveResult.panel : p));
-    setSelectedPanel(moveResult.panel);
-    setSnapLines(moveResult.snapLines);
-    return;
-  }
+    // 吹き出しリサイズ処理（8方向対応）
+    if (selectedBubble && isBubbleResizing) {
+      const deltaX = mouseX - dragOffset.x;
+      const deltaY = mouseY - dragOffset.y;
+      
+      let newWidth = selectedBubble.width;
+      let newHeight = selectedBubble.height;
+      
+      // 方向に応じたリサイズ
+      switch (resizeDirection) {
+        case "e": // 右
+          newWidth = Math.max(60, selectedBubble.width + deltaX);
+          break;
+        case "w": // 左
+          newWidth = Math.max(60, selectedBubble.width - deltaX);
+          break;
+        case "n": // 上
+          newHeight = Math.max(40, selectedBubble.height - deltaY);
+          break;
+        case "s": // 下
+          newHeight = Math.max(40, selectedBubble.height + deltaY);
+          break;
+        case "ne": case "nw": case "se": case "sw": // 角（比例リサイズ）
+          const scale = 1 + deltaX / 100;
+          newWidth = Math.max(60, selectedBubble.width * scale);
+          newHeight = Math.max(40, selectedBubble.height * scale);
+          break;
+      }
+      
+      const updatedBubble = {
+        ...selectedBubble,
+        width: newWidth,
+        height: newHeight,
+      };
+      
+      setSpeechBubbles(
+        speechBubbles.map((bubble) =>
+          bubble.id === selectedBubble.id ? updatedBubble : bubble
+        )
+      );
+      setSelectedBubble(updatedBubble);
+      setDragOffset({ x: mouseX, y: mouseY });
+      return;
+    }
 
-  // 吹き出し移動
-  if (selectedBubble && isDragging) {
-    const newX = mouseX - dragOffset.x;
-    const newY = mouseY - dragOffset.y;
-    
-    const updatedBubble = {
-      ...selectedBubble,
-      x: newX,
-      y: newY,
-    };
-    
-    setSpeechBubbles(
-      speechBubbles.map((bubble) =>
-        bubble.id === selectedBubble.id ? updatedBubble : bubble
-      )
-    );
-    setSelectedBubble(updatedBubble);
-    return;
-  }
+    // キャラクターリサイズ処理
+    if (selectedCharacter && isCharacterResizing) {
+      const deltaX = mouseX - dragOffset.x;
+      const deltaY = mouseY - dragOffset.y;
+      const scaleDelta = (deltaX + deltaY) / 200;
+      
+      const newScale = Math.max(0.5, Math.min(5.0, selectedCharacter.scale + scaleDelta));
+      
+      const updatedCharacter = {
+        ...selectedCharacter,
+        scale: newScale,
+      };
+      
+      setCharacters(
+        characters.map((char) =>
+          char.id === selectedCharacter.id ? updatedCharacter : char
+        )
+      );
+      setSelectedCharacter(updatedCharacter);
+      if (onCharacterSelect) onCharacterSelect(updatedCharacter);
+      
+      setDragOffset({ x: mouseX, y: mouseY });
+      return;
+    }
 
-  // キャラクター移動
-  if (selectedCharacter && isDragging) {
-    const newX = mouseX - dragOffset.x;
-    const newY = mouseY - dragOffset.y;
-    
-    const updatedCharacter = {
-      ...selectedCharacter,
-      x: newX,
-      y: newY,
-    };
-    
-    setCharacters(
-      characters.map((char) =>
-        char.id === selectedCharacter.id ? updatedCharacter : char
-      )
-    );
-    setSelectedCharacter(updatedCharacter);
-    if (onCharacterSelect) onCharacterSelect(updatedCharacter);
-  }
-};
+    // パネルリサイズ
+    if (selectedPanel && isPanelResizing) {
+      const deltaX = mouseX - dragOffset.x;
+      const deltaY = mouseY - dragOffset.y;
+      
+      const updatedPanel = PanelManager.resizePanel(
+        selectedPanel,
+        resizeDirection,
+        deltaX,
+        deltaY
+      );
+      
+      setPanels(panels.map(p => p.id === selectedPanel.id ? updatedPanel : p));
+      setSelectedPanel(updatedPanel);
+      setDragOffset({ x: mouseX, y: mouseY });
+      return;
+    }
 
-  // 4. マウスアップ処理にキャラクターリサイズを追加
+    // パネル移動
+    if (selectedPanel && isPanelMoving) {
+      const deltaX = mouseX - dragOffset.x - selectedPanel.x;
+      const deltaY = mouseY - dragOffset.y - selectedPanel.y;
+      
+      const moveResult = PanelManager.movePanel(
+        selectedPanel,
+        deltaX,
+        deltaY,
+        canvas.width,
+        canvas.height,
+        snapSettings,
+        panels
+      );
+      
+      setPanels(panels.map(p => p.id === selectedPanel.id ? moveResult.panel : p));
+      setSelectedPanel(moveResult.panel);
+      setSnapLines(moveResult.snapLines);
+      return;
+    }
+
+    // 吹き出し移動
+    if (selectedBubble && isDragging) {
+      const newX = mouseX - dragOffset.x;
+      const newY = mouseY - dragOffset.y;
+      
+      const updatedBubble = {
+        ...selectedBubble,
+        x: newX,
+        y: newY,
+      };
+      
+      setSpeechBubbles(
+        speechBubbles.map((bubble) =>
+          bubble.id === selectedBubble.id ? updatedBubble : bubble
+        )
+      );
+      setSelectedBubble(updatedBubble);
+      return;
+    }
+
+    // キャラクター移動
+    if (selectedCharacter && isDragging) {
+      const newX = mouseX - dragOffset.x;
+      const newY = mouseY - dragOffset.y;
+      
+      const updatedCharacter = {
+        ...selectedCharacter,
+        x: newX,
+        y: newY,
+      };
+      
+      setCharacters(
+        characters.map((char) =>
+          char.id === selectedCharacter.id ? updatedCharacter : char
+        )
+      );
+      setSelectedCharacter(updatedCharacter);
+      if (onCharacterSelect) onCharacterSelect(updatedCharacter);
+    }
+  };
+
   const handleCanvasMouseUp = () => {
     setIsDragging(false);
     setIsBubbleResizing(false);
-    setIsCharacterResizing(false); // ← これを追加
+    setIsCharacterResizing(false);
     setIsPanelResizing(false);
     setIsPanelMoving(false);
     setResizeDirection("");
@@ -822,13 +913,12 @@ const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
   };
 
   // useEffect群
-  // 5. useEffectでキーボードイベントリスナーを修正
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown);
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [selectedPanel, selectedCharacter, selectedBubble, clipboard]); // dependenciesに clipboard を追加
+  }, [selectedPanel, selectedCharacter, selectedBubble, clipboard]);
 
   useEffect(() => {
     onCharacterAdd(addCharacter);
@@ -852,7 +942,6 @@ const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
   useEffect(() => {
     drawCanvas();
   }, [panels, selectedPanel, characters, selectedCharacter, speechBubbles, selectedBubble, isPanelEditMode, snapLines.length, showGrid, snapSettings]);
-
 
   useEffect(() => {
     const handleThemeChange = () => drawCanvas();
