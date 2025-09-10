@@ -1,4 +1,4 @@
-// src/components/CanvasArea/renderers/BubbleRenderer.tsx (リサイズ修正版)
+// src/components/CanvasArea/renderers/BubbleRenderer.tsx (リサイズ完全修正版)
 import { SpeechBubble, Panel } from "../../../types";
 
 export class BubbleRenderer {
@@ -218,16 +218,16 @@ export class BubbleRenderer {
     return lines;
   }
 
-  // 🆕 8方向リサイズハンドル描画（修正版）
+  // 🆕 8方向リサイズハンドル描画（強化版）
   static drawResizeHandles(ctx: CanvasRenderingContext2D, bubble: SpeechBubble) {
-    const handleSize = 8;
+    const handleSize = 12; // サイズを大きく
     const isDarkMode = document.documentElement.getAttribute("data-theme") === "dark";
     
-    ctx.fillStyle = isDarkMode ? "#ff6b35" : "#ff8833";
+    ctx.fillStyle = "#ff6b35";
     ctx.strokeStyle = isDarkMode ? "#fff" : "#000";
-    ctx.lineWidth = 1;
+    ctx.lineWidth = 2;
 
-    // 8方向のハンドル位置
+    // 🔧 8方向のハンドル位置（座標計算を明確化）
     const handles = [
       { x: bubble.x - handleSize/2, y: bubble.y - handleSize/2, dir: "nw" }, // 左上
       { x: bubble.x + bubble.width/2 - handleSize/2, y: bubble.y - handleSize/2, dir: "n" }, // 上
@@ -240,22 +240,39 @@ export class BubbleRenderer {
     ];
 
     handles.forEach(handle => {
-      ctx.fillRect(handle.x, handle.y, handleSize, handleSize);
-      ctx.strokeRect(handle.x, handle.y, handleSize, handleSize);
+      // 角のハンドルは四角、辺のハンドルは丸で区別
+      if (["nw", "ne", "se", "sw"].includes(handle.dir)) {
+        // 角：四角いハンドル
+        ctx.fillRect(handle.x, handle.y, handleSize, handleSize);
+        ctx.strokeRect(handle.x, handle.y, handleSize, handleSize);
+      } else {
+        // 辺：丸いハンドル
+        ctx.beginPath();
+        ctx.arc(handle.x + handleSize/2, handle.y + handleSize/2, handleSize/2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      }
     });
   }
 
-  // 🆕 8方向リサイズハンドル判定（修正版）
+  // 🆕 8方向リサイズハンドル判定（完全修正版）
   static isBubbleResizeHandleClicked(
     mouseX: number, 
     mouseY: number, 
     bubble: SpeechBubble, 
     panel: Panel
   ): { isClicked: boolean; direction: string } {
-    const handleSize = 8;
-    const tolerance = 2; // クリック判定を少し緩く
+    const handleSize = 12; // 描画と同じサイズに統一
+    const tolerance = 8; // クリック判定を広く
 
-    // 8方向のハンドル位置と方向
+    console.log("🔍 吹き出しリサイズハンドル判定開始:", {
+      mouseX, mouseY,
+      bubblePos: { x: bubble.x, y: bubble.y },
+      bubbleSize: { width: bubble.width, height: bubble.height },
+      handleSize, tolerance
+    });
+
+    // 🔧 8方向のハンドル位置（描画と完全一致）
     const handles = [
       { x: bubble.x - handleSize/2, y: bubble.y - handleSize/2, dir: "nw" },
       { x: bubble.x + bubble.width/2 - handleSize/2, y: bubble.y - handleSize/2, dir: "n" },
@@ -268,15 +285,25 @@ export class BubbleRenderer {
     ];
 
     for (const handle of handles) {
-      if (mouseX >= handle.x - tolerance && 
-          mouseX <= handle.x + handleSize + tolerance &&
-          mouseY >= handle.y - tolerance && 
-          mouseY <= handle.y + handleSize + tolerance) {
-        console.log(`🎯 リサイズハンドル検出: ${handle.dir} at (${handle.x}, ${handle.y})`);
+      const inRangeX = mouseX >= handle.x - tolerance && mouseX <= handle.x + handleSize + tolerance;
+      const inRangeY = mouseY >= handle.y - tolerance && mouseY <= handle.y + handleSize + tolerance;
+      
+      console.log(`🔍 ハンドル ${handle.dir} 判定:`, {
+        handlePos: { x: handle.x, y: handle.y },
+        checkRange: {
+          x: `${handle.x - tolerance} ~ ${handle.x + handleSize + tolerance}`,
+          y: `${handle.y - tolerance} ~ ${handle.y + handleSize + tolerance}`
+        },
+        inRangeX, inRangeY
+      });
+      
+      if (inRangeX && inRangeY) {
+        console.log(`🎯 吹き出しリサイズハンドル ${handle.dir} クリック検出!`);
         return { isClicked: true, direction: handle.dir };
       }
     }
 
+    console.log("❌ リサイズハンドルクリック判定: 該当なし");
     return { isClicked: false, direction: "" };
   }
 
@@ -302,7 +329,7 @@ export class BubbleRenderer {
     return null;
   }
 
-  // 🆕 8方向リサイズ実行（BubbleRenderer.tsxに追加）
+  // 🆕 8方向リサイズ実行（完全修正版）
   static resizeBubble(
     bubble: SpeechBubble,
     direction: string,
@@ -318,31 +345,32 @@ export class BubbleRenderer {
     const minWidth = 60;
     const minHeight = 40;
 
-    // 中心座標で管理されているため、座標変換が必要
-    const bubbleLeft = bubble.x - bubble.width / 2;
-    const bubbleTop = bubble.y - bubble.height / 2;
+    console.log("🔧 吹き出しリサイズ実行:", {
+      direction,
+      deltaX, deltaY,
+      currentSize: { width: bubble.width, height: bubble.height },
+      currentPos: { x: bubble.x, y: bubble.y },
+      originalBounds
+    });
 
+    // 🔧 各方向の処理を明確化
     switch (direction) {
       case "nw": // 左上
-        const newLeft_nw = Math.min(bubbleLeft + originalBounds.width - minWidth, bubbleLeft + deltaX);
-        const newTop_nw = Math.min(bubbleTop + originalBounds.height - minHeight, bubbleTop + deltaY);
-        newWidth = (bubbleLeft + bubble.width) - newLeft_nw;
-        newHeight = (bubbleTop + bubble.height) - newTop_nw;
-        newX = newLeft_nw + newWidth / 2;
-        newY = newTop_nw + newHeight / 2;
+        newWidth = Math.max(minWidth, originalBounds.width - deltaX);
+        newHeight = Math.max(minHeight, originalBounds.height - deltaY);
+        newX = originalBounds.x + originalBounds.width - newWidth;
+        newY = originalBounds.y + originalBounds.height - newHeight;
         break;
         
       case "n": // 上
-        const newTop_n = Math.min(bubbleTop + originalBounds.height - minHeight, bubbleTop + deltaY);
-        newHeight = (bubbleTop + bubble.height) - newTop_n;
-        newY = newTop_n + newHeight / 2;
+        newHeight = Math.max(minHeight, originalBounds.height - deltaY);
+        newY = originalBounds.y + originalBounds.height - newHeight;
         break;
         
       case "ne": // 右上
-        const newTop_ne = Math.min(bubbleTop + originalBounds.height - minHeight, bubbleTop + deltaY);
         newWidth = Math.max(minWidth, originalBounds.width + deltaX);
-        newHeight = (bubbleTop + bubble.height) - newTop_ne;
-        newY = newTop_ne + newHeight / 2;
+        newHeight = Math.max(minHeight, originalBounds.height - deltaY);
+        newY = originalBounds.y + originalBounds.height - newHeight;
         break;
         
       case "e": // 右
@@ -359,25 +387,34 @@ export class BubbleRenderer {
         break;
         
       case "sw": // 左下
-        const newLeft_sw = Math.min(bubbleLeft + originalBounds.width - minWidth, bubbleLeft + deltaX);
-        newWidth = (bubbleLeft + bubble.width) - newLeft_sw;
+        newWidth = Math.max(minWidth, originalBounds.width - deltaX);
         newHeight = Math.max(minHeight, originalBounds.height + deltaY);
-        newX = newLeft_sw + newWidth / 2;
+        newX = originalBounds.x + originalBounds.width - newWidth;
         break;
         
       case "w": // 左
-        const newLeft_w = Math.min(bubbleLeft + originalBounds.width - minWidth, bubbleLeft + deltaX);
-        newWidth = (bubbleLeft + bubble.width) - newLeft_w;
-        newX = newLeft_w + newWidth / 2;
+        newWidth = Math.max(minWidth, originalBounds.width - deltaX);
+        newX = originalBounds.x + originalBounds.width - newWidth;
         break;
+        
+      default:
+        console.warn("⚠️ 不明なリサイズ方向:", direction);
+        return bubble;
     }
 
-    return {
+    const result = {
       ...bubble,
       x: newX,
       y: newY,
       width: newWidth,
       height: newHeight,
     };
+
+    console.log("✅ 吹き出しリサイズ結果:", {
+      newPos: { x: newX, y: newY },
+      newSize: { width: newWidth, height: newHeight }
+    });
+
+    return result;
   }
 }
