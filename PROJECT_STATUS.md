@@ -1,27 +1,27 @@
-# ネーム制作ツール - プロジェクト状況ファイル（リサイズ修復失敗版）
+# ネーム制作ツール - プロジェクト状況ファイル（コード分割作業中）
 
 ## 基本情報
 - **プロジェクト名**: React製ネーム制作支援ツール
 - **技術スタック**: React + TypeScript + HTML5 Canvas + jsPDF + html2canvas
 - **開発開始**: 2025年9月8日
-- **最終更新**: 2025年9月10日（リサイズ修復試行失敗）
-- **現在の状況**: リサイズ機能修復失敗、コード分割も検討が必要
+- **最終更新**: 2025年9月10日（CharacterRenderer.tsx分割作業実施中）
+- **現在の状況**: コード分割作業を優先実施中、リサイズ機能修復は分割後に実施予定
 
 ## 🚨 **現在発生中の問題**
 
-### **リサイズ機能完全停止**（未解決）
+### **リサイズ機能完全停止**（分割後修復予定）
 - **症状**: 吹き出しとキャラクターのリサイズが一切動作しない
 - **発生タイミング**: ファイル分割作業後
 - **元々の状態**: Phase 8完了時点では正常動作していた
-- **修復試行結果**: 全コード提供したが動作せず
+- **修復方針**: 分割完了後にピンポイント修復実施
 
-### **新たな問題: コードサイズ過大**
-- **CharacterRenderer.tsx**: 800行超の巨大ファイル
-- **BubbleRenderer.tsx**: 300行超
-- **CanvasComponent.tsx**: 600行超
-- **状況**: ファイルサイズ制限により効率的な修正が困難
+### **コードサイズ過大問題**（対応中）
+- **CharacterRenderer.tsx**: 1400行（実測値）→ 5ファイルに分割中
+- **BubbleRenderer.tsx**: 300行超（分割予定）
+- **CanvasComponent.tsx**: 600行超（分割予定）
+- **現在の分割状況**: CharacterRenderer.tsx分割作業中
 
-### **技術的詳細**
+### **技術的詳細**（変更なし）
 ```
 ログ出力（推定）:
 🖱️ マウス移動イベント発生
@@ -33,7 +33,51 @@
 - `isCharacterResizing` フラグが `true` にならない
 - リサイズハンドルクリック判定が失敗している
 
-## 現在の実装状況
+## 📂 **コード分割進捗状況**
+
+### **Phase 8.1: CharacterRenderer.tsx分割**（作業中）
+
+#### **分割計画**：
+```
+CharacterRenderer.tsx (1400行) → 5ファイルに分割
+├── CharacterRenderer.tsx         # メイン処理（150行）
+├── CharacterFaceRenderer.tsx     # 顔・髪・表情描画（200行）
+├── CharacterBodyRenderer.tsx     # 体・ポーズ・腕描画（250行）
+├── CharacterHandleRenderer.tsx   # リサイズハンドル・判定（100行）
+└── CharacterUtils.tsx           # サイズ計算・ユーティリティ（100行）
+```
+
+#### **分割進捗**：
+- ✅ **CharacterRenderer.tsx** (150行) - 完了
+- ❌ **CharacterFaceRenderer.tsx** (200行) - **途中で止まっている**
+- ✅ **CharacterBodyRenderer.tsx** (250行) - 完了
+- ❌ **CharacterHandleRenderer.tsx** (100行) - **途中で止まっている**
+- ✅ **CharacterUtils.tsx** (100行) - 完了
+
+#### **残りタスク**：
+1. **最優先**: CharacterFaceRenderer.tsx の完成（口描画部分の続き）
+2. **次点**: CharacterHandleRenderer.tsx の完成（ハンドル位置配列の続き）
+3. **確認**: 分割後のインポート関係の整合性チェック
+
+### **Phase 8.2: 他ファイル分割**（未着手）
+
+#### **BubbleRenderer.tsx分割案**:
+```
+BubbleRenderer.tsx (300行) → 3ファイルに分割
+├── BubbleRenderer.tsx (基本描画・100行)
+├── BubbleShapeRenderer.tsx (形状描画・100行)
+└── BubbleHandleRenderer.tsx (リサイズハンドル・100行)
+```
+
+#### **CanvasComponent.tsx分割案**:
+```
+CanvasComponent.tsx (600行) → 3ファイルに分割
+├── CanvasComponent.tsx (メイン・300行)
+├── CanvasEventHandlers.tsx (イベント処理・200行)
+└── CanvasStateManager.tsx (状態管理・100行)
+```
+
+## 現在の実装状況（変更なし）
 
 ### ✅ 正常動作中の機能
 
@@ -95,64 +139,37 @@
 - **❌ 吹き出しリサイズ**: 8方向ハンドル表示されるがクリック無効
 - **❌ キャラクターリサイズ**: 8方向ハンドル表示されるがクリック無効
 - **原因**: マウスダウン時にリサイズモードフラグが設定されない
-- **修復試行**: 全コード提供も動作せず
-
-### 🎉 Phase 8で完了していた項目（現在バグ発生）
-1. ✅ **スナップ設定UI実装**: グリッドサイズ・感度・表示設定の完全カスタマイズ
-2. ✅ **PanelManager分割**: パネル操作ロジックを独立モジュール化（350行分離）
-3. ✅ **ContextMenuHandler分割**: 右クリックメニュー処理を独立モジュール化（250行分離）
-4. ✅ **型定義拡張**: SnapSettings型の追加とCanvasComponentProps更新
-5. ✅ **設定連携システム**: App.tsx → CanvasComponent.tsx → PanelManager.ts の完全な設定伝達
-6. ✅ **コードベース最適化**: CanvasComponent.tsx を1000行 → 600行に削減（40%削減）
-7. **❌ リサイズ機能**: 分割作業中に破損、修復失敗
+- **修復予定**: コード分割完了後にピンポイント修復
 
 ## 🔧 **必要な作業**
 
-### **Phase 8.1: リサイズ機能緊急修復** 🚨
-**最優先**: 元々動作していたリサイズ機能の復旧
+### **Phase 8.1: CharacterRenderer.tsx分割完了** 🚨 **現在実施中**
+**最優先**: 途中で止まっているファイルの完成
+1. CharacterFaceRenderer.tsx の口描画部分完成
+2. CharacterHandleRenderer.tsx のハンドル配列部分完成
+3. インポート関係の整合性確認
 
-#### 修復方針の見直し:
-1. **段階的修復**: 全コード置換ではなく、ピンポイント修正
-2. **コード分割**: 巨大ファイルの分割を先行実施
-3. **最小限修正**: 動作する最低限の修正に絞る
+### **Phase 8.2: 他ファイル分割** 🔜 **CharacterRenderer完了後**
+1. **BubbleRenderer.tsx分割**: 300行を3ファイルに分割
+2. **CanvasComponent.tsx分割**: 600行を3ファイルに分割
 
-#### 推奨コード分割構成:
-1. **CharacterRenderer.tsx分割案**:
-   ```
-   CharacterRenderer.tsx (基本描画・150行)
-   CharacterFaceRenderer.tsx (顔描画・200行)
-   CharacterBodyRenderer.tsx (体描画・250行)
-   CharacterHandleRenderer.tsx (リサイズハンドル・100行)
-   CharacterUtils.tsx (ユーティリティ・100行)
-   ```
+### **Phase 8.3: リサイズ機能段階的修復** 🔜 **全分割完了後実施**
+1. **最小限のリサイズハンドル修復**: クリック判定のみ
+2. **段階的機能回復**: 移動→リサイズ→完全機能
+3. **動作確認**: 各段階で動作テスト
 
-2. **BubbleRenderer.tsx分割案**:
-   ```
-   BubbleRenderer.tsx (基本描画・100行)
-   BubbleShapeRenderer.tsx (形状描画・100行)
-   BubbleHandleRenderer.tsx (リサイズハンドル・100行)
-   ```
+### **Phase 9: 次世代機能** 🔜
+- ズーム機能、ルーラー機能、残コード分割完了
 
-3. **CanvasComponent.tsx分割案**:
-   ```
-   CanvasComponent.tsx (メイン・300行)
-   CanvasEventHandlers.tsx (イベント処理・200行)
-   CanvasStateManager.tsx (状態管理・100行)
-   ```
-
-#### 修復の技術的要件:
-- **8方向リサイズ**: nw, n, ne, e, se, s, sw, w の全方向対応
-- **最小サイズ制限**: 吹き出し60x40px、キャラクター0.5倍スケール
-- **最大サイズ制限**: キャラクター5.0倍スケール
-- **リアルタイム反映**: ドラッグ中の即座サイズ変更
-
-## 🏗️ ファイル構造（現在）
+## 🏗️ ファイル構造（分割後想定）
 ```
 src/
 ├── types.ts                    # 共通型定義（SnapSettings追加）
 ├── App.tsx                     # メインアプリ（スナップ設定UI付き）
 ├── components/
-│   ├── CanvasComponent.tsx     # Canvas操作中核（600行、リサイズバグあり）
+│   ├── CanvasComponent.tsx     # Canvas操作中核（600行→300行予定）
+│   ├── CanvasEventHandlers.tsx # イベント処理（200行・新規）
+│   ├── CanvasStateManager.tsx  # 状態管理（100行・新規）
 │   ├── UI/
 │   │   ├── CharacterDetailPanel.tsx # キャラクター詳細設定
 │   │   └── ExportPanel.tsx          # エクスポートUI
@@ -164,59 +181,47 @@ src/
 │       ├── templates.ts             # パネルテンプレート定義
 │       ├── sceneTemplates.ts        # シーンテンプレート定義
 │       └── renderers/
-│           ├── BubbleRenderer.tsx    # 吹き出し描画・操作（300行、リサイズバグあり）
-│           ├── CharacterRenderer.tsx # キャラクター描画・操作（800行、リサイズバグあり）
-│           └── PanelRenderer.tsx     # パネル描画・操作
+│           ├── BubbleRenderer.tsx        # 吹き出し描画（100行予定）
+│           ├── BubbleShapeRenderer.tsx   # 吹き出し形状（100行・新規）
+│           ├── BubbleHandleRenderer.tsx  # 吹き出しハンドル（100行・新規）
+│           ├── CharacterRenderer.tsx     # キャラ統合（150行・完了）
+│           ├── CharacterFaceRenderer.tsx # 顔描画（200行・未完了）
+│           ├── CharacterBodyRenderer.tsx # 体描画（250行・完了）
+│           ├── CharacterHandleRenderer.tsx # キャラハンドル（100行・未完了）
+│           ├── CharacterUtils.tsx        # キャラユーティリティ（100行・完了）
+│           └── PanelRenderer.tsx         # パネル描画・操作
 ├── services/
 │   └── ExportService.ts        # エクスポート機能中核
 ```
 
-## 🎯 **推奨次期作業方針**
-
-### **Phase 8.2: コード分割優先実施** 🔜 **最優先**
-1. **CharacterRenderer.tsx分割**: 800行を5ファイルに分割
-2. **BubbleRenderer.tsx分割**: 300行を3ファイルに分割
-3. **CanvasComponent.tsx分割**: 600行を3ファイルに分割
-
-### **Phase 8.3: リサイズ機能段階的修復** 🔜 **分割後実施**
-1. **最小限のリサイズハンドル修復**: クリック判定のみ
-2. **段階的機能回復**: 移動→リサイズ→完全機能
-3. **動作確認**: 各段階で動作テスト
-
-### **Phase 9: 次世代機能** 🔜
-- ズーム機能、ルーラー機能、残コード分割完了
-
-**現在の進捗率: 90% 完了（リサイズ機能停止とコード分割必要により10%減）** 🚧
+**現在の進捗率: 88% 完了（分割作業により2%減、完了後90%に回復予定）** 🚧
 
 ## 🎯 対応方針
 
-### **短期目標（1-2日以内）**
-1. **🔄 コード分割実施**: 大きなファイルを分割して管理可能にする
-2. **🔍 段階的デバッグ**: ピンポイントでリサイズ機能を修復
+### **短期目標（本日中）**
+1. **🔄 CharacterRenderer.tsx分割完了**: 途中ファイルの完成
+2. **🔍 分割後動作確認**: インポート関係とビルド確認
 
-### **中期目標（1週間）**
-1. **🔧 リサイズ機能完全復旧**: 8方向リサイズの完全実装
-2. **🧪 全機能テスト**: 修復後の動作確認
+### **中期目標（1-2日）**
+1. **🔧 他ファイル分割**: BubbleRenderer.txt、CanvasComponent.tsx
+2. **🔧 リサイズ機能段階的修復**: 分割後のピンポイント修復
 
-### **長期目標（1ヶ月）**
+### **長期目標（1週間）**
 1. **🎨 背景・小物システム実装**: 効果線・集中線の追加
 2. **🤖 ChatGPT API連携**: AIによるストーリー相談機能
 
 ## 📝 **開発者メモ**
 
-### **疲労度**: 非常に高 😵
-### **問題の性質**: 既存機能の破損（新機能開発ではない）
-### **緊急度**: 最高（基本機能に影響）
-### **修復見積もり**: 3-5時間の集中作業（分割作業含む）
+### **現在のフォーカス**: コード分割の完了 🎯
+### **分割の意義**: 1400行ファイルによる修正困難の解決
+### **次回作業優先順位**:
+1. **最優先**: CharacterFaceRenderer.tsx、CharacterHandleRenderer.tsx の完成
+2. **次点**: 分割後の動作確認とビルドテスト
+3. **最後**: BubbleRenderer.tsx、CanvasComponent.tsx の分割
 
-**次回作業時の優先順位:**
-1. **最優先**: コード分割の実施
-2. **次点**: 分割後のリサイズ機能修復
-3. **最後**: 新機能追加
-
-**重要**: まちまちなコード提供ではなく、段階的で管理可能な修復アプローチが必要
+**重要**: 分割完了後はピンポイントでリサイズ機能修復に集中
 
 ### **反省点**
-- 一度に大量のコード提供は非効率
-- ファイルサイズ制限を考慮した設計が不足
-- 段階的な修復アプローチが必要だった
+- CharacterRenderer.txtが1400行だったのを800行と誤認識していた
+- 分割作業中にファイルが途中で止まってしまった
+- より慎重な段階的分割アプローチが必要
