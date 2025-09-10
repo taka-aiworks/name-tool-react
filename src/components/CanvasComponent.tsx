@@ -624,7 +624,7 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
         console.log("✅ リサイズモード開始:", resizeResult.direction);
         setIsBubbleResizing(true);
         setResizeDirection(resizeResult.direction);
-        setDragOffset({ x: mouseX, y: mouseY });
+        //setDragOffset({ x: mouseX, y: mouseY });
       } else {
         console.log("📱 ドラッグモード開始");
         setIsDragging(true);
@@ -657,7 +657,7 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
           console.log("✅ キャラリサイズモード開始:", resizeResult.direction);
           setIsCharacterResizing(true);
           setResizeDirection(resizeResult.direction);
-          setDragOffset({ x: mouseX, y: mouseY });
+          //setDragOffset({ x: mouseX, y: mouseY });
         } else {
           console.log("📱 キャラドラッグモード開始");
           setIsDragging(true);
@@ -682,7 +682,7 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
 
-    // 吹き出しリサイズ処理（8方向対応）
+    // 吹き出しリサイズ処理（元のシンプル版）
     if (selectedBubble && isBubbleResizing) {
       const deltaX = mouseX - dragOffset.x;
       const deltaY = mouseY - dragOffset.y;
@@ -690,25 +690,10 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
       let newWidth = selectedBubble.width;
       let newHeight = selectedBubble.height;
       
-      // 方向に応じたリサイズ
-      switch (resizeDirection) {
-        case "e": // 右
-          newWidth = Math.max(60, selectedBubble.width + deltaX);
-          break;
-        case "w": // 左
-          newWidth = Math.max(60, selectedBubble.width - deltaX);
-          break;
-        case "n": // 上
-          newHeight = Math.max(40, selectedBubble.height - deltaY);
-          break;
-        case "s": // 下
-          newHeight = Math.max(40, selectedBubble.height + deltaY);
-          break;
-        case "ne": case "nw": case "se": case "sw": // 角（比例リサイズ）
-          const scale = 1 + deltaX / 100;
-          newWidth = Math.max(60, selectedBubble.width * scale);
-          newHeight = Math.max(40, selectedBubble.height * scale);
-          break;
+      if (resizeDirection === "horizontal") {
+        newWidth = Math.max(60, selectedBubble.width + deltaX);
+      } else if (resizeDirection === "vertical") {
+        newHeight = Math.max(40, selectedBubble.height + deltaY);
       }
       
       const updatedBubble = {
@@ -727,7 +712,7 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
       return;
     }
 
-    // キャラクターリサイズ処理
+    // キャラクターリサイズ処理（元のシンプル版）
     if (selectedCharacter && isCharacterResizing) {
       const deltaX = mouseX - dragOffset.x;
       const deltaY = mouseY - dragOffset.y;
@@ -751,7 +736,6 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
       setDragOffset({ x: mouseX, y: mouseY });
       return;
     }
-
     // パネルリサイズ
     if (selectedPanel && isPanelResizing) {
       const deltaX = mouseX - dragOffset.x;

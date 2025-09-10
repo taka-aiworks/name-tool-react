@@ -1,389 +1,383 @@
-// src/components/CanvasArea/renderers/BubbleRenderer.tsx
+// src/components/CanvasArea/renderers/BubbleRenderer.tsx (リサイズ修正版)
 import { SpeechBubble, Panel } from "../../../types";
 
 export class BubbleRenderer {
-  // 吹き出し描画機能
+  // 吹き出し描画メイン関数
   static drawBubbles(
     ctx: CanvasRenderingContext2D,
-    speechBubbles: SpeechBubble[],
+    bubbles: SpeechBubble[],
     panels: Panel[],
     selectedBubble: SpeechBubble | null
   ) {
-    speechBubbles.forEach((bubble) => {
-      const panel = panels.find((p) => p.id === bubble.panelId);
-      if (!panel) return;
-      BubbleRenderer.drawBubble(ctx, bubble, panel, selectedBubble);
+    bubbles.forEach(bubble => {
+      this.drawSingleBubble(ctx, bubble, panels, selectedBubble);
     });
   }
 
-  // 個別吹き出し描画（絶対座標のみ）
-static drawBubble(
-  ctx: CanvasRenderingContext2D,
-  bubble: SpeechBubble,
-  panel: Panel,
-  selectedBubble: SpeechBubble | null
-) {
-  // 常に絶対座標で描画
-  const bubbleX = bubble.x - bubble.width / 2;
-  const bubbleY = bubble.y - bubble.height / 2;
+  // 単一吹き出し描画
+  static drawSingleBubble(
+    ctx: CanvasRenderingContext2D,
+    bubble: SpeechBubble,
+    panels: Panel[],
+    selectedBubble: SpeechBubble | null
+  ) {
+    const panel = panels.find(p => p.id === bubble.panelId) || panels[0];
+    if (!panel) return;
 
-  // 選択状態の背景
-  if (bubble === selectedBubble) {
-    ctx.fillStyle = "rgba(255, 20, 147, 0.2)";
-    ctx.fillRect(bubbleX - 5, bubbleY - 5, bubble.width + 10, bubble.height + 10);
-    ctx.strokeStyle = "#ff1493";
-    ctx.lineWidth = 2;
-    ctx.strokeRect(bubbleX - 5, bubbleY - 5, bubble.width + 10, bubble.height + 10);
+    ctx.save();
+
+    // 吹き出し背景描画
+    this.drawBubbleBackground(ctx, bubble);
     
-    BubbleRenderer.drawBubbleResizeHandles(ctx, bubbleX, bubbleY, bubble.width, bubble.height);
+    // テキスト描画
+    this.drawBubbleText(ctx, bubble);
+    
+    // 選択状態の場合、リサイズハンドル描画
+    if (selectedBubble && selectedBubble.id === bubble.id) {
+      this.drawResizeHandles(ctx, bubble);
+    }
+
+    ctx.restore();
   }
 
-    // 吹き出しの種類によって形状を変える
+  // 吹き出し背景描画
+  static drawBubbleBackground(ctx: CanvasRenderingContext2D, bubble: SpeechBubble) {
+    const isDarkMode = document.documentElement.getAttribute("data-theme") === "dark";
+    
+    ctx.fillStyle = isDarkMode ? "#2d2d2d" : "white";
+    ctx.strokeStyle = isDarkMode ? "#555" : "#333";
+    ctx.lineWidth = 2;
+
+    // 吹き出し形状に応じた描画
     switch (bubble.type) {
-      case "普通":
-        BubbleRenderer.drawNormalBubble(ctx, bubbleX, bubbleY, bubble.width, bubble.height);
+      case "speech":
+        this.drawSpeechBubble(ctx, bubble);
         break;
-      case "叫び":
-        BubbleRenderer.drawShoutBubble(ctx, bubbleX, bubbleY, bubble.width, bubble.height);
+      case "thought":
+        this.drawThoughtBubble(ctx, bubble);
         break;
-      case "小声":
-        BubbleRenderer.drawWhisperBubble(ctx, bubbleX, bubbleY, bubble.width, bubble.height);
+      case "shout":
+        this.drawShoutBubble(ctx, bubble);
         break;
-      case "心の声":
-        BubbleRenderer.drawThoughtBubble(ctx, bubbleX, bubbleY, bubble.width, bubble.height);
+      case "whisper":
+        this.drawWhisperBubble(ctx, bubble);
         break;
       default:
-        BubbleRenderer.drawNormalBubble(ctx, bubbleX, bubbleY, bubble.width, bubble.height);
-    }
-
-    // 吹き出しの尻尾（しっぽ）を描画
-    BubbleRenderer.drawBubbleTail(ctx, bubbleX, bubbleY, bubble.width, bubble.height, bubble.type);
-
-    // 縦書きテキスト
-    ctx.fillStyle = "#333";
-    ctx.font = "12px Arial";
-    if (bubble.vertical) {
-      // 縦書き描画（改良版）
-      const chars = bubble.text.split("");
-      const startX = bubbleX + bubble.width / 2 - 6;
-      const startY = bubbleY + 20;
-      chars.forEach((char, index) => {
-        ctx.fillText(
-          char,
-          startX,
-          startY + index * 14
-        );
-      });
-    } else {
-      // 横書き
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText(
-        bubble.text,
-        bubbleX + bubble.width / 2,
-        bubbleY + bubble.height / 2
-      );
+        this.drawSpeechBubble(ctx, bubble);
     }
   }
 
-  // 吹き出しリサイズハンドル描画（8方向）
-  static drawBubbleResizeHandles(
-    ctx: CanvasRenderingContext2D,
-    bubbleX: number,
-    bubbleY: number,
-    width: number,
-    height: number
-  ) {
-    const handleSize = 16;
+  // 基本的な吹き出し形状
+  static drawSpeechBubble(ctx: CanvasRenderingContext2D, bubble: SpeechBubble) {
+    const cornerRadius = 8;
     
-    // 8方向のハンドル
-    const positions = [
-      { x: bubbleX - handleSize/2, y: bubbleY - handleSize/2, type: "corner" }, // 左上
-      { x: bubbleX + width/2 - handleSize/2, y: bubbleY - handleSize/2, type: "edge" }, // 上
-      { x: bubbleX + width - handleSize/2, y: bubbleY - handleSize/2, type: "corner" }, // 右上
-      { x: bubbleX + width - handleSize/2, y: bubbleY + height/2 - handleSize/2, type: "edge" }, // 右
-      { x: bubbleX + width - handleSize/2, y: bubbleY + height - handleSize/2, type: "corner" }, // 右下
-      { x: bubbleX + width/2 - handleSize/2, y: bubbleY + height - handleSize/2, type: "edge" }, // 下
-      { x: bubbleX - handleSize/2, y: bubbleY + height - handleSize/2, type: "corner" }, // 左下
-      { x: bubbleX - handleSize/2, y: bubbleY + height/2 - handleSize/2, type: "edge" }, // 左
-    ];
-
-    positions.forEach((pos) => {
-      if (pos.type === "corner") {
-        // 角：四角形（比例リサイズ）
-        ctx.fillStyle = "#ff1493";
-        ctx.strokeStyle = "#fff";
-        ctx.lineWidth = 2;
-        ctx.fillRect(pos.x, pos.y, handleSize, handleSize);
-        ctx.strokeRect(pos.x, pos.y, handleSize, handleSize);
-      } else {
-        // 辺：円形（縦横リサイズ）
-        ctx.fillStyle = "#1493ff";
-        ctx.strokeStyle = "#fff";
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(pos.x + handleSize/2, pos.y + handleSize/2, handleSize/2, 0, 2 * Math.PI);
-        ctx.fill();
-        ctx.stroke();
-      }
-    });
-  }
-
-  // 普通の吹き出し（楕円形）
-  static drawNormalBubble(
-    ctx: CanvasRenderingContext2D,
-    x: number,
-    y: number,
-    width: number,
-    height: number
-  ) {
-    const centerX = x + width / 2;
-    const centerY = y + height / 2;
-    const radiusX = width / 2;
-    const radiusY = height / 2;
-
     ctx.beginPath();
-    ctx.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, 2 * Math.PI);
-    ctx.fillStyle = "white";
+    ctx.roundRect(bubble.x, bubble.y, bubble.width, bubble.height, cornerRadius);
     ctx.fill();
-    ctx.strokeStyle = "#333";
-    ctx.lineWidth = 2;
     ctx.stroke();
-  }
 
-  // 叫び声の吹き出し（ギザギザ）
-  static drawShoutBubble(
-    ctx: CanvasRenderingContext2D,
-    x: number,
-    y: number,
-    width: number,
-    height: number
-  ) {
+    // 吹き出しの尻尾
+    const tailX = bubble.x + bubble.width * 0.2;
+    const tailY = bubble.y + bubble.height;
+    
     ctx.beginPath();
-    
-    // ギザギザの点を計算
-    const points = [];
-    const segments = 16; // ギザギザの数
-    const centerX = x + width / 2;
-    const centerY = y + height / 2;
-    
-    for (let i = 0; i < segments; i++) {
-      const angle = (i / segments) * 2 * Math.PI;
-      const isOuter = i % 2 === 0;
-      const radiusX = isOuter ? width / 2 : width / 2.5;
-      const radiusY = isOuter ? height / 2 : height / 2.5;
-      
-      const px = centerX + Math.cos(angle) * radiusX;
-      const py = centerY + Math.sin(angle) * radiusY;
-      points.push({ x: px, y: py });
-    }
-    
-    // パスを描画
-    ctx.moveTo(points[0].x, points[0].y);
-    points.forEach(point => {
-      ctx.lineTo(point.x, point.y);
-    });
+    ctx.moveTo(tailX, tailY);
+    ctx.lineTo(tailX - 10, tailY + 15);
+    ctx.lineTo(tailX + 10, tailY + 10);
     ctx.closePath();
-    
-    ctx.fillStyle = "white";
     ctx.fill();
-    ctx.strokeStyle = "#333";
-    ctx.lineWidth = 2;
     ctx.stroke();
   }
 
-  // 小声の吹き出し（点線）
-  static drawWhisperBubble(
-    ctx: CanvasRenderingContext2D,
-    x: number,
-    y: number,
-    width: number,
-    height: number
-  ) {
-    const centerX = x + width / 2;
-    const centerY = y + height / 2;
-    const radiusX = width / 2;
-    const radiusY = height / 2;
+  // 思考吹き出し
+  static drawThoughtBubble(ctx: CanvasRenderingContext2D, bubble: SpeechBubble) {
+    ctx.beginPath();
+    ctx.ellipse(
+      bubble.x + bubble.width / 2,
+      bubble.y + bubble.height / 2,
+      bubble.width / 2,
+      bubble.height / 2,
+      0, 0, Math.PI * 2
+    );
+    ctx.fill();
+    ctx.stroke();
+
+    // 思考の泡
+    const bubbleSize1 = 8;
+    const bubbleSize2 = 5;
+    const bubbleX = bubble.x + bubble.width * 0.2;
+    const bubbleY = bubble.y + bubble.height + 10;
 
     ctx.beginPath();
-    ctx.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, 2 * Math.PI);
-    ctx.fillStyle = "white";
+    ctx.arc(bubbleX, bubbleY, bubbleSize1, 0, Math.PI * 2);
     ctx.fill();
-    
-    // 点線で描画
-    ctx.setLineDash([5, 5]);
-    ctx.strokeStyle = "#666";
-    ctx.lineWidth = 2;
     ctx.stroke();
-    ctx.setLineDash([]); // 点線をリセット
+
+    ctx.beginPath();
+    ctx.arc(bubbleX - 8, bubbleY + 8, bubbleSize2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
   }
 
-  // 心の声（雲形）
-  static drawThoughtBubble(
-    ctx: CanvasRenderingContext2D,
-    x: number,
-    y: number,
-    width: number,
-    height: number
-  ) {
-    const centerX = x + width / 2;
-    const centerY = y + height / 2;
+  // 叫び吹き出し
+  static drawShoutBubble(ctx: CanvasRenderingContext2D, bubble: SpeechBubble) {
+    const spikes = 8;
+    const spikeLength = 10;
     
-    // 雲を表現する複数の円
-    const circles = [
-      { x: centerX - width * 0.3, y: centerY - height * 0.2, r: width * 0.25 },
-      { x: centerX + width * 0.2, y: centerY - height * 0.3, r: width * 0.2 },
-      { x: centerX + width * 0.3, y: centerY + height * 0.1, r: width * 0.22 },
-      { x: centerX - width * 0.2, y: centerY + height * 0.2, r: width * 0.18 },
-      { x: centerX, y: centerY, r: width * 0.3 },
-    ];
+    ctx.beginPath();
     
-    ctx.fillStyle = "white";
-    ctx.strokeStyle = "#333";
-    ctx.lineWidth = 2;
+    for (let i = 0; i < spikes * 2; i++) {
+      const angle = (i / (spikes * 2)) * Math.PI * 2;
+      const radius = (i % 2 === 0) ? 
+        Math.min(bubble.width, bubble.height) / 2 + spikeLength :
+        Math.min(bubble.width, bubble.height) / 2;
+      
+      const x = bubble.x + bubble.width / 2 + Math.cos(angle) * radius;
+      const y = bubble.y + bubble.height / 2 + Math.sin(angle) * radius;
+      
+      if (i === 0) {
+        ctx.moveTo(x, y);
+      } else {
+        ctx.lineTo(x, y);
+      }
+    }
     
-    circles.forEach(circle => {
-      ctx.beginPath();
-      ctx.arc(circle.x, circle.y, circle.r, 0, 2 * Math.PI);
-      ctx.fill();
-      ctx.stroke();
-    });
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
   }
 
-  // 吹き出しの尻尾
-  static drawBubbleTail(
-    ctx: CanvasRenderingContext2D,
-    x: number,
-    y: number,
-    width: number,
-    height: number,
-    type: string
-  ) {
-    if (type === "心の声") {
-      // 思考泡（小さい円）
-      const bubbles = [
-        { x: x + width * 0.2, y: y + height + 10, r: 4 },
-        { x: x + width * 0.1, y: y + height + 20, r: 2 },
-      ];
+  // ささやき吹き出し
+  static drawWhisperBubble(ctx: CanvasRenderingContext2D, bubble: SpeechBubble) {
+    ctx.setLineDash([5, 5]);
+    
+    ctx.beginPath();
+    ctx.roundRect(bubble.x, bubble.y, bubble.width, bubble.height, 8);
+    ctx.fill();
+    ctx.stroke();
+    
+    ctx.setLineDash([]);
+  }
+
+  // テキスト描画
+  static drawBubbleText(ctx: CanvasRenderingContext2D, bubble: SpeechBubble) {
+    const isDarkMode = document.documentElement.getAttribute("data-theme") === "dark";
+    
+    ctx.fillStyle = isDarkMode ? "#fff" : "#000";
+    ctx.font = "14px 'Noto Sans JP', sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    const centerX = bubble.x + bubble.width / 2;
+    const centerY = bubble.y + bubble.height / 2;
+
+    if (bubble.vertical) {
+      // 縦書き処理
+      const lines = bubble.text.split('');
+      const lineHeight = 18;
+      const startY = centerY - (lines.length * lineHeight) / 2;
       
-      ctx.fillStyle = "white";
-      ctx.strokeStyle = "#333";
-      ctx.lineWidth = 2;
-      
-      bubbles.forEach(bubble => {
-        ctx.beginPath();
-        ctx.arc(bubble.x, bubble.y, bubble.r, 0, 2 * Math.PI);
-        ctx.fill();
-        ctx.stroke();
+      lines.forEach((char, index) => {
+        ctx.fillText(char, centerX, startY + index * lineHeight);
       });
     } else {
-      // 通常の尻尾（三角形）
-      const tailX = x + width * 0.2;
-      const tailY = y + height;
+      // 横書き処理
+      const maxWidth = bubble.width - 20;
+      const lines = this.wrapText(ctx, bubble.text, maxWidth);
+      const lineHeight = 18;
+      const startY = centerY - (lines.length * lineHeight) / 2;
       
-      ctx.beginPath();
-      ctx.moveTo(tailX, tailY);
-      ctx.lineTo(tailX - 10, tailY + 15);
-      ctx.lineTo(tailX + 15, tailY + 8);
-      ctx.closePath();
-      
-      ctx.fillStyle = "white";
-      ctx.fill();
-      ctx.strokeStyle = "#333";
-      ctx.lineWidth = 2;
-      ctx.stroke();
+      lines.forEach((line, index) => {
+        ctx.fillText(line, centerX, startY + index * lineHeight);
+      });
     }
   }
 
-  // 8方向ハンドルクリック判定（戻り値を修正）
+  // テキスト折り返し処理
+  static wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
+    const words = text.split('');
+    const lines: string[] = [];
+    let currentLine = '';
+
+    for (const char of words) {
+      const testLine = currentLine + char;
+      const metrics = ctx.measureText(testLine);
+      
+      if (metrics.width > maxWidth && currentLine.length > 0) {
+        lines.push(currentLine);
+        currentLine = char;
+      } else {
+        currentLine = testLine;
+      }
+    }
+    
+    if (currentLine.length > 0) {
+      lines.push(currentLine);
+    }
+    
+    return lines;
+  }
+
+  // 🆕 8方向リサイズハンドル描画（修正版）
+  static drawResizeHandles(ctx: CanvasRenderingContext2D, bubble: SpeechBubble) {
+    const handleSize = 8;
+    const isDarkMode = document.documentElement.getAttribute("data-theme") === "dark";
+    
+    ctx.fillStyle = isDarkMode ? "#ff6b35" : "#ff8833";
+    ctx.strokeStyle = isDarkMode ? "#fff" : "#000";
+    ctx.lineWidth = 1;
+
+    // 8方向のハンドル位置
+    const handles = [
+      { x: bubble.x - handleSize/2, y: bubble.y - handleSize/2, dir: "nw" }, // 左上
+      { x: bubble.x + bubble.width/2 - handleSize/2, y: bubble.y - handleSize/2, dir: "n" }, // 上
+      { x: bubble.x + bubble.width - handleSize/2, y: bubble.y - handleSize/2, dir: "ne" }, // 右上
+      { x: bubble.x + bubble.width - handleSize/2, y: bubble.y + bubble.height/2 - handleSize/2, dir: "e" }, // 右
+      { x: bubble.x + bubble.width - handleSize/2, y: bubble.y + bubble.height - handleSize/2, dir: "se" }, // 右下
+      { x: bubble.x + bubble.width/2 - handleSize/2, y: bubble.y + bubble.height - handleSize/2, dir: "s" }, // 下
+      { x: bubble.x - handleSize/2, y: bubble.y + bubble.height - handleSize/2, dir: "sw" }, // 左下
+      { x: bubble.x - handleSize/2, y: bubble.y + bubble.height/2 - handleSize/2, dir: "w" } // 左
+    ];
+
+    handles.forEach(handle => {
+      ctx.fillRect(handle.x, handle.y, handleSize, handleSize);
+      ctx.strokeRect(handle.x, handle.y, handleSize, handleSize);
+    });
+  }
+
+  // 🆕 8方向リサイズハンドル判定（修正版）
   static isBubbleResizeHandleClicked(
-    mouseX: number,
-    mouseY: number,
-    bubble: SpeechBubble,
+    mouseX: number, 
+    mouseY: number, 
+    bubble: SpeechBubble, 
     panel: Panel
   ): { isClicked: boolean; direction: string } {
-    const bubbleX = bubble.x - bubble.width / 2;
-    const bubbleY = bubble.y - bubble.height / 2;
-    const handleSize = 12;
-    const tolerance = 8;
+    const handleSize = 8;
+    const tolerance = 2; // クリック判定を少し緩く
 
-    const positions = [
-      { x: bubbleX - handleSize/2, y: bubbleY - handleSize/2, type: "nw" },
-      { x: bubbleX + bubble.width/2 - handleSize/2, y: bubbleY - handleSize/2, type: "n" },
-      { x: bubbleX + bubble.width - handleSize/2, y: bubbleY - handleSize/2, type: "ne" },
-      { x: bubbleX + bubble.width - handleSize/2, y: bubbleY + bubble.height/2 - handleSize/2, type: "e" },
-      { x: bubbleX + bubble.width - handleSize/2, y: bubbleY + bubble.height - handleSize/2, type: "se" },
-      { x: bubbleX + bubble.width/2 - handleSize/2, y: bubbleY + bubble.height - handleSize/2, type: "s" },
-      { x: bubbleX - handleSize/2, y: bubbleY + bubble.height - handleSize/2, type: "sw" },
-      { x: bubbleX - handleSize/2, y: bubbleY + bubble.height/2 - handleSize/2, type: "w" },
+    // 8方向のハンドル位置と方向
+    const handles = [
+      { x: bubble.x - handleSize/2, y: bubble.y - handleSize/2, dir: "nw" },
+      { x: bubble.x + bubble.width/2 - handleSize/2, y: bubble.y - handleSize/2, dir: "n" },
+      { x: bubble.x + bubble.width - handleSize/2, y: bubble.y - handleSize/2, dir: "ne" },
+      { x: bubble.x + bubble.width - handleSize/2, y: bubble.y + bubble.height/2 - handleSize/2, dir: "e" },
+      { x: bubble.x + bubble.width - handleSize/2, y: bubble.y + bubble.height - handleSize/2, dir: "se" },
+      { x: bubble.x + bubble.width/2 - handleSize/2, y: bubble.y + bubble.height - handleSize/2, dir: "s" },
+      { x: bubble.x - handleSize/2, y: bubble.y + bubble.height - handleSize/2, dir: "sw" },
+      { x: bubble.x - handleSize/2, y: bubble.y + bubble.height/2 - handleSize/2, dir: "w" }
     ];
 
-    for (const pos of positions) {
-      if (
-        mouseX >= pos.x - tolerance &&
-        mouseX <= pos.x + handleSize + tolerance &&
-        mouseY >= pos.y - tolerance &&
-        mouseY <= pos.y + handleSize + tolerance
-      ) {
-        console.log(`リサイズハンドル ${pos.type} クリック検出!`);
-        return { isClicked: true, direction: pos.type };
+    for (const handle of handles) {
+      if (mouseX >= handle.x - tolerance && 
+          mouseX <= handle.x + handleSize + tolerance &&
+          mouseY >= handle.y - tolerance && 
+          mouseY <= handle.y + handleSize + tolerance) {
+        console.log(`🎯 リサイズハンドル検出: ${handle.dir} at (${handle.x}, ${handle.y})`);
+        return { isClicked: true, direction: handle.dir };
       }
     }
-    
+
     return { isClicked: false, direction: "" };
   }
 
-  // 検索も絶対座標のみ
+  // 吹き出し位置判定
   static findBubbleAt(
-    mouseX: number, 
-    mouseY: number, 
-    speechBubbles: SpeechBubble[], 
+    x: number, 
+    y: number, 
+    bubbles: SpeechBubble[], 
     panels: Panel[]
   ): SpeechBubble | null {
-    for (let i = speechBubbles.length - 1; i >= 0; i--) {
-      const bubble = speechBubbles[i];
+    // 後ろから検索（上に描画されたものを優先）
+    for (let i = bubbles.length - 1; i >= 0; i--) {
+      const bubble = bubbles[i];
       
-      const bubbleX = bubble.x - bubble.width / 2;
-      const bubbleY = bubble.y - bubble.height / 2;
-
-      if (
-        mouseX >= bubbleX &&
-        mouseX <= bubbleX + bubble.width &&
-        mouseY >= bubbleY &&
-        mouseY <= bubbleY + bubble.height
-      ) {
+      if (x >= bubble.x && 
+          x <= bubble.x + bubble.width &&
+          y >= bubble.y && 
+          y <= bubble.y + bubble.height) {
         return bubble;
       }
     }
+    
     return null;
   }
 
-  // 吹き出しの自由移動対応（パネル外も可能）
-  static findBubbleAtGlobal(
-    mouseX: number, 
-    mouseY: number, 
-    speechBubbles: SpeechBubble[], 
-    panels: Panel[]
-  ): SpeechBubble | null {
-    for (let i = speechBubbles.length - 1; i >= 0; i--) {
-      const bubble = speechBubbles[i];
-      const panel = panels.find((p) => p.id === bubble.panelId);
-      if (!panel) continue;
+  // 🆕 8方向リサイズ実行（BubbleRenderer.tsxに追加）
+  static resizeBubble(
+    bubble: SpeechBubble,
+    direction: string,
+    deltaX: number,
+    deltaY: number,
+    originalBounds: { x: number; y: number; width: number; height: number }
+  ): SpeechBubble {
+    let newX = bubble.x;
+    let newY = bubble.y;
+    let newWidth = bubble.width;
+    let newHeight = bubble.height;
 
-      // 絶対座標で計算（パネル外も含む）
-      const bubbleX = panel.x + panel.width * bubble.x - bubble.width / 2;
-      const bubbleY = panel.y + panel.height * bubble.y - bubble.height / 2;
+    const minWidth = 60;
+    const minHeight = 40;
 
-      if (
-        mouseX >= bubbleX &&
-        mouseX <= bubbleX + bubble.width &&
-        mouseY >= bubbleY &&
-        mouseY <= bubbleY + bubble.height
-      ) {
-        return bubble;
-      }
+    // 中心座標で管理されているため、座標変換が必要
+    const bubbleLeft = bubble.x - bubble.width / 2;
+    const bubbleTop = bubble.y - bubble.height / 2;
+
+    switch (direction) {
+      case "nw": // 左上
+        const newLeft_nw = Math.min(bubbleLeft + originalBounds.width - minWidth, bubbleLeft + deltaX);
+        const newTop_nw = Math.min(bubbleTop + originalBounds.height - minHeight, bubbleTop + deltaY);
+        newWidth = (bubbleLeft + bubble.width) - newLeft_nw;
+        newHeight = (bubbleTop + bubble.height) - newTop_nw;
+        newX = newLeft_nw + newWidth / 2;
+        newY = newTop_nw + newHeight / 2;
+        break;
+        
+      case "n": // 上
+        const newTop_n = Math.min(bubbleTop + originalBounds.height - minHeight, bubbleTop + deltaY);
+        newHeight = (bubbleTop + bubble.height) - newTop_n;
+        newY = newTop_n + newHeight / 2;
+        break;
+        
+      case "ne": // 右上
+        const newTop_ne = Math.min(bubbleTop + originalBounds.height - minHeight, bubbleTop + deltaY);
+        newWidth = Math.max(minWidth, originalBounds.width + deltaX);
+        newHeight = (bubbleTop + bubble.height) - newTop_ne;
+        newY = newTop_ne + newHeight / 2;
+        break;
+        
+      case "e": // 右
+        newWidth = Math.max(minWidth, originalBounds.width + deltaX);
+        break;
+        
+      case "se": // 右下
+        newWidth = Math.max(minWidth, originalBounds.width + deltaX);
+        newHeight = Math.max(minHeight, originalBounds.height + deltaY);
+        break;
+        
+      case "s": // 下
+        newHeight = Math.max(minHeight, originalBounds.height + deltaY);
+        break;
+        
+      case "sw": // 左下
+        const newLeft_sw = Math.min(bubbleLeft + originalBounds.width - minWidth, bubbleLeft + deltaX);
+        newWidth = (bubbleLeft + bubble.width) - newLeft_sw;
+        newHeight = Math.max(minHeight, originalBounds.height + deltaY);
+        newX = newLeft_sw + newWidth / 2;
+        break;
+        
+      case "w": // 左
+        const newLeft_w = Math.min(bubbleLeft + originalBounds.width - minWidth, bubbleLeft + deltaX);
+        newWidth = (bubbleLeft + bubble.width) - newLeft_w;
+        newX = newLeft_w + newWidth / 2;
+        break;
     }
-    return null;
+
+    return {
+      ...bubble,
+      x: newX,
+      y: newY,
+      width: newWidth,
+      height: newHeight,
+    };
   }
 }
-

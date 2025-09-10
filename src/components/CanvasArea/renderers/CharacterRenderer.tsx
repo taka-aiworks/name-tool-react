@@ -1377,6 +1377,8 @@ export class CharacterRenderer {
     return null;
   }
 
+  // CharacterRenderer.tsx の isCharacterResizeHandleClicked 関数を修正
+
   static isCharacterResizeHandleClicked(
     mouseX: number,
     mouseY: number,
@@ -1385,20 +1387,33 @@ export class CharacterRenderer {
   ): { isClicked: boolean; direction: string } {
     let charX, charY, charWidth, charHeight;
     
+    // 🔧 座標計算を修正
     if (character.isGlobalPosition) {
+      // グローバル座標の場合
       charWidth = CharacterRenderer.getCharacterWidth(character);
       charHeight = CharacterRenderer.getCharacterHeight(character);
       charX = character.x - charWidth / 2;
       charY = character.y - charHeight / 2;
     } else {
+      // 相対座標の場合
       charWidth = 60 * character.scale;
       charHeight = 40 * character.scale;
       charX = panel.x + panel.width * character.x - charWidth / 2;
       charY = panel.y + panel.height * character.y - charHeight / 2;
     }
 
-    const handleSize = 12;
-    const tolerance = 8;
+    // 🔧 ハンドルサイズを大きく
+    const handleSize = 20; // 12 → 20に変更
+    const tolerance = 12;  // 8 → 12に変更
+
+    // 🔧 デバッグログ追加
+    console.log("🔍 キャラクターリサイズ判定詳細:", {
+      mouseX, mouseY,
+      charX, charY, charWidth, charHeight,
+      isGlobalPosition: character.isGlobalPosition,
+      characterPos: { x: character.x, y: character.y },
+      scale: character.scale
+    });
 
     const positions = [
       { x: charX - handleSize/2, y: charY - handleSize/2, type: "nw" },
@@ -1411,13 +1426,24 @@ export class CharacterRenderer {
       { x: charX - handleSize/2, y: charY + charHeight/2 - handleSize/2, type: "w" },
     ];
 
+    // 🔧 ハンドル位置もログ出力
+    console.log("🔍 ハンドル位置:", positions);
+
     for (const pos of positions) {
-      if (
-        mouseX >= pos.x - tolerance &&
-        mouseX <= pos.x + handleSize + tolerance &&
-        mouseY >= pos.y - tolerance &&
-        mouseY <= pos.y + handleSize + tolerance
-      ) {
+      const inRangeX = mouseX >= pos.x - tolerance && mouseX <= pos.x + handleSize + tolerance;
+      const inRangeY = mouseY >= pos.y - tolerance && mouseY <= pos.y + handleSize + tolerance;
+      
+      // 🔧 詳細な判定ログ
+      console.log(`🔍 ハンドル ${pos.type} 判定:`, {
+        mouseX, mouseY,
+        handleX: pos.x, handleY: pos.y,
+        inRangeX, inRangeY,
+        rangeX: `${pos.x - tolerance} ~ ${pos.x + handleSize + tolerance}`,
+        rangeY: `${pos.y - tolerance} ~ ${pos.y + handleSize + tolerance}`
+      });
+      
+      if (inRangeX && inRangeY) {
+        console.log(`🎯 キャラクターリサイズハンドル ${pos.type} クリック検出!`);
         return { isClicked: true, direction: pos.type };
       }
     }
@@ -1435,3 +1461,4 @@ export class CharacterRenderer {
     return result.isClicked;
   }
 }
+
