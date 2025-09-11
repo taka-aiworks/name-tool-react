@@ -112,7 +112,10 @@ export class CharacterRenderer {
     return baseHeight * character.scale * typeMultiplier;
   }
 
-  // 🆕 8方向リサイズハンドル描画（吹き出しと同様のスタイル）
+  // CharacterRenderer.tsx のハンドル描画修正版
+  // 🔧 ハンドル位置をキャラクターの実際のサイズに合わせる
+
+  // 🆕 8方向リサイズハンドル描画（位置修正版）
   static drawCharacterResizeHandles(
     ctx: CanvasRenderingContext2D,
     charX: number,
@@ -120,14 +123,14 @@ export class CharacterRenderer {
     width: number,
     height: number
   ) {
-    const handleSize = 16; // 大きめのハンドル
+    const handleSize = 16;
     const isDarkMode = document.documentElement.getAttribute("data-theme") === "dark";
     
-    ctx.fillStyle = "#ff6600"; // オレンジ色
+    ctx.fillStyle = "#ff6600";
     ctx.strokeStyle = isDarkMode ? "#fff" : "#000";
     ctx.lineWidth = 2;
 
-    // 🔧 8方向のハンドル位置（吹き出しと同じ計算方式）
+    // 🔧 ハンドル位置をキャラクターの実際の境界に合わせる
     const handles = [
       { x: charX - handleSize/2, y: charY - handleSize/2, dir: "nw" }, // 左上
       { x: charX + width/2 - handleSize/2, y: charY - handleSize/2, dir: "n" }, // 上
@@ -139,8 +142,19 @@ export class CharacterRenderer {
       { x: charX - handleSize/2, y: charY + height/2 - handleSize/2, dir: "w" } // 左
     ];
 
+    // 🆕 デバッグ用：キャラクター境界の表示
+    ctx.strokeStyle = "rgba(255, 102, 0, 0.5)";
+    ctx.lineWidth = 1;
+    ctx.setLineDash([5, 5]);
+    ctx.strokeRect(charX, charY, width, height);
+    ctx.setLineDash([]);
+
+    // ハンドル描画
+    ctx.fillStyle = "#ff6600";
+    ctx.strokeStyle = isDarkMode ? "#fff" : "#000";
+    ctx.lineWidth = 2;
+
     handles.forEach(handle => {
-      // 角のハンドルは四角、辺のハンドルは丸で区別（吹き出しと同様）
       if (["nw", "ne", "se", "sw"].includes(handle.dir)) {
         // 角：四角いハンドル
         ctx.fillRect(handle.x, handle.y, handleSize, handleSize);
