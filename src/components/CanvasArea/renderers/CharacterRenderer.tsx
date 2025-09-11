@@ -1,4 +1,4 @@
-// src/components/CanvasArea/renderers/CharacterRenderer.tsx (人間らしい表現・大幅改良版)
+// src/components/CanvasArea/renderers/CharacterRenderer.tsx (リサイズ機能完全対応版)
 import { Character, Panel } from "../../../types";
 
 export class CharacterRenderer {
@@ -10,19 +10,12 @@ export class CharacterRenderer {
     selectedCharacter: Character | null
   ) {
     characters.forEach((character) => {
-      // 🔧 パネルID照合を厳格にチェック
       const panel = panels.find((p) => {
-        // 数値と文字列の両方に対応
         return String(p.id) === String(character.panelId);
       });
       
-      // 🔧 デバッグログ追加
       if (!panel) {
         console.warn(`⚠️ パネルが見つかりません - キャラクター: ${character.name}, パネルID: ${character.panelId}`);
-        console.log("利用可能なパネル:", panels.map(p => ({ id: p.id, type: typeof p.id })));
-        console.log("キャラクターのパネルID:", character.panelId, typeof character.panelId);
-        
-        // 🆕 緊急回避：最初のパネルを使用
         const fallbackPanel = panels[0];
         if (fallbackPanel) {
           console.log(`🚑 緊急回避: パネル${fallbackPanel.id}を使用`);
@@ -64,6 +57,7 @@ export class CharacterRenderer {
       ctx.lineWidth = 2;
       ctx.strokeRect(charX - 5, charY - 5, charWidth + 10, charHeight + 10);
       
+      // 🆕 8方向リサイズハンドル描画
       CharacterRenderer.drawCharacterResizeHandles(ctx, charX, charY, charWidth, charHeight);
     }
 
@@ -77,8 +71,14 @@ export class CharacterRenderer {
     ctx.fillText(character.name, charX + charWidth / 2, charY + charHeight + 12);
   }
 
-  // 幅・高さ計算（改良）
+  // 🆕 幅・高さ計算（width/height対応改良版）
   static getCharacterWidth(character: Character): number {
+    // width指定がある場合は優先
+    if (character.width !== undefined && character.width > 0) {
+      return character.width;
+    }
+    
+    // 従来のscale計算をフォールバック
     const baseWidth = 50;
     let typeMultiplier = 1.0;
     
@@ -93,6 +93,12 @@ export class CharacterRenderer {
   }
 
   static getCharacterHeight(character: Character): number {
+    // height指定がある場合は優先
+    if (character.height !== undefined && character.height > 0) {
+      return character.height;
+    }
+    
+    // 従来のscale計算をフォールバック
     const baseHeight = 60;
     let typeMultiplier = 1.0;
     
@@ -104,6 +110,199 @@ export class CharacterRenderer {
     }
     
     return baseHeight * character.scale * typeMultiplier;
+  }
+
+  // 🆕 8方向リサイズハンドル描画（吹き出しと同様のスタイル）
+  static drawCharacterResizeHandles(
+    ctx: CanvasRenderingContext2D,
+    charX: number,
+    charY: number,
+    width: number,
+    height: number
+  ) {
+    const handleSize = 16; // 大きめのハンドル
+    const isDarkMode = document.documentElement.getAttribute("data-theme") === "dark";
+    
+    ctx.fillStyle = "#ff6600"; // オレンジ色
+    ctx.strokeStyle = isDarkMode ? "#fff" : "#000";
+    ctx.lineWidth = 2;
+
+    // 🔧 8方向のハンドル位置（吹き出しと同じ計算方式）
+    const handles = [
+      { x: charX - handleSize/2, y: charY - handleSize/2, dir: "nw" }, // 左上
+      { x: charX + width/2 - handleSize/2, y: charY - handleSize/2, dir: "n" }, // 上
+      { x: charX + width - handleSize/2, y: charY - handleSize/2, dir: "ne" }, // 右上
+      { x: charX + width - handleSize/2, y: charY + height/2 - handleSize/2, dir: "e" }, // 右
+      { x: charX + width - handleSize/2, y: charY + height - handleSize/2, dir: "se" }, // 右下
+      { x: charX + width/2 - handleSize/2, y: charY + height - handleSize/2, dir: "s" }, // 下
+      { x: charX - handleSize/2, y: charY + height - handleSize/2, dir: "sw" }, // 左下
+      { x: charX - handleSize/2, y: charY + height/2 - handleSize/2, dir: "w" } // 左
+    ];
+
+    handles.forEach(handle => {
+      // 角のハンドルは四角、辺のハンドルは丸で区別（吹き出しと同様）
+      if (["nw", "ne", "se", "sw"].includes(handle.dir)) {
+        // 角：四角いハンドル
+        ctx.fillRect(handle.x, handle.y, handleSize, handleSize);
+        ctx.strokeRect(handle.x, handle.y, handleSize, handleSize);
+      } else {
+        // 辺：丸いハンドル
+        ctx.beginPath();
+        ctx.arc(handle.x + handleSize/2, handle.y + handleSize/2, handleSize/2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      }
+    });
+  }
+
+  // 🆕 8方向リサイズハンドル判定（吹き出しと同様のロジック）
+  static isCharacterResizeHandleClicked(
+    mouseX: number,
+    mouseY: number,
+    character: Character,
+    panel: Panel
+  ): { isClicked: boolean; direction: string } {
+    let charX, charY, charWidth, charHeight;
+    
+    // 🔧 座標計算
+    if (character.isGlobalPosition) {
+      charWidth = CharacterRenderer.getCharacterWidth(character);
+      charHeight = CharacterRenderer.getCharacterHeight(character);
+      charX = character.x - charWidth / 2;
+      charY = character.y - charHeight / 2;
+    } else {
+      charWidth = 60 * character.scale;
+      charHeight = 40 * character.scale;
+      charX = panel.x + panel.width * character.x - charWidth / 2;
+      charY = panel.y + panel.height * character.y - charHeight / 2;
+    }
+
+    const handleSize = 16; // 描画と同じサイズ
+    const tolerance = 10; // クリック判定を広く
+
+    console.log("🔍 キャラクターリサイズハンドル判定開始:", {
+      mouseX, mouseY,
+      charPos: { x: charX, y: charY },
+      charSize: { width: charWidth, height: charHeight },
+      handleSize, tolerance
+    });
+
+    // 🔧 8方向のハンドル位置（描画と完全一致）
+    const handles = [
+      { x: charX - handleSize/2, y: charY - handleSize/2, dir: "nw" },
+      { x: charX + charWidth/2 - handleSize/2, y: charY - handleSize/2, dir: "n" },
+      { x: charX + charWidth - handleSize/2, y: charY - handleSize/2, dir: "ne" },
+      { x: charX + charWidth - handleSize/2, y: charY + charHeight/2 - handleSize/2, dir: "e" },
+      { x: charX + charWidth - handleSize/2, y: charY + charHeight - handleSize/2, dir: "se" },
+      { x: charX + charWidth/2 - handleSize/2, y: charY + charHeight - handleSize/2, dir: "s" },
+      { x: charX - handleSize/2, y: charY + charHeight - handleSize/2, dir: "sw" },
+      { x: charX - handleSize/2, y: charY + charHeight/2 - handleSize/2, dir: "w" }
+    ];
+
+    for (const handle of handles) {
+      const inRangeX = mouseX >= handle.x - tolerance && mouseX <= handle.x + handleSize + tolerance;
+      const inRangeY = mouseY >= handle.y - tolerance && mouseY <= handle.y + handleSize + tolerance;
+      
+      console.log(`🔍 ハンドル ${handle.dir} 判定:`, {
+        handlePos: { x: handle.x, y: handle.y },
+        checkRange: {
+          x: `${handle.x - tolerance} ~ ${handle.x + handleSize + tolerance}`,
+          y: `${handle.y - tolerance} ~ ${handle.y + handleSize + tolerance}`
+        },
+        inRangeX, inRangeY
+      });
+      
+      if (inRangeX && inRangeY) {
+        console.log(`🎯 キャラクターリサイズハンドル ${handle.dir} クリック検出!`);
+        return { isClicked: true, direction: handle.dir };
+      }
+    }
+
+    console.log("❌ リサイズハンドルクリック判定: 該当なし");
+    return { isClicked: false, direction: "" };
+  }
+
+  // CharacterRenderer.tsx の resizeCharacter メソッド修正版
+  // 🔧 座標系を吹き出しと統一（中心座標を維持）
+
+  static resizeCharacter(
+    character: Character,
+    direction: string,
+    deltaX: number,
+    deltaY: number,
+    originalBounds: { x: number; y: number; width: number; height: number }
+  ): Character {
+    let newWidth = originalBounds.width;
+    let newHeight = originalBounds.height;
+
+    const minWidth = 30;  // キャラクターの最小幅
+    const minHeight = 40; // キャラクターの最小高さ
+
+    console.log("🔧 キャラクターリサイズ実行:", {
+      direction,
+      deltaX, deltaY,
+      currentSize: { width: originalBounds.width, height: originalBounds.height },
+      currentPos: { x: character.x, y: character.y },
+      originalBounds
+    });
+
+    // 🔧 各方向の処理（座標は変更せず、サイズのみ変更）
+    switch (direction) {
+      case "nw": // 左上
+        newWidth = Math.max(minWidth, originalBounds.width - deltaX);
+        newHeight = Math.max(minHeight, originalBounds.height - deltaY);
+        break;
+        
+      case "n": // 上
+        newHeight = Math.max(minHeight, originalBounds.height - deltaY);
+        break;
+        
+      case "ne": // 右上
+        newWidth = Math.max(minWidth, originalBounds.width + deltaX);
+        newHeight = Math.max(minHeight, originalBounds.height - deltaY);
+        break;
+        
+      case "e": // 右
+        newWidth = Math.max(minWidth, originalBounds.width + deltaX);
+        break;
+        
+      case "se": // 右下
+        newWidth = Math.max(minWidth, originalBounds.width + deltaX);
+        newHeight = Math.max(minHeight, originalBounds.height + deltaY);
+        break;
+        
+      case "s": // 下
+        newHeight = Math.max(minHeight, originalBounds.height + deltaY);
+        break;
+        
+      case "sw": // 左下
+        newWidth = Math.max(minWidth, originalBounds.width - deltaX);
+        newHeight = Math.max(minHeight, originalBounds.height + deltaY);
+        break;
+        
+      case "w": // 左
+        newWidth = Math.max(minWidth, originalBounds.width - deltaX);
+        break;
+        
+      default:
+        console.warn("⚠️ 不明なリサイズ方向:", direction);
+        return character;
+    }
+
+    // 🆕 座標は変更せず、サイズのみ変更
+    const result = {
+      ...character,
+      // x, y はそのまま（中心座標を維持）
+      width: newWidth,   // 🆕 width プロパティを設定
+      height: newHeight, // 🆕 height プロパティを設定
+    };
+
+    console.log("✅ キャラクターリサイズ結果:", {
+      pos: { x: character.x, y: character.y }, // 座標は変更なし
+      newSize: { width: newWidth, height: newHeight }
+    });
+
+    return result;
   }
 
   // キャラクター本体描画（表示タイプ別）
@@ -806,334 +1005,10 @@ export class CharacterRenderer {
     const bodyX = charX + charWidth / 2 - bodyWidth / 2;
     const bodyY = bodyStartY;
 
-    // ポーズに応じた体の描画
-    switch (pose) {
-      case "sitting":
-        CharacterRenderer.drawSittingBody(ctx, bodyX, bodyY, bodyWidth, bodyHeight, direction);
-        break;
-      case "walking":
-        CharacterRenderer.drawWalkingBody(ctx, bodyX, bodyY, bodyWidth, bodyHeight, direction);
-        break;
-      case "pointing":
-        CharacterRenderer.drawPointingBody(ctx, bodyX, bodyY, bodyWidth, bodyHeight, direction);
-        break;
-      case "waving":
-        CharacterRenderer.drawWavingBody(ctx, bodyX, bodyY, bodyWidth, bodyHeight, direction);
-        break;
-      case "arms_crossed":
-        CharacterRenderer.drawArmsCrossedBody(ctx, bodyX, bodyY, bodyWidth, bodyHeight, direction);
-        break;
-      case "thinking":
-        CharacterRenderer.drawThinkingBody(ctx, bodyX, bodyY, bodyWidth, bodyHeight, direction);
-        break;
-      default: // standing
-        CharacterRenderer.drawStandingBody(ctx, bodyX, bodyY, bodyWidth, bodyHeight, direction);
-    }
-  }
-
-  // 立っているポーズ
-  static drawStandingBody(
-    ctx: CanvasRenderingContext2D,
-    x: number,
-    y: number,
-    w: number,
-    h: number,
-    direction: string
-  ) {
-    switch (direction) {
-      case "back":
-      case "leftBack":
-      case "rightBack":
-        CharacterRenderer.drawBodyBack(ctx, x, y, w, h);
-        break;
-      case "left":
-      case "leftFront":
-        CharacterRenderer.drawBodySide(ctx, x, y, w, h, "left");
-        break;
-      case "right":
-      case "rightFront":
-        CharacterRenderer.drawBodySide(ctx, x, y, w, h, "right");
-        break;
-      default:
-        CharacterRenderer.drawBodyFront(ctx, x, y, w, h);
-    }
-  }
-
-  // 座っているポーズ
-  static drawSittingBody(
-    ctx: CanvasRenderingContext2D,
-    x: number,
-    y: number,
-    w: number,
-    h: number,
-    direction: string
-  ) {
-    // 胴体（少し短く）
-    const torsoHeight = h * 0.6;
+    // 体の基本描画
     ctx.fillStyle = "#4CAF50";
     ctx.beginPath();
-    ctx.roundRect(x, y, w, torsoHeight, 8);
-    ctx.fill();
-    
-    ctx.strokeStyle = "#2E7D32";
-    ctx.lineWidth = 1;
-    ctx.stroke();
-
-    // 座った脚
-    const legY = y + torsoHeight - h * 0.1;
-    ctx.fillStyle = "#1976D2";
-    ctx.beginPath();
-    ctx.roundRect(x + w * 0.1, legY, w * 0.8, h * 0.3, 4);
-    ctx.fill();
-    
-    ctx.strokeStyle = "#1565C0";
-    ctx.lineWidth = 1;
-    ctx.stroke();
-
-    // 腕
-    CharacterRenderer.drawArms(ctx, x, y, w, h, "sitting", direction);
-  }
-
-  // 歩いているポーズ
-  static drawWalkingBody(
-    ctx: CanvasRenderingContext2D,
-    x: number,
-    y: number,
-    w: number,
-    h: number,
-    direction: string
-  ) {
-    // 胴体（少し傾ける）
-    ctx.save();
-    ctx.translate(x + w/2, y + h/2);
-    ctx.rotate(direction === "right" ? 0.05 : -0.05);
-    
-    ctx.fillStyle = "#4CAF50";
-    ctx.beginPath();
-    ctx.roundRect(-w/2, -h/2, w, h * 0.7, 8);
-    ctx.fill();
-    
-    ctx.strokeStyle = "#2E7D32";
-    ctx.lineWidth = 1;
-    ctx.stroke();
-    
-    ctx.restore();
-
-    // 歩行中の腕
-    CharacterRenderer.drawArms(ctx, x, y, w, h, "walking", direction);
-  }
-
-  // 指さしポーズ
-  static drawPointingBody(
-    ctx: CanvasRenderingContext2D,
-    x: number,
-    y: number,
-    w: number,
-    h: number,
-    direction: string
-  ) {
-    // 胴体
-    CharacterRenderer.drawBodyFront(ctx, x, y, w, h);
-    
-    // 指さしの腕（右腕を前に）
-    const armW = w * 0.12;
-    const armH = h * 0.6;
-    
-    ctx.fillStyle = "#FFCCAA";
-    ctx.beginPath();
-    ctx.roundRect(x + w, y + h * 0.2, armW * 2, armH, 4);
-    ctx.fill();
-    
-    ctx.strokeStyle = "#E8B887";
-    ctx.lineWidth = 1;
-    ctx.stroke();
-
-    // 指
-    ctx.fillStyle = "#FFCCAA";
-    ctx.beginPath();
-    ctx.roundRect(x + w + armW * 2, y + h * 0.3, armW * 0.5, armH * 0.3, 2);
-    ctx.fill();
-    ctx.stroke();
-  }
-
-  // 手を振るポーズ
-  static drawWavingBody(
-    ctx: CanvasRenderingContext2D,
-    x: number,
-    y: number,
-    w: number,
-    h: number,
-    direction: string
-  ) {
-    // 胴体
-    CharacterRenderer.drawBodyFront(ctx, x, y, w, h);
-    
-    // 振っている腕（右腕を上に）
-    const armW = w * 0.12;
-    const armH = h * 0.5;
-    
-    ctx.save();
-    ctx.translate(x + w + armW/2, y + h * 0.1);
-    ctx.rotate(-0.3);
-    
-    ctx.fillStyle = "#FFCCAA";
-    ctx.beginPath();
-    ctx.roundRect(-armW/2, 0, armW, armH, 4);
-    ctx.fill();
-    
-    ctx.strokeStyle = "#E8B887";
-    ctx.lineWidth = 1;
-    ctx.stroke();
-    
-    ctx.restore();
-
-    // 左腕（通常）
-    ctx.fillStyle = "#FFCCAA";
-    ctx.beginPath();
-    ctx.roundRect(x - armW/2, y + h * 0.1, armW, armH, 4);
-    ctx.fill();
-    ctx.stroke();
-  }
-
-  // 腕組みポーズ
-  static drawArmsCrossedBody(
-    ctx: CanvasRenderingContext2D,
-    x: number,
-    y: number,
-    w: number,
-    h: number,
-    direction: string
-  ) {
-    // 胴体
-    CharacterRenderer.drawBodyFront(ctx, x, y, w, h);
-    
-    // 交差した腕
-    const armW = w * 0.15;
-    const armH = h * 0.4;
-    
-    // 右腕（左に交差）
-    ctx.save();
-    ctx.translate(x + w * 0.7, y + h * 0.3);
-    ctx.rotate(-0.3);
-    
-    ctx.fillStyle = "#FFCCAA";
-    ctx.beginPath();
-    ctx.roundRect(-armW/2, 0, armW, armH, 4);
-    ctx.fill();
-    
-    ctx.strokeStyle = "#E8B887";
-    ctx.lineWidth = 1;
-    ctx.stroke();
-    
-    ctx.restore();
-
-    // 左腕（右に交差）
-    ctx.save();
-    ctx.translate(x + w * 0.3, y + h * 0.3);
-    ctx.rotate(0.3);
-    
-    ctx.fillStyle = "#FFCCAA";
-    ctx.beginPath();
-    ctx.roundRect(-armW/2, 0, armW, armH, 4);
-    ctx.fill();
-    ctx.stroke();
-    
-    ctx.restore();
-  }
-
-  // 考えているポーズ
-  static drawThinkingBody(
-    ctx: CanvasRenderingContext2D,
-    x: number,
-    y: number,
-    w: number,
-    h: number,
-    direction: string
-  ) {
-    // 胴体
-    CharacterRenderer.drawBodyFront(ctx, x, y, w, h);
-    
-    // 右手を顎に
-    const armW = w * 0.12;
-    const armH = h * 0.3;
-    
-    ctx.fillStyle = "#FFCCAA";
-    ctx.beginPath();
-    ctx.roundRect(x + w * 0.8, y + h * 0.1, armW, armH, 4);
-    ctx.fill();
-    
-    ctx.strokeStyle = "#E8B887";
-    ctx.lineWidth = 1;
-    ctx.stroke();
-
-    // 左腕（普通）
-    ctx.beginPath();
-    ctx.roundRect(x - armW/2, y + h * 0.1, armW, h * 0.5, 4);
-    ctx.fill();
-    ctx.stroke();
-  }
-
-  // 腕の描画（ポーズ別）
-  static drawArms(
-    ctx: CanvasRenderingContext2D,
-    x: number,
-    y: number,
-    w: number,
-    h: number,
-    pose: string,
-    direction: string
-  ) {
-    const armW = w * 0.18;
-    const armH = h * 0.75;
-    
-    ctx.fillStyle = "#FFCCAA";
-    ctx.strokeStyle = "#E8B887";
-    ctx.lineWidth = 0.5;
-
-    switch (pose) {
-      case "walking":
-        // 歩行中：腕を前後に
-        // 左腕（前）
-        ctx.save();
-        ctx.translate(x, y + h * 0.1);
-        ctx.rotate(0.2);
-        ctx.beginPath();
-        ctx.roundRect(-armW/2, 0, armW, armH, 4);
-        ctx.fill();
-        ctx.stroke();
-        ctx.restore();
-        
-        // 右腕（後）
-        ctx.save();
-        ctx.translate(x + w, y + h * 0.1);
-        ctx.rotate(-0.2);
-        ctx.beginPath();
-        ctx.roundRect(-armW/2, 0, armW, armH, 4);
-        ctx.fill();
-        ctx.stroke();
-        ctx.restore();
-        break;
-        
-      default:
-        // 通常の腕
-        ctx.beginPath();
-        ctx.roundRect(x - armW / 2, y + h * 0.1, armW, armH, 4);
-        ctx.fill();
-        ctx.stroke();
-        
-        ctx.beginPath();
-        ctx.roundRect(x + w - armW / 2, y + h * 0.1, armW, armH, 4);
-        ctx.fill();
-        ctx.stroke();
-    }
-  }
-
-  // 正面向きの体（改良）
-  static drawBodyFront(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) {
-    // 胴体
-    ctx.fillStyle = "#4CAF50";
-    ctx.beginPath();
-    ctx.roundRect(x, y, w, h, 8);
+    ctx.roundRect(bodyX, bodyY, bodyWidth, bodyHeight, 8);
     ctx.fill();
     
     ctx.strokeStyle = "#2E7D32";
@@ -1144,62 +1019,28 @@ export class CharacterRenderer {
     ctx.fillStyle = "#2E7D32";
     for (let i = 0; i < 3; i++) {
       ctx.beginPath();
-      ctx.arc(x + w / 2, y + h * 0.2 + i * h * 0.2, 1.5, 0, Math.PI * 2);
+      ctx.arc(bodyX + bodyWidth / 2, bodyY + bodyHeight * 0.2 + i * bodyHeight * 0.2, 1.5, 0, Math.PI * 2);
       ctx.fill();
     }
 
-    // 両肩・腕
-    CharacterRenderer.drawArms(ctx, x, y, w, h, "standing", "front");
-  }
-
-  // 後ろ向きの体（改良）
-  static drawBodyBack(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) {
-    // 胴体（後ろ向き）
-    ctx.fillStyle = "#2E7D32";
-    ctx.beginPath();
-    ctx.roundRect(x, y, w, h, 8);
-    ctx.fill();
-    
-    ctx.strokeStyle = "#1B5E20";
-    ctx.lineWidth = 1;
-    ctx.stroke();
-
-    // 肩のライン
-    ctx.strokeStyle = "#1B5E20";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(x + w * 0.15, y + h * 0.1);
-    ctx.lineTo(x + w * 0.85, y + h * 0.1);
-    ctx.stroke();
-  }
-
-  // 横向きの体（改良）
-  static drawBodySide(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, direction: "left" | "right") {
-    // 胴体（横向きは幅を狭く）
-    const sideW = w * 0.6;
-    const sideX = x + (w - sideW) / 2;
-    
-    ctx.fillStyle = "#4CAF50";
-    ctx.beginPath();
-    ctx.roundRect(sideX, y, sideW, h, 6);
-    ctx.fill();
-    
-    ctx.strokeStyle = "#2E7D32";
-    ctx.lineWidth = 1;
-    ctx.stroke();
-
-    // 見える腕（1本のみ）
-    const armW = w * 0.12;
-    const armH = h * 0.75;
-    const armX = direction === "left" ? sideX - armW / 2 : sideX + sideW - armW / 2;
+    // 腕の描画
+    const armW = bodyWidth * 0.25;
+    const armH = bodyHeight * 0.75;
     
     ctx.fillStyle = "#FFCCAA";
-    ctx.beginPath();
-    ctx.roundRect(armX, y + h * 0.1, armW, armH, 3);
-    ctx.fill();
-    
     ctx.strokeStyle = "#E8B887";
     ctx.lineWidth = 0.5;
+
+    // 左腕
+    ctx.beginPath();
+    ctx.roundRect(bodyX - armW / 2, bodyY + bodyHeight * 0.1, armW, armH, 4);
+    ctx.fill();
+    ctx.stroke();
+    
+    // 右腕
+    ctx.beginPath();
+    ctx.roundRect(bodyX + bodyWidth - armW / 2, bodyY + bodyHeight * 0.1, armW, armH, 4);
+    ctx.fill();
     ctx.stroke();
   }
 
@@ -1222,26 +1063,10 @@ export class CharacterRenderer {
     const legHeight = charHeight * 0.45;
     const legX = charX + charWidth / 2 - legWidth / 2;
     
-    // ポーズに応じた脚の描画
-    const pose = character.bodyPose || "standing";
-    switch (pose) {
-      case "walking":
-        CharacterRenderer.drawWalkingLegs(ctx, legX, legStartY, legWidth, legHeight);
-        break;
-      case "sitting":
-        // 座っている場合は脚を描画しない
-        break;
-      default:
-        CharacterRenderer.drawStandingLegs(ctx, legX, legStartY, legWidth, legHeight);
-    }
-  }
-
-  // 立っている脚
-  static drawStandingLegs(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) {
     // ズボン
     ctx.fillStyle = "#1976D2";
     ctx.beginPath();
-    ctx.roundRect(x, y, w, h, 6);
+    ctx.roundRect(legX, legStartY, legWidth, legHeight, 6);
     ctx.fill();
     
     ctx.strokeStyle = "#1565C0";
@@ -1249,10 +1074,10 @@ export class CharacterRenderer {
     ctx.stroke();
 
     // 靴
-    const feetWidth = w * 1.1;
-    const feetHeight = h * 0.1;
-    const feetX = x - (feetWidth - w) / 2;
-    const feetY = y + h;
+    const feetWidth = legWidth * 1.1;
+    const feetHeight = legHeight * 0.1;
+    const feetX = legX - (feetWidth - legWidth) / 2;
+    const feetY = legStartY + legHeight;
     
     ctx.fillStyle = "#5D4037";
     ctx.beginPath();
@@ -1264,82 +1089,7 @@ export class CharacterRenderer {
     ctx.stroke();
   }
 
-  // 歩いている脚
-  static drawWalkingLegs(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) {
-    const legW = w * 0.4;
-    
-    // 左脚（前）
-    ctx.save();
-    ctx.translate(x + w * 0.2, y);
-    ctx.rotate(0.1);
-    
-    ctx.fillStyle = "#1976D2";
-    ctx.beginPath();
-    ctx.roundRect(0, 0, legW, h, 4);
-    ctx.fill();
-    
-    ctx.strokeStyle = "#1565C0";
-    ctx.lineWidth = 1;
-    ctx.stroke();
-    
-    ctx.restore();
-
-    // 右脚（後）
-    ctx.save();
-    ctx.translate(x + w * 0.6, y);
-    ctx.rotate(-0.1);
-    
-    ctx.fillStyle = "#1976D2";
-    ctx.beginPath();
-    ctx.roundRect(0, 0, legW, h, 4);
-    ctx.fill();
-    ctx.stroke();
-    
-    ctx.restore();
-
-    // 靴（2つ）
-    CharacterRenderer.drawStandingLegs(ctx, x, y, w, h);
-  }
-
-  // 既存のメソッド（変更なし）
-  static drawCharacterResizeHandles(
-    ctx: CanvasRenderingContext2D,
-    charX: number,
-    charY: number,
-    width: number,
-    height: number
-  ) {
-    const handleSize = 16;
-    const positions = [
-      { x: charX - handleSize/2, y: charY - handleSize/2, type: "corner" },
-      { x: charX + width/2 - handleSize/2, y: charY - handleSize/2, type: "edge" },
-      { x: charX + width - handleSize/2, y: charY - handleSize/2, type: "corner" },
-      { x: charX + width - handleSize/2, y: charY + height/2 - handleSize/2, type: "edge" },
-      { x: charX + width - handleSize/2, y: charY + height - handleSize/2, type: "corner" },
-      { x: charX + width/2 - handleSize/2, y: charY + height - handleSize/2, type: "edge" },
-      { x: charX - handleSize/2, y: charY + height - handleSize/2, type: "corner" },
-      { x: charX - handleSize/2, y: charY + height/2 - handleSize/2, type: "edge" },
-    ];
-
-    positions.forEach((pos) => {
-      if (pos.type === "corner") {
-        ctx.fillStyle = "#ff6600";
-        ctx.strokeStyle = "#fff";
-        ctx.lineWidth = 2;
-        ctx.fillRect(pos.x, pos.y, handleSize, handleSize);
-        ctx.strokeRect(pos.x, pos.y, handleSize, handleSize);
-      } else {
-        ctx.fillStyle = "#ff9900";
-        ctx.strokeStyle = "#fff";
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(pos.x + handleSize/2, pos.y + handleSize/2, handleSize/2, 0, 2 * Math.PI);
-        ctx.fill();
-        ctx.stroke();
-      }
-    });
-  }
-
+  // findCharacterAt メソッド
   static findCharacterAt(
     mouseX: number,
     mouseY: number,
@@ -1377,80 +1127,7 @@ export class CharacterRenderer {
     return null;
   }
 
-  // CharacterRenderer.tsx の isCharacterResizeHandleClicked 関数を修正
-
-  static isCharacterResizeHandleClicked(
-    mouseX: number,
-    mouseY: number,
-    character: Character,
-    panel: Panel
-  ): { isClicked: boolean; direction: string } {
-    let charX, charY, charWidth, charHeight;
-    
-    // 🔧 座標計算を修正
-    if (character.isGlobalPosition) {
-      // グローバル座標の場合
-      charWidth = CharacterRenderer.getCharacterWidth(character);
-      charHeight = CharacterRenderer.getCharacterHeight(character);
-      charX = character.x - charWidth / 2;
-      charY = character.y - charHeight / 2;
-    } else {
-      // 相対座標の場合
-      charWidth = 60 * character.scale;
-      charHeight = 40 * character.scale;
-      charX = panel.x + panel.width * character.x - charWidth / 2;
-      charY = panel.y + panel.height * character.y - charHeight / 2;
-    }
-
-    // 🔧 ハンドルサイズを大きく
-    const handleSize = 20; // 12 → 20に変更
-    const tolerance = 12;  // 8 → 12に変更
-
-    // 🔧 デバッグログ追加
-    console.log("🔍 キャラクターリサイズ判定詳細:", {
-      mouseX, mouseY,
-      charX, charY, charWidth, charHeight,
-      isGlobalPosition: character.isGlobalPosition,
-      characterPos: { x: character.x, y: character.y },
-      scale: character.scale
-    });
-
-    const positions = [
-      { x: charX - handleSize/2, y: charY - handleSize/2, type: "nw" },
-      { x: charX + charWidth/2 - handleSize/2, y: charY - handleSize/2, type: "n" },
-      { x: charX + charWidth - handleSize/2, y: charY - handleSize/2, type: "ne" },
-      { x: charX + charWidth - handleSize/2, y: charY + charHeight/2 - handleSize/2, type: "e" },
-      { x: charX + charWidth - handleSize/2, y: charY + charHeight - handleSize/2, type: "se" },
-      { x: charX + charWidth/2 - handleSize/2, y: charY + charHeight - handleSize/2, type: "s" },
-      { x: charX - handleSize/2, y: charY + charHeight - handleSize/2, type: "sw" },
-      { x: charX - handleSize/2, y: charY + charHeight/2 - handleSize/2, type: "w" },
-    ];
-
-    // 🔧 ハンドル位置もログ出力
-    console.log("🔍 ハンドル位置:", positions);
-
-    for (const pos of positions) {
-      const inRangeX = mouseX >= pos.x - tolerance && mouseX <= pos.x + handleSize + tolerance;
-      const inRangeY = mouseY >= pos.y - tolerance && mouseY <= pos.y + handleSize + tolerance;
-      
-      // 🔧 詳細な判定ログ
-      console.log(`🔍 ハンドル ${pos.type} 判定:`, {
-        mouseX, mouseY,
-        handleX: pos.x, handleY: pos.y,
-        inRangeX, inRangeY,
-        rangeX: `${pos.x - tolerance} ~ ${pos.x + handleSize + tolerance}`,
-        rangeY: `${pos.y - tolerance} ~ ${pos.y + handleSize + tolerance}`
-      });
-      
-      if (inRangeX && inRangeY) {
-        console.log(`🎯 キャラクターリサイズハンドル ${pos.type} クリック検出!`);
-        return { isClicked: true, direction: pos.type };
-      }
-    }
-    
-    return { isClicked: false, direction: "" };
-  }
-
+  // 既存のメソッド（後方互換性）
   static isResizeHandleClicked(
     mouseX: number,
     mouseY: number,
@@ -1461,4 +1138,3 @@ export class CharacterRenderer {
     return result.isClicked;
   }
 }
-

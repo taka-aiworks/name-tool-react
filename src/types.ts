@@ -1,4 +1,4 @@
-// src/types.ts - 体の向き・表情・ポーズ対応版（重複修正）
+// src/types.ts - キャラクターリサイズ対応版
 
 export interface Panel {
   id: number;
@@ -16,6 +16,10 @@ export interface Character {
   x: number; // パネル内の相対位置 (0-1) または絶対座標
   y: number; // パネル内の相対位置 (0-1) または絶対座標
   scale: number;
+  
+  // 🆕 縦横自由リサイズ用プロパティ追加
+  width?: number;  // 幅（省略時はscaleから計算）
+  height?: number; // 高さ（省略時はscaleから計算）
   
   // 旧システム（一時的に残す）
   facing: string;
@@ -111,7 +115,7 @@ export interface TemplateInfo {
 
 // パネル操作関連の型
 export interface PanelHandle {
-  type: "resize" | "move" | "split";
+  type: "resize" | "move" | "split" | "delete"; // 🔧 delete追加
   direction?: "nw" | "n" | "ne" | "e" | "se" | "s" | "sw" | "w";
   x: number;
   y: number;

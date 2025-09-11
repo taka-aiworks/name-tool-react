@@ -1,4 +1,4 @@
-// src/components/CanvasComponent.tsx (リサイズ機能完全修正版)
+// src/components/CanvasComponent.tsx (キャラクターリサイズ機能完全修正版)
 import React, { useRef, useEffect, useState, forwardRef, useImperativeHandle } from "react";
 import { Panel, Character, SpeechBubble, CanvasComponentProps } from "../types";
 import { BubbleRenderer } from "./CanvasArea/renderers/BubbleRenderer";
@@ -55,6 +55,12 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
   const [initialBubbleBounds, setInitialBubbleBounds] = useState<{
     x: number; y: number; width: number; height: number;
   } | null>(null);
+  
+  // 🆕 キャラクターリサイズ用の初期値保存
+  const [initialCharacterBounds, setInitialCharacterBounds] = useState<{
+    x: number; y: number; width: number; height: number;
+  } | null>(null);
+  
   const [initialCharacterScale, setInitialCharacterScale] = useState<number>(1.0);
   
   // UI状態
@@ -383,52 +389,90 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
     }
   };
 
-  // キャラクター追加機能
-  const addCharacter = (type: string) => {
-    let availablePanels = panels;
-    if (availablePanels.length === 0 && selectedTemplate && templates[selectedTemplate]) {
-      availablePanels = templates[selectedTemplate].panels;
-    }
-    
-    const targetPanel = selectedPanel || availablePanels[0];
-    if (!targetPanel) {
-      console.log("⚠️ 利用可能なパネルがありません");
-      return;
-    }
+  // キャラクター追加機能（TypeScriptエラー修正版）
+const addCharacter = (type: string) => {
+  let availablePanels = panels;
+  if (availablePanels.length === 0 && selectedTemplate && templates[selectedTemplate]) {
+    availablePanels = templates[selectedTemplate].panels;
+  }
+  
+  const targetPanel = selectedPanel || availablePanels[0];
+  if (!targetPanel) {
+    console.log("⚠️ 利用可能なパネルがありません");
+    return;
+  }
 
-    const characterNames: Record<string, string> = {
-      hero: "主人公",
-      heroine: "ヒロイン", 
-      rival: "ライバル",
-      friend: "友人",
-    };
-
-    const newCharacter: Character = {
-      id: `char_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-      panelId: targetPanel.id,
-      type: type,
-      name: characterNames[type] || "キャラクター",
-      x: targetPanel.x + targetPanel.width * 0.5,
-      y: targetPanel.y + targetPanel.height * 0.7,
-      scale: 2.0,
-      facing: "front",
-      gaze: "center",
-      pose: "standing",
-      expression: "neutral",
-      faceAngle: "front",
-      bodyDirection: "front",
-      faceExpression: "normal",
-      bodyPose: "standing",
-      eyeDirection: "front",
-      viewType: "halfBody",
-      isGlobalPosition: true,
-    };
-
-    setCharacters([...characters, newCharacter]);
-    setSelectedCharacter(newCharacter);
-    if (onCharacterSelect) onCharacterSelect(newCharacter);
-    console.log("✅ キャラクター追加:", newCharacter.name);
+  const characterNames: Record<string, string> = {
+    hero: "主人公",
+    heroine: "ヒロイン", 
+    rival: "ライバル",
+    friend: "友人",
   };
+
+  // 🆕 キャラクタータイプに応じたviewTypeとサイズ設定
+  let viewType: "face" | "halfBody" | "fullBody";
+  let initialWidth: number;
+  let initialHeight: number;
+
+  // キャラクタータイプに応じた設定
+  switch (type) {
+    case "hero":
+      viewType = "halfBody";
+      initialWidth = 100;
+      initialHeight = 120;
+      break;
+    case "heroine":
+      viewType = "halfBody";
+      initialWidth = 95;
+      initialHeight = 115;
+      break;
+    case "rival":
+      viewType = "halfBody";
+      initialWidth = 105;
+      initialHeight = 125;
+      break;
+    case "friend":
+      viewType = "face";
+      initialWidth = 80;
+      initialHeight = 80;
+      break;
+    default:
+      viewType = "halfBody";
+      initialWidth = 100;
+      initialHeight = 120;
+  }
+
+  const newCharacter: Character = {
+    id: `char_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+    panelId: targetPanel.id,
+    type: type,
+    name: characterNames[type] || "キャラクター",
+    x: targetPanel.x + targetPanel.width * 0.5,
+    y: targetPanel.y + targetPanel.height * 0.7,
+    scale: 2.0,
+    
+    // 🆕 width/height を明示的に設定
+    width: initialWidth,
+    height: initialHeight,
+    
+    facing: "front",
+    gaze: "center",
+    pose: "standing",
+    expression: "neutral",
+    faceAngle: "front",
+    bodyDirection: "front",
+    faceExpression: "normal",
+    bodyPose: "standing",
+    eyeDirection: "front",
+    viewType: viewType,
+    isGlobalPosition: true,
+  };
+
+  setCharacters([...characters, newCharacter]);
+  setSelectedCharacter(newCharacter);
+  if (onCharacterSelect) onCharacterSelect(newCharacter);
+  console.log("✅ キャラクター追加:", newCharacter.name, `(${initialWidth}x${initialHeight}px)`);
+};
 
   // 吹き出し追加機能
   const addBubble = (type: string, text: string) => {
@@ -689,7 +733,16 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
         setIsCharacterResizing(true);
         setResizeDirection(resizeResult.direction);
         setDragOffset({ x: mouseX, y: mouseY });
-        setInitialCharacterScale(clickedCharacter.scale);
+        
+        // 🆕 初期サイズを保存（width/height対応）
+        const currentWidth = CharacterRenderer.getCharacterWidth(clickedCharacter);
+        const currentHeight = CharacterRenderer.getCharacterHeight(clickedCharacter);
+        setInitialCharacterBounds({
+          x: clickedCharacter.x,
+          y: clickedCharacter.y,
+          width: currentWidth,
+          height: currentHeight
+        });
       } else {
         console.log("📱 キャラクタードラッグモード開始");
         setIsDragging(true);
@@ -780,58 +833,41 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
     }
 
     // 🆕 キャラクターリサイズ処理（8方向対応・完全修正版）
-    if (selectedCharacter && isCharacterResizing) {
+    if (selectedCharacter && isCharacterResizing && initialCharacterBounds) {
       console.log("🔧 キャラクターリサイズ実行中:", resizeDirection);
       
       const deltaX = mouseX - dragOffset.x;
       const deltaY = mouseY - dragOffset.y;
       
-      // 🔧 キャラクターリサイズは主にスケール変更
-      let scaleDelta = 0;
+      console.log("🔍 リサイズデルタ:", { deltaX, deltaY });
       
-      switch (resizeDirection) {
-        case "nw":
-        case "sw":
-          scaleDelta = -deltaX / 100; // 左側のハンドルは逆方向
-          break;
-        case "ne":
-        case "se":
-        case "e":
-          scaleDelta = deltaX / 100; // 右側のハンドルは正方向
-          break;
-        case "n":
-          scaleDelta = -deltaY / 100; // 上のハンドルは逆方向
-          break;
-        case "s":
-          scaleDelta = deltaY / 100; // 下のハンドルは正方向
-          break;
-        case "w":
-          scaleDelta = -deltaX / 100; // 左のハンドルは逆方向
-          break;
-        default:
-          scaleDelta = (deltaX + deltaY) / 200; // デフォルト
-      }
+      // 🆕 CharacterRenderer.resizeCharacter を使用（吹き出しと同様）
+      const resizedCharacter = CharacterRenderer.resizeCharacter(
+        selectedCharacter,
+        resizeDirection,
+        deltaX,
+        deltaY,
+        initialCharacterBounds
+      );
       
-      const newScale = Math.max(0.5, Math.min(5.0, initialCharacterScale + scaleDelta));
-      
-      console.log("🔍 スケール変更:", {
-        initial: initialCharacterScale,
-        delta: scaleDelta,
-        new: newScale
+      console.log("🔧 キャラクターリサイズ結果:", {
+        oldSize: { 
+          width: CharacterRenderer.getCharacterWidth(selectedCharacter), 
+          height: CharacterRenderer.getCharacterHeight(selectedCharacter) 
+        },
+        newSize: { 
+          width: CharacterRenderer.getCharacterWidth(resizedCharacter), 
+          height: CharacterRenderer.getCharacterHeight(resizedCharacter) 
+        }
       });
-      
-      const updatedCharacter = {
-        ...selectedCharacter,
-        scale: newScale,
-      };
       
       setCharacters(
         characters.map((char) =>
-          char.id === selectedCharacter.id ? updatedCharacter : char
+          char.id === selectedCharacter.id ? resizedCharacter : char
         )
       );
-      setSelectedCharacter(updatedCharacter);
-      if (onCharacterSelect) onCharacterSelect(updatedCharacter);
+      setSelectedCharacter(resizedCharacter);
+      if (onCharacterSelect) onCharacterSelect(resizedCharacter);
       return;
     }
 
@@ -929,9 +965,9 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
     setResizeDirection("");
     setSnapLines([]);
     
-    // 🆕 初期値もリセット
+    // 🆕 初期値もリセット（キャラクター用追加）
     setInitialBubbleBounds(null);
-    setInitialCharacterScale(1.0);
+    setInitialCharacterBounds(null);
     
     console.log("✅ 全状態リセット完了");
   };
