@@ -199,30 +199,30 @@ export class CharacterBounds {
     return { isClicked: false, direction: "" };
   }
 
-  // 🎯 回転ハンドル境界計算
+  // 🎯 回転ハンドル境界計算（修正版）
   static getRotationHandleBounds(
     character: Character,
     panel: Panel
   ): { x: number; y: number; radius: number } {
     const bounds = CharacterBounds.getCharacterBounds(character, panel);
     const handleDistance = 35;
-    // CharacterBounds.tsのgetRotationHandleBoundsで
-const handleRadius = 50; // 12から50に変更（テスト用）
+    const handleRadius = 20; // ← 12から20に拡大（操作しやすく）
     
-    // ここにデバッグログを追加
-    console.log("🔍 判定用ハンドル座標:", {
+    console.log("🔍 回転ハンドル座標計算:", {
       bounds,
+      handleX: bounds.centerX,
+      handleY: bounds.y - handleDistance,
       calculation: `${bounds.y} - ${handleDistance} = ${bounds.y - handleDistance}`
     });
     
     return {
-      x: bounds.centerX,                // キャラクター中心X（変更なし）
-      y: bounds.y - 35,                 // キャラクター上部35px上（修正済み）
-      radius: 12                        // クリック判定半径を12pxに縮小（精度向上）
+      x: bounds.centerX,
+      y: bounds.y - handleDistance,
+      radius: handleRadius
     };
   }
 
-  // 🎯 回転ハンドルクリック判定
+  // 🎯 回転ハンドルクリック判定（修正版）
   static isRotationHandleClicked(
     mouseX: number,
     mouseY: number,
@@ -230,21 +230,23 @@ const handleRadius = 50; // 12から50に変更（テスト用）
     panel: Panel
   ): boolean {
     const handle = CharacterBounds.getRotationHandleBounds(character, panel);
-    const distance = CharacterUtils.calculateDistance(mouseX, mouseY, handle.x, handle.y);
+    const distance = Math.sqrt(
+      Math.pow(mouseX - handle.x, 2) + 
+      Math.pow(mouseY - handle.y, 2)
+    );
     
-    const isClicked = distance <= handle.radius;
-
     console.log("🔍 回転ハンドル判定詳細:", {
       mousePos: { x: mouseX, y: mouseY },
       handlePos: { x: handle.x, y: handle.y },
-      distance,
-      radius: handle.radius
+      distance: distance,
+      radius: handle.radius,
+      isClicked: distance <= handle.radius
     });
+    
+    const isClicked = distance <= handle.radius;
     
     if (isClicked) {
       console.log("🔄 回転ハンドルクリック検出!", {
-        mousePos: { x: mouseX, y: mouseY },
-        handlePos: { x: handle.x, y: handle.y },
         distance,
         radius: handle.radius
       });
@@ -253,34 +255,43 @@ const handleRadius = 50; // 12から50に変更（テスト用）
     return isClicked;
   }
 
-  // CharacterBounds.ts の getHandleClickInfo メソッドを修正
-    // 🎯 統合ハンドルクリック判定（修正版）
-    static getHandleClickInfo(
+
+  // 🎯 統合ハンドルクリック判定（完全修正版）
+  static getHandleClickInfo(
     mouseX: number,
     mouseY: number,
     character: Character,
     panel: Panel
-    ): { 
+  ): { 
     isClicked: boolean; 
-    type: "none" | "resize" | "rotate"; // ← ここに"none"追加
+    type: "none" | "resize" | "rotate";
     direction?: string 
-    } {
-    // 以下は既存コード（変更なし）
+  } {
+    console.log("🎯 統合ハンドル判定開始:", {
+      mousePos: { x: mouseX, y: mouseY },
+      character: character.name
+    });
+
+    // 🔄 回転ハンドル判定（最優先）
     if (CharacterBounds.isRotationHandleClicked(mouseX, mouseY, character, panel)) {
-        return { isClicked: true, type: "rotate" };
+      console.log("✅ 回転ハンドル検出！");
+      return { isClicked: true, type: "rotate" };
     }
     
+    // 🔧 リサイズハンドル判定
     const resizeResult = CharacterBounds.isResizeHandleClicked(mouseX, mouseY, character, panel);
     if (resizeResult.isClicked) {
-        return { 
+      console.log("✅ リサイズハンドル検出！", resizeResult.direction);
+      return { 
         isClicked: true, 
         type: "resize", 
         direction: resizeResult.direction 
-        };
+      };
     }
     
+    console.log("❌ ハンドル検出されず");
     return { isClicked: false, type: "none" };
-    }
+  }
 
   // 🎯 キャラクター境界とパネル境界の重複判定
   static isCharacterInPanel(

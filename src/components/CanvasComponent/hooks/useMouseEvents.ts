@@ -203,11 +203,13 @@ export const useMouseEvents = ({
       return;
     }
 
-    // キャラクター操作
+    // キャラクター操作部分（220行目付近）を完全に置き換え：
+
     const clickedCharacter = CharacterRenderer.findCharacterAt(mouseX, mouseY, characters, panels);
     if (clickedCharacter) {
       console.log("👤 キャラクタークリック検出:", clickedCharacter.name);
       
+      // ⚡ 最初に選択状態を設定（重要！）
       actions.setSelectedCharacter(clickedCharacter);
       actions.setSelectedBubble(null);
       actions.setSelectedPanel(null);
@@ -215,53 +217,36 @@ export const useMouseEvents = ({
       const panel = panels.find(p => p.id === clickedCharacter.panelId);
       if (!panel) {
         console.error("❌ キャラクターのパネルが見つかりません");
-        return;
+        if (onCharacterSelect) onCharacterSelect(clickedCharacter);
+        e.preventDefault();
+        return; // 🚨 エラー時も early return
       }
       
-      // キャラクターハンドル判定（リサイズ + 回転）
-      console.log("🚨 ハンドル判定前チェック:", typeof CharacterRenderer.isCharacterHandleClicked);
+      // ハンドル判定
       const handleInfo = CharacterRenderer.isCharacterHandleClicked(mouseX, mouseY, clickedCharacter, panel);
-
-      console.log("🔍 キャラクターハンドル判定:", {
+      
+      console.log("🔍 ハンドル判定結果:", {
         isClicked: handleInfo.isClicked,
         type: handleInfo.type,
-        direction: handleInfo.direction,
-        mousePos: { mouseX, mouseY },
-        characterPos: { x: clickedCharacter.x, y: clickedCharacter.y },
-        characterRotation: clickedCharacter.rotation || 0
-      });
-
-      // 🆕 回転ハンドル専用テスト
-      const bounds = CharacterBounds.getCharacterBounds(clickedCharacter, panel);
-      const rotationHandleBounds = CharacterBounds.getRotationHandleBounds(clickedCharacter, panel);
-      const rotationTest = CharacterBounds.isRotationHandleClicked(mouseX, mouseY, clickedCharacter, panel);
-
-      console.log("🔄 詳細デバッグ:", {
-        mousePos: { x: mouseX, y: mouseY },
-        characterBounds: bounds,
-        rotationHandle: rotationHandleBounds,
-        distance: Math.sqrt(
-          Math.pow(mouseX - rotationHandleBounds.x, 2) + 
-          Math.pow(mouseY - rotationHandleBounds.y, 2)
-        ),
-        rotationTest
+        direction: handleInfo.direction
       });
 
       if (handleInfo.isClicked) {
+        console.log("🎯 ハンドル操作開始:", handleInfo.type);
+        
         if (handleInfo.type === "rotate") {
           // 🔄 回転開始
           console.log("🔄 回転操作開始");
           actions.setIsCharacterRotating(true);
           
-          // 回転開始角度計算
           const { centerX, centerY } = CharacterUtils.calculateCenterCoordinates(clickedCharacter, panel);
           const startAngle = CharacterUtils.calculateAngle(centerX, centerY, mouseX, mouseY);
           actions.setRotationStartAngle(startAngle);
           actions.setOriginalRotation(clickedCharacter.rotation || 0);
           
         } else if (handleInfo.type === "resize" && handleInfo.direction) {
-          // リサイズ処理
-          console.log("✅ キャラクターリサイズモード開始:", handleInfo.direction);
+          // リサイズ開始
+          console.log("📏 リサイズ操作開始:", handleInfo.direction);
           actions.setIsCharacterResizing(true);
           actions.setResizeDirection(handleInfo.direction);
           actions.setDragOffset({ x: mouseX, y: mouseY });
@@ -275,15 +260,9 @@ export const useMouseEvents = ({
             height: currentHeight
           });
         }
-        
-        // 🚨 ハンドル操作時の早期return（重要！）
-        if (onCharacterSelect) onCharacterSelect(clickedCharacter);
-        e.preventDefault();
-        return; // ← パネル処理に進まない
-        
       } else {
         // 通常のドラッグ
-        console.log("📱 キャラクタードラッグモード開始");
+        console.log("📱 通常ドラッグ開始");
         actions.setIsDragging(true);
         actions.setDragOffset({
           x: mouseX - clickedCharacter.x,
@@ -291,10 +270,10 @@ export const useMouseEvents = ({
         });
       }
       
-      // 🚨 キャラクター操作全般の早期return（重要！）
+      // 🚨 キャラクター処理の完全 early return（最重要！）
       if (onCharacterSelect) onCharacterSelect(clickedCharacter);
       e.preventDefault();
-      return; // ← パネル処理に進まない
+      return; // ← この return で後続のパネル処理を完全にスキップ
     }
 
     // その他のクリック処理
@@ -343,7 +322,7 @@ export const useMouseEvents = ({
     }
 
 
-    // 🔄 キャラクター回転処理（既存のリサイズ処理の後に追加）
+    // 🔄 キャラクター回転処理
     if (state.isCharacterRotating && state.selectedCharacter) {
       console.log("🔄 回転処理中");
       
@@ -357,12 +336,13 @@ export const useMouseEvents = ({
         const newRotation = CharacterUtils.normalizeAngle(state.originalRotation + angleDiff);
         
         // キャラクター更新
-        const updatedCharacter = CharacterRotation.rotateCharacter(state.selectedCharacter!, newRotation);
+        const updatedCharacter = { ...state.selectedCharacter!, rotation: newRotation };
         
         const updatedCharacters = characters.map((char: Character) => 
           char.id === updatedCharacter.id ? updatedCharacter : char
         );
         setCharacters(updatedCharacters);
+        actions.setSelectedCharacter(updatedCharacter);
         
         console.log(`🔄 回転更新: ${Math.round(newRotation)}°`);
       }

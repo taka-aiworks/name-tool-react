@@ -104,6 +104,7 @@ export const useCanvasState = (): [CanvasState, CanvasStateActions] => {
   const [isCharacterRotating, setIsCharacterRotating] = useState(false);
   const [rotationStartAngle, setRotationStartAngle] = useState(0);
   const [originalRotation, setOriginalRotation] = useState(0);
+  
 
   // リサイズ開始時の初期値
   const [initialBubbleBounds, setInitialBubbleBounds] = useState<{
