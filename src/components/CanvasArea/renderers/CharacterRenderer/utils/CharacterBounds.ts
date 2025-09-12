@@ -200,20 +200,20 @@ export class CharacterBounds {
   }
 
   // 🎯 回転ハンドル境界計算
-  static getRotationHandleBounds(
+    static getRotationHandleBounds(
     character: Character,
     panel: Panel
-  ): { x: number; y: number; radius: number } {
+    ): { x: number; y: number; radius: number } {
     const bounds = CharacterBounds.getCharacterBounds(character, panel);
     const handleDistance = 35;
     const handleRadius = 12;
     
     return {
-      x: bounds.centerX,
-      y: bounds.y - handleDistance,
-      radius: handleRadius
+        x: bounds.centerX,                    // キャラクター中心X
+        y: bounds.y - handleDistance,        // キャラクター上部 - 35px
+        radius: handleRadius
     };
-  }
+    }
 
   // 🎯 回転ハンドルクリック判定
   static isRotationHandleClicked(

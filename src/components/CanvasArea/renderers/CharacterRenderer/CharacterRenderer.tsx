@@ -432,14 +432,13 @@ export class CharacterRenderer {
 
   // ===== 統合されたハンドル判定メソッド =====
   
-  // 🎯 ハンドルクリック判定（統合版）
+  // 🎯 統合ハンドルクリック判定（追加）
     static isCharacterHandleClicked(
     mouseX: number,
     mouseY: number,
     character: Character,
     panel: Panel
     ): { isClicked: boolean; type: "none" | "resize" | "rotate"; direction?: string } {
-    //    ↑ "none" を追加
     return CharacterBounds.getHandleClickInfo(mouseX, mouseY, character, panel);
     }
 

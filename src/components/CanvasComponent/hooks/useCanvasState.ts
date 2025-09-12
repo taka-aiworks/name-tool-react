@@ -17,6 +17,11 @@ export interface CanvasState {
   resizeDirection: string;
   dragOffset: { x: number; y: number };
   
+  // 🆕 回転状態追加
+  isCharacterRotating: boolean;
+  rotationStartAngle: number;
+  originalRotation: number;
+  
   // リサイズ開始時の初期値
   initialBubbleBounds: {
     x: number; y: number; width: number; height: number;
@@ -48,6 +53,11 @@ export interface CanvasStateActions {
   setIsPanelMoving: (isMoving: boolean) => void;
   setResizeDirection: (direction: string) => void;
   setDragOffset: (offset: { x: number; y: number }) => void;
+
+  // 🆕 回転関連アクション追加
+  setIsCharacterRotating: (isRotating: boolean) => void;
+  setRotationStartAngle: (angle: number) => void;
+  setOriginalRotation: (rotation: number) => void;
   
   // 初期値設定
   setInitialBubbleBounds: (bounds: {
@@ -89,6 +99,12 @@ export const useCanvasState = (): [CanvasState, CanvasStateActions] => {
   const [resizeDirection, setResizeDirection] = useState<string>("");
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   
+
+  // ドラッグ&操作状態の下に追加
+  const [isCharacterRotating, setIsCharacterRotating] = useState(false);
+  const [rotationStartAngle, setRotationStartAngle] = useState(0);
+  const [originalRotation, setOriginalRotation] = useState(0);
+
   // リサイズ開始時の初期値
   const [initialBubbleBounds, setInitialBubbleBounds] = useState<{
     x: number; y: number; width: number; height: number;
@@ -111,6 +127,9 @@ export const useCanvasState = (): [CanvasState, CanvasStateActions] => {
     selectedCharacter,
     selectedBubble,
     isDragging,
+    isCharacterRotating,
+    rotationStartAngle,
+    originalRotation,
     isCharacterResizing,
     isBubbleResizing,
     isPanelResizing,
@@ -139,6 +158,9 @@ export const useCanvasState = (): [CanvasState, CanvasStateActions] => {
   const resetDragStates = () => {
     setIsDragging(false);
     setIsCharacterResizing(false);
+    setIsCharacterRotating(false); // ← 追加
+    setRotationStartAngle(0);      // ← 追加
+    setOriginalRotation(0);        // ← 追加
     setIsBubbleResizing(false);
     setIsPanelResizing(false);
     setIsPanelMoving(false);
@@ -153,6 +175,9 @@ export const useCanvasState = (): [CanvasState, CanvasStateActions] => {
     setSelectedCharacter,
     setSelectedBubble,
     setIsDragging,
+    setIsCharacterRotating,  // ← 追加
+    setRotationStartAngle,   // ← 追加
+    setOriginalRotation,     // ← 追加
     setIsCharacterResizing,
     setIsBubbleResizing,
     setIsPanelResizing,
