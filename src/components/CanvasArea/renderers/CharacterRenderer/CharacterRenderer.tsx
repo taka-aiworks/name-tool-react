@@ -330,25 +330,59 @@ export class CharacterRenderer {
   }
 
   static drawSimpleEyes(ctx: CanvasRenderingContext2D, headX: number, headY: number, headSize: number, direction: string) {
+  const eyeSize = headSize * 0.06;
+  const eyeY = headY + headSize * 0.35;
+  
+  if (direction !== "left" && direction !== "leftBack") {
+    const leftEyeX = headX + headSize * 0.3;
+    
+    // 白目
     ctx.fillStyle = "#FFFFFF";
-    const eyeSize = headSize * 0.06;
+    ctx.beginPath();
+    ctx.arc(leftEyeX, eyeY, eyeSize, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#333";
+    ctx.lineWidth = 1;
+    ctx.stroke();
     
-    if (direction !== "left" && direction !== "leftBack") {
-      ctx.beginPath();
-      ctx.arc(headX + headSize * 0.3, headY + headSize * 0.35, eyeSize, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = "#333";
-      ctx.stroke();
-    }
+    // 黒目（瞳）
+    ctx.fillStyle = "#2E2E2E";
+    ctx.beginPath();
+    ctx.arc(leftEyeX, eyeY, eyeSize * 0.6, 0, Math.PI * 2);
+    ctx.fill();
     
-    if (direction !== "right" && direction !== "rightBack") {
-      ctx.beginPath();
-      ctx.arc(headX + headSize * 0.7, headY + headSize * 0.35, eyeSize, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = "#333";
-      ctx.stroke();
-    }
+    // ハイライト
+    ctx.fillStyle = "#FFFFFF";
+    ctx.beginPath();
+    ctx.arc(leftEyeX - eyeSize * 0.2, eyeY - eyeSize * 0.2, eyeSize * 0.3, 0, Math.PI * 2);
+    ctx.fill();
   }
+  
+  if (direction !== "right" && direction !== "rightBack") {
+    const rightEyeX = headX + headSize * 0.7;
+    
+    // 白目
+    ctx.fillStyle = "#FFFFFF";
+    ctx.beginPath();
+    ctx.arc(rightEyeX, eyeY, eyeSize, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#333";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    
+    // 黒目（瞳）
+    ctx.fillStyle = "#2E2E2E";
+    ctx.beginPath();
+    ctx.arc(rightEyeX, eyeY, eyeSize * 0.6, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // ハイライト
+    ctx.fillStyle = "#FFFFFF";
+    ctx.beginPath();
+    ctx.arc(rightEyeX - eyeSize * 0.2, eyeY - eyeSize * 0.2, eyeSize * 0.3, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
 
   static drawSimpleMouth(ctx: CanvasRenderingContext2D, headX: number, headY: number, headSize: number, expression: string) {
     const mouthX = headX + headSize * 0.5;

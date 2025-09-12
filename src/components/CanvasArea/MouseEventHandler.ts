@@ -2,7 +2,7 @@
 import React from "react";
 import { Panel, Character, SpeechBubble, SnapSettings } from "../../types";
 import { BubbleRenderer } from "./renderers/BubbleRenderer";
-import { CharacterRenderer } from "./renderers/CharacterRenderer";
+import { CharacterRenderer } from './renderers/CharacterRenderer/CharacterRenderer';
 import { PanelManager } from "./PanelManager";
 
 export interface MouseEventState {

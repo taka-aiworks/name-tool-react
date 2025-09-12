@@ -170,3 +170,4 @@ export const useCanvasState = (): [CanvasState, CanvasStateActions] => {
 
   return [state, actions];
 };
+

@@ -3,7 +3,7 @@ import { RefObject } from 'react';
 import { Panel, Character, SpeechBubble, SnapSettings } from '../../../types';
 import { CanvasState, CanvasStateActions } from './useCanvasState';
 import { BubbleRenderer } from '../../CanvasArea/renderers/BubbleRenderer';
-import { CharacterRenderer } from '../../CanvasArea/renderers/CharacterRenderer';
+import { CharacterRenderer } from '../../CanvasArea/renderers/CharacterRenderer/CharacterRenderer';
 import { PanelManager } from '../../CanvasArea/PanelManager';
 import { ContextMenuState, ContextMenuActions } from '../../CanvasArea/ContextMenuHandler';
 

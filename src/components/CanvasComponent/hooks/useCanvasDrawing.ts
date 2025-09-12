@@ -4,7 +4,7 @@ import { Panel, Character, SpeechBubble, SnapSettings } from '../../../types';
 import { CanvasState } from './useCanvasState';
 import { CanvasDrawing } from '../../CanvasArea/CanvasDrawing';
 import { BubbleRenderer } from '../../CanvasArea/renderers/BubbleRenderer';
-import { CharacterRenderer } from '../../CanvasArea/renderers/CharacterRenderer';
+import { CharacterRenderer } from '../../CanvasArea/renderers/CharacterRenderer/CharacterRenderer';
 
 export interface CanvasDrawingHookProps {
   canvasRef: RefObject<HTMLCanvasElement | null>;
