@@ -15,21 +15,28 @@ export class CharacterRotation {  // ← exportを追加
   ) {
     const isDarkMode = document.documentElement.getAttribute("data-theme") === "dark";
     
-    // 回転ハンドルの位置（キャラクターの上方約30px）
+    // 🔧 座標計算を統一（判定と同じ計算方法）
     const handleDistance = 35;
     const handleX = bounds.centerX;
     const handleY = bounds.y - handleDistance;
     const handleSize = 20;
     
-    // 🔗 接続線を描画
+    console.log("🎨 回転ハンドル描画位置（修正版）:", {
+      handleX,
+      handleY,
+      boundsY: bounds.y,
+      calculation: `${bounds.y} - ${handleDistance} = ${handleY}`
+    });
+    
+    // 接続線
     ctx.strokeStyle = isDarkMode ? "rgba(255, 102, 0, 0.8)" : "rgba(255, 102, 0, 0.6)";
     ctx.lineWidth = 2;
-    ctx.setLineDash([5, 5]); // 点線
+    ctx.setLineDash([5, 5]);
     ctx.beginPath();
     ctx.moveTo(bounds.centerX, bounds.y);
-    ctx.lineTo(handleX, handleY + handleSize / 2);
+    ctx.lineTo(handleX, handleY);
     ctx.stroke();
-    ctx.setLineDash([]); // 実線に戻す
+    ctx.setLineDash([]);
     
     // 🔄 回転ハンドル（円形・回転アイコン付き）
     ctx.fillStyle = "#ff6600";
@@ -40,32 +47,9 @@ export class CharacterRotation {  // ← exportを追加
     ctx.arc(handleX, handleY, handleSize / 2, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
-    
-    // 🔄 回転アイコン（矢印）
-    ctx.strokeStyle = isDarkMode ? "#000" : "#fff";
-    ctx.lineWidth = 2;
-    ctx.lineCap = "round";
-    
-    const iconRadius = handleSize * 0.25;
-    const arrowSize = handleSize * 0.15;
-    
-    // 円弧矢印を描画
-    ctx.beginPath();
-    ctx.arc(handleX, handleY, iconRadius, -Math.PI * 0.7, Math.PI * 0.3);
-    ctx.stroke();
-    
-    // 矢印の先端
-    const arrowEndX = handleX + iconRadius * Math.cos(Math.PI * 0.3);
-    const arrowEndY = handleY + iconRadius * Math.sin(Math.PI * 0.3);
-    
-    ctx.beginPath();
-    ctx.moveTo(arrowEndX, arrowEndY);
-    ctx.lineTo(arrowEndX - arrowSize, arrowEndY - arrowSize);
-    ctx.moveTo(arrowEndX, arrowEndY);
-    ctx.lineTo(arrowEndX + arrowSize, arrowEndY - arrowSize);
-    ctx.stroke();
   }
-  
+
+
   // 🎯 回転ハンドルクリック判定
   static isRotationHandleClicked(
     mouseX: number,

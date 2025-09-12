@@ -200,20 +200,27 @@ export class CharacterBounds {
   }
 
   // 🎯 回転ハンドル境界計算
-    static getRotationHandleBounds(
+  static getRotationHandleBounds(
     character: Character,
     panel: Panel
-    ): { x: number; y: number; radius: number } {
+  ): { x: number; y: number; radius: number } {
     const bounds = CharacterBounds.getCharacterBounds(character, panel);
     const handleDistance = 35;
-    const handleRadius = 12;
+    // CharacterBounds.tsのgetRotationHandleBoundsで
+const handleRadius = 50; // 12から50に変更（テスト用）
+    
+    // ここにデバッグログを追加
+    console.log("🔍 判定用ハンドル座標:", {
+      bounds,
+      calculation: `${bounds.y} - ${handleDistance} = ${bounds.y - handleDistance}`
+    });
     
     return {
-        x: bounds.centerX,                    // キャラクター中心X
-        y: bounds.y - handleDistance,        // キャラクター上部 - 35px
-        radius: handleRadius
+      x: bounds.centerX,                // キャラクター中心X（変更なし）
+      y: bounds.y - 35,                 // キャラクター上部35px上（修正済み）
+      radius: 12                        // クリック判定半径を12pxに縮小（精度向上）
     };
-    }
+  }
 
   // 🎯 回転ハンドルクリック判定
   static isRotationHandleClicked(
@@ -226,6 +233,13 @@ export class CharacterBounds {
     const distance = CharacterUtils.calculateDistance(mouseX, mouseY, handle.x, handle.y);
     
     const isClicked = distance <= handle.radius;
+
+    console.log("🔍 回転ハンドル判定詳細:", {
+      mousePos: { x: mouseX, y: mouseY },
+      handlePos: { x: handle.x, y: handle.y },
+      distance,
+      radius: handle.radius
+    });
     
     if (isClicked) {
       console.log("🔄 回転ハンドルクリック検出!", {

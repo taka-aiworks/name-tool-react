@@ -275,6 +275,12 @@ export const useMouseEvents = ({
             height: currentHeight
           });
         }
+        
+        // 🚨 ハンドル操作時の早期return（重要！）
+        if (onCharacterSelect) onCharacterSelect(clickedCharacter);
+        e.preventDefault();
+        return; // ← パネル処理に進まない
+        
       } else {
         // 通常のドラッグ
         console.log("📱 キャラクタードラッグモード開始");
@@ -285,9 +291,10 @@ export const useMouseEvents = ({
         });
       }
       
+      // 🚨 キャラクター操作全般の早期return（重要！）
       if (onCharacterSelect) onCharacterSelect(clickedCharacter);
       e.preventDefault();
-      return;
+      return; // ← パネル処理に進まない
     }
 
     // その他のクリック処理
