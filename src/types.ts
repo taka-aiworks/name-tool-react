@@ -20,6 +20,8 @@ export interface Character {
   // 🆕 縦横自由リサイズ用プロパティ追加
   width?: number;  // 幅（省略時はscaleから計算）
   height?: number; // 高さ（省略時はscaleから計算）
+  // 🆕 2D回転機能追加
+  rotation?: number; // 回転角度（度数、0-360）デフォルト: 0
   
   // 旧システム（一時的に残す）
   facing: string;
@@ -40,6 +42,34 @@ export interface Character {
   
   isGlobalPosition: boolean;
 }
+
+
+// 🆕 新しい型定義を追加
+export interface CharacterBounds {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  centerX: number;
+  centerY: number;
+}
+
+export interface RotationHandle {
+  type: "rotation";
+  x: number;
+  y: number;
+  radius: number;
+}
+
+export type CharacterInteractionMode = "none" | "move" | "resize" | "rotate";
+
+export interface CharacterInteractionState {
+  mode: CharacterInteractionMode;
+  resizeDirection?: string;
+  rotationStartAngle?: number;
+  originalRotation?: number;
+}
+
 
 export interface SpeechBubble {
   id: string;
