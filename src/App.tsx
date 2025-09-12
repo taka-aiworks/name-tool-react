@@ -1,6 +1,6 @@
 // src/App.tsx (スナップ設定UI追加版)
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import CanvasComponent from "./components/CanvasComponent";
+import CanvasComponent from "./components/CanvasComponent.tsx_old";
 import CharacterDetailPanel from "./components/UI/CharacterDetailPanel";
 import { Panel, Character, SpeechBubble, SnapSettings } from "./types"; // 🆕 SnapSettings追加
 import { templates } from "./components/CanvasArea/templates";
