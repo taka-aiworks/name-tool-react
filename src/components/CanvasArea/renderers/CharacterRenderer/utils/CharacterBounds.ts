@@ -1,7 +1,7 @@
 // src/components/CanvasArea/renderers/CharacterRenderer/utils/CharacterBounds.ts
 // 🎯 キャラクター境界・当たり判定専用クラス
 
-import { Character, Panel, CharacterBounds as CharacterBoundsType } from "../../../../../types"; // ← こちらも確認
+import { Character, Panel, CharacterBounds as CharacterBoundsType } from "../../../../../types";
 import { CharacterUtils } from "./CharacterUtils";
 
 export class CharacterBounds {
@@ -199,20 +199,21 @@ export class CharacterBounds {
     return { isClicked: false, direction: "" };
   }
 
-  // 🎯 回転ハンドル境界計算（修正版）
+  // 🎯 回転ハンドル境界計算（🔧 半径大幅拡大版）
   static getRotationHandleBounds(
     character: Character,
     panel: Panel
   ): { x: number; y: number; radius: number } {
     const bounds = CharacterBounds.getCharacterBounds(character, panel);
     const handleDistance = 35;
-    const handleRadius = 20; // ← 12から20に拡大（操作しやすく）
+    const handleRadius = 100; // 🔧 20px → 100px（5倍に拡大）
     
     console.log("🔍 回転ハンドル座標計算:", {
       bounds,
       handleX: bounds.centerX,
       handleY: bounds.y - handleDistance,
-      calculation: `${bounds.y} - ${handleDistance} = ${bounds.y - handleDistance}`
+      calculation: `${bounds.y} - ${handleDistance} = ${bounds.y - handleDistance}`,
+      radius: handleRadius
     });
     
     return {
@@ -254,7 +255,6 @@ export class CharacterBounds {
     
     return isClicked;
   }
-
 
   // 🎯 統合ハンドルクリック判定（完全修正版）
   static getHandleClickInfo(

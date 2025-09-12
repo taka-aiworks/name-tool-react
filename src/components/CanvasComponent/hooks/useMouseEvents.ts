@@ -203,23 +203,15 @@ export const useMouseEvents = ({
       return;
     }
 
-    // キャラクター操作部分（220行目付近）を完全に置き換え：
-
+    // 🔧 キャラクター操作部分（完全修正版）
     const clickedCharacter = CharacterRenderer.findCharacterAt(mouseX, mouseY, characters, panels);
     if (clickedCharacter) {
       console.log("👤 キャラクタークリック検出:", clickedCharacter.name);
       
-      // ⚡ 最初に選択状態を設定（重要！）
-      actions.setSelectedCharacter(clickedCharacter);
-      actions.setSelectedBubble(null);
-      actions.setSelectedPanel(null);
-      
       const panel = panels.find(p => p.id === clickedCharacter.panelId);
       if (!panel) {
         console.error("❌ キャラクターのパネルが見つかりません");
-        if (onCharacterSelect) onCharacterSelect(clickedCharacter);
-        e.preventDefault();
-        return; // 🚨 エラー時も early return
+        return;
       }
       
       // ハンドル判定
@@ -234,6 +226,11 @@ export const useMouseEvents = ({
       if (handleInfo.isClicked) {
         console.log("🎯 ハンドル操作開始:", handleInfo.type);
         
+        // 🚨 ハンドル操作時は選択状態を最初に設定（最重要！）
+        actions.setSelectedCharacter(clickedCharacter);
+        actions.setSelectedBubble(null);
+        actions.setSelectedPanel(null);
+        
         if (handleInfo.type === "rotate") {
           // 🔄 回転開始
           console.log("🔄 回転操作開始");
@@ -243,6 +240,10 @@ export const useMouseEvents = ({
           const startAngle = CharacterUtils.calculateAngle(centerX, centerY, mouseX, mouseY);
           actions.setRotationStartAngle(startAngle);
           actions.setOriginalRotation(clickedCharacter.rotation || 0);
+          
+          if (onCharacterSelect) onCharacterSelect(clickedCharacter);
+          e.preventDefault();
+          return; // 🚨 early return
           
         } else if (handleInfo.type === "resize" && handleInfo.direction) {
           // リサイズ開始
@@ -259,8 +260,17 @@ export const useMouseEvents = ({
             width: currentWidth,
             height: currentHeight
           });
+          
+          if (onCharacterSelect) onCharacterSelect(clickedCharacter);
+          e.preventDefault();
+          return; // 🚨 early return
         }
       } else {
+        // 🚨 通常クリック時も選択状態を最初に設定
+        actions.setSelectedCharacter(clickedCharacter);
+        actions.setSelectedBubble(null);
+        actions.setSelectedPanel(null);
+        
         // 通常のドラッグ
         console.log("📱 通常ドラッグ開始");
         actions.setIsDragging(true);
@@ -304,27 +314,15 @@ export const useMouseEvents = ({
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
 
-    //console.log("🖱️ マウス移動イベント発生");
-    /*console.log("🔍 状態確認:", {
-      isDragging: state.isDragging,
-      isBubbleResizing: state.isBubbleResizing,
-      isCharacterResizing: state.isCharacterResizing,
-      isPanelResizing: state.isPanelResizing,
-      isPanelMoving: state.isPanelMoving,
-      resizeDirection: state.resizeDirection
-    });*/
-
     // 何も操作していない場合は早期リターン
     if (!state.isDragging && !state.isPanelResizing && !state.isPanelMoving && 
-        !state.isCharacterResizing && !state.isBubbleResizing) {
-      //console.log("❌ 移動処理スキップ: 操作中のアイテムなし");
+        !state.isCharacterResizing && !state.isBubbleResizing && !state.isCharacterRotating) {
       return;
     }
 
-
-    // 🔄 キャラクター回転処理
+    // 🔄 キャラクター回転処理（ハンドル操作時のみ）
     if (state.isCharacterRotating && state.selectedCharacter) {
-      console.log("🔄 回転処理中");
+      console.log("🔄 回転処理中（ハンドル操作）");
       
       const panel = panels.find(p => p.id === state.selectedCharacter!.panelId);
       if (panel) {
@@ -504,18 +502,24 @@ export const useMouseEvents = ({
    * Canvas マウスアップ処理
    */
   const handleCanvasMouseUp = () => {
-    //console.log("🖱️ マウスアップ: 全状態リセット");
-    
-    // 回転終了処理を追加
-    if (state.isCharacterRotating) {
-      console.log("🔄 回転操作完了");
-      actions.setIsCharacterRotating(false);
+    // 🚨 回転終了時の選択状態保持
+    if (state.isCharacterRotating && state.selectedCharacter) {
+      console.log("🔄 回転操作完了 - 選択状態維持");
+      const currentCharacter = state.selectedCharacter;
+      
+      actions.resetDragStates();
+      actions.setSnapLines([]);
+      
+      // 選択状態を再設定（重要！）
+      actions.setSelectedCharacter(currentCharacter);
+      if (onCharacterSelect) onCharacterSelect(currentCharacter);
+      return;
     }
     
     actions.resetDragStates();
     actions.setSnapLines([]);
-    //console.log("✅ 全状態リセット完了");
   };
+
   /**
    * Canvas 右クリックメニュー処理
    */

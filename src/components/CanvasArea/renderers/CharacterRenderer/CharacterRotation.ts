@@ -21,47 +21,62 @@ export class CharacterRotation {
     };
   }
 
-  // 🎨 回転ハンドル描画
+  // 🎨 回転ハンドル描画（座標統一修正版）
   static drawRotationHandle(
     ctx: CanvasRenderingContext2D, 
     character: Character, 
     panel: Panel,
     bounds: any
   ) {
-    const handle = CharacterBounds.getRotationHandleBounds(character, panel);
+    // 🔧 CharacterBoundsと同じ座標計算を使用
+    const characterBounds = CharacterBounds.getCharacterBounds(character, panel);
+    const handleDistance = 35;
+    const handleRadius = 20;
+    const handleX = characterBounds.centerX;
+    const handleY = characterBounds.y - handleDistance;
     
-    console.log("🎨 回転ハンドル描画:", {
-      handleX: handle.x,
-      handleY: handle.y,
-      radius: handle.radius,
-      character: character.name
+    console.log("🎨 回転ハンドル描画（座標統一版）:", {
+      handleX,
+      handleY,
+      characterBounds,
+      calculation: `${characterBounds.y} - ${handleDistance} = ${handleY}`
     });
 
     ctx.save();
+    
+    // 接続線（キャラクター上部から回転ハンドルまで）
+    ctx.strokeStyle = "rgba(255, 102, 0, 0.6)";
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 5]);
+    ctx.beginPath();
+    ctx.moveTo(characterBounds.centerX, characterBounds.y);
+    ctx.lineTo(handleX, handleY);
+    ctx.stroke();
+    ctx.setLineDash([]);
     
     // 回転ハンドル背景（白い円）
     ctx.fillStyle = "#ffffff";
     ctx.strokeStyle = "#4a90e2";
     ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.arc(handle.x, handle.y, handle.radius, 0, Math.PI * 2);
+    ctx.arc(handleX, handleY, handleRadius, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
     
     // 回転アイコン（回転矢印）
-    const innerRadius = handle.radius * 0.6;
-    const arrowSize = handle.radius * 0.3;
+    const innerRadius = handleRadius * 0.6;
+    const arrowSize = handleRadius * 0.3;
     
     // 円弧描画
     ctx.strokeStyle = "#4a90e2";
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.arc(handle.x, handle.y, innerRadius, -Math.PI/2, Math.PI);
+    ctx.arc(handleX, handleY, innerRadius, -Math.PI/2, Math.PI);
     ctx.stroke();
     
     // 矢印の先端
-    const arrowX = handle.x + innerRadius * Math.cos(Math.PI);
-    const arrowY = handle.y + innerRadius * Math.sin(Math.PI);
+    const arrowX = handleX + innerRadius * Math.cos(Math.PI);
+    const arrowY = handleY + innerRadius * Math.sin(Math.PI);
     
     ctx.fillStyle = "#4a90e2";
     ctx.beginPath();
@@ -74,7 +89,7 @@ export class CharacterRotation {
     // 中心点（小さな円）
     ctx.fillStyle = "#4a90e2";
     ctx.beginPath();
-    ctx.arc(handle.x, handle.y, 2, 0, Math.PI * 2);
+    ctx.arc(handleX, handleY, 2, 0, Math.PI * 2);
     ctx.fill();
     
     ctx.restore();
