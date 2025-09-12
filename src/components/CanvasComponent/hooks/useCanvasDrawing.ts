@@ -7,7 +7,7 @@ import { BubbleRenderer } from '../../CanvasArea/renderers/BubbleRenderer';
 import { CharacterRenderer } from '../../CanvasArea/renderers/CharacterRenderer';
 
 export interface CanvasDrawingHookProps {
-  canvasRef: RefObject<HTMLCanvasElement>;
+  canvasRef: RefObject<HTMLCanvasElement | null>;
   state: CanvasState;
   panels: Panel[];
   characters: Character[];

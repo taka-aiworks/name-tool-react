@@ -1,8 +1,9 @@
-// src/App.tsx (スナップ設定UI追加版)
+// src/App.tsx (正しいインポートパス版)
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import CanvasComponent from "./components/CanvasComponent.tsx_old";
+// 🔧 修正: 正しいパスに変更（.tsxは不要）
+import CanvasComponent from "./components/CanvasComponent";
 import CharacterDetailPanel from "./components/UI/CharacterDetailPanel";
-import { Panel, Character, SpeechBubble, SnapSettings } from "./types"; // 🆕 SnapSettings追加
+import { Panel, Character, SpeechBubble, SnapSettings } from "./types";
 import { templates } from "./components/CanvasArea/templates";
 import { sceneTemplates, applySceneTemplate } from "./components/CanvasArea/sceneTemplates";
 import { ExportPanel } from './components/UI/ExportPanel';
@@ -30,7 +31,7 @@ function App() {
   const [showCharacterPanel, setShowCharacterPanel] = useState<boolean>(false);
   const [isPanelEditMode, setIsPanelEditMode] = useState<boolean>(false);
 
-  // 🆕 スナップ設定の状態管理
+  // スナップ設定の状態管理
   const [snapSettings, setSnapSettings] = useState<SnapSettings>({
     enabled: true,
     gridSize: 20,
@@ -38,7 +39,7 @@ function App() {
     gridDisplay: 'edit-only'
   });
 
-  // 機能コールバック用の状態
+  // 🔧 型修正: 機能コールバック用の状態
   const [addCharacterFunc, setAddCharacterFunc] = useState<((type: string) => void) | null>(null);
   const [addBubbleFunc, setAddBubbleFunc] = useState<((type: string, text: string) => void) | null>(null);
 
@@ -165,7 +166,7 @@ function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleDeleteSelected, handleUndo, handleRedo]);
 
-  // 🆕 スナップ設定ハンドラー
+  // スナップ設定ハンドラー
   const handleSnapToggle = useCallback(() => {
     setSnapSettings(prev => ({ ...prev, enabled: !prev.enabled }));
   }, []);
@@ -404,7 +405,7 @@ function App() {
             🔧 {isPanelEditMode ? "編集中" : "編集"}
           </button>
 
-          {/* 🆕 スナップ設定UI（インライン） */}
+          {/* スナップ設定UI（インライン） */}
           <button 
             className={`control-btn ${snapSettings.enabled ? 'active' : ''}`}
             onClick={handleSnapToggle}
@@ -607,7 +608,7 @@ function App() {
               {selectedCharacter && <span> | 選択中: {selectedCharacter.name}</span>}
               {selectedPanel && <span> | パネル{selectedPanel.id}選択中</span>}
               {isPanelEditMode && <span> | 🔧 コマ編集モード</span>}
-              {/* 🆕 スナップ状態表示 */}
+              {/* スナップ状態表示 */}
               {snapSettings.enabled && <span> | ⚙️ スナップ: {snapSettings.gridSize}px ({snapSettings.sensitivity})</span>}
             </div>
           </div>
@@ -622,17 +623,18 @@ function App() {
             setCharacters={setCharacters}
             speechBubbles={speechBubbles}
             setSpeechBubbles={setSpeechBubbles}
-            onCharacterAdd={(func) => setAddCharacterFunc(() => func)}
-            onBubbleAdd={(func) => setAddBubbleFunc(() => func)}
-            onPanelSelect={(panel) => setSelectedPanel(panel)}
-            onCharacterSelect={(character) => setSelectedCharacter(character)}
+            // 🔧 型修正: 明示的に型を指定
+            onCharacterAdd={(func: (type: string) => void) => setAddCharacterFunc(() => func)}
+            onBubbleAdd={(func: (type: string, text: string) => void) => setAddBubbleFunc(() => func)}
+            onPanelSelect={(panel: Panel | null) => setSelectedPanel(panel)}
+            onCharacterSelect={(character: Character | null) => setSelectedCharacter(character)}
             onCharacterRightClick={handleCharacterRightClick}
             isPanelEditMode={isPanelEditMode}
             onPanelSplit={handlePanelSplit}
             onPanelEditModeToggle={handlePanelEditModeToggle}
             onPanelAdd={handlePanelAdd}
             onPanelDelete={handlePanelDelete}
-            snapSettings={snapSettings} // 🆕 スナップ設定を渡す
+            snapSettings={snapSettings}
           />
         </div>
 

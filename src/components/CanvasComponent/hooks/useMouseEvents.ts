@@ -17,7 +17,7 @@ export interface MouseEventHandlers {
 }
 
 export interface MouseEventHookProps {
-  canvasRef: RefObject<HTMLCanvasElement>;
+  canvasRef: RefObject<HTMLCanvasElement | null>;
   state: CanvasState;
   actions: CanvasStateActions;
   panels: Panel[];
