@@ -1,8 +1,6 @@
-// src/components/CanvasComponent/hooks/useMouseEvents.ts
-// 🎯 クリーン整理版：ハンドルのみ回転・キャラクター本体は移動のみ
-
+// src/components/CanvasComponent/hooks/useMouseEvents.ts - 既存システム対応版
 import { RefObject } from 'react';
-import { Panel, Character, SpeechBubble, SnapSettings } from '../../../types';
+import { Panel, Character, SpeechBubble, BackgroundElement, SnapSettings } from '../../../types';
 import { CanvasState, CanvasStateActions } from './useCanvasState';
 import { BubbleRenderer } from '../../CanvasArea/renderers/BubbleRenderer';
 import { CharacterRenderer } from '../../CanvasArea/renderers/CharacterRenderer/CharacterRenderer';
@@ -10,6 +8,7 @@ import { PanelManager } from '../../CanvasArea/PanelManager';
 import { ContextMenuState, ContextMenuActions } from '../../CanvasArea/ContextMenuHandler';
 import { CharacterUtils } from '../../CanvasArea/renderers/CharacterRenderer/utils/CharacterUtils';
 import { CharacterBounds } from '../../CanvasArea/renderers/CharacterRenderer/utils/CharacterBounds';
+import { BackgroundRenderer } from '../../CanvasArea/renderers/BackgroundRenderer';
 
 export interface MouseEventHandlers {
   handleCanvasClick: (e: React.MouseEvent<HTMLCanvasElement>) => void;
@@ -30,6 +29,11 @@ export interface MouseEventHookProps {
   setCharacters: (characters: Character[]) => void;
   speechBubbles: SpeechBubble[];
   setSpeechBubbles: (bubbles: SpeechBubble[]) => void;
+  // 背景関連のprops追加（オプショナル）
+  backgrounds?: BackgroundElement[];
+  setBackgrounds?: (backgrounds: BackgroundElement[]) => void;
+  selectedBackground?: BackgroundElement | null;
+  setSelectedBackground?: (background: BackgroundElement | null) => void;
   isPanelEditMode: boolean;
   snapSettings: SnapSettings;
   contextMenu: ContextMenuState;
@@ -39,6 +43,31 @@ export interface MouseEventHookProps {
   onCharacterSelect?: (character: Character | null) => void;
   onPanelSplit?: (panelId: number, direction: 'horizontal' | 'vertical') => void;
 }
+
+// 簡易的な背景クリック判定ヘルパー
+const findBackgroundAt = (
+  x: number, 
+  y: number, 
+  backgrounds: BackgroundElement[], 
+  panels: Panel[]
+): BackgroundElement | null => {
+  for (let i = backgrounds.length - 1; i >= 0; i--) {
+    const background = backgrounds[i];
+    const panel = panels.find(p => p.id === background.panelId);
+    if (panel) {
+      const absoluteX = panel.x + background.x * panel.width;
+      const absoluteY = panel.y + background.y * panel.height;
+      const absoluteWidth = background.width * panel.width;
+      const absoluteHeight = background.height * panel.height;
+      
+      if (x >= absoluteX && x <= absoluteX + absoluteWidth &&
+          y >= absoluteY && y <= absoluteY + absoluteHeight) {
+        return background;
+      }
+    }
+  }
+  return null;
+};
 
 export const useMouseEvents = ({
   canvasRef,
@@ -50,6 +79,11 @@ export const useMouseEvents = ({
   setCharacters,
   speechBubbles,
   setSpeechBubbles,
+  // 背景関連（オプショナル）
+  backgrounds = [],
+  setBackgrounds,
+  selectedBackground = null,
+  setSelectedBackground,
   isPanelEditMode,
   snapSettings,
   contextMenu,
@@ -69,12 +103,28 @@ export const useMouseEvents = ({
 
     setContextMenu({ ...contextMenu, visible: false });
 
+    // 背景クリック判定（背景機能が有効な場合のみ）
+    if (backgrounds.length > 0 && setSelectedBackground) {
+      const clickedBackground = findBackgroundAt(x, y, backgrounds, panels);
+      if (clickedBackground) {
+        setSelectedBackground(clickedBackground);
+        actions.setSelectedBubble(null);
+        actions.setSelectedCharacter(null);
+        actions.setSelectedPanel(null);
+        if (onPanelSelect) onPanelSelect(null);
+        if (onCharacterSelect) onCharacterSelect(null);
+        console.log("🎨 背景選択:", clickedBackground.type);
+        return;
+      }
+    }
+
     // 吹き出しクリック判定
     const clickedBubble = BubbleRenderer.findBubbleAt(x, y, speechBubbles, panels);
     if (clickedBubble) {
       actions.setSelectedBubble(clickedBubble);
       actions.setSelectedCharacter(null);
       actions.setSelectedPanel(null);
+      if (setSelectedBackground) setSelectedBackground(null);
       if (onPanelSelect) onPanelSelect(null);
       if (onCharacterSelect) onCharacterSelect(null);
       return;
@@ -86,6 +136,7 @@ export const useMouseEvents = ({
       actions.setSelectedCharacter(clickedCharacter);
       actions.setSelectedBubble(null);
       actions.setSelectedPanel(null);
+      if (setSelectedBackground) setSelectedBackground(null);
       if (onPanelSelect) onPanelSelect(null);
       if (onCharacterSelect) onCharacterSelect(clickedCharacter);
       return;
@@ -96,6 +147,7 @@ export const useMouseEvents = ({
     actions.setSelectedPanel(clickedPanel || null);
     actions.setSelectedCharacter(null);
     actions.setSelectedBubble(null);
+    if (setSelectedBackground) setSelectedBackground(null);
     if (onPanelSelect) onPanelSelect(clickedPanel || null);
     if (onCharacterSelect) onCharacterSelect(null);
   };
@@ -109,16 +161,15 @@ export const useMouseEvents = ({
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
 
-    console.log("🖱️ [クリーン版] マウスダウン開始:", { mouseX, mouseY });
+    console.log("🖱️ マウスダウン開始:", { mouseX, mouseY });
 
-    // 🚨 手動キャラクター検索（クリーン版）
+    // 手動キャラクター検索
     let clickedCharacter: Character | null = null;
     for (let i = characters.length - 1; i >= 0; i--) {
       const character = characters[i];
       const panel = panels.find(p => p.id === character.panelId);
       
       if (panel) {
-        // 拡張クリック範囲での判定（境界問題対応）
         const bounds = CharacterBounds.getCharacterBounds(character, panel);
         const expandedBounds = {
           x: bounds.x - 50,
@@ -136,32 +187,31 @@ export const useMouseEvents = ({
         
         if (expandedClicked) {
           clickedCharacter = character;
-          console.log(`✅ [クリーン版] キャラクター発見: ${character.name}`);
+          console.log(`✅ キャラクター発見: ${character.name}`);
           break;
         }
       }
     }
 
     if (clickedCharacter) {
-      console.log("👤 [最適化版] キャラクター処理開始:", clickedCharacter.name);
+      console.log("👤 キャラクター処理開始:", clickedCharacter.name);
       
-      // 🚨 既に選択済みの場合は選択状態更新をスキップ
       const isAlreadySelected = state.selectedCharacter?.id === clickedCharacter.id;
       
       if (!isAlreadySelected) {
-        // 選択状態を変更（未選択 → 選択の場合のみ）
         actions.setSelectedCharacter(clickedCharacter);
         actions.setSelectedBubble(null);
         actions.setSelectedPanel(null);
+        if (setSelectedBackground) setSelectedBackground(null);
         if (onCharacterSelect) onCharacterSelect(clickedCharacter);
-        console.log("📱 [最適化版] 選択状態変更実行");
+        console.log("📱 選択状態変更実行");
       } else {
-        console.log("📱 [最適化版] 既に選択済み - 選択状態更新スキップ");
+        console.log("📱 既に選択済み - 選択状態更新スキップ");
       }
       
       const panel = panels.find(p => p.id === clickedCharacter!.panelId);
       if (!panel) {
-        console.error("❌ [最適化版] パネル未発見");
+        console.error("❌ パネル未発見");
         e.preventDefault();
         return;
       }
@@ -172,7 +222,7 @@ export const useMouseEvents = ({
       );
       
       if (rotationClicked) {
-        console.log("🔄 [最適化版] 回転ハンドルクリック");
+        console.log("🔄 回転ハンドルクリック");
         actions.setIsCharacterRotating(true);
         
         const { centerX, centerY } = CharacterUtils.calculateCenterCoordinates(clickedCharacter, panel);
@@ -191,7 +241,7 @@ export const useMouseEvents = ({
       );
       
       if (resizeResult.isClicked) {
-        console.log("📏 [最適化版] リサイズ開始:", resizeResult.direction);
+        console.log("📏 リサイズ開始:", resizeResult.direction);
         actions.setIsCharacterResizing(true);
         actions.setResizeDirection(resizeResult.direction);
         actions.setDragOffset({ x: mouseX, y: mouseY });
@@ -211,7 +261,7 @@ export const useMouseEvents = ({
       
       // 通常ドラッグ（選択済みの場合のみ開始）
       if (isAlreadySelected) {
-        console.log("📱 [最適化版] 通常ドラッグ開始");
+        console.log("📱 通常ドラッグ開始");
         actions.setIsDragging(true);
         actions.setDragOffset({
           x: mouseX - clickedCharacter.x,
@@ -223,28 +273,28 @@ export const useMouseEvents = ({
       return;
     }
 
+    console.log("❌ キャラクター検出されず - 他の処理へ");
 
-    console.log("❌ [クリーン版] キャラクター検出されず - 他の処理へ");
-
-    // 🎯 吹き出し処理
+    // 吹き出し処理
     const clickedBubble = BubbleRenderer.findBubbleAt(mouseX, mouseY, speechBubbles, panels);
     if (clickedBubble) {
-      console.log("🎯 [クリーン版] 吹き出しクリック:", clickedBubble.text);
+      console.log("🎯 吹き出しクリック:", clickedBubble.text);
       
       actions.setSelectedBubble(clickedBubble);
       actions.setSelectedCharacter(null);
       actions.setSelectedPanel(null);
+      if (setSelectedBackground) setSelectedBackground(null);
       
       const panel = panels.find(p => p.id === clickedBubble.panelId) || panels[0];
       if (!panel) {
-        console.error("❌ [クリーン版] 吹き出しパネル未発見");
+        console.error("❌ 吹き出しパネル未発見");
         return;
       }
       
       const resizeResult = BubbleRenderer.isBubbleResizeHandleClicked(mouseX, mouseY, clickedBubble, panel);
       
       if (resizeResult.isClicked) {
-        console.log("✅ [クリーン版] 吹き出しリサイズ開始:", resizeResult.direction);
+        console.log("✅ 吹き出しリサイズ開始:", resizeResult.direction);
         actions.setIsBubbleResizing(true);
         actions.setResizeDirection(resizeResult.direction);
         actions.setDragOffset({ x: mouseX, y: mouseY });
@@ -255,7 +305,7 @@ export const useMouseEvents = ({
           height: clickedBubble.height
         });
       } else {
-        console.log("📱 [クリーン版] 吹き出しドラッグ開始");
+        console.log("📱 吹き出しドラッグ開始");
         actions.setIsDragging(true);
         actions.setDragOffset({
           x: mouseX - clickedBubble.x,
@@ -267,12 +317,12 @@ export const useMouseEvents = ({
       return;
     }
 
-    // 🎯 パネル編集モード処理
+    // パネル編集モード処理
     if (isPanelEditMode && state.selectedPanel) {
       const panelHandle = PanelManager.getPanelHandleAt(mouseX, mouseY, state.selectedPanel);
       
       if (panelHandle) {
-        console.log("🔧 [クリーン版] パネル編集ハンドル:", panelHandle.type);
+        console.log("🔧 パネル編集ハンドル:", panelHandle.type);
         
         if (panelHandle.type === "delete") {
           contextMenuActions.onDeletePanel(state.selectedPanel);
@@ -303,20 +353,38 @@ export const useMouseEvents = ({
       }
     }
 
-    // 🎯 通常パネル処理・背景クリック
+    // 背景クリック判定（新規選択）
+    if (backgrounds.length > 0 && setSelectedBackground) {
+      const clickedBackground = findBackgroundAt(mouseX, mouseY, backgrounds, panels);
+      if (clickedBackground) {
+        console.log("🎨 背景クリック:", clickedBackground.type);
+        setSelectedBackground(clickedBackground);
+        actions.setSelectedCharacter(null);
+        actions.setSelectedBubble(null);
+        actions.setSelectedPanel(null);
+        if (onPanelSelect) onPanelSelect(null);
+        if (onCharacterSelect) onCharacterSelect(null);
+        e.preventDefault();
+        return;
+      }
+    }
+
+    // 通常パネル処理・背景クリック
     const clickedPanel = PanelManager.findPanelAt(mouseX, mouseY, panels);
     if (clickedPanel) {
-      console.log("🎯 [クリーン版] パネルクリック:", clickedPanel.id);
+      console.log("🎯 パネルクリック:", clickedPanel.id);
       actions.setSelectedPanel(clickedPanel);
       actions.setSelectedCharacter(null);
       actions.setSelectedBubble(null);
+      if (setSelectedBackground) setSelectedBackground(null);
       if (onPanelSelect) onPanelSelect(clickedPanel);
       if (onCharacterSelect) onCharacterSelect(null);
     } else {
-      console.log("🎯 [クリーン版] 背景クリック - 全選択解除");
+      console.log("🎯 背景クリック - 全選択解除");
       actions.setSelectedPanel(null);
       actions.setSelectedCharacter(null);
       actions.setSelectedBubble(null);
+      if (setSelectedBackground) setSelectedBackground(null);
       if (onPanelSelect) onPanelSelect(null);
       if (onCharacterSelect) onCharacterSelect(null);
     }
@@ -335,9 +403,9 @@ export const useMouseEvents = ({
       return;
     }
 
-    // 🔄 キャラクター回転処理（ハンドルのみ）
+    // キャラクター回転処理（ハンドルのみ）
     if (state.isCharacterRotating && state.selectedCharacter) {
-      console.log("🔄 [クリーン版] 回転処理実行中（ハンドルのみ）:", {
+      console.log("🔄 回転処理実行中（ハンドルのみ）:", {
         character: state.selectedCharacter.name,
         mousePos: { mouseX, mouseY }
       });
@@ -349,7 +417,6 @@ export const useMouseEvents = ({
         );
         const currentAngle = CharacterUtils.calculateAngle(centerX, centerY, mouseX, mouseY);
         
-        // 角度差分計算
         const angleDiff = CharacterUtils.calculateAngleDifference(
           state.rotationStartAngle, currentAngle
         );
@@ -357,7 +424,6 @@ export const useMouseEvents = ({
           state.originalRotation + angleDiff
         );
         
-        // キャラクター更新
         const updatedCharacter = { 
           ...state.selectedCharacter,
           rotation: newRotation 
@@ -367,7 +433,6 @@ export const useMouseEvents = ({
           char.id === updatedCharacter.id ? updatedCharacter : char
         ));
         
-        // 選択キャラクターも更新
         actions.setSelectedCharacter(updatedCharacter);
       }
       return;
@@ -398,7 +463,7 @@ export const useMouseEvents = ({
 
     // キャラクター移動（回転なし）
     if (state.selectedCharacter && state.isDragging) {
-      console.log("📱 [クリーン版] キャラクター移動実行中（回転なし）");
+      console.log("📱 キャラクター移動実行中（回転なし）");
       
       const newX = mouseX - state.dragOffset.x;
       const newY = mouseY - state.dragOffset.y;
@@ -502,11 +567,11 @@ export const useMouseEvents = ({
   };
 
   const handleCanvasMouseUp = () => {
-    console.log("⬆️ [クリーン版] マウスアップ - 操作終了処理");
+    console.log("⬆️ マウスアップ - 操作終了処理");
     
     // 回転終了時の選択状態維持
     if (state.isCharacterRotating && state.selectedCharacter) {
-      console.log("🔄 [クリーン版] 回転操作完了 - 選択状態維持:", state.selectedCharacter.name);
+      console.log("🔄 回転操作完了 - 選択状態維持:", state.selectedCharacter.name);
       const currentCharacter = state.selectedCharacter;
       
       // 状態リセット
@@ -517,7 +582,7 @@ export const useMouseEvents = ({
       setTimeout(() => {
         actions.setSelectedCharacter(currentCharacter);
         if (onCharacterSelect) onCharacterSelect(currentCharacter);
-        console.log("✅ [クリーン版] 回転後選択状態復元:", currentCharacter.name);
+        console.log("✅ 回転後選択状態復元:", currentCharacter.name);
       }, 0);
       
       return;
@@ -526,7 +591,7 @@ export const useMouseEvents = ({
     // その他の操作終了処理
     actions.resetDragStates();
     actions.setSnapLines([]);
-    console.log("✅ [クリーン版] 全状態リセット完了");
+    console.log("✅ 全状態リセット完了");
   };
 
   const handleCanvasContextMenu = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -537,6 +602,21 @@ export const useMouseEvents = ({
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
+
+    // 背景右クリック判定
+    if (backgrounds.length > 0) {
+      const clickedBackground = findBackgroundAt(x, y, backgrounds, panels);
+      if (clickedBackground) {
+        setContextMenu({
+          visible: true,
+          x: e.clientX,
+          y: e.clientY,
+          target: 'background',
+          targetElement: clickedBackground,
+        });
+        return;
+      }
+    }
 
     const clickedBubble = BubbleRenderer.findBubbleAt(x, y, speechBubbles, panels);
     if (clickedBubble) {
@@ -590,6 +670,16 @@ export const useMouseEvents = ({
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
+    
+    // 背景ダブルクリック処理
+    if (backgrounds.length > 0) {
+      const clickedBackground = findBackgroundAt(x, y, backgrounds, panels);
+      if (clickedBackground && contextMenuActions.onOpenBackgroundPanel) {
+        contextMenuActions.onOpenBackgroundPanel(clickedBackground);
+        console.log("🎨 背景設定パネル開く:", clickedBackground.type);
+        return;
+      }
+    }
     
     const clickedBubble = BubbleRenderer.findBubbleAt(x, y, speechBubbles, panels);
     if (clickedBubble) {

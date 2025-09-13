@@ -1,39 +1,43 @@
-// src/components/CanvasArea/ContextMenuHandler.ts
+// src/components/CanvasArea/ContextMenuHandler.ts - 背景機能対応版
 import React from "react";
-import { Panel, Character, SpeechBubble } from "../../types";
+import { Panel, Character, SpeechBubble, BackgroundElement } from "../../types";
 
 export interface ContextMenuState {
   visible: boolean;
   x: number;
   y: number;
-  target: 'character' | 'bubble' | 'panel' | null;
-  targetElement: Character | SpeechBubble | Panel | null;
+  target: 'character' | 'bubble' | 'panel' | 'background' | null; // 🆕 background追加
+  targetElement: Character | SpeechBubble | Panel | BackgroundElement | null; // 🆕 BackgroundElement追加
 }
 
 export interface ClipboardState {
-  type: 'panel' | 'character' | 'bubble';
-  data: Panel | Character | SpeechBubble;
+  type: 'panel' | 'character' | 'bubble' | 'background'; // 🆕 background追加
+  data: Panel | Character | SpeechBubble | BackgroundElement; // 🆕 BackgroundElement追加
 }
 
 export interface ContextMenuActions {
   onDuplicateCharacter: (character: Character) => void;
   onDuplicatePanel: (panel: Panel) => void;
-  onCopyToClipboard: (type: 'panel' | 'character' | 'bubble', element: Panel | Character | SpeechBubble) => void;
+  // 🆕 背景関連アクション追加
+  onDuplicateBackground?: (background: BackgroundElement) => void;
+  onCopyToClipboard: (type: 'panel' | 'character' | 'bubble' | 'background', element: Panel | Character | SpeechBubble | BackgroundElement) => void;
   onPasteFromClipboard: () => void;
-  onDeleteElement: (type: 'character' | 'bubble', element: Character | SpeechBubble) => void;
+  onDeleteElement: (type: 'character' | 'bubble' | 'background', element: Character | SpeechBubble | BackgroundElement) => void;
   onDeletePanel: (panel: Panel) => void;
   onFlipHorizontal: () => void;
   onFlipVertical: () => void;
   onEditPanel: (panel: Panel) => void;
   onSplitPanel: (panel: Panel, direction: 'horizontal' | 'vertical') => void;
-  onSelectElement: (type: 'character' | 'bubble' | 'panel', element: Character | SpeechBubble | Panel) => void;
+  onSelectElement: (type: 'character' | 'bubble' | 'panel' | 'background', element: Character | SpeechBubble | Panel | BackgroundElement) => void;
   onOpenCharacterPanel: (character: Character) => void;
+  // 🆕 背景設定パネル
+  onOpenBackgroundPanel?: (background: BackgroundElement) => void;
   onDeselectAll: () => void;
 }
 
 export class ContextMenuHandler {
   /**
-   * 右クリックメニューのアクション処理
+   * 右クリックメニューのアクション処理（背景対応版）
    */
   static handleAction(
     action: string,
@@ -57,6 +61,13 @@ export class ContextMenuHandler {
         }
         break;
 
+      // 🆕 背景複製
+      case 'duplicateBackground':
+        if (target === 'background' && targetElement && actions.onDuplicateBackground) {
+          actions.onDuplicateBackground(targetElement as BackgroundElement);
+        }
+        break;
+
       case 'copy':
         if (target === 'panel' && targetElement) {
           actions.onCopyToClipboard('panel', targetElement as Panel);
@@ -64,6 +75,9 @@ export class ContextMenuHandler {
           actions.onCopyToClipboard('character', targetElement as Character);
         } else if (target === 'bubble' && targetElement) {
           actions.onCopyToClipboard('bubble', targetElement as SpeechBubble);
+        } else if (target === 'background' && targetElement) {
+          // 🆕 背景コピー
+          actions.onCopyToClipboard('background', targetElement as BackgroundElement);
         }
         break;
 
@@ -89,7 +103,8 @@ export class ContextMenuHandler {
         if (target === 'panel' && targetElement) {
           actions.onDeletePanel(targetElement as Panel);
         } else if (target && targetElement) {
-          actions.onDeleteElement(target as 'character' | 'bubble', targetElement as Character | SpeechBubble);
+          // 🆕 背景削除対応
+          actions.onDeleteElement(target as 'character' | 'bubble' | 'background', targetElement as Character | SpeechBubble | BackgroundElement);
         }
         break;
 
@@ -100,12 +115,22 @@ export class ContextMenuHandler {
           actions.onSelectElement('bubble', targetElement as SpeechBubble);
         } else if (target === 'panel' && targetElement) {
           actions.onSelectElement('panel', targetElement as Panel);
+        } else if (target === 'background' && targetElement) {
+          // 🆕 背景選択
+          actions.onSelectElement('background', targetElement as BackgroundElement);
         }
         break;
 
       case 'characterPanel':
         if (target === 'character' && targetElement) {
           actions.onOpenCharacterPanel(targetElement as Character);
+        }
+        break;
+
+      // 🆕 背景設定パネル
+      case 'backgroundPanel':
+        if (target === 'background' && targetElement && actions.onOpenBackgroundPanel) {
+          actions.onOpenBackgroundPanel(targetElement as BackgroundElement);
         }
         break;
 
@@ -128,7 +153,7 @@ export class ContextMenuHandler {
   }
 
   /**
-   * 右クリックメニューコンポーネントの生成
+   * 右クリックメニューコンポーネントの生成（背景対応版）
    */
   static renderContextMenu(
     contextMenu: ContextMenuState,
@@ -192,7 +217,7 @@ export class ContextMenuHandler {
             onMouseLeave: handleMouseLeave,
             onClick: () => onAction('characterPanel')
           },
-          '詳細設定'
+          '⚙️ 詳細設定'
         ),
         React.createElement(
           'div',
@@ -225,7 +250,7 @@ export class ContextMenuHandler {
             onMouseLeave: handleMouseLeave,
             onClick: () => onAction('delete')
           },
-          '削除'
+          '🗑️ 削除'
         )
       ],
       
@@ -239,7 +264,7 @@ export class ContextMenuHandler {
             onMouseLeave: handleMouseLeave,
             onClick: () => onAction('select')
           },
-          '選択'
+          '👆 選択'
         ),
         React.createElement(
           'div',
@@ -261,7 +286,55 @@ export class ContextMenuHandler {
             onMouseLeave: handleMouseLeave,
             onClick: () => onAction('delete')
           },
-          '削除'
+          '🗑️ 削除'
+        )
+      ],
+
+      // 🆕 背景右クリックメニュー
+      contextMenu.target === 'background' && [
+        React.createElement(
+          'div',
+          {
+            key: 'backgroundPanel',
+            style: itemStyle,
+            onMouseEnter: handleMouseEnter,
+            onMouseLeave: handleMouseLeave,
+            onClick: () => onAction('backgroundPanel')
+          },
+          '🎨 背景設定'
+        ),
+        React.createElement(
+          'div',
+          {
+            key: 'duplicateBackground',
+            style: itemStyle,
+            onMouseEnter: handleMouseEnter,
+            onMouseLeave: handleMouseLeave,
+            onClick: () => onAction('duplicateBackground')
+          },
+          '🎭 背景複製'
+        ),
+        React.createElement(
+          'div',
+          {
+            key: 'copyBackground',
+            style: itemStyle,
+            onMouseEnter: handleMouseEnter,
+            onMouseLeave: handleMouseLeave,
+            onClick: () => onAction('copy')
+          },
+          '📋 コピー (Ctrl+C)'
+        ),
+        React.createElement(
+          'div',
+          {
+            key: 'deleteBackground',
+            style: dangerItemStyle,
+            onMouseEnter: handleMouseEnter,
+            onMouseLeave: handleMouseLeave,
+            onClick: () => onAction('delete')
+          },
+          '🗑️ 削除'
         )
       ],
       
@@ -377,18 +450,18 @@ export class ContextMenuHandler {
             onMouseLeave: handleMouseLeave,
             onClick: () => onAction('deselect')
           },
-          '選択解除'
+          '❌ 選択解除'
         )
       ].filter(Boolean)
     );
   }
 
   /**
-   * クリップボード操作
+   * クリップボード操作（背景対応版）
    */
   static copyToClipboard(
-    type: 'panel' | 'character' | 'bubble',
-    element: Panel | Character | SpeechBubble
+    type: 'panel' | 'character' | 'bubble' | 'background', // 🆕 background追加
+    element: Panel | Character | SpeechBubble | BackgroundElement // 🆕 BackgroundElement追加
   ): ClipboardState {
     console.log(`📋 ${type}をクリップボードにコピー:`, element);
     return { type, data: element };
@@ -429,19 +502,42 @@ export class ContextMenuHandler {
   }
 
   /**
-   * 反転処理
+   * 🆕 背景複製
+   */
+  static duplicateBackground(
+    originalBackground: BackgroundElement,
+    canvasWidth: number = 600,
+    canvasHeight: number = 800
+  ): BackgroundElement {
+    console.log("🎨 背景複製開始:", originalBackground.type);
+    
+    const newBackground: BackgroundElement = {
+      ...originalBackground,
+      id: `bg_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+      x: Math.min(originalBackground.x + 0.1, 0.9),
+      y: Math.min(originalBackground.y + 0.1, 0.9),
+    };
+    
+    console.log(`✅ 背景複製完了: ${originalBackground.type} → ${newBackground.id}`);
+    return newBackground;
+  }
+
+  /**
+   * 反転処理（背景対応版）
    */
   static flipElements(
     direction: 'horizontal' | 'vertical',
     panels: Panel[],
     characters: Character[],
     speechBubbles: SpeechBubble[],
+    backgrounds: BackgroundElement[], // 🆕 backgrounds追加
     canvasWidth: number = 600,
     canvasHeight: number = 800
   ): {
     panels: Panel[];
     characters: Character[];
     speechBubbles: SpeechBubble[];
+    backgrounds: BackgroundElement[]; // 🆕 backgrounds追加
   } {
     if (direction === 'horizontal') {
       const flippedPanels = panels.map(panel => ({
@@ -456,12 +552,18 @@ export class ContextMenuHandler {
         ...bubble,
         x: bubble.isGlobalPosition ? canvasWidth - bubble.x : bubble.x
       }));
+      // 🆕 背景も反転
+      const flippedBackgrounds = backgrounds.map(bg => ({
+        ...bg,
+        x: 1 - bg.x - bg.width
+      }));
       
-      console.log("↔️ 水平反転完了");
+      console.log("↔️ 水平反転完了（背景含む）");
       return {
         panels: flippedPanels,
         characters: flippedCharacters,
-        speechBubbles: flippedBubbles
+        speechBubbles: flippedBubbles,
+        backgrounds: flippedBackgrounds
       };
     } else {
       const flippedPanels = panels.map(panel => ({
@@ -476,12 +578,18 @@ export class ContextMenuHandler {
         ...bubble,
         y: bubble.isGlobalPosition ? canvasHeight - bubble.y : bubble.y
       }));
+      // 🆕 背景も反転
+      const flippedBackgrounds = backgrounds.map(bg => ({
+        ...bg,
+        y: 1 - bg.y - bg.height
+      }));
       
-      console.log("↕️ 垂直反転完了");
+      console.log("↕️ 垂直反転完了（背景含む）");
       return {
         panels: flippedPanels,
         characters: flippedCharacters,
-        speechBubbles: flippedBubbles
+        speechBubbles: flippedBubbles,
+        backgrounds: flippedBackgrounds
       };
     }
   }

@@ -1,24 +1,22 @@
-// src/components/CanvasComponent.tsx (正しいパス版)
+// src/components/CanvasComponent.tsx - 動作版（エラー修正）
 import React, { useRef, useState, forwardRef, useImperativeHandle, useEffect } from "react";
-// 🔧 修正: ../types (1つ上)
-import { Panel, Character, SpeechBubble, CanvasComponentProps } from "../types";
-// 🔧 修正: ./CanvasArea (同階層)
+import { Panel, Character, SpeechBubble, BackgroundElement, CanvasComponentProps } from "../types";
 import { templates } from "./CanvasArea/templates";
 
-// 🔧 修正: ./CanvasComponent/hooks (同階層のCanvasComponentフォルダ内)
+// Hooks import
 import { useCanvasState } from "./CanvasComponent/hooks/useCanvasState";
 import { useMouseEvents } from "./CanvasComponent/hooks/useMouseEvents";
 import { useKeyboardEvents } from "./CanvasComponent/hooks/useKeyboardEvents";
 import { useCanvasDrawing } from "./CanvasComponent/hooks/useCanvasDrawing";
 import { useElementActions } from "./CanvasComponent/hooks/useElementActions";
 
-// 🔧 修正: ./CanvasArea (同階層)
-import { ContextMenuHandler, ContextMenuState, ClipboardState, ContextMenuActions } from "./CanvasArea/ContextMenuHandler";
+// Components
 import EditBubbleModal from "./CanvasArea/EditBubbleModal";
+import { BackgroundRenderer } from "./CanvasArea/renderers/BackgroundRenderer";
+import { ContextMenuHandler, ContextMenuState, ContextMenuActions, ClipboardState } from "./CanvasArea/ContextMenuHandler";
 
 /**
- * Canvas操作の中核となるコンポーネント（分割後）
- * 状態管理とイベント処理を各hookに委譲し、メインロジックを簡潔に保つ
+ * Canvas操作の中核となるコンポーネント（背景機能統合・動作版）
  */
 const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((props, ref) => {
   const {
@@ -29,6 +27,8 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
     setCharacters,
     speechBubbles,
     setSpeechBubbles,
+    backgrounds,
+    setBackgrounds,
     onCharacterAdd,
     onBubbleAdd,
     onPanelSelect,
@@ -45,12 +45,17 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
     }
   } = props;
 
-  // Canvas ref（型修正）
+  // Canvas ref
   const canvasRef = useRef<HTMLCanvasElement>(null!);
   useImperativeHandle(ref, () => canvasRef.current!, []);
 
-  // 🎯 状態管理hook使用
+  // 状態管理hook使用
   const [state, actions] = useCanvasState();
+
+  // 背景選択状態
+  const [selectedBackground, setSelectedBackground] = useState<BackgroundElement | null>(null);
+  const [isBackgroundDragging, setIsBackgroundDragging] = useState<boolean>(false);
+  const [isBackgroundResizing, setIsBackgroundResizing] = useState<boolean>(false);
 
   // ContextMenu & Clipboard 状態
   const [contextMenu, setContextMenu] = useState<ContextMenuState>({
@@ -62,7 +67,7 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
   });
   const [clipboard, setClipboard] = useState<ClipboardState | null>(null);
 
-  // 🎯 ContextMenuActions定義（従来通り）
+  // ContextMenuActions実装（背景対応版）
   const contextMenuActions: ContextMenuActions = {
     onDuplicateCharacter: (character: Character) => {
       const newCharacter = {
@@ -114,20 +119,30 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
         id: `bubble_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
         panelId: newPanelId,
       }));
+
+      // 背景も複製
+      const panelBackgrounds = backgrounds.filter(bg => bg.panelId === panel.id);
+      const newBackgrounds = panelBackgrounds.map(bg => ({
+        ...bg,
+        id: `bg_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+        panelId: newPanelId,
+      }));
       
       setPanels([...panels, newPanel]);
       setCharacters([...characters, ...newCharacters]);
       setSpeechBubbles([...speechBubbles, ...newBubbles]);
+      setBackgrounds([...backgrounds, ...newBackgrounds]);
       
       actions.setSelectedPanel(newPanel);
       actions.setSelectedCharacter(null);
       actions.setSelectedBubble(null);
+      setSelectedBackground(null);
       if (onPanelSelect) onPanelSelect(newPanel);
       if (onCharacterSelect) onCharacterSelect(null);
     },
 
-    onCopyToClipboard: (type: 'panel' | 'character' | 'bubble', element: Panel | Character | SpeechBubble) => {
-      const newClipboard = { type, data: element };
+    onCopyToClipboard: (type: 'panel' | 'character' | 'bubble' | 'background', element: Panel | Character | SpeechBubble | BackgroundElement) => {
+      const newClipboard: ClipboardState = { type, data: element };
       setClipboard(newClipboard);
     },
 
@@ -156,12 +171,23 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
           setSpeechBubbles([...speechBubbles, newBubble]);
           actions.setSelectedBubble(newBubble);
           break;
+
+        case 'background':
+          const newBackground = {
+            ...data as BackgroundElement,
+            id: `bg_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+            x: (data as BackgroundElement).x + 0.1,
+            y: (data as BackgroundElement).y + 0.1,
+          };
+          setBackgrounds([...backgrounds, newBackground]);
+          setSelectedBackground(newBackground);
+          break;
       }
       
       setClipboard(null);
     },
 
-    onDeleteElement: (type: 'character' | 'bubble', element: Character | SpeechBubble) => {
+    onDeleteElement: (type: 'character' | 'bubble' | 'background', element: Character | SpeechBubble | BackgroundElement) => {
       if (type === 'character') {
         const newCharacters = characters.filter(char => char.id !== element.id);
         setCharacters(newCharacters);
@@ -173,21 +199,30 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
         setSpeechBubbles(newBubbles);
         actions.setSelectedBubble(null);
         console.log("吹き出し削除:", (element as SpeechBubble).text);
+      } else if (type === 'background') {
+        const newBackgrounds = backgrounds.filter(bg => bg.id !== element.id);
+        setBackgrounds(newBackgrounds);
+        setSelectedBackground(null);
+        console.log("背景削除:", (element as BackgroundElement).type);
       }
     },
 
     onDeletePanel: (panel: Panel) => {
       const panelCharacters = characters.filter(char => char.panelId === panel.id);
       const panelBubbles = speechBubbles.filter(bubble => bubble.panelId === panel.id);
+      const panelBackgrounds = backgrounds.filter(bg => bg.panelId === panel.id);
       
       let confirmMessage = `コマ ${panel.id} を削除しますか？`;
-      if (panelCharacters.length > 0 || panelBubbles.length > 0) {
+      if (panelCharacters.length > 0 || panelBubbles.length > 0 || panelBackgrounds.length > 0) {
         confirmMessage += `\n含まれる要素も一緒に削除されます:`;
         if (panelCharacters.length > 0) {
           confirmMessage += `\n・キャラクター: ${panelCharacters.length}体`;
         }
         if (panelBubbles.length > 0) {
           confirmMessage += `\n・吹き出し: ${panelBubbles.length}個`;
+        }
+        if (panelBackgrounds.length > 0) {
+          confirmMessage += `\n・背景: ${panelBackgrounds.length}個`;
         }
       }
       
@@ -198,14 +233,17 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
       const newPanels = panels.filter(p => p.id !== panel.id);
       const newCharacters = characters.filter(char => char.panelId !== panel.id);
       const newBubbles = speechBubbles.filter(bubble => bubble.panelId !== panel.id);
+      const newBackgrounds = backgrounds.filter(bg => bg.panelId !== panel.id);
       
       setPanels(newPanels);
       setCharacters(newCharacters);
       setSpeechBubbles(newBubbles);
+      setBackgrounds(newBackgrounds);
 
       actions.setSelectedPanel(null);
       actions.setSelectedCharacter(null);
       actions.setSelectedBubble(null);
+      setSelectedBackground(null);
       if (onPanelSelect) onPanelSelect(null);
       if (onCharacterSelect) onCharacterSelect(null);
       
@@ -228,10 +266,15 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
         ...bubble,
         x: bubble.isGlobalPosition ? canvas.width - bubble.x : bubble.x
       }));
+      const flippedBackgrounds = backgrounds.map(bg => ({
+        ...bg,
+        x: 1 - bg.x - bg.width
+      }));
 
       setPanels(flippedPanels);
       setCharacters(flippedCharacters);
       setSpeechBubbles(flippedBubbles);
+      setBackgrounds(flippedBackgrounds);
     },
 
     onFlipVertical: () => {
@@ -250,16 +293,22 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
         ...bubble,
         y: bubble.isGlobalPosition ? canvas.height - bubble.y : bubble.y
       }));
+      const flippedBackgrounds = backgrounds.map(bg => ({
+        ...bg,
+        y: 1 - bg.y - bg.height
+      }));
 
       setPanels(flippedPanels);
       setCharacters(flippedCharacters);
       setSpeechBubbles(flippedBubbles);
+      setBackgrounds(flippedBackgrounds);
     },
 
     onEditPanel: (panel: Panel) => {
       actions.setSelectedPanel(panel);
       actions.setSelectedCharacter(null);
       actions.setSelectedBubble(null);
+      setSelectedBackground(null);
       if (onPanelSelect) onPanelSelect(panel);
       if (onCharacterSelect) onCharacterSelect(null);
       if (onPanelEditModeToggle) onPanelEditModeToggle(true);
@@ -272,25 +321,35 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
       }
     },
 
-    onSelectElement: (type: 'character' | 'bubble' | 'panel', element: Character | SpeechBubble | Panel) => {
+    onSelectElement: (type: 'character' | 'bubble' | 'panel' | 'background', element: Character | SpeechBubble | Panel | BackgroundElement) => {
       if (type === 'character') {
         actions.setSelectedCharacter(element as Character);
         actions.setSelectedBubble(null);
         actions.setSelectedPanel(null);
+        setSelectedBackground(null);
         if (onCharacterSelect) onCharacterSelect(element as Character);
         if (onPanelSelect) onPanelSelect(null);
       } else if (type === 'bubble') {
         actions.setSelectedBubble(element as SpeechBubble);
         actions.setSelectedCharacter(null);
         actions.setSelectedPanel(null);
+        setSelectedBackground(null);
         if (onCharacterSelect) onCharacterSelect(null);
         if (onPanelSelect) onPanelSelect(null);
       } else if (type === 'panel') {
         actions.setSelectedPanel(element as Panel);
         actions.setSelectedCharacter(null);
         actions.setSelectedBubble(null);
+        setSelectedBackground(null);
         if (onPanelSelect) onPanelSelect(element as Panel);
         if (onCharacterSelect) onCharacterSelect(null);
+      } else if (type === 'background') {
+        setSelectedBackground(element as BackgroundElement);
+        actions.setSelectedCharacter(null);
+        actions.setSelectedBubble(null);
+        actions.setSelectedPanel(null);
+        if (onCharacterSelect) onCharacterSelect(null);
+        if (onPanelSelect) onPanelSelect(null);
       }
     },
 
@@ -300,16 +359,33 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
       }
     },
 
+    onDuplicateBackground: (background: BackgroundElement) => {
+      const newBackground = {
+        ...background,
+        id: `bg_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+        x: Math.min(background.x + 0.1, 0.9),
+        y: Math.min(background.y + 0.1, 0.9),
+      };
+      setBackgrounds([...backgrounds, newBackground]);
+      setSelectedBackground(newBackground);
+    },
+
+    onOpenBackgroundPanel: (background: BackgroundElement) => {
+      console.log("背景設定パネルを開く:", background.type);
+      // TODO: 背景設定パネルの実装
+    },
+
     onDeselectAll: () => {
       actions.setSelectedCharacter(null);
       actions.setSelectedBubble(null);
       actions.setSelectedPanel(null);
+      setSelectedBackground(null);
       if (onCharacterSelect) onCharacterSelect(null);
       if (onPanelSelect) onPanelSelect(null);
     },
   };
 
-  // 🎯 マウスイベントhook使用
+  // マウスイベントhook使用（背景対応版）
   const mouseEventHandlers = useMouseEvents({
     canvasRef,
     state,
@@ -320,6 +396,11 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
     setCharacters,
     speechBubbles,
     setSpeechBubbles,
+    // 背景関連プロパティ
+    backgrounds,
+    setBackgrounds,
+    selectedBackground,
+    setSelectedBackground,
     isPanelEditMode,
     snapSettings,
     contextMenu,
@@ -330,18 +411,37 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
     onPanelSplit,
   });
 
-  // 🎯 キーボードイベントhook使用
-  useKeyboardEvents({
-    state,
-    actions,
-    clipboard,
-    setClipboard,
-    contextMenuActions,
-    onPanelSelect,
-    onCharacterSelect,
-  });
+  // 一時的なキーボードイベント処理
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        switch (e.key.toLowerCase()) {
+          case 'c':
+            if (selectedBackground) {
+              contextMenuActions.onCopyToClipboard('background', selectedBackground);
+              e.preventDefault();
+            }
+            break;
+          case 'v':
+            if (clipboard) {
+              contextMenuActions.onPasteFromClipboard();
+              e.preventDefault();
+            }
+            break;
+        }
+      }
+      
+      if (e.key === 'Delete' && selectedBackground) {
+        contextMenuActions.onDeleteElement('background', selectedBackground);
+        e.preventDefault();
+      }
+    };
 
-  // 🎯 Canvas描画hook使用
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [selectedBackground, clipboard]);
+
+  // Canvas描画hook使用
   const { drawCanvas } = useCanvasDrawing({
     canvasRef,
     state,
@@ -352,7 +452,7 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
     snapSettings,
   });
 
-  // 🎯 要素追加・編集hook使用
+  // 要素追加・編集hook使用
   const { handleEditComplete, handleEditCancel } = useElementActions({
     state,
     actions,
@@ -367,25 +467,20 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
     onCharacterSelect,
   });
 
-  // 🎯 ContextMenuHandler統合版のアクション処理
-  const handleContextMenuAction = (action: string) => {
-    ContextMenuHandler.handleAction(action, contextMenu, contextMenuActions);
-    setContextMenu({ ...contextMenu, visible: false });
-  };
-
-  // 🎯 テンプレート変更時の処理
+  // テンプレート変更時の処理
   useEffect(() => {
     if (templates[selectedTemplate]) {
       setPanels([...templates[selectedTemplate].panels]);
       actions.setSelectedPanel(null);
       actions.setSelectedCharacter(null);
       actions.setSelectedBubble(null);
+      setSelectedBackground(null);
       if (onPanelSelect) onPanelSelect(null);
       if (onCharacterSelect) onCharacterSelect(null);
     }
   }, [selectedTemplate, setPanels]);
 
-  // 🎯 ContextMenu外クリック処理
+  // ContextMenu外クリック処理
   useEffect(() => {
     const handleClickOutside = () => {
       setContextMenu({ ...contextMenu, visible: false });
@@ -399,7 +494,7 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
 
   return (
     <div style={{ position: "relative", display: "flex", justifyContent: "center", alignItems: "flex-start", minHeight: "100vh", padding: "0px" }}>
-      {/* 🎯 Canvas要素（イベントハンドラーはhookから取得） */}
+      {/* Canvas要素 */}
       <canvas
         ref={canvasRef}
         width={600}
@@ -414,14 +509,14 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
         style={{
           border: "2px solid #ddd",
           background: "white",
-          cursor: state.isPanelResizing || state.isDragging || state.isBubbleResizing || state.isCharacterResizing ? "grabbing" : "pointer",
+          cursor: state.isPanelResizing || state.isDragging || state.isBubbleResizing || state.isCharacterResizing || isBackgroundDragging || isBackgroundResizing ? "grabbing" : "pointer",
           boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
           borderRadius: "8px",
           marginTop: "0px",
         }}
       />
 
-      {/* 🎯 編集モーダル */}
+      {/* 編集モーダル */}
       <EditBubbleModal
         editingBubble={state.editingBubble}
         editText={state.editText}
@@ -430,16 +525,19 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
         onCancel={handleEditCancel}
       />
 
-      {/* 🎯 ContextMenuHandlerを使用した右クリックメニュー */}
+      {/* 右クリックメニュー */}
       {ContextMenuHandler.renderContextMenu(
         contextMenu,
         clipboard,
         isPanelEditMode,
-        handleContextMenuAction,
+        (action: string) => {
+          ContextMenuHandler.handleAction(action, contextMenu, contextMenuActions);
+          setContextMenu({ ...contextMenu, visible: false });
+        },
         (e: React.MouseEvent) => e.stopPropagation()
       )}
 
-      {/* 🎯 選択状態表示（詳細版） */}
+      {/* 選択状態表示 */}
       {state.selectedPanel && (
         <div
           style={{
@@ -521,12 +619,41 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
         </div>
       )}
 
+      {/* 背景選択状態表示 */}
+      {selectedBackground && (
+        <div
+          style={{
+            position: "absolute",
+            top: "100px",
+            right: "10px",
+            background: isBackgroundResizing 
+              ? "rgba(156, 39, 176, 0.9)"
+              : isBackgroundDragging 
+              ? "rgba(103, 58, 183, 0.9)"
+              : "rgba(156, 39, 176, 0.9)",
+            color: "white",
+            padding: "8px 12px",
+            borderRadius: "4px",
+            fontSize: "12px",
+            fontWeight: "bold",
+          }}
+        >
+          {isBackgroundResizing ? "背景リサイズ中" : 
+          isBackgroundDragging ? "背景移動中" : 
+          `背景選択中`}
+          <br/>
+          <small>
+            {selectedBackground.type} | 透明度: {Math.round(selectedBackground.opacity * 100)}%
+          </small>
+        </div>
+      )}
+
       {/* クリップボード状態表示 */}
       {clipboard && (
         <div
           style={{
             position: "absolute",
-            top: "100px",
+            top: "130px",
             right: "10px",
             background: "rgba(128, 128, 128, 0.9)",
             color: "white",
@@ -547,7 +674,7 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
         <div
           style={{
             position: "absolute",
-            top: "130px",
+            top: "160px",
             right: "10px",
             background: "rgba(76, 175, 80, 0.9)",
             color: "white",
@@ -563,7 +690,7 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
         </div>
       )}
 
-      {/* 🆕 デバッグ情報表示 */}
+      {/* デバッグ情報表示 */}
       <div
         style={{
           position: "absolute",
@@ -578,10 +705,11 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
         }}
       >
         🔧 デバッグ情報<br/>
-        ドラッグ: {state.isDragging ? "✅" : "❌"}<br/>
+        ドラッグ: {state.isDragging || isBackgroundDragging ? "✅" : "❌"}<br/>
         吹き出しリサイズ: {state.isBubbleResizing ? "✅" : "❌"}<br/>
         キャラリサイズ: {state.isCharacterResizing ? "✅" : "❌"}<br/>
-        方向: {state.resizeDirection || "なし"}
+        背景操作: {selectedBackground ? "✅" : "❌"}<br/>
+        背景数: {backgrounds.length}個
       </div>
     </div>
   );
