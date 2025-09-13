@@ -1,4 +1,4 @@
-// src/components/UI/ProjectPanel.tsx - エラー修正版
+// src/components/UI/ProjectPanel.tsx - 完全修正版
 import React, { useState, useRef } from 'react';
 import SaveService, { ProjectMetadata } from '../../services/SaveService';
 
@@ -26,7 +26,6 @@ const ProjectPanel: React.FC<ProjectPanelProps> = ({
   currentProjectId,
   saveStatus,
   onSaveProject,
-  className = ''
 }) => {
   const [projects, setProjects] = useState<ProjectMetadata[]>(() => 
     SaveService.getProjectList()
@@ -148,94 +147,211 @@ const ProjectPanel: React.FC<ProjectPanelProps> = ({
   // ストレージ情報
   const storageInfo = SaveService.getStorageInfo();
 
+  // ボタンスタイル定義
+  const buttonStyles = {
+    base: {
+      display: 'flex' as const,
+      alignItems: 'center' as const,
+      gap: '4px',
+      padding: '8px 12px',
+      borderRadius: '8px',
+      fontSize: '12px',
+      fontWeight: '500' as const,
+      border: 'none',
+      cursor: 'pointer' as const,
+      color: 'white',
+      whiteSpace: 'nowrap' as const
+    },
+    blue: { backgroundColor: '#3b82f6' },
+    green: { backgroundColor: '#10b981' },
+    purple: { backgroundColor: '#8b5cf6' },
+    red: { backgroundColor: '#ef4444' }
+  };
+
   return (
-  <div 
-    style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: 'rgba(0, 0, 0, 0.6)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 9999,
-      padding: '16px'
-    }}
-  >
     <div 
-      className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col transform transition-all duration-200 ease-out"
       style={{
-        animation: isOpen ? 'modalSlideIn 0.2s ease-out' : ''
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 9999,
+        padding: '16px'
       }}
     >
+      <div 
+        style={{
+          backgroundColor: 'white',
+          borderRadius: '12px',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+          width: '100%',
+          maxWidth: '640px',
+          maxHeight: '85vh',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column'
+        }}
+      >
         {/* ヘッダー */}
-        <div className="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold">💾</span>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '24px',
+          borderBottom: '1px solid #e5e7eb',
+          background: 'linear-gradient(to right, #eff6ff, #e0e7ff)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{
+              width: '32px',
+              height: '32px',
+              backgroundColor: '#3b82f6',
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <span style={{ color: 'white', fontWeight: 'bold' }}>💾</span>
             </div>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+            <h2 style={{
+              fontSize: '20px',
+              fontWeight: 'bold',
+              color: '#111827',
+              margin: 0
+            }}>
               プロジェクト管理
             </h2>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+            style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '50%',
+              border: 'none',
+              backgroundColor: 'transparent',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#6b7280',
+              cursor: 'pointer',
+              fontSize: '18px'
+            }}
           >
             ✕
           </button>
         </div>
 
         {/* 保存状態表示 */}
-        <div className="px-6 py-4 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className={`w-3 h-3 rounded-full ${
-                saveStatus.isAutoSaving ? 'bg-blue-500 animate-pulse' :
-                saveStatus.hasUnsavedChanges ? 'bg-orange-500' : 'bg-green-500'
-              }`}></div>
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+        <div style={{
+          padding: '16px 24px',
+          backgroundColor: '#f9fafb',
+          borderBottom: '1px solid #e5e7eb'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{
+                width: '12px',
+                height: '12px',
+                borderRadius: '50%',
+                backgroundColor: saveStatus.isAutoSaving ? '#3b82f6' : 
+                               saveStatus.hasUnsavedChanges ? '#f59e0b' : '#10b981'
+              }}></div>
+              <span style={{
+                fontSize: '14px',
+                fontWeight: '500',
+                color: '#374151'
+              }}>
                 {saveStatus.isAutoSaving ? '自動保存中...' :
                  saveStatus.hasUnsavedChanges ? '未保存の変更あり' : '保存済み'}
               </span>
             </div>
             
             {saveStatus.lastSaved && (
-              <span className="text-xs text-gray-500 dark:text-gray-400">
+              <span style={{
+                fontSize: '12px',
+                color: '#6b7280'
+              }}>
                 最終保存: {formatDate(saveStatus.lastSaved.toISOString())}
               </span>
             )}
           </div>
           
           {saveStatus.error && (
-            <div className="text-xs text-red-600 dark:text-red-400 mt-2 p-2 bg-red-50 dark:bg-red-900/20 rounded">
+            <div style={{
+              fontSize: '12px',
+              color: '#dc2626',
+              marginTop: '8px',
+              padding: '8px',
+              backgroundColor: '#fef2f2',
+              borderRadius: '6px'
+            }}>
               エラー: {saveStatus.error}
             </div>
           )}
         </div>
 
         {/* アクションボタン */}
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-600">
-          <div className="flex flex-wrap gap-3">
+        <div style={{
+          padding: '16px 24px',
+          borderBottom: '1px solid #e5e7eb'
+        }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
             <button
               onClick={handleNewProject}
-              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '8px 16px',
+                backgroundColor: '#059669',
+                color: 'white',
+                borderRadius: '8px',
+                border: 'none',
+                cursor: 'pointer',
+                fontWeight: '500'
+              }}
             >
               <span>📄</span>
               新規プロジェクト
             </button>
             <button
               onClick={handleSaveAsNew}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '8px 16px',
+                backgroundColor: '#2563eb',
+                color: 'white',
+                borderRadius: '8px',
+                border: 'none',
+                cursor: 'pointer',
+                fontWeight: '500'
+              }}
             >
               <span>💾</span>
               名前を付けて保存
             </button>
             <button
               onClick={handleImport}
-              className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '8px 16px',
+                backgroundColor: '#7c3aed',
+                color: 'white',
+                borderRadius: '8px',
+                border: 'none',
+                cursor: 'pointer',
+                fontWeight: '500'
+              }}
             >
               <span>📥</span>
               インポート
@@ -244,29 +360,36 @@ const ProjectPanel: React.FC<ProjectPanelProps> = ({
         </div>
 
         {/* プロジェクト一覧 */}
-        <div className="flex-1 overflow-y-auto px-6 py-4">
+        <div style={{
+          flex: 1,
+          overflowY: 'auto',
+          padding: '16px 24px'
+        }}>
           {projects.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="text-4xl mb-4">📂</div>
-              <div className="text-gray-500 dark:text-gray-400">
+            <div style={{ textAlign: 'center', padding: '48px 0' }}>
+              <div style={{ fontSize: '48px', marginBottom: '16px' }}>📂</div>
+              <div style={{ color: '#6b7280', fontSize: '16px' }}>
                 プロジェクトがありません<br/>
-                <span className="text-sm">新規プロジェクトを作成してください</span>
+                <span style={{ fontSize: '14px' }}>新規プロジェクトを作成してください</span>
               </div>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {projects.map((project) => (
                 <div
                   key={project.id}
-                  className={`p-4 border rounded-xl transition-all cursor-pointer hover:shadow-md ${
-                    currentProjectId === project.id
-                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-md'
-                      : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700/50'
-                  }`}
+                  style={{
+                    padding: '16px',
+                    border: currentProjectId === project.id ? '2px solid #3b82f6' : '1px solid #e5e7eb',
+                    borderRadius: '12px',
+                    cursor: 'pointer',
+                    backgroundColor: currentProjectId === project.id ? '#eff6ff' : 'white',
+                    boxShadow: currentProjectId === project.id ? '0 4px 6px -1px rgba(0, 0, 0, 0.1)' : 'none'
+                  }}
                   onClick={() => handleLoadProject(project.id)}
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1 min-w-0">
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
                       {isRenaming === project.id ? (
                         <input
                           type="text"
@@ -277,68 +400,98 @@ const ProjectPanel: React.FC<ProjectPanelProps> = ({
                             if (e.key === 'Enter') handleRename(project.id);
                             if (e.key === 'Escape') setIsRenaming(null);
                           }}
-                          className="w-full px-3 py-1 border rounded-lg text-gray-900 dark:text-white dark:bg-gray-700 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          style={{
+                            width: '100%',
+                            padding: '4px 12px',
+                            border: '1px solid #d1d5db',
+                            borderRadius: '8px',
+                            fontSize: '16px',
+                            color: '#111827'
+                          }}
                           autoFocus
                           onClick={(e) => e.stopPropagation()}
                         />
                       ) : (
                         <div>
-                          <h3 className="font-semibold text-gray-900 dark:text-white truncate">
+                          <h3 style={{ 
+                            fontWeight: '600', 
+                            color: '#111827',
+                            fontSize: '16px',
+                            margin: 0,
+                            padding: 0
+                          }}>
                             {project.name}
                             {currentProjectId === project.id && (
-                              <span className="ml-2 px-2 py-1 text-xs bg-blue-500 text-white rounded-full">
+                              <span style={{
+                                marginLeft: '8px',
+                                padding: '2px 8px',
+                                fontSize: '12px',
+                                backgroundColor: '#3b82f6',
+                                color: 'white',
+                                borderRadius: '9999px'
+                              }}>
                                 現在のプロジェクト
                               </span>
                             )}
                           </h3>
-                          <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                          <div style={{ 
+                            fontSize: '14px', 
+                            color: '#6b7280',
+                            marginTop: '4px' 
+                          }}>
                             更新: {formatDate(project.updatedAt)}
                           </div>
                         </div>
                       )}
                     </div>
 
-                    <div className="flex items-center gap-1 ml-4">
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '8px', 
+                      marginLeft: '16px', 
+                      flexWrap: 'wrap' 
+                    }}>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           setIsRenaming(project.id);
                           setNewName(project.name);
                         }}
-                        className="w-8 h-8 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center justify-center text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors"
+                        style={{...buttonStyles.base, ...buttonStyles.blue}}
                         title="名前変更"
                       >
-                        ✏️
+                        ✏️ 名前変更
                       </button>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           handleDuplicate(project.id);
                         }}
-                        className="w-8 h-8 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center justify-center text-gray-500 hover:text-green-600 dark:text-gray-400 dark:hover:text-green-400 transition-colors"
+                        style={{...buttonStyles.base, ...buttonStyles.green}}
                         title="複製"
                       >
-                        📋
+                        📋 複製
                       </button>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           handleExport(project.id);
                         }}
-                        className="w-8 h-8 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center justify-center text-gray-500 hover:text-purple-600 dark:text-gray-400 dark:hover:text-purple-400 transition-colors"
+                        style={{...buttonStyles.base, ...buttonStyles.purple}}
                         title="エクスポート"
                       >
-                        📥
+                        📥 出力
                       </button>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           setShowConfirmDelete(project.id);
                         }}
-                        className="w-8 h-8 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center justify-center text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 transition-colors"
+                        style={{...buttonStyles.base, ...buttonStyles.red}}
                         title="削除"
                       >
-                        🗑️
+                        🗑️ 削除
                       </button>
                     </div>
                   </div>
@@ -349,22 +502,40 @@ const ProjectPanel: React.FC<ProjectPanelProps> = ({
         </div>
 
         {/* フッター：ストレージ情報 */}
-        <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-600 dark:text-gray-400">
+        <div style={{
+          padding: '16px 24px',
+          borderTop: '1px solid #e5e7eb',
+          backgroundColor: '#f9fafb'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            fontSize: '14px'
+          }}>
+            <span style={{ color: '#4b5563' }}>
               ストレージ使用量: {Math.round(storageInfo.percentage)}%
             </span>
-            <span className="text-gray-500 dark:text-gray-500">
+            <span style={{ color: '#6b7280' }}>
               {(storageInfo.used / 1024).toFixed(1)}KB / {(storageInfo.available / 1024).toFixed(0)}KB
             </span>
           </div>
-          <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2 mt-2">
+          <div style={{
+            width: '100%',
+            backgroundColor: '#e5e7eb',
+            borderRadius: '9999px',
+            height: '8px',
+            marginTop: '8px'
+          }}>
             <div 
-              className={`h-2 rounded-full transition-all ${
-                storageInfo.percentage > 80 ? 'bg-red-500' :
-                storageInfo.percentage > 60 ? 'bg-yellow-500' : 'bg-blue-500'
-              }`}
-              style={{ width: `${Math.min(storageInfo.percentage, 100)}%` }}
+              style={{
+                height: '8px',
+                borderRadius: '9999px',
+                backgroundColor: storageInfo.percentage > 80 ? '#ef4444' :
+                                storageInfo.percentage > 60 ? '#f59e0b' : '#3b82f6',
+                width: `${Math.min(storageInfo.percentage, 100)}%`,
+                transition: 'all 0.3s ease'
+              }}
             />
           </div>
         </div>
@@ -375,32 +546,76 @@ const ProjectPanel: React.FC<ProjectPanelProps> = ({
           type="file"
           accept=".json"
           onChange={handleFileSelect}
-          className="hidden"
+          style={{ display: 'none' }}
         />
 
         {/* 削除確認ダイアログ */}
         {showConfirmDelete && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-sm mx-4 shadow-2xl">
-              <div className="text-center">
-                <div className="text-4xl mb-4">🗑️</div>
-                <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 50
+          }}>
+            <div style={{
+              backgroundColor: 'white',
+              borderRadius: '12px',
+              padding: '24px',
+              maxWidth: '400px',
+              margin: '16px',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+            }}>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '48px', marginBottom: '16px' }}>🗑️</div>
+                <h3 style={{
+                  fontSize: '18px',
+                  fontWeight: 'bold',
+                  marginBottom: '16px',
+                  color: '#111827',
+                  margin: '0 0 16px 0'
+                }}>
                   プロジェクトを削除
                 </h3>
-                <p className="text-gray-600 dark:text-gray-400 mb-6">
+                <p style={{
+                  color: '#4b5563',
+                  marginBottom: '24px',
+                  lineHeight: '1.5'
+                }}>
                   このプロジェクトを削除しますか？<br/>
                   この操作は取り消せません。
                 </p>
-                <div className="flex gap-3">
+                <div style={{ display: 'flex', gap: '12px' }}>
                   <button
                     onClick={() => setShowConfirmDelete(null)}
-                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors"
+                    style={{
+                      flex: 1,
+                      padding: '8px 16px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '8px',
+                      backgroundColor: 'white',
+                      color: '#374151',
+                      cursor: 'pointer'
+                    }}
                   >
                     キャンセル
                   </button>
                   <button
                     onClick={() => handleDelete(showConfirmDelete)}
-                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                    style={{
+                      flex: 1,
+                      padding: '8px 16px',
+                      backgroundColor: '#dc2626',
+                      color: 'white',
+                      borderRadius: '8px',
+                      border: 'none',
+                      cursor: 'pointer'
+                    }}
                   >
                     削除
                   </button>
