@@ -1,4 +1,4 @@
-// src/App.tsx (正しいインポートパス版)
+// src/App.tsx (データ保存機能統合版)
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 // 🔧 修正: 正しいパスに変更（.tsxは不要）
 import CanvasComponent from "./components/CanvasComponent";
@@ -9,6 +9,10 @@ import { sceneTemplates, applySceneTemplate } from "./components/CanvasArea/scen
 import { ExportPanel } from './components/UI/ExportPanel';
 import { useRef } from 'react';
 import "./App.css";
+
+// 必要なimport（2行追加）
+import useProjectSave from './hooks/useProjectSave';
+import ProjectPanel from './components/UI/ProjectPanel';
 
 function App() {
   // デフォルトダークモード設定
@@ -30,6 +34,7 @@ function App() {
   const [selectedScene, setSelectedScene] = useState<string>("");
   const [showCharacterPanel, setShowCharacterPanel] = useState<boolean>(false);
   const [isPanelEditMode, setIsPanelEditMode] = useState<boolean>(false);
+  const [showProjectPanel, setShowProjectPanel] = useState<boolean>(false); // 🆕 追加
 
   // スナップ設定の状態管理
   const [snapSettings, setSnapSettings] = useState<SnapSettings>({
@@ -37,6 +42,22 @@ function App() {
     gridSize: 20,
     sensitivity: 'medium',
     gridDisplay: 'edit-only'
+  });
+
+  // 🆕 プロジェクト保存hook
+  const canvasSize = { width: 800, height: 600 }; // キャンバスサイズ
+  const settings = { 
+    snapEnabled: snapSettings.enabled, 
+    snapSize: snapSettings.gridSize, 
+    darkMode: isDarkMode 
+  };
+  
+  const projectSave = useProjectSave({ 
+    panels, 
+    characters, 
+    bubbles: speechBubbles, // 注意：speechBubblesをbubblesとして渡す
+    canvasSize, 
+    settings 
   });
 
   // 🔧 型修正: 機能コールバック用の状態
@@ -405,6 +426,21 @@ function App() {
             🔧 {isPanelEditMode ? "編集中" : "編集"}
           </button>
 
+          {/* 🆕 プロジェクトボタン追加 */}
+          <button 
+            className="control-btn"
+            onClick={() => setShowProjectPanel(true)}
+            title="プロジェクト管理"
+            style={{
+              background: projectSave.hasUnsavedChanges ? "#ff6b6b" : "var(--bg-tertiary)",
+              color: projectSave.hasUnsavedChanges ? "white" : "var(--text-primary)",
+              border: `1px solid ${projectSave.hasUnsavedChanges ? "#ff6b6b" : "var(--border-color)"}`,
+            }}
+          >
+            💾 プロジェクト
+            {projectSave.hasUnsavedChanges && <span style={{ marginLeft: "4px" }}>●</span>}
+          </button>
+
           {/* スナップ設定UI（インライン） */}
           <button 
             className={`control-btn ${snapSettings.enabled ? 'active' : ''}`}
@@ -610,6 +646,9 @@ function App() {
               {isPanelEditMode && <span> | 🔧 コマ編集モード</span>}
               {/* スナップ状態表示 */}
               {snapSettings.enabled && <span> | ⚙️ スナップ: {snapSettings.gridSize}px ({snapSettings.sensitivity})</span>}
+              {/* 🆕 保存状態表示 */}
+              {projectSave.isAutoSaving && <span> | 💾 自動保存中...</span>}
+              {projectSave.hasUnsavedChanges && <span> | ⚠️ 未保存</span>}
             </div>
           </div>
 
@@ -712,6 +751,40 @@ function App() {
           onClose={handleCharacterPanelClose}
         />
       )}
+
+      {/* 🆕 プロジェクト管理パネル */}
+      <ProjectPanel
+        isOpen={showProjectPanel}
+        onClose={() => setShowProjectPanel(false)}
+        onLoadProject={(projectId) => {
+          const project = projectSave.loadProject(projectId);
+          if (project) {
+            setPanels(project.data.panels);
+            setCharacters(project.data.characters);
+            setSpeechBubbles(project.data.bubbles);
+            // 設定も復元
+            setSnapSettings(prev => ({
+              ...prev,
+              enabled: project.data.settings.snapEnabled,
+              gridSize: project.data.settings.snapSize
+            }));
+            setIsDarkMode(project.data.settings.darkMode);
+            // テーマも更新
+            document.documentElement.setAttribute("data-theme", project.data.settings.darkMode ? "dark" : "light");
+          }
+        }}
+        onNewProject={() => {
+          projectSave.newProject();
+          setPanels([]);
+          setCharacters([]);
+          setSpeechBubbles([]);
+          setSelectedCharacter(null);
+          setSelectedPanel(null);
+        }}
+        currentProjectId={projectSave.currentProjectId}
+        saveStatus={projectSave.saveStatus}
+        onSaveProject={projectSave.saveProject}
+      />
     </div>
   );
 }
