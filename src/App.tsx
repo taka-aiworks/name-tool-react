@@ -45,17 +45,22 @@ function App() {
   });
 
   // 🆕 プロジェクト保存hook
-  const canvasSize = { width: 800, height: 600 }; // キャンバスサイズ
-  const settings = { 
+  // App.tsx内で、useProjectSave呼び出しの前に追加
+  const settings = useMemo(() => ({ 
     snapEnabled: snapSettings.enabled, 
     snapSize: snapSettings.gridSize, 
     darkMode: isDarkMode 
-  };
-  
+  }), [snapSettings.enabled, snapSettings.gridSize, isDarkMode]);
+
+  const canvasSize = useMemo(() => ({ 
+    width: 800, 
+    height: 600 
+  }), []);
+
   const projectSave = useProjectSave({ 
     panels, 
     characters, 
-    bubbles: speechBubbles, // 注意：speechBubblesをbubblesとして渡す
+    bubbles: speechBubbles,
     canvasSize, 
     settings 
   });
