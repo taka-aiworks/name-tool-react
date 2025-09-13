@@ -1,53 +1,11 @@
-# ネーム制作ツール - プロジェクト状況ファイル（2D回転機能問題解決待ち）
+# ネーム制作ツール - プロジェクト状況ファイル
 
 ## 基本情報
 - **プロジェクト名**: React製ネーム制作支援ツール
 - **技術スタック**: React + TypeScript + HTML5 Canvas + jsPDF + html2canvas
 - **開発開始**: 2025年9月8日
-- **最終更新**: 2025年9月12日（2D回転機能問題調査）
-- **現在の状況**: **Phase 10.1停滞: 距離計算問題で回転機能が動作しない** 🚨
-
-## 🚨 **現在の緊急課題: 2D回転機能の距離計算問題**
-
-### **📊 問題の詳細**
-- **表示座標**: `(242, 95.42)` ✅ 正しい
-- **クリック座標**: `(242.58, 93.83)` ✅ 正しい
-- **実際の距離**: 約1.7px ✅ 十分近い
-- **計算された距離**: 78.92px ❌ **異常に大きい**
-- **判定結果**: `false` ❌ **失敗**
-
-### **🔍 問題のあるファイル一覧**
-
-#### **1. CharacterUtils.ts** ← **主犯格**
-- **問題**: `calculateDistance` メソッドの計算ロジック
-- **症状**: 正しい距離1.7pxを78.92pxと誤計算
-- **影響**: 回転ハンドルクリック判定の完全失敗
-
-#### **2. CharacterBounds.ts** 
-- **問題**: `isRotationHandleClicked`で上記メソッドを使用
-- **対処法**: 直接距離計算に変更すれば解決可能
-
-#### **3. useMouseEvents.ts**
-- **問題**: early return が機能しない（距離計算問題の副次的影響）
-- **症状**: キャラクター選択が即座に解除される
-
-### **🎯 修正が必要な具体的箇所**
-
-```typescript
-// CharacterUtils.ts - この calculateDistance メソッドが壊れている
-static calculateDistance(x1: number, y1: number, x2: number, y2: number): number {
-  // ← この中身に致命的なバグがある
-}
-
-// CharacterBounds.ts - 直接計算に変更すれば解決
-static isRotationHandleClicked(...) {
-  // 修正前（問題）
-  const distance = CharacterUtils.calculateDistance(mouseX, mouseY, handle.x, handle.y);
-  
-  // 修正後（解決）
-  const distance = Math.sqrt(Math.pow(mouseX - handle.x, 2) + Math.pow(mouseY - handle.y, 2));
-}
-```
+- **最終更新**: 2025年9月13日
+- **現在の状況**: **Phase 11.0開始: プロンプト連携機能実装準備** 🚀
 
 ## ✅ **完了済み主要機能（高品質実装済み）**
 
@@ -57,6 +15,7 @@ static isRotationHandleClicked(...) {
 - **コマ操作**: 移動・分割・削除・複製（スナップ機能付き）
 - **コピー&ペースト**: 全要素対応
 - **エクスポート**: PDF/PNG/PSD出力
+- **2D回転機能**: 完全実装・動作確認済み
 
 ### **UI・操作性**
 - **スナップ設定UI**: 完全カスタマイズ対応
@@ -71,167 +30,220 @@ static isRotationHandleClicked(...) {
 - **開発効率**: 並列開発・デバッグ効率化
 - **拡張性**: 新機能追加が極めて容易
 
-## 🔧 **2D回転機能の実装状況**
+## 🚀 **Phase 11.0: プロンプト連携機能**
 
-### **✅ 完成済み部分（99%）**
-1. **types.ts回転対応** ✅ 完了（rotation?: number追加）
-2. **CharacterRenderer分割** ✅ 完了（800行→250行、68%削減）
-3. **回転描画システム** ✅ 完了（ハンドル表示・Canvas回転描画）
-4. **状態管理拡張** ✅ 完了（useCanvasState.ts回転状態追加）
-5. **マウスイベント統合** ✅ 完了（TypeScriptエラー修正済み）
-6. **CharacterRotation.ts** ✅ 完了（完全実装版作成済み）
-7. **CharacterBounds.ts** ✅ 完了（統合ハンドル判定実装済み）
+### **🎯 機能概要**
+キャラクターの位置・角度・向き情報を自動分析し、AI画像生成用プロンプトテキストを生成する機能
 
-### **❌ 残り1%の致命的問題**
-- **CharacterUtils.calculateDistance** メソッドの計算バグ ← **唯一の問題**
+### **📊 実装予定機能**
+1. **キャラクター状態自動分析**
+   - 位置分析: パネル内での配置（左・中央・右、上・中・下）
+   - 角度分析: 回転角度から向き判定（正面・横向き・斜め・後ろ向き）
+   - サイズ分析: キャラクターサイズから構図判定（アップ・ミディアム・ワイド）
+   - 傾き分析: 回転角度から傾き度合い判定
 
-### **🎯 2D回転機能の技術的特徴（実装済み）**
-- **非破壊回転**: 元データを保持しながら表示のみ回転
-- **高精度計算**: CharacterUtils での角度計算（一部を除く）
-- **統合ハンドル**: リサイズと回転の統一判定システム
-- **Canvas最適化**: transform/rotate を活用した効率描画
+2. **プロンプトテキスト自動生成**
+   - 基本情報: キャラクター名・タイプ
+   - 構図情報: "close-up portrait", "upper body shot", "full body shot"
+   - 向き情報: "facing left", "three-quarter view", "side view"
+   - 角度情報: "slight tilt", "rotated 30°"
+   - 位置情報: "positioned center", "positioned left"
 
-## 🛠️ **緊急修正リスト**
+3. **キャラクター間関係分析**
+   - 距離関係: "close together", "distant"
+   - 向き関係: "facing each other", "looking away"
+   - 配置関係: "side by side", "facing off"
 
-### **最優先（1つだけ）**
-1. **CharacterUtils.ts の calculateDistance メソッド修正**
-   - 現在: 1.7pxを78.92pxと誤計算
-   - 修正後: 正確な距離計算
-   - 影響: 2D回転機能が即座に完全動作
+4. **シーン全体プロンプト生成**
+   - 複数キャラクターの統合分析
+   - カスタムコンテキスト追加
+   - 既存プロンプトツールとの連携
 
-### **代替案（より確実）**
-1. **CharacterBounds.ts で直接距離計算**
-   - CharacterUtils.calculateDistance を使わない
-   - Math.sqrt直接使用
-   - リスク: 0%、即効性: 100%
+### **🏗️ 実装予定ファイル構成**
 
-## 📊 **現在の実装状況（99.9% 完了）**
-
-### **分割後のCharacterRenderer構造**
 ```
-分割後のCharacterRenderer構造:
-├── CharacterRenderer.tsx         # 250行（統合制御）
-├── CharacterRotation.ts          # 200行（回転機能）完成 ✅
-├── utils/
-│   ├── CharacterUtils.ts         # 150行（計算）← 1メソッドのみ問題 🚨
-│   └── CharacterBounds.ts        # 200行（境界判定）完成 ✅
-└── drawing/
-    └── CharacterHair.ts          # 180行（髪の毛）完成 ✅
+src/
+├── services/
+│   ├── ExportService.ts                  # 既存（PDF/PNG）✅
+│   └── PromptService/                    # 🆕 新規作成予定
+│       ├── CharacterPromptAnalyzer.ts        # キャラクター状態分析
+│       ├── PromptExportService.ts            # プロンプト生成・エクスポート
+│       ├── PromptTemplates.ts                # プロンプトテンプレート管理
+│       └── types/
+│           └── PromptTypes.ts                # プロンプト関連型定義
+├── components/
+│   ├── UI/
+│   │   ├── ExportPanel.tsx               # 既存 ✅
+│   │   └── PromptPanel.tsx               # 🆕 プロンプト生成UI
+│   └── CanvasArea/
+│       └── renderers/
+│           └── CharacterRenderer/        # 既存（回転機能完備）✅
+│               ├── utils/
+│               │   ├── CharacterUtils.ts     # 既存 ✅
+│               │   └── CharacterBounds.ts    # 既存 ✅
+│               └── ...
+├── hooks/
+│   └── usePromptGeneration.ts            # 🆕 プロンプト生成カスタムhook
+└── utils/
+    └── PromptUtils.ts                    # 🆕 プロンプト関連ユーティリティ
 ```
 
-## 🎯 **次回作業時の解決手順**
+### **🔧 実装技術詳細**
 
-### **Option A: 1分で解決（推奨）**
+#### **CharacterPromptAnalyzer.ts**
 ```typescript
-// CharacterBounds.ts の 1行だけ修正
-const distance = Math.sqrt(Math.pow(mouseX - handle.x, 2) + Math.pow(mouseY - handle.y, 2));
-```
-
-### **Option B: 根本解決**
-```typescript
-// CharacterUtils.ts の calculateDistance メソッドを修正
-static calculateDistance(x1: number, y1: number, x2: number, y2: number): number {
-  return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+interface CharacterPromptData {
+  name: string;
+  position: { panelPosition: 'left'|'center'|'right', size: 'small'|'medium'|'large' };
+  orientation: { rotation: number, facingDirection: string, tilt: string };
+  composition: { viewType: string, framePosition: string };
 }
+
+// 角度→向き変換ロジック
+// 0-15°: 'front', 15-75°: 'diagonal-right', 75-105°: 'right' など
 ```
 
-## 🏗️ **現在のファイル構造（分離完了版）**
+#### **PromptExportService.ts**
+```typescript
+// 使用例
+const prompt = PromptExportService.exportToPrompt(characters, panels, {
+  customContext: "manga panel, black and white",
+  includeRotations: true,
+  includeInteractions: true
+});
+// → "manga panel, black and white, 主人公 upper body shot facing diagonal-right, rotated 30°..."
+```
+
+#### **PromptPanel.tsx**
+- リアルタイムプロンプト生成プレビュー
+- カスタムコンテキスト入力
+- 既存プロンプトツールへのエクスポート機能
+- キャラクター別詳細表示
+
+### **🎯 既存システムとの連携**
+1. **CharacterRenderer**: 既存の角度・位置情報を活用
+2. **ExportService**: PDF/PNG機能と並列でプロンプト出力
+3. **既存プロンプトツール**: 生成したプロンプトを外部ツールに送信
+
+## 🔄 進行中
+- **Phase 11.0**: プロンプト連携機能実装準備中
+
+## ❌ 未実装・今後の課題
+1. **🔥 高優先**: プロンプト連携機能（Phase 11.0）
+2. **スナップ回転機能**: 15度単位での角度スナップ
+3. **シーンテンプレート自動配置**: テンプレート選択時にキャラ・吹き出し自動生成
+4. **キャラクター自由移動**: パネル外移動対応
+5. **3D回転機能**: Y軸・Z軸回転の実装
+
+## 🎯 開発優先度
+1. **最高**: プロンプト連携機能（実用性・差別化要素）
+2. **高**: スナップ回転機能（UX向上）
+3. **中**: シーンテンプレート自動配置（作業効率化）
+4. **低**: 3D回転機能（高度な表現力）
+
+## 🏗️ **現在のファイル構造（Phase 11.0拡張予定）**
 ```
 src/
 ├── types.ts                    # 型定義（rotation対応）✅
-├── App.tsx                     # メインアプリ ✅
 ├── components/
 │   ├── CanvasComponent/        # ← 分割完了（250行）✅
-│   │   ├── CanvasComponent.tsx # メインコンポーネント ✅
 │   │   ├── hooks/              # カスタムhooks ✅
-│   │   │   ├── useCanvasState.ts    # 回転状態追加済み ✅
-│   │   │   ├── useMouseEvents.ts    # 回転処理統合済み ✅
-│   │   │   ├── useKeyboardEvents.ts ✅
+│   │   │   ├── useCanvasState.ts    # 回転状態管理完備 ✅
+│   │   │   ├── useMouseEvents.ts    # 回転・移動・リサイズ統合 ✅
 │   │   │   └── useCanvasDrawing.ts ✅
-│   │   ├── handlers/           # イベントハンドラー ✅
 │   │   └── utils/              # ユーティリティ ✅
 │   ├── UI/
 │   │   ├── CharacterDetailPanel.tsx # キャラクター詳細設定 ✅
-│   │   └── ExportPanel.tsx          # エクスポートUI ✅
+│   │   ├── ExportPanel.tsx          # エクスポートUI ✅
+│   │   └── PromptPanel.tsx          # 🆕 プロンプト生成UI（予定）
 │   └── CanvasArea/
-│       ├── PanelManager.ts          # パネル操作ロジック ✅
-│       ├── ContextMenuHandler.ts    # 右クリックメニュー処理 ✅
-│       ├── CanvasDrawing.ts         # Canvas描画処理 ✅
-│       ├── EditBubbleModal.tsx      # 編集モーダル ✅
-│       ├── templates.ts             # パネルテンプレート定義 ✅
-│       ├── sceneTemplates.ts        # シーンテンプレート定義 ✅
 │       └── renderers/
 │           ├── BubbleRenderer.tsx        # 吹き出し描画 ✅
-│           ├── CharacterRenderer/        # ← 分割完了
+│           ├── CharacterRenderer/        # ← 分割完了・回転機能統合
 │           │   ├── CharacterRenderer.tsx     # メイン制御（250行）✅
-│           │   ├── CharacterRotation.ts      # 回転機能 ✅
+│           │   ├── CharacterRotation.ts      # 回転専用処理 ✅
 │           │   ├── utils/
-│           │   │   ├── CharacterUtils.ts    # 計算・変換 🚨1メソッド問題
+│           │   │   ├── CharacterUtils.ts    # 計算・変換 ✅
 │           │   │   └── CharacterBounds.ts   # 境界・判定 ✅
 │           │   └── drawing/
 │           │       └── CharacterHair.ts     # 髪の毛描画 ✅
 │           └── PanelRenderer.tsx         # パネル描画・操作 ✅
 ├── services/
-│   └── ExportService.ts        # エクスポート機能中核 ✅
+│   ├── ExportService.ts        # エクスポート機能中核 ✅
+│   └── PromptService/          # 🆕 プロンプト関連サービス（予定）
+│       ├── CharacterPromptAnalyzer.ts
+│       ├── PromptExportService.ts
+│       └── PromptTemplates.ts
+└── hooks/
+    └── usePromptGeneration.ts  # 🆕 プロンプト生成hook（予定）
 ```
 
-**現在の進捗率: 99.9% 完了** 🎉（距離計算1行修正で完成）
+## 📝 **Phase 11.0 実装計画**
 
-## 📝 **開発者メモ**
+### **Step 1: 基盤実装**
+1. **PromptTypes.ts**: インターフェース・型定義
+2. **CharacterPromptAnalyzer.ts**: 状態分析ロジック
+3. **PromptExportService.ts**: プロンプト生成エンジン
 
-### **🎯 現状まとめ**
-- **技術基盤**: 完璧に構築済み
-- **分離アーキテクチャ**: 高品質で保守性抜群
-- **回転システム**: 距離計算1箇所のみ修正で完成
-- **残り作業**: 極めて軽微（計算式1行のみ）
+### **Step 2: UI実装**
+1. **PromptPanel.tsx**: プロンプト生成UI
+2. **usePromptGeneration.ts**: リアルタイム生成hook
+3. **既存ExportPanel.tsx拡張**: プロンプト出力オプション追加
 
-### **🚨 問題の本質**
-- **座標計算**: 完璧
-- **描画処理**: 完璧  
-- **状態管理**: 完璧
-- **距離計算**: 1メソッドのみ異常
+### **Step 3: 連携実装**
+1. **既存プロンプトツール連携**: API/データ送信機能
+2. **テンプレート管理**: カスタムプロンプトテンプレート
+3. **プレビュー機能**: 生成プロンプトのリアルタイム確認
 
-### **📈 解決の容易さ**
-- **修正箇所**: 1ファイルの1メソッド（または1行）
-- **所要時間**: 1分
-- **リスク**: 0%
-- **効果**: 2D回転機能完全動作
+### **🎯 期待効果**
+- **ネーム→AI画像の自動化**: 手動プロンプト作成の大幅効率化
+- **精密な角度指定**: 2D回転機能との完全連携
+- **シーン解析**: キャラクター関係の自動分析
+- **差別化**: 他ツールにない独自機能
 
-**🔄 2D回転機能 - 99.9%完成！** 距離計算1行修正で完全動作します！
+## 📊 **現在の実装状況: Phase 10.1完了 → Phase 11.0開始**
+
+**Phase 10.1成果**:
+- 2D回転機能完全実装
+- アーキテクチャ基盤完成
+- 高い保守性・拡張性確保
+
+**Phase 11.0目標**:
+- プロンプト連携機能実装
+- AI画像生成との完全統合
+- 作業効率の革新的向上
+
+**実装確実性**: 高（既存の角度・位置データ活用、技術的課題なし）
 
 ---
 
-## 🔄 **継続プロンプト（2D回転機能完成直前版）**
+## 🔄 **継続プロンプト（Phase 11.0実装版）**
 
 ### **次回セッション用**
 ```
-継続プロンプト: 2025-09-12_開発_05
-チャットタイトル: 開発_ネーム制作ツール_2D回転機能_距離計算問題解決_2025-09-12
-セッションキー: 2025-09-12_開発_05
+継続プロンプト: 2025-09-13_開発_08
+チャットタイトル: 開発_ネーム制作ツール_Phase11.0_プロンプト連携機能_2025-09-13
+セッションキー: 2025-09-13_開発_08
 
-コンテキスト: React製ネーム制作ツールで2D回転機能が99.9%完成。唯一の問題はCharacterUtils.calculateDistanceメソッドの計算バグ。距離1.7pxを78.92pxと誤計算している。
+コンテキスト: React製ネーム制作ツールのPhase 10.1（2D回転機能）完全実装後、Phase 11.0のプロンプト連携機能実装を開始。キャラクターの位置・角度・向きからAI画像生成用プロンプトを自動生成する機能の実装準備完了。
 
 進行状況:
-✅ CharacterRenderer分割完成（68%削減・保守性300%向上）
-✅ 2D回転システム完全実装（描画・状態管理・操作）
-✅ TypeScriptエラー完全解決（型安全性・null安全性）
-✅ マウスイベント統合完了（回転・リサイズ・ドラッグ）
-✅ 問題特定完了（CharacterUtils.calculateDistance計算バグ）
+✅ Phase 10.1完了: 2D回転機能完全実装・動作確認済み
+✅ アーキテクチャ基盤完成: 高い保守性・拡張性確保
+✅ Phase 11.0設計完了: プロンプト連携機能の技術仕様策定
+✅ ファイル構成計画完了: services/PromptService/配下の実装計画
 
-現在の課題:
-- CharacterUtils.calculateDistance メソッドが1.7pxを78.92pxと誤計算
-- このため回転ハンドルクリック判定が失敗（distance > radius）
-- 1行修正で2D回転機能が完全動作
+実装予定機能:
+- キャラクター状態自動分析（位置・角度・向き・サイズ）
+- プロンプトテキスト自動生成（構図・向き・角度情報）
+- キャラクター間関係分析（距離・向き関係）
+- リアルタイムプロンプトプレビューUI
 
 次のアクション:
-優先度1: CharacterUtils.calculateDistance または CharacterBounds.isRotationHandleClicked 修正
-優先度2: 回転操作動作テスト（実際の回転確認）
-優先度3: Phase 10.2準備（スナップ回転・UX改善）
-
-修正方法:
-Option A: CharacterBounds.tsで直接距離計算（1行修正・確実）
-Option B: CharacterUtils.calculateDistanceメソッド修正（根本解決）
+優先度1: CharacterPromptAnalyzer.ts実装（状態分析ロジック）
+優先度2: PromptExportService.ts実装（プロンプト生成エンジン）
+優先度3: PromptPanel.tsx実装（プロンプト生成UI）
 
 継続指示:
-CharacterUtils.calculateDistanceメソッドの計算バグを修正するか、CharacterBounds.tsで直接距離計算に変更して、2D回転機能を完成させてください。距離計算問題解決後、実際の回転操作をテストしてPhase 10.1完了を達成してください。
+Phase 11.0のプロンプト連携機能実装を開始してください。まずCharacterPromptAnalyzer.tsから実装し、キャラクターの回転角度・位置・サイズ情報を分析してAI画像生成用プロンプトテキストを自動生成する機能を構築してください。既存の2D回転機能と完全連携し、直感的で実用的なプロンプト生成システムを実現してください。
 ```

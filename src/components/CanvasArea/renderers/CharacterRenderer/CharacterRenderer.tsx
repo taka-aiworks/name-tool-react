@@ -118,7 +118,7 @@ export class CharacterRenderer {
     const { charX, charY, charWidth, charHeight } = 
       CharacterUtils.calculateDrawingCoordinates(character, panel);
     
-    // 🔧 リサイズハンドル描画
+    // 🔧 リサイズハンドル描画（四隅の四角）
     CharacterRenderer.drawResizeHandles(ctx, charX, charY, charWidth, charHeight);
     
     // 🔄 回転ハンドル描画
@@ -126,7 +126,7 @@ export class CharacterRenderer {
     CharacterRotation.drawRotationHandle(ctx, character, panel, bounds);
   }
 
-  // 🔧 リサイズハンドル描画
+  // 🔧 リサイズハンドル描画（修正版）
   static drawResizeHandles(
     ctx: CanvasRenderingContext2D,
     charX: number,
@@ -134,31 +134,29 @@ export class CharacterRenderer {
     width: number,
     height: number
   ) {
-    const handleSize = 16;
+    const handleSize = 12; // ハンドルサイズ
     const isDarkMode = document.documentElement.getAttribute("data-theme") === "dark";
     
-    const handles = CharacterBounds.getResizeHandleBounds(
-      { x: charX, y: charY } as any, // 簡易的な型変換
-      { x: 0, y: 0, width, height } as any
-    );
+    // 四隅の座標計算
+    const corners = [
+      { x: charX - handleSize/2, y: charY - handleSize/2 }, // 左上
+      { x: charX + width - handleSize/2, y: charY - handleSize/2 }, // 右上
+      { x: charX + width - handleSize/2, y: charY + height - handleSize/2 }, // 右下
+      { x: charX - handleSize/2, y: charY + height - handleSize/2 }  // 左下
+    ];
 
-    ctx.fillStyle = "#ff6600";
-    ctx.strokeStyle = isDarkMode ? "#fff" : "#000";
+    // 四隅の四角ハンドル描画
+    ctx.fillStyle = "#ff6600"; // オレンジ色
+    ctx.strokeStyle = isDarkMode ? "#fff" : "#000"; // 枠線
     ctx.lineWidth = 2;
 
-    handles.forEach(handle => {
-      if (["nw", "ne", "se", "sw"].includes(handle.direction)) {
-        // 角：四角いハンドル
-        ctx.fillRect(handle.x, handle.y, handleSize, handleSize);
-        ctx.strokeRect(handle.x, handle.y, handleSize, handleSize);
-      } else {
-        // 辺：丸いハンドル
-        ctx.beginPath();
-        ctx.arc(handle.x + handleSize/2, handle.y + handleSize/2, handleSize/2, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
-      }
+    corners.forEach(corner => {
+      // 四角いハンドル
+      ctx.fillRect(corner.x, corner.y, handleSize, handleSize);
+      ctx.strokeRect(corner.x, corner.y, handleSize, handleSize);
     });
+    
+    console.log("🔧 キャラクター四隅ハンドル描画完了");
   }
 
   // 🎯 キャラクター名前描画

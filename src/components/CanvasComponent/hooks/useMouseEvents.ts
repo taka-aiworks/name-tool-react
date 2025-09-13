@@ -1,5 +1,5 @@
 // src/components/CanvasComponent/hooks/useMouseEvents.ts
-// 🔍 完全デバッグ統合版：キャラクター検出問題解決・2D回転機能完全実装・TypeScript修正版
+// 🎯 クリーン整理版：ハンドルのみ回転・キャラクター本体は移動のみ
 
 import { RefObject } from 'react';
 import { Panel, Character, SpeechBubble, SnapSettings } from '../../../types';
@@ -109,81 +109,70 @@ export const useMouseEvents = ({
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
 
-    console.log("🖱️ [完全版] マウスダウン開始:", { mouseX, mouseY });
+    console.log("🖱️ [クリーン版] マウスダウン開始:", { mouseX, mouseY });
 
-    // 🔍 詳細デバッグ：キャラクター判定
-    console.log("🔍 [完全版] キャラクター数:", characters.length);
-    console.log("🔍 [完全版] キャラクター一覧:", characters.map(c => ({
-      name: c.name,
-      id: c.id,
-      x: c.x,
-      y: c.y,
-      rotation: c.rotation || 0,
-      panelId: c.panelId
-    })));
-
-    // 🚨 手動キャラクター検索（デバッグ強化版）
+    // 🚨 手動キャラクター検索（クリーン版）
     let clickedCharacter: Character | null = null;
     for (let i = characters.length - 1; i >= 0; i--) {
       const character = characters[i];
       const panel = panels.find(p => p.id === character.panelId);
       
-      console.log(`🔍 [完全版] ${character.name} 判定開始:`, {
-        character: { x: character.x, y: character.y, rotation: character.rotation || 0 },
-        panel: panel ? { id: panel.id, x: panel.x, y: panel.y, width: panel.width, height: panel.height } : "なし",
-        mousePos: { mouseX, mouseY }
-      });
-      
       if (panel) {
-        // 境界計算
+        // 拡張クリック範囲での判定（境界問題対応）
         const bounds = CharacterBounds.getCharacterBounds(character, panel);
-        console.log(`🔍 [完全版] ${character.name} 境界:`, {
-          x: Math.round(bounds.x),
-          y: Math.round(bounds.y),
-          width: Math.round(bounds.width),
-          height: Math.round(bounds.height),
-          centerX: Math.round(bounds.centerX),
-          centerY: Math.round(bounds.centerY)
-        });
+        const expandedBounds = {
+          x: bounds.x - 50,
+          y: bounds.y - 50,
+          width: bounds.width + 100,
+          height: bounds.height + 100
+        };
         
-        // クリック判定実行
-        const isClicked = CharacterBounds.isCharacterClicked(mouseX, mouseY, character, panel);
-        console.log(`🔍 [完全版] ${character.name} クリック判定:`, isClicked);
+        const expandedClicked = (
+          mouseX >= expandedBounds.x &&
+          mouseX <= expandedBounds.x + expandedBounds.width &&
+          mouseY >= expandedBounds.y &&
+          mouseY <= expandedBounds.y + expandedBounds.height
+        );
         
-        if (isClicked) {
+        if (expandedClicked) {
           clickedCharacter = character;
-          console.log(`✅ [完全版] キャラクター発見: ${character.name}`);
+          console.log(`✅ [クリーン版] キャラクター発見: ${character.name}`);
           break;
         }
       }
     }
 
-    // 🚨 キャラクターが見つかった場合の処理
     if (clickedCharacter) {
-      console.log("👤 [完全版] キャラクター処理開始:", clickedCharacter.name);
+      console.log("👤 [最適化版] キャラクター処理開始:", clickedCharacter.name);
       
-      // 🚨 選択状態を最優先で設定
-      actions.setSelectedCharacter(clickedCharacter);
-      actions.setSelectedBubble(null);
-      actions.setSelectedPanel(null);
-      if (onCharacterSelect) onCharacterSelect(clickedCharacter);
+      // 🚨 既に選択済みの場合は選択状態更新をスキップ
+      const isAlreadySelected = state.selectedCharacter?.id === clickedCharacter.id;
+      
+      if (!isAlreadySelected) {
+        // 選択状態を変更（未選択 → 選択の場合のみ）
+        actions.setSelectedCharacter(clickedCharacter);
+        actions.setSelectedBubble(null);
+        actions.setSelectedPanel(null);
+        if (onCharacterSelect) onCharacterSelect(clickedCharacter);
+        console.log("📱 [最適化版] 選択状態変更実行");
+      } else {
+        console.log("📱 [最適化版] 既に選択済み - 選択状態更新スキップ");
+      }
       
       const panel = panels.find(p => p.id === clickedCharacter.panelId);
       if (!panel) {
-        console.error("❌ [完全版] パネル未発見");
+        console.error("❌ [最適化版] パネル未発見");
         e.preventDefault();
-        return; // 🚨 即座にreturn
+        return;
       }
       
-      // 🔄 回転ハンドル判定
+      // 回転ハンドル判定
       const rotationClicked = CharacterBounds.isRotationHandleClicked(
         mouseX, mouseY, clickedCharacter, panel
       );
       
-      console.log("🔍 [完全版] 回転ハンドル判定:", rotationClicked);
-      
       if (rotationClicked) {
-        console.log("🔄 [完全版] 回転開始!");
+        console.log("🔄 [最適化版] 回転ハンドルクリック");
         actions.setIsCharacterRotating(true);
         
         const { centerX, centerY } = CharacterUtils.calculateCenterCoordinates(clickedCharacter, panel);
@@ -192,26 +181,17 @@ export const useMouseEvents = ({
         actions.setRotationStartAngle(startAngle);
         actions.setOriginalRotation(clickedCharacter.rotation || 0);
         
-        console.log("🔄 [完全版] 回転設定完了:", {
-          startAngle: Math.round(startAngle),
-          originalRotation: clickedCharacter.rotation || 0,
-          character: clickedCharacter.name
-        });
-        
-        console.log("🚨 [完全版] 回転処理完了 - return実行");
         e.preventDefault();
-        return; // 🚨 CRITICAL: 回転処理後は完全終了
+        return;
       }
       
-      // 📏 リサイズハンドル判定
+      // リサイズハンドル判定
       const resizeResult = CharacterRenderer.isCharacterResizeHandleClicked(
         mouseX, mouseY, clickedCharacter, panel
       );
       
-      console.log("🔍 [完全版] リサイズハンドル判定:", resizeResult);
-      
       if (resizeResult.isClicked) {
-        console.log("📏 [完全版] リサイズ開始:", resizeResult.direction);
+        console.log("📏 [最適化版] リサイズ開始:", resizeResult.direction);
         actions.setIsCharacterResizing(true);
         actions.setResizeDirection(resizeResult.direction);
         actions.setDragOffset({ x: mouseX, y: mouseY });
@@ -224,9 +204,14 @@ export const useMouseEvents = ({
           width: currentWidth,
           height: currentHeight
         });
-      } else {
-        // 📱 通常ドラッグ
-        console.log("📱 [完全版] 通常ドラッグ開始");
+        
+        e.preventDefault();
+        return;
+      }
+      
+      // 通常ドラッグ（選択済みの場合のみ開始）
+      if (isAlreadySelected) {
+        console.log("📱 [最適化版] 通常ドラッグ開始");
         actions.setIsDragging(true);
         actions.setDragOffset({
           x: mouseX - clickedCharacter.x,
@@ -234,17 +219,17 @@ export const useMouseEvents = ({
         });
       }
       
-      console.log("🚨 [完全版] キャラクター処理完了 - return実行");
       e.preventDefault();
-      return; // 🚨 ULTRA CRITICAL: この return が絶対に必要！
+      return;
     }
 
-    console.log("❌ [完全版] キャラクター検出されず - 他の処理へ");
 
-    // 🎯 吹き出し処理（キャラクターの次の優先度）
+    console.log("❌ [クリーン版] キャラクター検出されず - 他の処理へ");
+
+    // 🎯 吹き出し処理
     const clickedBubble = BubbleRenderer.findBubbleAt(mouseX, mouseY, speechBubbles, panels);
     if (clickedBubble) {
-      console.log("🎯 [完全版] 吹き出しクリック:", clickedBubble.text);
+      console.log("🎯 [クリーン版] 吹き出しクリック:", clickedBubble.text);
       
       actions.setSelectedBubble(clickedBubble);
       actions.setSelectedCharacter(null);
@@ -252,14 +237,14 @@ export const useMouseEvents = ({
       
       const panel = panels.find(p => p.id === clickedBubble.panelId) || panels[0];
       if (!panel) {
-        console.error("❌ [完全版] 吹き出しパネル未発見");
+        console.error("❌ [クリーン版] 吹き出しパネル未発見");
         return;
       }
       
       const resizeResult = BubbleRenderer.isBubbleResizeHandleClicked(mouseX, mouseY, clickedBubble, panel);
       
       if (resizeResult.isClicked) {
-        console.log("✅ [完全版] 吹き出しリサイズ開始:", resizeResult.direction);
+        console.log("✅ [クリーン版] 吹き出しリサイズ開始:", resizeResult.direction);
         actions.setIsBubbleResizing(true);
         actions.setResizeDirection(resizeResult.direction);
         actions.setDragOffset({ x: mouseX, y: mouseY });
@@ -270,7 +255,7 @@ export const useMouseEvents = ({
           height: clickedBubble.height
         });
       } else {
-        console.log("📱 [完全版] 吹き出しドラッグ開始");
+        console.log("📱 [クリーン版] 吹き出しドラッグ開始");
         actions.setIsDragging(true);
         actions.setDragOffset({
           x: mouseX - clickedBubble.x,
@@ -279,7 +264,7 @@ export const useMouseEvents = ({
       }
       
       e.preventDefault();
-      return; // 🚨 吹き出し処理後も完全終了
+      return;
     }
 
     // 🎯 パネル編集モード処理
@@ -287,7 +272,7 @@ export const useMouseEvents = ({
       const panelHandle = PanelManager.getPanelHandleAt(mouseX, mouseY, state.selectedPanel);
       
       if (panelHandle) {
-        console.log("🔧 [完全版] パネル編集ハンドル:", panelHandle.type);
+        console.log("🔧 [クリーン版] パネル編集ハンドル:", panelHandle.type);
         
         if (panelHandle.type === "delete") {
           contextMenuActions.onDeletePanel(state.selectedPanel);
@@ -318,17 +303,17 @@ export const useMouseEvents = ({
       }
     }
 
-    // 🎯 通常パネル処理・背景クリック（最後の処理）
+    // 🎯 通常パネル処理・背景クリック
     const clickedPanel = PanelManager.findPanelAt(mouseX, mouseY, panels);
     if (clickedPanel) {
-      console.log("🎯 [完全版] パネルクリック:", clickedPanel.id);
+      console.log("🎯 [クリーン版] パネルクリック:", clickedPanel.id);
       actions.setSelectedPanel(clickedPanel);
       actions.setSelectedCharacter(null);
       actions.setSelectedBubble(null);
       if (onPanelSelect) onPanelSelect(clickedPanel);
       if (onCharacterSelect) onCharacterSelect(null);
     } else {
-      console.log("🎯 [完全版] 背景クリック - 全選択解除");
+      console.log("🎯 [クリーン版] 背景クリック - 全選択解除");
       actions.setSelectedPanel(null);
       actions.setSelectedCharacter(null);
       actions.setSelectedBubble(null);
@@ -350,9 +335,9 @@ export const useMouseEvents = ({
       return;
     }
 
-    // 🔄 キャラクター回転処理（最優先）
+    // 🔄 キャラクター回転処理（ハンドルのみ）
     if (state.isCharacterRotating && state.selectedCharacter) {
-      console.log("🔄 [完全版] 回転処理実行中:", {
+      console.log("🔄 [クリーン版] 回転処理実行中（ハンドルのみ）:", {
         character: state.selectedCharacter.name,
         mousePos: { mouseX, mouseY }
       });
@@ -372,13 +357,6 @@ export const useMouseEvents = ({
           state.originalRotation + angleDiff
         );
         
-        console.log("🔄 [完全版] 回転計算:", {
-          startAngle: Math.round(state.rotationStartAngle),
-          currentAngle: Math.round(currentAngle),
-          angleDiff: Math.round(angleDiff),
-          newRotation: Math.round(newRotation)
-        });
-        
         // キャラクター更新
         const updatedCharacter = { 
           ...state.selectedCharacter,
@@ -397,8 +375,6 @@ export const useMouseEvents = ({
 
     // キャラクターリサイズ処理
     if (state.selectedCharacter && state.isCharacterResizing && state.initialCharacterBounds) {
-      console.log("📏 [完全版] キャラクターリサイズ実行中");
-      
       const deltaX = mouseX - state.dragOffset.x;
       const deltaY = mouseY - state.dragOffset.y;
       
@@ -420,9 +396,9 @@ export const useMouseEvents = ({
       return;
     }
 
-    // キャラクター移動
+    // キャラクター移動（回転なし）
     if (state.selectedCharacter && state.isDragging) {
-      console.log("📱 [完全版] キャラクター移動実行中");
+      console.log("📱 [クリーン版] キャラクター移動実行中（回転なし）");
       
       const newX = mouseX - state.dragOffset.x;
       const newY = mouseY - state.dragOffset.y;
@@ -526,11 +502,11 @@ export const useMouseEvents = ({
   };
 
   const handleCanvasMouseUp = () => {
-    console.log("⬆️ [完全版] マウスアップ - 操作終了処理");
+    console.log("⬆️ [クリーン版] マウスアップ - 操作終了処理");
     
-    // 🔄 回転終了時の選択状態維持（最重要）
+    // 回転終了時の選択状態維持
     if (state.isCharacterRotating && state.selectedCharacter) {
-      console.log("🔄 [完全版] 回転操作完了 - 選択状態維持:", state.selectedCharacter.name);
+      console.log("🔄 [クリーン版] 回転操作完了 - 選択状態維持:", state.selectedCharacter.name);
       const currentCharacter = state.selectedCharacter;
       
       // 状態リセット
@@ -541,7 +517,7 @@ export const useMouseEvents = ({
       setTimeout(() => {
         actions.setSelectedCharacter(currentCharacter);
         if (onCharacterSelect) onCharacterSelect(currentCharacter);
-        console.log("✅ [完全版] 回転後選択状態復元:", currentCharacter.name);
+        console.log("✅ [クリーン版] 回転後選択状態復元:", currentCharacter.name);
       }, 0);
       
       return;
@@ -550,7 +526,7 @@ export const useMouseEvents = ({
     // その他の操作終了処理
     actions.resetDragStates();
     actions.setSnapLines([]);
-    console.log("✅ [完全版] 全状態リセット完了");
+    console.log("✅ [クリーン版] 全状態リセット完了");
   };
 
   const handleCanvasContextMenu = (e: React.MouseEvent<HTMLCanvasElement>) => {

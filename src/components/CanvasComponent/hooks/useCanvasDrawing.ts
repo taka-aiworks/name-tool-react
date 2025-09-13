@@ -127,17 +127,17 @@ export const useCanvasDrawing = ({
     });
   }, [
     panels.length,
-    state.selectedPanel,
+    state.selectedPanel,        // 元に戻す
     characters.length,
-    state.selectedCharacter,
+    state.selectedCharacter,    // 元に戻す
     speechBubbles.length,
-    state.selectedBubble,
+    state.selectedBubble,       // 元に戻す
     isPanelEditMode,
     state.snapLines.length,
     showGrid,
     snapSettings.gridSize,
     snapSettings.gridDisplay,
-    // JSON.stringify を使って深い変更も検出
+    // JSON.stringify も元に戻す
     JSON.stringify(panels.map(p => ({ id: p.id, x: p.x, y: p.y, width: p.width, height: p.height }))),
     JSON.stringify(characters.map(c => ({ id: c.id, x: c.x, y: c.y, scale: c.scale, width: c.width, height: c.height }))),
     JSON.stringify(speechBubbles.map(b => ({ id: b.id, x: b.x, y: b.y, width: b.width, height: b.height }))),

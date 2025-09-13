@@ -145,7 +145,7 @@ export class CharacterBounds {
     return null;
   }
 
-  // 🎯 リサイズハンドル境界計算
+  // 🎯 リサイズハンドル境界計算（四隅のみ版）
   static getResizeHandleBounds(
     character: Character,
     panel: Panel
@@ -157,20 +157,14 @@ export class CharacterBounds {
     height: number;
   }> {
     const bounds = CharacterBounds.getCharacterBounds(character, panel);
-    const handleSize = 16;
+    const handleSize = 12;
     
     return [
-      // 角ハンドル（四角）
+      // 四隅ハンドル（四角）のみ
       { direction: "nw", x: bounds.x - handleSize/2, y: bounds.y - handleSize/2, width: handleSize, height: handleSize },
       { direction: "ne", x: bounds.x + bounds.width - handleSize/2, y: bounds.y - handleSize/2, width: handleSize, height: handleSize },
       { direction: "se", x: bounds.x + bounds.width - handleSize/2, y: bounds.y + bounds.height - handleSize/2, width: handleSize, height: handleSize },
-      { direction: "sw", x: bounds.x - handleSize/2, y: bounds.y + bounds.height - handleSize/2, width: handleSize, height: handleSize },
-      
-      // 辺ハンドル（丸 - 円として扱う）
-      { direction: "n", x: bounds.x + bounds.width/2 - handleSize/2, y: bounds.y - handleSize/2, width: handleSize, height: handleSize },
-      { direction: "e", x: bounds.x + bounds.width - handleSize/2, y: bounds.y + bounds.height/2 - handleSize/2, width: handleSize, height: handleSize },
-      { direction: "s", x: bounds.x + bounds.width/2 - handleSize/2, y: bounds.y + bounds.height - handleSize/2, width: handleSize, height: handleSize },
-      { direction: "w", x: bounds.x - handleSize/2, y: bounds.y + bounds.height/2 - handleSize/2, width: handleSize, height: handleSize }
+      { direction: "sw", x: bounds.x - handleSize/2, y: bounds.y + bounds.height - handleSize/2, width: handleSize, height: handleSize }
     ];
   }
 
@@ -199,62 +193,50 @@ export class CharacterBounds {
     return { isClicked: false, direction: "" };
   }
 
-  // 🎯 回転ハンドル境界計算（🔧 半径大幅拡大版）
-  static getRotationHandleBounds(
-    character: Character,
-    panel: Panel
-  ): { x: number; y: number; radius: number } {
-    const bounds = CharacterBounds.getCharacterBounds(character, panel);
-    const handleDistance = 35;
-    const handleRadius = 100; // 🔧 20px → 100px（5倍に拡大）
-    
-    console.log("🔍 回転ハンドル座標計算:", {
-      bounds,
-      handleX: bounds.centerX,
-      handleY: bounds.y - handleDistance,
-      calculation: `${bounds.y} - ${handleDistance} = ${bounds.y - handleDistance}`,
-      radius: handleRadius
-    });
-    
-    return {
-      x: bounds.centerX,
-      y: bounds.y - handleDistance,
-      radius: handleRadius
-    };
-  }
+  // CharacterBounds.ts の getRotationHandleBounds メソッド修正
 
-  // 🎯 回転ハンドルクリック判定（修正版）
-  static isRotationHandleClicked(
-    mouseX: number,
-    mouseY: number,
-    character: Character,
-    panel: Panel
-  ): boolean {
-    const handle = CharacterBounds.getRotationHandleBounds(character, panel);
-    const distance = Math.sqrt(
-      Math.pow(mouseX - handle.x, 2) + 
-      Math.pow(mouseY - handle.y, 2)
-    );
-    
-    console.log("🔍 回転ハンドル判定詳細:", {
-      mousePos: { x: mouseX, y: mouseY },
-      handlePos: { x: handle.x, y: handle.y },
-      distance: distance,
+// 🎯 回転ハンドル境界計算（範囲縮小版）
+static getRotationHandleBounds(
+  character: Character,
+  panel: Panel
+): { x: number; y: number; radius: number } {
+  const bounds = CharacterBounds.getCharacterBounds(character, panel);
+  const handleDistance = 35;
+  const handleRadius = 15; // 🔧 100px → 15px に大幅縮小
+  
+  return {
+    x: bounds.centerX,
+    y: bounds.y - handleDistance,
+    radius: handleRadius  // 小さな範囲のみで回転
+  };
+}
+
+// 🎯 回転ハンドルクリック判定（範囲縮小版）
+static isRotationHandleClicked(
+  mouseX: number,
+  mouseY: number,
+  character: Character,
+  panel: Panel
+): boolean {
+  const handle = CharacterBounds.getRotationHandleBounds(character, panel);
+  const distance = Math.sqrt(
+    Math.pow(mouseX - handle.x, 2) + 
+    Math.pow(mouseY - handle.y, 2)
+  );
+  
+  const isClicked = distance <= handle.radius;
+  
+  if (isClicked) {
+    console.log("🔄 [範囲縮小版] 回転ハンドルクリック検出!", {
+      distance: Math.round(distance),
       radius: handle.radius,
-      isClicked: distance <= handle.radius
+      mousePos: { x: mouseX, y: mouseY },
+      handlePos: { x: handle.x, y: handle.y }
     });
-    
-    const isClicked = distance <= handle.radius;
-    
-    if (isClicked) {
-      console.log("🔄 回転ハンドルクリック検出!", {
-        distance,
-        radius: handle.radius
-      });
-    }
-    
-    return isClicked;
   }
+  
+  return isClicked;
+}
 
   // 🎯 統合ハンドルクリック判定（完全修正版）
   static getHandleClickInfo(
