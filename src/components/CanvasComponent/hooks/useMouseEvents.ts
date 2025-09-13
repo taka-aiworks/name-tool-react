@@ -159,7 +159,7 @@ export const useMouseEvents = ({
         console.log("📱 [最適化版] 既に選択済み - 選択状態更新スキップ");
       }
       
-      const panel = panels.find(p => p.id === clickedCharacter.panelId);
+      const panel = panels.find(p => p.id === clickedCharacter!.panelId);
       if (!panel) {
         console.error("❌ [最適化版] パネル未発見");
         e.preventDefault();
