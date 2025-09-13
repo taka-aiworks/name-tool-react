@@ -1,18 +1,19 @@
-// src/App.tsx (データ保存機能統合版)
+// src/App.tsx (背景機能統合版)
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 // 🔧 修正: 正しいパスに変更（.tsxは不要）
 import CanvasComponent from "./components/CanvasComponent";
 import CharacterDetailPanel from "./components/UI/CharacterDetailPanel";
-import { Panel, Character, SpeechBubble, SnapSettings } from "./types";
+import { Panel, Character, SpeechBubble, SnapSettings, BackgroundElement, BackgroundTemplate } from "./types";
 import { templates } from "./components/CanvasArea/templates";
 import { sceneTemplates, applySceneTemplate } from "./components/CanvasArea/sceneTemplates";
 import { ExportPanel } from './components/UI/ExportPanel';
 import { useRef } from 'react';
 import "./App.css";
 
-// 必要なimport（2行追加）
+// 必要なimport（3行追加 - 背景機能含む）
 import useProjectSave from './hooks/useProjectSave';
 import ProjectPanel from './components/UI/ProjectPanel';
+import BackgroundPanel from './components/UI/BackgroundPanel';
 
 function App() {
   // デフォルトダークモード設定
@@ -25,6 +26,7 @@ function App() {
   const [panels, setPanels] = useState<Panel[]>([]);
   const [characters, setCharacters] = useState<Character[]>([]);
   const [speechBubbles, setSpeechBubbles] = useState<SpeechBubble[]>([]);
+  const [backgrounds, setBackgrounds] = useState<BackgroundElement[]>([]); // 🆕 背景データ
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
   const [selectedPanel, setSelectedPanel] = useState<Panel | null>(null);
   const [dialogueText, setDialogueText] = useState<string>("");
@@ -34,7 +36,8 @@ function App() {
   const [selectedScene, setSelectedScene] = useState<string>("");
   const [showCharacterPanel, setShowCharacterPanel] = useState<boolean>(false);
   const [isPanelEditMode, setIsPanelEditMode] = useState<boolean>(false);
-  const [showProjectPanel, setShowProjectPanel] = useState<boolean>(false); // 🆕 追加
+  const [showProjectPanel, setShowProjectPanel] = useState<boolean>(false);
+  const [showBackgroundPanel, setShowBackgroundPanel] = useState<boolean>(false); // 🆕 背景パネル表示制御
 
   // スナップ設定の状態管理
   const [snapSettings, setSnapSettings] = useState<SnapSettings>({
@@ -44,8 +47,7 @@ function App() {
     gridDisplay: 'edit-only'
   });
 
-  // 🆕 プロジェクト保存hook
-  // App.tsx内で、useProjectSave呼び出しの前に追加
+  // 🆕 プロジェクト保存hook（背景データ対応）
   const settings = useMemo(() => ({ 
     snapEnabled: snapSettings.enabled, 
     snapSize: snapSettings.gridSize, 
@@ -61,6 +63,7 @@ function App() {
     panels, 
     characters, 
     bubbles: speechBubbles,
+    backgrounds, // 🆕 背景データを保存対象に追加
     canvasSize, 
     settings 
   });
@@ -69,22 +72,24 @@ function App() {
   const [addCharacterFunc, setAddCharacterFunc] = useState<((type: string) => void) | null>(null);
   const [addBubbleFunc, setAddBubbleFunc] = useState<((type: string, text: string) => void) | null>(null);
 
-  // アンドゥ/リドゥ機能
+  // アンドゥ/リドゥ機能（背景対応）
   const [operationHistory, setOperationHistory] = useState<{
     characters: Character[][];
     speechBubbles: SpeechBubble[][];
     panels: Panel[][];
+    backgrounds: BackgroundElement[][]; // 🆕 背景履歴追加
     currentIndex: number;
   }>({
     characters: [[]],
     speechBubbles: [[]],
     panels: [[]],
+    backgrounds: [[]], // 🆕 背景履歴初期化
     currentIndex: 0,
   });
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  // 履歴保存の最適化 - 依存関係を文字列で管理
+  // 履歴保存の最適化 - 依存関係を文字列で管理（背景対応）
   const charactersSignature = useMemo(() => 
     characters.map(char => `${char.id}-${char.x}-${char.y}-${char.scale}`).join(','), 
     [characters]
@@ -100,13 +105,19 @@ function App() {
     [panels]
   );
 
-  // 履歴保存関数
-  const saveToHistory = useCallback((newCharacters: Character[], newBubbles: SpeechBubble[], newPanels: Panel[]) => {
+  const backgroundsSignature = useMemo(() => 
+    backgrounds.map(bg => `${bg.id}-${bg.x}-${bg.y}-${bg.width}-${bg.height}-${bg.opacity}`).join(','), 
+    [backgrounds]
+  ); // 🆕 背景の変更検知
+
+  // 履歴保存関数（背景対応）
+  const saveToHistory = useCallback((newCharacters: Character[], newBubbles: SpeechBubble[], newPanels: Panel[], newBackgrounds: BackgroundElement[]) => {
     setOperationHistory(prev => {
       const newHistory = {
         characters: [...prev.characters.slice(0, prev.currentIndex + 1), [...newCharacters]],
         speechBubbles: [...prev.speechBubbles.slice(0, prev.currentIndex + 1), [...newBubbles]],
         panels: [...prev.panels.slice(0, prev.currentIndex + 1), [...newPanels]],
+        backgrounds: [...prev.backgrounds.slice(0, prev.currentIndex + 1), [...newBackgrounds]], // 🆕 背景履歴追加
         currentIndex: prev.currentIndex + 1,
       };
       
@@ -115,6 +126,7 @@ function App() {
         newHistory.characters = newHistory.characters.slice(1);
         newHistory.speechBubbles = newHistory.speechBubbles.slice(1);
         newHistory.panels = newHistory.panels.slice(1);
+        newHistory.backgrounds = newHistory.backgrounds.slice(1); // 🆕 背景履歴管理
         newHistory.currentIndex = Math.max(0, newHistory.currentIndex - 1);
       }
       
@@ -122,26 +134,28 @@ function App() {
     });
   }, []);
 
-  // 履歴保存のタイミング（修正版）
+  // 履歴保存のタイミング（背景対応）
   useEffect(() => {
     // 空の状態では履歴保存しない
-    if (characters.length === 0 && speechBubbles.length === 0 && panels.length === 0) {
+    if (characters.length === 0 && speechBubbles.length === 0 && panels.length === 0 && backgrounds.length === 0) {
       return;
     }
 
     const timeoutId = setTimeout(() => {
-      saveToHistory(characters, speechBubbles, panels);
+      saveToHistory(characters, speechBubbles, panels, backgrounds);
     }, 500); // デバウンス時間を500msに延長
 
     return () => clearTimeout(timeoutId);
-  }, [charactersSignature, bubblesSignature, panelsSignature, saveToHistory]);
+  }, [charactersSignature, bubblesSignature, panelsSignature, backgroundsSignature, saveToHistory]);
 
+  // アンドゥ/リドゥ処理（背景対応）
   const handleUndo = useCallback(() => {
     if (operationHistory.currentIndex > 0) {
       const newIndex = operationHistory.currentIndex - 1;
       setCharacters([...operationHistory.characters[newIndex]]);
       setSpeechBubbles([...operationHistory.speechBubbles[newIndex]]);
       setPanels([...operationHistory.panels[newIndex]]);
+      setBackgrounds([...operationHistory.backgrounds[newIndex]]); // 🆕 背景アンドゥ
       setOperationHistory(prev => ({ ...prev, currentIndex: newIndex }));
     }
   }, [operationHistory]);
@@ -152,6 +166,7 @@ function App() {
       setCharacters([...operationHistory.characters[newIndex]]);
       setSpeechBubbles([...operationHistory.speechBubbles[newIndex]]);
       setPanels([...operationHistory.panels[newIndex]]);
+      setBackgrounds([...operationHistory.backgrounds[newIndex]]); // 🆕 背景リドゥ
       setOperationHistory(prev => ({ ...prev, currentIndex: newIndex }));
     }
   }, [operationHistory]);
@@ -186,6 +201,12 @@ function App() {
         e.preventDefault();
         setIsPanelEditMode(prev => !prev);
       }
+
+      // 🆕 背景パネル表示ショートカット
+      if (e.key === 'b' && e.ctrlKey) {
+        e.preventDefault();
+        setShowBackgroundPanel(prev => !prev);
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -216,7 +237,7 @@ function App() {
     document.documentElement.setAttribute("data-theme", newTheme);
   }, [isDarkMode]);
 
-  // テンプレート変更処理
+  // テンプレート変更処理（背景クリア対応）
   const handleTemplateClick = useCallback((template: string) => {
     setSelectedTemplate(template);
     setSelectedCharacter(null);
@@ -227,6 +248,7 @@ function App() {
     
     setCharacters([]);
     setSpeechBubbles([]);
+    setBackgrounds([]); // 🆕 背景もクリア
   }, []);
 
   // シーンテンプレート適用
@@ -322,7 +344,7 @@ function App() {
     console.log(`✅ コマ追加完了: ${newPanelId} (${position})`);
   }, [panels]);
 
-  // コマ削除機能
+  // コマ削除機能（背景も削除）
   const handlePanelDelete = useCallback((panelId: string) => {
     if (panels.length <= 1) {
       console.log(`⚠️ 最後のコマは削除できません`);
@@ -333,6 +355,7 @@ function App() {
       const panelIdNum = parseInt(panelId);
       setCharacters(prev => prev.filter(char => char.panelId !== panelIdNum));
       setSpeechBubbles(prev => prev.filter(bubble => bubble.panelId !== panelIdNum));
+      setBackgrounds(prev => prev.filter(bg => bg.panelId !== panelIdNum)); // 🆕 背景も削除
       setPanels(prev => prev.filter(panel => panel.id !== panelIdNum));
       setSelectedPanel(null);
       console.log(`🗑️ コマ削除: ${panelId}`);
@@ -387,11 +410,12 @@ function App() {
     console.log(`${direction}分割完了（隙間: ${gap}px）`);
   }, [panels]);
 
-  // 全てクリア機能
+  // 全てクリア機能（背景対応）
   const handleClearAll = useCallback(() => {
     if (window.confirm("全ての要素をクリアしますか？")) {
       setCharacters([]);
       setSpeechBubbles([]);
+      setBackgrounds([]); // 🆕 背景もクリア
       setSelectedCharacter(null);
       setSelectedPanel(null);
     }
@@ -412,6 +436,11 @@ function App() {
     setIsPanelEditMode(enabled);
   };
 
+  // 🆕 背景テンプレート適用ハンドラー
+  const handleBackgroundAdd = useCallback((template: BackgroundTemplate) => {
+    console.log(`背景テンプレート「${template.name}」を適用しました`);
+  }, []);
+
   return (
     <div className={`app ${isDarkMode ? 'dark' : 'light'}`}>
       {/* ヘッダー */}
@@ -429,6 +458,21 @@ function App() {
             }}
           >
             🔧 {isPanelEditMode ? "編集中" : "編集"}
+          </button>
+
+          {/* 🆕 背景ボタン追加 */}
+          <button 
+            className="control-btn"
+            onClick={() => setShowBackgroundPanel(true)}
+            title="背景設定 (Ctrl+B)"
+            style={{
+              background: backgrounds.length > 0 ? "#9c27b0" : "var(--bg-tertiary)",
+              color: backgrounds.length > 0 ? "white" : "var(--text-primary)",
+              border: `1px solid ${backgrounds.length > 0 ? "#9c27b0" : "var(--border-color)"}`,
+            }}
+          >
+            🎨 背景
+            {backgrounds.length > 0 && <span style={{ marginLeft: "4px" }}>({backgrounds.length})</span>}
           </button>
 
           {/* 🆕 プロジェクトボタン追加 */}
@@ -654,6 +698,8 @@ function App() {
               {/* 🆕 保存状態表示 */}
               {projectSave.isAutoSaving && <span> | 💾 自動保存中...</span>}
               {projectSave.hasUnsavedChanges && <span> | ⚠️ 未保存</span>}
+              {/* 🆕 背景状態表示 */}
+              {backgrounds.length > 0 && <span> | 🎨 背景: {backgrounds.length}個</span>}
             </div>
           </div>
 
@@ -667,6 +713,8 @@ function App() {
             setCharacters={setCharacters}
             speechBubbles={speechBubbles}
             setSpeechBubbles={setSpeechBubbles}
+            backgrounds={backgrounds} // 🆕 背景データを渡す
+            setBackgrounds={setBackgrounds} // 🆕 背景更新関数を渡す
             // 🔧 型修正: 明示的に型を指定
             onCharacterAdd={(func: (type: string) => void) => setAddCharacterFunc(() => func)}
             onBubbleAdd={(func: (type: string, text: string) => void) => setAddBubbleFunc(() => func)}
@@ -734,6 +782,59 @@ function App() {
             </div>
           </div>
 
+          {/* 🆕 背景セクション */}
+          <div className="section">
+            <h3>🎨 背景</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <button 
+                className="btn btn-primary"
+                onClick={() => setShowBackgroundPanel(true)}
+                title="背景設定パネルを開く (Ctrl+B)"
+                style={{
+                  background: "var(--accent-color)",
+                  color: "white",
+                  border: "1px solid var(--accent-color)",
+                  borderRadius: "6px",
+                  padding: "8px 12px",
+                  cursor: "pointer",
+                  fontSize: "14px"
+                }}
+              >
+                🎨 背景設定
+              </button>
+              
+              {backgrounds.length > 0 && (
+                <div style={{
+                  background: "var(--bg-secondary)",
+                  border: "1px solid var(--border-color)",
+                  borderRadius: "6px",
+                  padding: "8px",
+                  fontSize: "12px",
+                  color: "var(--text-muted)"
+                }}>
+                  <strong>現在の背景:</strong><br/>
+                  {backgrounds.length}個の背景要素
+                  <br/>
+                  <small>• パネルを選択して背景設定</small>
+                </div>
+              )}
+              
+              {selectedPanel && (
+                <div style={{
+                  background: "var(--bg-tertiary)",
+                  border: "1px solid var(--accent-color)",
+                  borderRadius: "6px",
+                  padding: "8px",
+                  fontSize: "12px",
+                  color: "var(--accent-color)"
+                }}>
+                  📍 パネル{selectedPanel.id}選択中<br/>
+                  <small>背景設定パネルから背景を追加できます</small>
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* 出力 */}
           <div className="section">
             <h3>📤 出力</h3>
@@ -741,6 +842,7 @@ function App() {
               panels={panels}
               characters={characters}
               bubbles={speechBubbles}
+              backgrounds={backgrounds} // 🆕 背景データも出力対象に
               canvasRef={canvasRef}
             />
           </div>
@@ -757,6 +859,16 @@ function App() {
         />
       )}
 
+      {/* 🆕 背景設定パネル */}
+      <BackgroundPanel
+        isOpen={showBackgroundPanel}
+        onClose={() => setShowBackgroundPanel(false)}
+        backgrounds={backgrounds}
+        setBackgrounds={setBackgrounds}
+        selectedPanel={selectedPanel}
+        onBackgroundAdd={handleBackgroundAdd}
+      />
+
       {/* 🆕 プロジェクト管理パネル */}
       <ProjectPanel
         isOpen={showProjectPanel}
@@ -767,6 +879,7 @@ function App() {
             setPanels(project.data.panels);
             setCharacters(project.data.characters);
             setSpeechBubbles(project.data.bubbles);
+            setBackgrounds(project.data.backgrounds || []); // 🆕 背景データも復元
             // 設定も復元
             setSnapSettings(prev => ({
               ...prev,
@@ -783,6 +896,7 @@ function App() {
           setPanels([]);
           setCharacters([]);
           setSpeechBubbles([]);
+          setBackgrounds([]); // 🆕 背景もクリア
           setSelectedCharacter(null);
           setSelectedPanel(null);
         }}

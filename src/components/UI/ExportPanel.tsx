@@ -1,6 +1,7 @@
+// src/components/UI/ExportPanel.tsx の最初の部分を修正
 import React, { useState } from 'react';
 import { ExportService, ExportOptions, ExportProgress } from '../../services/ExportService';
-import { Panel, Character, SpeechBubble } from '../../types';
+import { Panel, Character, SpeechBubble, BackgroundElement } from '../../types'; // BackgroundElementを追加
 
 type ExportPurpose = 'print' | 'image' | 'clipstudio';
 
@@ -28,10 +29,12 @@ const purposeDefaults: Record<ExportPurpose, Partial<ExportOptions>> = {
   }
 };
 
+// ExportPanelProps に backgrounds を追加
 interface ExportPanelProps {
   panels: Panel[];
   characters: Character[];
   bubbles: SpeechBubble[];
+  backgrounds: BackgroundElement[]; // 🆕 追加
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
 }
 

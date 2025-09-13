@@ -94,17 +94,18 @@ export interface CanvasComponentProps {
   setCharacters: (characters: Character[]) => void;
   speechBubbles: SpeechBubble[];
   setSpeechBubbles: (speechBubbles: SpeechBubble[]) => void;
+  backgrounds: BackgroundElement[]; // 🆕 背景データ
+  setBackgrounds: (backgrounds: BackgroundElement[]) => void; // 🆕 背景更新関数
   onCharacterAdd: (func: (type: string) => void) => void;
   onBubbleAdd: (func: (type: string, text: string) => void) => void;
   onPanelSelect?: (panel: Panel | null) => void;
   onCharacterSelect?: (character: Character | null) => void;
   onCharacterRightClick?: (character: Character) => void;
-  isPanelEditMode?: boolean; // コマ編集モード
-  onPanelSplit?: (panelId: number, direction: "horizontal" | "vertical") => void; // 分割ハンドラー
+  isPanelEditMode?: boolean;
+  onPanelSplit?: (panelId: number, direction: "horizontal" | "vertical") => void;
   onPanelEditModeToggle?: (enabled: boolean) => void;
   onPanelAdd?: (targetPanelId: string, position: 'above' | 'below' | 'left' | 'right') => void;
   onPanelDelete?: (panelId: string) => void;
-  // 🆕 スナップ設定を追加
   snapSettings?: SnapSettings;
 }
 

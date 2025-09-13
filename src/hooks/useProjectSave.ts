@@ -1,16 +1,15 @@
-// src/hooks/useProjectSave.ts - エラー修正版
+// src/hooks/useProjectSave.ts - 背景対応修正版
 import { useEffect, useRef, useCallback, useState } from 'react';
 import SaveService from '../services/SaveService';
-import { Panel, Character, SpeechBubble } from '../types';
+import { Panel, Character, SpeechBubble, BackgroundElement } from '../types';
 
 interface UseProjectSaveProps {
   panels: Panel[];
   characters: Character[];
   bubbles: SpeechBubble[];
+  backgrounds: BackgroundElement[]; // 🆕 背景データ追加
   canvasSize: { width: number; height: number };
   settings: { snapEnabled: boolean; snapSize: number; darkMode: boolean };
-  projectName?: string;
-  autoSaveInterval?: number;
 }
 
 interface SaveStatus {
@@ -24,10 +23,9 @@ export const useProjectSave = ({
   panels,
   characters,
   bubbles,
+  backgrounds, // 🆕 背景データ受け取り
   canvasSize,
-  settings,
-  projectName = '新規プロジェクト',
-  autoSaveInterval = 30000
+  settings
 }: UseProjectSaveProps) => {
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>({
@@ -41,16 +39,19 @@ export const useProjectSave = ({
   const autoSaveTimerRef = useRef<NodeJS.Timeout | undefined>(undefined);
   const retryCountRef = useRef<number>(0);
   const maxRetries = 3;
+  const projectName = '新規プロジェクト'; // デフォルト名
+  const autoSaveInterval = 30000; // 30秒
 
   const getCurrentDataString = useCallback(() => {
     return JSON.stringify({
       panels,
       characters,
       bubbles,
+      backgrounds, // 🆕 背景データを含める
       canvasSize,
       settings
     });
-  }, [panels, characters, bubbles, canvasSize, settings]);
+  }, [panels, characters, bubbles, backgrounds, canvasSize, settings]);
 
   const hasDataChanged = useCallback(() => {
     const currentData = getCurrentDataString();
@@ -66,6 +67,7 @@ export const useProjectSave = ({
         panels,
         characters,
         bubbles,
+        backgrounds, // 🆕 背景データを保存
         canvasSize,
         settings,
         currentProjectId || undefined
@@ -87,7 +89,7 @@ export const useProjectSave = ({
       console.error('手動保存エラー:', error);
       return null;
     }
-  }, [projectName, panels, characters, bubbles, canvasSize, settings, currentProjectId, getCurrentDataString]);
+  }, [projectName, panels, characters, bubbles, backgrounds, canvasSize, settings, currentProjectId, getCurrentDataString]);
 
   const autoSave = useCallback(async () => {
     if (!hasDataChanged() || saveStatus.isAutoSaving) {
@@ -186,6 +188,7 @@ export const useProjectSave = ({
             panels,
             characters,
             bubbles,
+            backgrounds, // 🆕 背景データも保存
             canvasSize,
             settings,
             currentProjectId || undefined
@@ -201,7 +204,7 @@ export const useProjectSave = ({
 
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [saveStatus.hasUnsavedChanges, projectName, panels, characters, bubbles, canvasSize, settings, currentProjectId]);
+  }, [saveStatus.hasUnsavedChanges, projectName, panels, characters, bubbles, backgrounds, canvasSize, settings, currentProjectId]);
 
   useEffect(() => {
     return () => {

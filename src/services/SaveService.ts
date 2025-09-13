@@ -1,6 +1,8 @@
-// src/services/SaveService.ts - エラー修正版
-import { Panel, Character, SpeechBubble } from '../types';
+// SaveService.ts の最初のimport部分を修正
+import { Panel, Character, SpeechBubble, BackgroundElement } from '../types';
 
+
+// ProjectData interface を修正
 export interface ProjectData {
   id: string;
   name: string;
@@ -11,6 +13,7 @@ export interface ProjectData {
     panels: Panel[];
     characters: Character[];
     bubbles: SpeechBubble[];
+    backgrounds: BackgroundElement[]; // 🆕 背景データ追加
     canvasSize: { width: number; height: number };
     settings: {
       snapEnabled: boolean;
@@ -19,6 +22,7 @@ export interface ProjectData {
     };
   };
 }
+
 
 export interface ProjectMetadata {
   id: string;
@@ -36,11 +40,13 @@ export class SaveService {
   /**
    * プロジェクトを保存
    */
+  // SaveService.ts の saveProject メソッドを以下に置き換えてください
   static saveProject(
     name: string,
     panels: Panel[],
     characters: Character[],
     bubbles: SpeechBubble[],
+    backgrounds: BackgroundElement[], // 🆕 背景データ追加
     canvasSize: { width: number; height: number },
     settings: { snapEnabled: boolean; snapSize: number; darkMode: boolean },
     projectId?: string
@@ -59,6 +65,7 @@ export class SaveService {
           panels: JSON.parse(JSON.stringify(panels)),
           characters: JSON.parse(JSON.stringify(characters)),
           bubbles: JSON.parse(JSON.stringify(bubbles)),
+          backgrounds: JSON.parse(JSON.stringify(backgrounds)), // 🆕 背景データ保存
           canvasSize,
           settings
         }
