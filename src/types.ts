@@ -172,3 +172,95 @@ export interface SnapSettings {
   sensitivity: 'weak' | 'medium' | 'strong';
   gridDisplay: 'always' | 'edit-only' | 'hidden';
 }
+
+// types.ts - 背景機能型定義追加部分
+// 既存のtypes.tsの最後に以下を追加してください（既存の型定義は一切変更しない）
+
+// ==========================================
+// 背景機能用型定義（新規追加）
+// ==========================================
+
+export interface BackgroundElement {
+  id: string;
+  panelId: number;  // 既存のPanel.idに対応（number型を維持）
+  type: 'solid' | 'gradient' | 'pattern' | 'image';
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rotation: number;
+  zIndex: number;
+  opacity: number;
+  
+  // 単色背景用
+  solidColor?: string;
+  
+  // グラデーション背景用
+  gradientType?: 'linear' | 'radial';
+  gradientColors?: string[];
+  gradientDirection?: number; // 角度（度数）
+  
+  // パターン背景用
+  patternType?: 'dots' | 'lines' | 'grid' | 'diagonal' | 'crosshatch';
+  patternColor?: string;
+  patternSize?: number;
+  patternSpacing?: number;
+  
+  // 画像背景用
+  imageUrl?: string;
+  imageMode?: 'fit' | 'fill' | 'stretch' | 'tile';
+  imageBrightness?: number;
+  imageContrast?: number;
+}
+
+// 背景テンプレート定義
+export interface BackgroundTemplate {
+  id: string;
+  name: string;
+  category: 'nature' | 'indoor' | 'school' | 'city' | 'abstract' | 'emotion';
+  thumbnail?: string;
+  elements: Omit<BackgroundElement, 'id' | 'panelId'>[];
+}
+
+// 背景管理用の型
+export interface BackgroundManager {
+  backgrounds: BackgroundElement[];
+  selectedBackground: BackgroundElement | null;
+  isDragging: boolean;
+  isResizing: boolean;
+  resizeDirection: string;
+}
+
+// 背景コンポーネントのプロパティ
+export interface BackgroundPanelProps {
+  isOpen: boolean;
+  onClose: () => void;
+  backgrounds: BackgroundElement[];
+  setBackgrounds: (backgrounds: BackgroundElement[]) => void;
+  selectedPanel: Panel | null;
+  onBackgroundAdd: (template: BackgroundTemplate) => void;
+}
+
+// 背景レンダラーのプロパティ
+export interface BackgroundRendererProps {
+  backgrounds: BackgroundElement[];
+  panelId: number;
+  panelBounds: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+  ctx: CanvasRenderingContext2D;
+  isSelected?: boolean;
+  selectedBackground?: BackgroundElement | null;
+}
+
+// 背景操作のハンドル
+export interface BackgroundHandle {
+  type: "move" | "resize" | "rotate";
+  direction?: "nw" | "n" | "ne" | "e" | "se" | "s" | "sw" | "w";
+  x: number;
+  y: number;
+  radius?: number;
+}
