@@ -1,4 +1,4 @@
-// src/components/UI/BackgroundPanel.tsx
+// src/components/UI/BackgroundPanel.tsx - 完全修正版
 import React, { useState } from 'react';
 import { BackgroundPanelProps, BackgroundTemplate, BackgroundElement } from '../../types';
 import { 
@@ -23,21 +23,44 @@ const BackgroundPanel: React.FC<BackgroundPanelProps> = ({
 
   if (!isOpen) return null;
 
-  // 背景テンプレート適用
+  // 🆕 利用可能なパネルを取得（背景があるパネルも含める）
+  const getAvailablePanels = () => {
+    // selectedPanelがある場合はそれを優先
+    if (selectedPanel) return [selectedPanel];
+    
+    // selectedPanelがない場合、背景があるパネルから選択可能にする
+    const panelsWithBackgrounds = backgrounds.map(bg => bg.panelId);
+    
+    // 🔧 TypeScriptエラー修正: Setのスプレッド演算子を避ける
+    const uniquePanelIds: number[] = [];
+    panelsWithBackgrounds.forEach(id => {
+      if (uniquePanelIds.indexOf(id) === -1) {
+        uniquePanelIds.push(id);
+      }
+    });
+    
+    // 背景があるパネルIDから擬似的なパネルオブジェクトを作成
+    return uniquePanelIds.map(id => ({ id, x: 0, y: 0, width: 100, height: 100 }));
+  };
+
+  const availablePanels = getAvailablePanels();
+  const currentPanel = selectedPanel || availablePanels[0] || null;
+
+  // 🔧 背景テンプレート適用（修正版）
   const applyBackgroundTemplate = (template: BackgroundTemplate) => {
-    if (!selectedPanel) {
-      alert('先にパネルを選択してください');
+    if (!currentPanel) {
+      alert('パネルを選択するか、既存の背景があるパネルから選択してください');
       return;
     }
 
     // 既存の背景を削除（同じパネル内）
-    const filteredBackgrounds = backgrounds.filter(bg => bg.panelId !== selectedPanel.id);
+    const filteredBackgrounds = backgrounds.filter(bg => bg.panelId !== currentPanel.id);
     
     // 新しい背景要素を作成
     const newBackgrounds = template.elements.map((element, index) => {
       const backgroundElement: BackgroundElement = {
         id: `bg_${Date.now()}_${index}`,
-        panelId: selectedPanel.id,
+        panelId: currentPanel.id,
         ...element
       };
       return backgroundElement;
@@ -45,7 +68,7 @@ const BackgroundPanel: React.FC<BackgroundPanelProps> = ({
 
     setBackgrounds([...filteredBackgrounds, ...newBackgrounds]);
     onBackgroundAdd(template);
-    console.log(`背景テンプレート「${template.name}」を適用しました`);
+    console.log(`背景テンプレート「${template.name}」をパネル${currentPanel.id}に適用しました`);
   };
 
   // 背景要素削除
@@ -57,9 +80,9 @@ const BackgroundPanel: React.FC<BackgroundPanelProps> = ({
     }
   };
 
-  // 現在のパネルの背景取得
-  const panelBackgrounds = selectedPanel 
-    ? backgrounds.filter(bg => bg.panelId === selectedPanel.id)
+  // 🔧 現在のパネルの背景取得（修正版）
+  const panelBackgrounds = currentPanel 
+    ? backgrounds.filter(bg => bg.panelId === currentPanel.id)
     : [];
 
   return (
@@ -106,9 +129,9 @@ const BackgroundPanel: React.FC<BackgroundPanelProps> = ({
         }}>
           <h2 style={{ margin: 0, fontSize: '24px', fontWeight: 'bold' }}>
             🎨 背景設定
-            {selectedPanel && (
+            {currentPanel && (
               <span style={{ fontSize: '16px', fontWeight: 'normal', marginLeft: '12px', color: 'var(--text-muted)' }}>
-                パネル{selectedPanel.id}
+                パネル{currentPanel.id}
               </span>
             )}
           </h2>
@@ -129,7 +152,8 @@ const BackgroundPanel: React.FC<BackgroundPanelProps> = ({
           </button>
         </div>
 
-        {!selectedPanel && (
+        {/* 🔧 パネル選択状況の表示（修正版） */}
+        {!currentPanel ? (
           <div style={{
             background: 'var(--bg-secondary)',
             border: '1px solid var(--accent-color)',
@@ -140,10 +164,37 @@ const BackgroundPanel: React.FC<BackgroundPanelProps> = ({
             color: 'var(--accent-color)'
           }}>
             📢 背景を設定するパネルを先に選択してください
+            {availablePanels.length > 0 && (
+              <div style={{ marginTop: '12px' }}>
+                <small style={{ display: 'block', marginBottom: '8px' }}>
+                  または、既存の背景があるパネルから選択:
+                </small>
+                <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                  {availablePanels.map(panel => (
+                    <button 
+                      key={panel.id}
+                      style={{
+                        padding: '4px 8px',
+                        backgroundColor: 'var(--accent-color)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontSize: '12px'
+                      }}
+                      onClick={() => {
+                        // パネル選択の代替処理
+                        console.log(`パネル${panel.id}を選択`);
+                      }}
+                    >
+                      パネル{panel.id}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-        )}
-
-        {selectedPanel && (
+        ) : (
           <>
             {/* カテゴリタブ */}
             <div style={{ marginBottom: '20px' }}>
@@ -182,7 +233,7 @@ const BackgroundPanel: React.FC<BackgroundPanelProps> = ({
                 fontSize: '18px',
                 color: 'var(--text-primary)'
               }}>
-                📋 テンプレート
+                📋 テンプレート ({getBackgroundsByCategory(activeCategory as any).length}個)
               </h3>
               
               <div style={{
@@ -302,7 +353,7 @@ const BackgroundPanel: React.FC<BackgroundPanelProps> = ({
               </div>
             )}
 
-            {/* 操作ガイド */}
+            {/* 🆕 操作ガイド（拡張版） */}
             <div style={{
               marginTop: '20px',
               padding: '12px',
@@ -315,7 +366,9 @@ const BackgroundPanel: React.FC<BackgroundPanelProps> = ({
               <strong>💡 操作ガイド:</strong><br/>
               • テンプレートをクリックして背景を適用<br/>
               • 背景要素をクリックして選択・削除<br/>
-              • キャンバス上でドラッグ＆リサイズが可能
+              • キャンバス上で背景をクリックして選択<br/>
+              • パネルを選択してから背景設定パネルを開く<br/>
+              • 🔧 不具合修正: クリック優先順位を調整済み
             </div>
           </>
         )}

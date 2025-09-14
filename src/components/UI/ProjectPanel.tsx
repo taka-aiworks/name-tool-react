@@ -1,6 +1,7 @@
-// src/components/UI/ProjectPanel.tsx - 完全修正版
+// src/components/UI/ProjectPanel.tsx - 背景機能対応修正版
 import React, { useState, useRef } from 'react';
 import SaveService, { ProjectMetadata } from '../../services/SaveService';
+import { BackgroundElement } from '../../types'; // 🆕 BackgroundElement型をインポート
 
 interface ProjectPanelProps {
   isOpen: boolean;
@@ -65,16 +66,20 @@ const ProjectPanel: React.FC<ProjectPanelProps> = ({
     }
   };
 
-  // プロジェクト名変更
+  // 🔧 プロジェクト名変更（背景データ対応）
   const handleRename = async (projectId: string) => {
     if (newName.trim()) {
       const project = SaveService.loadProject(projectId);
       if (project) {
+        // 🆕 背景データが存在しない古いプロジェクトに対応
+        const backgrounds: BackgroundElement[] = (project.data as any).backgrounds || [];
+        
         SaveService.saveProject(
           newName.trim(),
           project.data.panels,
           project.data.characters,
           project.data.bubbles,
+          backgrounds, // 🆕 背景データを追加
           project.data.canvasSize,
           project.data.settings,
           projectId

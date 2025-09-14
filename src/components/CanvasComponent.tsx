@@ -412,35 +412,74 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
     onPanelSplit,
   });
 
-  // 一時的なキーボードイベント処理
-  useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.ctrlKey || e.metaKey) {
-        switch (e.key.toLowerCase()) {
-          case 'c':
-            if (selectedBackground) {
-              contextMenuActions.onCopyToClipboard('background', selectedBackground);
-              e.preventDefault();
-            }
-            break;
-          case 'v':
-            if (clipboard) {
-              contextMenuActions.onPasteFromClipboard();
-              e.preventDefault();
-            }
-            break;
-        }
-      }
-      
-      if (e.key === 'Delete' && selectedBackground) {
-        contextMenuActions.onDeleteElement('background', selectedBackground);
-        e.preventDefault();
-      }
-    };
+  // 🔧 修正版：キーボードイベント処理（全要素対応）
+  // CanvasComponent.tsx のキーボードイベント処理部分を以下に置き換え
 
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [selectedBackground, clipboard]);
+  // 🔧 修正版：キーボードイベント処理（全要素対応）
+    useEffect(() => {
+      const handleKeyPress = (e: KeyboardEvent) => {
+        // Ctrl+C, Ctrl+V処理
+        if (e.ctrlKey || e.metaKey) {
+          switch (e.key.toLowerCase()) {
+            case 'c':
+              // コピー処理（優先順位順）
+              if (state.selectedBubble) {
+                contextMenuActions.onCopyToClipboard('bubble', state.selectedBubble);
+                e.preventDefault();
+              } else if (state.selectedCharacter) {
+                contextMenuActions.onCopyToClipboard('character', state.selectedCharacter);
+                e.preventDefault();
+              } else if (selectedBackground) {
+                contextMenuActions.onCopyToClipboard('background', selectedBackground);
+                e.preventDefault();
+              } else if (state.selectedPanel) {
+                contextMenuActions.onCopyToClipboard('panel', state.selectedPanel);
+                e.preventDefault();
+              }
+              break;
+            case 'v':
+              if (clipboard) {
+                contextMenuActions.onPasteFromClipboard();
+                e.preventDefault();
+              }
+              break;
+          }
+        }
+        
+        // 🔧 Delete/Backspace処理（全要素対応・優先順位順）
+        if (e.key === 'Delete' || e.key === 'Backspace') {
+          if (state.selectedBubble) {
+            contextMenuActions.onDeleteElement('bubble', state.selectedBubble);
+            console.log("💬 吹き出し削除（キーボード）:", state.selectedBubble.text);
+            e.preventDefault();
+          } else if (state.selectedCharacter) {
+            contextMenuActions.onDeleteElement('character', state.selectedCharacter);
+            console.log("👤 キャラクター削除（キーボード）:", state.selectedCharacter.name);
+            e.preventDefault();
+          } else if (selectedBackground) {
+            contextMenuActions.onDeleteElement('background', selectedBackground);
+            console.log("🎨 背景削除（キーボード）:", selectedBackground.type);
+            e.preventDefault();
+          } else if (state.selectedPanel && isPanelEditMode) {
+            // 🔧 パネル削除（編集モード時のみ）
+            contextMenuActions.onDeletePanel(state.selectedPanel);
+            console.log("📐 パネル削除（キーボード）:", state.selectedPanel.id);
+            e.preventDefault();
+          }
+        }
+      };
+
+      window.addEventListener('keydown', handleKeyPress);
+      return () => window.removeEventListener('keydown', handleKeyPress);
+    }, [
+      // 🔧 依存配列を修正：全ての選択状態を含める
+      state.selectedBubble,
+      state.selectedCharacter, 
+      state.selectedPanel,
+      selectedBackground, 
+      clipboard,
+      contextMenuActions
+    ]);
 
   // Canvas描画hook使用
   const { drawCanvas } = useCanvasDrawing({
