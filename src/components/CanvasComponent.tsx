@@ -1,6 +1,6 @@
-// src/components/CanvasComponent.tsx - 動作版（エラー修正）
+// src/components/CanvasComponent.tsx - 効果線統合版
 import React, { useRef, useState, forwardRef, useImperativeHandle, useEffect } from "react";
-import { Panel, Character, SpeechBubble, BackgroundElement, CanvasComponentProps } from "../types";
+import { Panel, Character, SpeechBubble, BackgroundElement, EffectElement, CanvasComponentProps } from "../types";
 import { templates } from "./CanvasArea/templates";
 
 // Hooks import
@@ -16,7 +16,7 @@ import { BackgroundRenderer } from "./CanvasArea/renderers/BackgroundRenderer";
 import { ContextMenuHandler, ContextMenuState, ContextMenuActions, ClipboardState } from "./CanvasArea/ContextMenuHandler";
 
 /**
- * Canvas操作の中核となるコンポーネント（背景機能統合・動作版）
+ * Canvas操作の中核となるコンポーネント（効果線機能統合版）
  */
 const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((props, ref) => {
   const {
@@ -27,8 +27,11 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
     setCharacters,
     speechBubbles,
     setSpeechBubbles,
-    backgrounds, // 🆕 背景データを受け取り
-    setBackgrounds, // 🆕 背景更新関数を受け取り
+    backgrounds,
+    setBackgrounds,
+    // 🆕 効果線関連のprops追加
+    effects,
+    setEffects,
     onCharacterAdd,
     onBubbleAdd,
     onPanelSelect,
@@ -57,6 +60,10 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
   const [isBackgroundDragging, setIsBackgroundDragging] = useState<boolean>(false);
   const [isBackgroundResizing, setIsBackgroundResizing] = useState<boolean>(false);
   
+  // 🆕 効果線選択状態
+  const [selectedEffect, setSelectedEffect] = useState<EffectElement | null>(null);
+  const [isEffectDragging, setIsEffectDragging] = useState<boolean>(false);
+  const [isEffectResizing, setIsEffectResizing] = useState<boolean>(false);
 
   // ContextMenu & Clipboard 状態
   const [contextMenu, setContextMenu] = useState<ContextMenuState>({
@@ -68,7 +75,7 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
   });
   const [clipboard, setClipboard] = useState<ClipboardState | null>(null);
 
-  // ContextMenuActions実装（背景対応版）
+  // ContextMenuActions実装（効果線対応版）
   const contextMenuActions: ContextMenuActions = {
     onDuplicateCharacter: (character: Character) => {
       const newCharacter = {
@@ -128,21 +135,31 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
         id: `bg_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
         panelId: newPanelId,
       }));
+
+      // 🆕 効果線も複製
+      const panelEffects = effects.filter(effect => effect.panelId === panel.id);
+      const newEffects = panelEffects.map(effect => ({
+        ...effect,
+        id: `effect_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+        panelId: newPanelId,
+      }));
       
       setPanels([...panels, newPanel]);
       setCharacters([...characters, ...newCharacters]);
       setSpeechBubbles([...speechBubbles, ...newBubbles]);
       setBackgrounds([...backgrounds, ...newBackgrounds]);
+      setEffects([...effects, ...newEffects]); // 🆕 効果線も更新
       
       actions.setSelectedPanel(newPanel);
       actions.setSelectedCharacter(null);
       actions.setSelectedBubble(null);
       setSelectedBackground(null);
+      setSelectedEffect(null); // 🆕 効果線選択解除
       if (onPanelSelect) onPanelSelect(newPanel);
       if (onCharacterSelect) onCharacterSelect(null);
     },
 
-    onCopyToClipboard: (type: 'panel' | 'character' | 'bubble' | 'background', element: Panel | Character | SpeechBubble | BackgroundElement) => {
+    onCopyToClipboard: (type: 'panel' | 'character' | 'bubble' | 'background' | 'effect', element: Panel | Character | SpeechBubble | BackgroundElement | EffectElement) => {
       const newClipboard: ClipboardState = { type, data: element };
       setClipboard(newClipboard);
     },
@@ -183,12 +200,24 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
           setBackgrounds([...backgrounds, newBackground]);
           setSelectedBackground(newBackground);
           break;
+
+        // 🆕 効果線ペースト
+        case 'effect':
+          const newEffect = {
+            ...data as EffectElement,
+            id: `effect_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+            x: (data as EffectElement).x + 0.1,
+            y: (data as EffectElement).y + 0.1,
+          };
+          setEffects([...effects, newEffect]);
+          setSelectedEffect(newEffect);
+          break;
       }
       
       setClipboard(null);
     },
 
-    onDeleteElement: (type: 'character' | 'bubble' | 'background', element: Character | SpeechBubble | BackgroundElement) => {
+    onDeleteElement: (type: 'character' | 'bubble' | 'background' | 'effect', element: Character | SpeechBubble | BackgroundElement | EffectElement) => {
       if (type === 'character') {
         const newCharacters = characters.filter(char => char.id !== element.id);
         setCharacters(newCharacters);
@@ -205,6 +234,12 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
         setBackgrounds(newBackgrounds);
         setSelectedBackground(null);
         console.log("背景削除:", (element as BackgroundElement).type);
+      } else if (type === 'effect') {
+        // 🆕 効果線削除
+        const newEffects = effects.filter(effect => effect.id !== element.id);
+        setEffects(newEffects);
+        setSelectedEffect(null);
+        console.log("効果線削除:", (element as EffectElement).type);
       }
     },
 
@@ -212,9 +247,10 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
       const panelCharacters = characters.filter(char => char.panelId === panel.id);
       const panelBubbles = speechBubbles.filter(bubble => bubble.panelId === panel.id);
       const panelBackgrounds = backgrounds.filter(bg => bg.panelId === panel.id);
+      const panelEffects = effects.filter(effect => effect.panelId === panel.id); // 🆕 効果線もカウント
       
       let confirmMessage = `コマ ${panel.id} を削除しますか？`;
-      if (panelCharacters.length > 0 || panelBubbles.length > 0 || panelBackgrounds.length > 0) {
+      if (panelCharacters.length > 0 || panelBubbles.length > 0 || panelBackgrounds.length > 0 || panelEffects.length > 0) {
         confirmMessage += `\n含まれる要素も一緒に削除されます:`;
         if (panelCharacters.length > 0) {
           confirmMessage += `\n・キャラクター: ${panelCharacters.length}体`;
@@ -224,6 +260,9 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
         }
         if (panelBackgrounds.length > 0) {
           confirmMessage += `\n・背景: ${panelBackgrounds.length}個`;
+        }
+        if (panelEffects.length > 0) {
+          confirmMessage += `\n・効果線: ${panelEffects.length}個`; // 🆕 効果線も表示
         }
       }
       
@@ -235,16 +274,19 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
       const newCharacters = characters.filter(char => char.panelId !== panel.id);
       const newBubbles = speechBubbles.filter(bubble => bubble.panelId !== panel.id);
       const newBackgrounds = backgrounds.filter(bg => bg.panelId !== panel.id);
+      const newEffects = effects.filter(effect => effect.panelId !== panel.id); // 🆕 効果線も削除
       
       setPanels(newPanels);
       setCharacters(newCharacters);
       setSpeechBubbles(newBubbles);
       setBackgrounds(newBackgrounds);
+      setEffects(newEffects); // 🆕 効果線も更新
 
       actions.setSelectedPanel(null);
       actions.setSelectedCharacter(null);
       actions.setSelectedBubble(null);
       setSelectedBackground(null);
+      setSelectedEffect(null); // 🆕 効果線選択解除
       if (onPanelSelect) onPanelSelect(null);
       if (onCharacterSelect) onCharacterSelect(null);
       
@@ -271,11 +313,19 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
         ...bg,
         x: 1 - bg.x - bg.width
       }));
+      // 🆕 効果線も反転
+      const flippedEffects = effects.map(effect => ({
+        ...effect,
+        x: 1 - effect.x - effect.width,
+        // 水平反転時は角度も調整（必要に応じて）
+        angle: effect.type === 'speed' ? 180 - effect.angle : effect.angle
+      }));
 
       setPanels(flippedPanels);
       setCharacters(flippedCharacters);
       setSpeechBubbles(flippedBubbles);
       setBackgrounds(flippedBackgrounds);
+      setEffects(flippedEffects); // 🆕 効果線も更新
     },
 
     onFlipVertical: () => {
@@ -298,11 +348,19 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
         ...bg,
         y: 1 - bg.y - bg.height
       }));
+      // 🆕 効果線も反転
+      const flippedEffects = effects.map(effect => ({
+        ...effect,
+        y: 1 - effect.y - effect.height,
+        // 垂直反転時は角度も調整（必要に応じて）
+        angle: effect.type === 'speed' ? -effect.angle : effect.angle
+      }));
 
       setPanels(flippedPanels);
       setCharacters(flippedCharacters);
       setSpeechBubbles(flippedBubbles);
       setBackgrounds(flippedBackgrounds);
+      setEffects(flippedEffects); // 🆕 効果線も更新
     },
 
     onEditPanel: (panel: Panel) => {
@@ -310,6 +368,7 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
       actions.setSelectedCharacter(null);
       actions.setSelectedBubble(null);
       setSelectedBackground(null);
+      setSelectedEffect(null); // 🆕 効果線選択解除
       if (onPanelSelect) onPanelSelect(panel);
       if (onCharacterSelect) onCharacterSelect(null);
       if (onPanelEditModeToggle) onPanelEditModeToggle(true);
@@ -322,12 +381,13 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
       }
     },
 
-    onSelectElement: (type: 'character' | 'bubble' | 'panel' | 'background', element: Character | SpeechBubble | Panel | BackgroundElement) => {
+    onSelectElement: (type: 'character' | 'bubble' | 'panel' | 'background' | 'effect', element: Character | SpeechBubble | Panel | BackgroundElement | EffectElement) => {
       if (type === 'character') {
         actions.setSelectedCharacter(element as Character);
         actions.setSelectedBubble(null);
         actions.setSelectedPanel(null);
         setSelectedBackground(null);
+        setSelectedEffect(null); // 🆕 効果線選択解除
         if (onCharacterSelect) onCharacterSelect(element as Character);
         if (onPanelSelect) onPanelSelect(null);
       } else if (type === 'bubble') {
@@ -335,6 +395,7 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
         actions.setSelectedCharacter(null);
         actions.setSelectedPanel(null);
         setSelectedBackground(null);
+        setSelectedEffect(null); // 🆕 効果線選択解除
         if (onCharacterSelect) onCharacterSelect(null);
         if (onPanelSelect) onPanelSelect(null);
       } else if (type === 'panel') {
@@ -342,6 +403,7 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
         actions.setSelectedCharacter(null);
         actions.setSelectedBubble(null);
         setSelectedBackground(null);
+        setSelectedEffect(null); // 🆕 効果線選択解除
         if (onPanelSelect) onPanelSelect(element as Panel);
         if (onCharacterSelect) onCharacterSelect(null);
       } else if (type === 'background') {
@@ -349,6 +411,16 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
         actions.setSelectedCharacter(null);
         actions.setSelectedBubble(null);
         actions.setSelectedPanel(null);
+        setSelectedEffect(null); // 🆕 効果線選択解除
+        if (onCharacterSelect) onCharacterSelect(null);
+        if (onPanelSelect) onPanelSelect(null);
+      } else if (type === 'effect') {
+        // 🆕 効果線選択
+        setSelectedEffect(element as EffectElement);
+        actions.setSelectedCharacter(null);
+        actions.setSelectedBubble(null);
+        actions.setSelectedPanel(null);
+        setSelectedBackground(null);
         if (onCharacterSelect) onCharacterSelect(null);
         if (onPanelSelect) onPanelSelect(null);
       }
@@ -371,9 +443,27 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
       setSelectedBackground(newBackground);
     },
 
+    // 🆕 効果線複製
+    onDuplicateEffect: (effect: EffectElement) => {
+      const newEffect = {
+        ...effect,
+        id: `effect_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+        x: Math.min(effect.x + 0.1, 0.9),
+        y: Math.min(effect.y + 0.1, 0.9),
+      };
+      setEffects([...effects, newEffect]);
+      setSelectedEffect(newEffect);
+    },
+
     onOpenBackgroundPanel: (background: BackgroundElement) => {
       console.log("背景設定パネルを開く:", background.type);
       // TODO: 背景設定パネルの実装
+    },
+
+    // 🆕 効果線設定パネル
+    onOpenEffectPanel: (effect: EffectElement) => {
+      console.log("効果線設定パネルを開く:", effect.type);
+      // TODO: 効果線設定パネルの実装
     },
 
     onDeselectAll: () => {
@@ -381,12 +471,13 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
       actions.setSelectedBubble(null);
       actions.setSelectedPanel(null);
       setSelectedBackground(null);
+      setSelectedEffect(null); // 🆕 効果線選択解除
       if (onCharacterSelect) onCharacterSelect(null);
       if (onPanelSelect) onPanelSelect(null);
     },
   };
 
-  // マウスイベントhook使用（背景対応版）
+  // マウスイベントhook使用（効果線対応版）
   const mouseEventHandlers = useMouseEvents({
     canvasRef,
     state,
@@ -402,6 +493,11 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
     setBackgrounds,
     selectedBackground,
     setSelectedBackground,
+    // 🆕 効果線関連プロパティ
+    effects,
+    setEffects,
+    selectedEffect,
+    setSelectedEffect,
     isPanelEditMode,
     snapSettings,
     contextMenu,
@@ -412,74 +508,81 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
     onPanelSplit,
   });
 
-  // 🔧 修正版：キーボードイベント処理（全要素対応）
-  // CanvasComponent.tsx のキーボードイベント処理部分を以下に置き換え
-
-  // 🔧 修正版：キーボードイベント処理（全要素対応）
-    useEffect(() => {
-      const handleKeyPress = (e: KeyboardEvent) => {
-        // Ctrl+C, Ctrl+V処理
-        if (e.ctrlKey || e.metaKey) {
-          switch (e.key.toLowerCase()) {
-            case 'c':
-              // コピー処理（優先順位順）
-              if (state.selectedBubble) {
-                contextMenuActions.onCopyToClipboard('bubble', state.selectedBubble);
-                e.preventDefault();
-              } else if (state.selectedCharacter) {
-                contextMenuActions.onCopyToClipboard('character', state.selectedCharacter);
-                e.preventDefault();
-              } else if (selectedBackground) {
-                contextMenuActions.onCopyToClipboard('background', selectedBackground);
-                e.preventDefault();
-              } else if (state.selectedPanel) {
-                contextMenuActions.onCopyToClipboard('panel', state.selectedPanel);
-                e.preventDefault();
-              }
-              break;
-            case 'v':
-              if (clipboard) {
-                contextMenuActions.onPasteFromClipboard();
-                e.preventDefault();
-              }
-              break;
-          }
+  // 🔧 修正版：キーボードイベント処理（効果線対応）
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      // Ctrl+C, Ctrl+V処理
+      if (e.ctrlKey || e.metaKey) {
+        switch (e.key.toLowerCase()) {
+          case 'c':
+            // コピー処理（優先順位順）
+            if (state.selectedBubble) {
+              contextMenuActions.onCopyToClipboard('bubble', state.selectedBubble);
+              e.preventDefault();
+            } else if (state.selectedCharacter) {
+              contextMenuActions.onCopyToClipboard('character', state.selectedCharacter);
+              e.preventDefault();
+            } else if (selectedEffect) {
+              // 🆕 効果線コピー
+              contextMenuActions.onCopyToClipboard('effect', selectedEffect);
+              e.preventDefault();
+            } else if (selectedBackground) {
+              contextMenuActions.onCopyToClipboard('background', selectedBackground);
+              e.preventDefault();
+            } else if (state.selectedPanel) {
+              contextMenuActions.onCopyToClipboard('panel', state.selectedPanel);
+              e.preventDefault();
+            }
+            break;
+          case 'v':
+            if (clipboard) {
+              contextMenuActions.onPasteFromClipboard();
+              e.preventDefault();
+            }
+            break;
         }
-        
-        // 🔧 Delete/Backspace処理（全要素対応・優先順位順）
-        if (e.key === 'Delete' || e.key === 'Backspace') {
-          if (state.selectedBubble) {
-            contextMenuActions.onDeleteElement('bubble', state.selectedBubble);
-            console.log("💬 吹き出し削除（キーボード）:", state.selectedBubble.text);
-            e.preventDefault();
-          } else if (state.selectedCharacter) {
-            contextMenuActions.onDeleteElement('character', state.selectedCharacter);
-            console.log("👤 キャラクター削除（キーボード）:", state.selectedCharacter.name);
-            e.preventDefault();
-          } else if (selectedBackground) {
-            contextMenuActions.onDeleteElement('background', selectedBackground);
-            console.log("🎨 背景削除（キーボード）:", selectedBackground.type);
-            e.preventDefault();
-          } else if (state.selectedPanel && isPanelEditMode) {
-            // 🔧 パネル削除（編集モード時のみ）
-            contextMenuActions.onDeletePanel(state.selectedPanel);
-            console.log("📐 パネル削除（キーボード）:", state.selectedPanel.id);
-            e.preventDefault();
-          }
+      }
+      
+      // 🔧 Delete/Backspace処理（効果線対応・優先順位順）
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (state.selectedBubble) {
+          contextMenuActions.onDeleteElement('bubble', state.selectedBubble);
+          console.log("💬 吹き出し削除（キーボード）:", state.selectedBubble.text);
+          e.preventDefault();
+        } else if (state.selectedCharacter) {
+          contextMenuActions.onDeleteElement('character', state.selectedCharacter);
+          console.log("👤 キャラクター削除（キーボード）:", state.selectedCharacter.name);
+          e.preventDefault();
+        } else if (selectedEffect) {
+          // 🆕 効果線削除
+          contextMenuActions.onDeleteElement('effect', selectedEffect);
+          console.log("⚡ 効果線削除（キーボード）:", selectedEffect.type);
+          e.preventDefault();
+        } else if (selectedBackground) {
+          contextMenuActions.onDeleteElement('background', selectedBackground);
+          console.log("🎨 背景削除（キーボード）:", selectedBackground.type);
+          e.preventDefault();
+        } else if (state.selectedPanel && isPanelEditMode) {
+          // 🔧 パネル削除（編集モード時のみ）
+          contextMenuActions.onDeletePanel(state.selectedPanel);
+          console.log("📐 パネル削除（キーボード）:", state.selectedPanel.id);
+          e.preventDefault();
         }
-      };
+      }
+    };
 
-      window.addEventListener('keydown', handleKeyPress);
-      return () => window.removeEventListener('keydown', handleKeyPress);
-    }, [
-      // 🔧 依存配列を修正：全ての選択状態を含める
-      state.selectedBubble,
-      state.selectedCharacter, 
-      state.selectedPanel,
-      selectedBackground, 
-      clipboard,
-      contextMenuActions
-    ]);
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [
+    // 🔧 依存配列を修正：効果線選択状態を含める
+    state.selectedBubble,
+    state.selectedCharacter, 
+    state.selectedPanel,
+    selectedBackground,
+    selectedEffect, // 🆕 効果線選択状態
+    clipboard,
+    contextMenuActions
+  ]);
 
   // Canvas描画hook使用
   const { drawCanvas } = useCanvasDrawing({
@@ -488,8 +591,11 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
     panels,
     characters,
     speechBubbles,
-    backgrounds, // 🆕 背景データを渡す
-    selectedBackground, // 🆕 選択された背景を渡す
+    backgrounds,
+    selectedBackground,
+    // 🆕 効果線データを渡す
+    effects,
+    selectedEffect,
     isPanelEditMode,
     snapSettings,
   });
@@ -517,6 +623,7 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
       actions.setSelectedCharacter(null);
       actions.setSelectedBubble(null);
       setSelectedBackground(null);
+      setSelectedEffect(null); // 🆕 効果線選択解除
       if (onPanelSelect) onPanelSelect(null);
       if (onCharacterSelect) onCharacterSelect(null);
     }
@@ -551,7 +658,7 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
         style={{
           border: "2px solid #ddd",
           background: "white",
-          cursor: state.isPanelResizing || state.isDragging || state.isBubbleResizing || state.isCharacterResizing || isBackgroundDragging || isBackgroundResizing ? "grabbing" : "pointer",
+          cursor: state.isPanelResizing || state.isDragging || state.isBubbleResizing || state.isCharacterResizing || isBackgroundDragging || isBackgroundResizing || isEffectDragging || isEffectResizing ? "grabbing" : "pointer",
           boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
           borderRadius: "8px",
           marginTop: "0px",
@@ -690,12 +797,41 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
         </div>
       )}
 
+      {/* 🆕 効果線選択状態表示 */}
+      {selectedEffect && (
+        <div
+          style={{
+            position: "absolute",
+            top: "130px",
+            right: "10px",
+            background: isEffectResizing 
+              ? "rgba(255, 193, 7, 0.9)"
+              : isEffectDragging 
+              ? "rgba(255, 152, 0, 0.9)"
+              : "rgba(255, 193, 7, 0.9)",
+            color: "white",
+            padding: "8px 12px",
+            borderRadius: "4px",
+            fontSize: "12px",
+            fontWeight: "bold",
+          }}
+        >
+          {isEffectResizing ? "効果線リサイズ中" : 
+          isEffectDragging ? "効果線移動中" : 
+          `効果線選択中`}
+          <br/>
+          <small>
+            {selectedEffect.type} | 強度: {selectedEffect.intensity} | 密度: {selectedEffect.density}
+          </small>
+        </div>
+      )}
+
       {/* クリップボード状態表示 */}
       {clipboard && (
         <div
           style={{
             position: "absolute",
-            top: "130px",
+            top: "160px",
             right: "10px",
             background: "rgba(128, 128, 128, 0.9)",
             color: "white",
@@ -716,7 +852,7 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
         <div
           style={{
             position: "absolute",
-            top: "160px",
+            top: "190px",
             right: "10px",
             background: "rgba(76, 175, 80, 0.9)",
             color: "white",
@@ -747,11 +883,13 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
         }}
       >
         🔧 デバッグ情報<br/>
-        ドラッグ: {state.isDragging || isBackgroundDragging ? "✅" : "❌"}<br/>
+        ドラッグ: {state.isDragging || isBackgroundDragging || isEffectDragging ? "✅" : "❌"}<br/>
         吹き出しリサイズ: {state.isBubbleResizing ? "✅" : "❌"}<br/>
         キャラリサイズ: {state.isCharacterResizing ? "✅" : "❌"}<br/>
         背景操作: {selectedBackground ? "✅" : "❌"}<br/>
-        背景数: {backgrounds.length}個
+        効果線操作: {selectedEffect ? "✅" : "❌"}<br/>
+        背景数: {backgrounds.length}個<br/>
+        効果線数: {effects.length}個
       </div>
     </div>
   );

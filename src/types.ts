@@ -1,4 +1,4 @@
-// src/types.ts - 効果線完全対応版
+// src/types.ts - 効果線完全対応版（CanvasComponentProps修正）
 
 export interface Panel {
   id: number;
@@ -83,7 +83,7 @@ export interface SpeechBubble {
   isGlobalPosition: boolean;
 }
 
-// CanvasComponent のプロパティ型（効果線完全対応）
+// 🔧 CanvasComponent のプロパティ型（効果線完全対応・修正版）
 export interface CanvasComponentProps {
   selectedTemplate: string;
   panels: Panel[];
@@ -97,10 +97,11 @@ export interface CanvasComponentProps {
   backgrounds: BackgroundElement[];
   setBackgrounds: (backgrounds: BackgroundElement[]) => void;
   
-  // 🆕 効果線関連プロパティ追加
+  // 🆕 効果線関連プロパティ（修正版）
   effects: EffectElement[];
   setEffects: (effects: EffectElement[]) => void;
-  selectedEffect: EffectElement | null;
+  // 🔧 以下のプロパティをオプショナルに修正（CanvasComponent内で管理するため）
+  selectedEffect?: EffectElement | null;
   onEffectSelect?: (effect: EffectElement | null) => void;
   onEffectRightClick?: (effect: EffectElement) => void;
   showEffectPanel?: boolean;

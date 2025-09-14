@@ -1,6 +1,6 @@
-// src/components/CanvasComponent/hooks/useMouseEvents.ts - 完全修正版
+// src/components/CanvasComponent/hooks/useMouseEvents.ts - 効果線対応版
 import { RefObject } from 'react';
-import { Panel, Character, SpeechBubble, BackgroundElement, SnapSettings } from '../../../types';
+import { Panel, Character, SpeechBubble, BackgroundElement, EffectElement, SnapSettings } from '../../../types';
 import { CanvasState, CanvasStateActions } from './useCanvasState';
 import { BubbleRenderer } from '../../CanvasArea/renderers/BubbleRenderer';
 import { CharacterRenderer } from '../../CanvasArea/renderers/CharacterRenderer/CharacterRenderer';
@@ -29,11 +29,16 @@ export interface MouseEventHookProps {
   setCharacters: (characters: Character[]) => void;
   speechBubbles: SpeechBubble[];
   setSpeechBubbles: (bubbles: SpeechBubble[]) => void;
-  // 背景関連のprops追加（オプショナル）
+  // 背景関連のprops
   backgrounds?: BackgroundElement[];
   setBackgrounds?: (backgrounds: BackgroundElement[]) => void;
   selectedBackground?: BackgroundElement | null;
   setSelectedBackground?: (background: BackgroundElement | null) => void;
+  // 🆕 効果線関連のprops追加
+  effects?: EffectElement[];
+  setEffects?: (effects: EffectElement[]) => void;
+  selectedEffect?: EffectElement | null;
+  setSelectedEffect?: (effect: EffectElement | null) => void;
   isPanelEditMode: boolean;
   snapSettings: SnapSettings;
   contextMenu: ContextMenuState;
@@ -69,6 +74,64 @@ const findBackgroundAt = (
   return null;
 };
 
+// 🆕 効果線クリック判定ヘルパー
+const findEffectAt = (
+  x: number, 
+  y: number, 
+  effects: EffectElement[], 
+  panels: Panel[]
+): EffectElement | null => {
+  for (let i = effects.length - 1; i >= 0; i--) {
+    const effect = effects[i];
+    const panel = panels.find(p => p.id === effect.panelId);
+    if (panel) {
+      const absoluteX = panel.x + effect.x * panel.width;
+      const absoluteY = panel.y + effect.y * panel.height;
+      const absoluteWidth = effect.width * panel.width;
+      const absoluteHeight = effect.height * panel.height;
+      
+      if (x >= absoluteX && x <= absoluteX + absoluteWidth &&
+          y >= absoluteY && y <= absoluteY + absoluteHeight) {
+        return effect;
+      }
+    }
+  }
+  return null;
+};
+
+// 🆕 効果線リサイズハンドル判定ヘルパー
+const isEffectResizeHandleClicked = (
+  mouseX: number,
+  mouseY: number,
+  effect: EffectElement,
+  panel: Panel
+): { isClicked: boolean; direction: string } => {
+  const absoluteX = panel.x + effect.x * panel.width;
+  const absoluteY = panel.y + effect.y * panel.height;
+  const absoluteWidth = effect.width * panel.width;
+  const absoluteHeight = effect.height * panel.height;
+  
+  const handleSize = 8;
+  const tolerance = 5;
+  
+  // 4つの角のハンドル判定
+  const handles = [
+    { x: absoluteX - handleSize/2, y: absoluteY - handleSize/2, direction: 'nw' },
+    { x: absoluteX + absoluteWidth - handleSize/2, y: absoluteY - handleSize/2, direction: 'ne' },
+    { x: absoluteX - handleSize/2, y: absoluteY + absoluteHeight - handleSize/2, direction: 'sw' },
+    { x: absoluteX + absoluteWidth - handleSize/2, y: absoluteY + absoluteHeight - handleSize/2, direction: 'se' },
+  ];
+  
+  for (const handle of handles) {
+    if (mouseX >= handle.x - tolerance && mouseX <= handle.x + handleSize + tolerance &&
+        mouseY >= handle.y - tolerance && mouseY <= handle.y + handleSize + tolerance) {
+      return { isClicked: true, direction: handle.direction };
+    }
+  }
+  
+  return { isClicked: false, direction: '' };
+};
+
 export const useMouseEvents = ({
   canvasRef,
   state,
@@ -84,6 +147,11 @@ export const useMouseEvents = ({
   setBackgrounds,
   selectedBackground = null,
   setSelectedBackground,
+  // 🆕 効果線関連（オプショナル）
+  effects = [],
+  setEffects,
+  selectedEffect = null,
+  setSelectedEffect,
   isPanelEditMode,
   snapSettings,
   contextMenu,
@@ -94,7 +162,7 @@ export const useMouseEvents = ({
   onPanelSplit,
 }: MouseEventHookProps): MouseEventHandlers => {
 
-  // 🔧 修正版 handleCanvasClick - パネルを背景より優先
+  // 🔧 修正版 handleCanvasClick - 効果線追加（優先順位調整）
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -104,7 +172,7 @@ export const useMouseEvents = ({
 
     setContextMenu({ ...contextMenu, visible: false });
 
-    // クリック判定の優先順位（修正版）
+    // クリック判定の優先順位（効果線追加版）
     // 1. 吹き出しクリック判定（最優先）
     const clickedBubble = BubbleRenderer.findBubbleAt(x, y, speechBubbles, panels);
     if (clickedBubble) {
@@ -112,6 +180,7 @@ export const useMouseEvents = ({
       actions.setSelectedCharacter(null);
       actions.setSelectedPanel(null);
       if (setSelectedBackground) setSelectedBackground(null);
+      if (setSelectedEffect) setSelectedEffect(null); // 🆕 効果線選択解除
       if (onPanelSelect) onPanelSelect(null);
       if (onCharacterSelect) onCharacterSelect(null);
       console.log("💬 吹き出し選択:", clickedBubble.text);
@@ -125,26 +194,44 @@ export const useMouseEvents = ({
       actions.setSelectedBubble(null);
       actions.setSelectedPanel(null);
       if (setSelectedBackground) setSelectedBackground(null);
+      if (setSelectedEffect) setSelectedEffect(null); // 🆕 効果線選択解除
       if (onPanelSelect) onPanelSelect(null);
       if (onCharacterSelect) onCharacterSelect(clickedCharacter);
       console.log("👤 キャラクター選択:", clickedCharacter.name);
       return;
     }
 
-    // 🔧 3. パネルクリック判定（背景より優先）
+    // 🆕 3. 効果線クリック判定（3番目の優先度）
+    if (effects.length > 0 && setSelectedEffect) {
+      const clickedEffect = findEffectAt(x, y, effects, panels);
+      if (clickedEffect) {
+        setSelectedEffect(clickedEffect);
+        actions.setSelectedBubble(null);
+        actions.setSelectedCharacter(null);
+        actions.setSelectedPanel(null);
+        if (setSelectedBackground) setSelectedBackground(null);
+        if (onPanelSelect) onPanelSelect(null);
+        if (onCharacterSelect) onCharacterSelect(null);
+        console.log("⚡ 効果線選択:", clickedEffect.type);
+        return;
+      }
+    }
+
+    // 4. パネルクリック判定（背景より優先）
     const clickedPanel = PanelManager.findPanelAt(x, y, panels);
     if (clickedPanel) {
       actions.setSelectedPanel(clickedPanel);
       actions.setSelectedCharacter(null);
       actions.setSelectedBubble(null);
       if (setSelectedBackground) setSelectedBackground(null);
+      if (setSelectedEffect) setSelectedEffect(null); // 🆕 効果線選択解除
       if (onPanelSelect) onPanelSelect(clickedPanel);
       if (onCharacterSelect) onCharacterSelect(null);
       console.log("📐 パネル選択:", clickedPanel.id);
       return;
     }
 
-    // 🔧 4. 背景クリック判定（最後の優先度）
+    // 5. 背景クリック判定（最後の優先度）
     if (backgrounds.length > 0 && setSelectedBackground) {
       const clickedBackground = findBackgroundAt(x, y, backgrounds, panels);
       if (clickedBackground) {
@@ -152,6 +239,7 @@ export const useMouseEvents = ({
         actions.setSelectedBubble(null);
         actions.setSelectedCharacter(null);
         actions.setSelectedPanel(null);
+        if (setSelectedEffect) setSelectedEffect(null); // 🆕 効果線選択解除
         if (onPanelSelect) onPanelSelect(null);
         if (onCharacterSelect) onCharacterSelect(null);
         console.log("🎨 背景選択:", clickedBackground.type);
@@ -159,17 +247,18 @@ export const useMouseEvents = ({
       }
     }
 
-    // 5. 空白クリック（全選択解除）
+    // 6. 空白クリック（全選択解除）
     console.log("🎯 空白クリック - 全選択解除");
     actions.setSelectedPanel(null);
     actions.setSelectedCharacter(null);
     actions.setSelectedBubble(null);
     if (setSelectedBackground) setSelectedBackground(null);
+    if (setSelectedEffect) setSelectedEffect(null); // 🆕 効果線選択解除
     if (onPanelSelect) onPanelSelect(null);
     if (onCharacterSelect) onCharacterSelect(null);
   };
 
-  // 🔧 修正版 handleCanvasMouseDown - パネル編集ハンドルを最優先
+  // 🔧 修正版 handleCanvasMouseDown - 効果線操作追加
   const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     setContextMenu({ ...contextMenu, visible: false });
     
@@ -181,7 +270,7 @@ export const useMouseEvents = ({
 
     console.log("🖱️ マウスダウン開始:", { mouseX, mouseY });
 
-    // 🔧 優先順位1: パネル編集モードのハンドル判定（最優先）
+    // 優先順位1: パネル編集モードのハンドル判定（最優先）
     if (isPanelEditMode && state.selectedPanel) {
       const panelHandle = PanelManager.getPanelHandleAt(mouseX, mouseY, state.selectedPanel);
       
@@ -217,7 +306,7 @@ export const useMouseEvents = ({
       }
     }
 
-    // 🔧 優先順位2: キャラクター操作判定
+    // 優先順位2: キャラクター操作判定
     let clickedCharacter: Character | null = null;
     for (let i = characters.length - 1; i >= 0; i--) {
       const character = characters[i];
@@ -257,6 +346,7 @@ export const useMouseEvents = ({
         actions.setSelectedBubble(null);
         actions.setSelectedPanel(null);
         if (setSelectedBackground) setSelectedBackground(null);
+        if (setSelectedEffect) setSelectedEffect(null); // 🆕 効果線選択解除
         if (onCharacterSelect) onCharacterSelect(clickedCharacter);
         console.log("📱 キャラクター選択状態変更実行");
       }
@@ -325,7 +415,7 @@ export const useMouseEvents = ({
       return;
     }
 
-    // 🔧 優先順位3: 吹き出し操作判定
+    // 優先順位3: 吹き出し操作判定
     const clickedBubble = BubbleRenderer.findBubbleAt(mouseX, mouseY, speechBubbles, panels);
     if (clickedBubble) {
       console.log("🎯 吹き出しクリック:", clickedBubble.text);
@@ -334,6 +424,7 @@ export const useMouseEvents = ({
       actions.setSelectedCharacter(null);
       actions.setSelectedPanel(null);
       if (setSelectedBackground) setSelectedBackground(null);
+      if (setSelectedEffect) setSelectedEffect(null); // 🆕 効果線選択解除
       
       const panel = panels.find(p => p.id === clickedBubble.panelId) || panels[0];
       if (!panel) {
@@ -367,7 +458,62 @@ export const useMouseEvents = ({
       return;
     }
 
-    // 🔧 優先順位4: 通常パネル処理（背景より優先）
+    // 🆕 優先順位4: 効果線操作判定
+    if (effects.length > 0 && setSelectedEffect) {
+      const clickedEffect = findEffectAt(mouseX, mouseY, effects, panels);
+      if (clickedEffect) {
+        console.log("⚡ 効果線クリック:", clickedEffect.type);
+        
+        const isAlreadySelected = selectedEffect?.id === clickedEffect.id;
+        
+        if (!isAlreadySelected) {
+          setSelectedEffect(clickedEffect);
+          actions.setSelectedCharacter(null);
+          actions.setSelectedBubble(null);
+          actions.setSelectedPanel(null);
+          if (setSelectedBackground) setSelectedBackground(null);
+          if (onCharacterSelect) onCharacterSelect(null);
+          if (onPanelSelect) onPanelSelect(null);
+          console.log("⚡ 効果線選択状態変更実行");
+        }
+        
+        const panel = panels.find(p => p.id === clickedEffect.panelId);
+        if (!panel) {
+          console.error("❌ 効果線パネル未発見");
+          e.preventDefault();
+          return;
+        }
+        
+        // 効果線リサイズハンドル判定
+        const resizeResult = isEffectResizeHandleClicked(mouseX, mouseY, clickedEffect, panel);
+        
+        if (resizeResult.isClicked) {
+          console.log("⚡ 効果線リサイズ開始:", resizeResult.direction);
+          actions.setIsCharacterResizing(true); // 既存のリサイズフラグを使用
+          actions.setResizeDirection(resizeResult.direction);
+          actions.setDragOffset({ x: mouseX, y: mouseY });
+          actions.setInitialCharacterBounds({
+            x: clickedEffect.x,
+            y: clickedEffect.y,
+            width: clickedEffect.width,
+            height: clickedEffect.height
+          });
+        } else if (isAlreadySelected) {
+          // 通常ドラッグ（選択済みの場合のみ開始）
+          console.log("⚡ 効果線ドラッグ開始");
+          actions.setIsDragging(true);
+          actions.setDragOffset({
+            x: mouseX - (panel.x + clickedEffect.x * panel.width),
+            y: mouseY - (panel.y + clickedEffect.y * panel.height),
+          });
+        }
+        
+        e.preventDefault();
+        return;
+      }
+    }
+
+    // 優先順位5: 通常パネル処理（背景より優先）
     const clickedPanel = PanelManager.findPanelAt(mouseX, mouseY, panels);
     if (clickedPanel) {
       console.log("🎯 パネルクリック:", clickedPanel.id);
@@ -375,12 +521,13 @@ export const useMouseEvents = ({
       actions.setSelectedCharacter(null);
       actions.setSelectedBubble(null);
       if (setSelectedBackground) setSelectedBackground(null);
+      if (setSelectedEffect) setSelectedEffect(null); // 🆕 効果線選択解除
       if (onPanelSelect) onPanelSelect(clickedPanel);
       if (onCharacterSelect) onCharacterSelect(null);
       return;
     }
 
-    // 🔧 優先順位5: 背景クリック判定（最後）
+    // 優先順位6: 背景クリック判定（最後）
     if (backgrounds.length > 0 && setSelectedBackground) {
       const clickedBackground = findBackgroundAt(mouseX, mouseY, backgrounds, panels);
       if (clickedBackground) {
@@ -389,6 +536,7 @@ export const useMouseEvents = ({
         actions.setSelectedCharacter(null);
         actions.setSelectedBubble(null);
         actions.setSelectedPanel(null);
+        if (setSelectedEffect) setSelectedEffect(null); // 🆕 効果線選択解除
         if (onPanelSelect) onPanelSelect(null);
         if (onCharacterSelect) onCharacterSelect(null);
         e.preventDefault();
@@ -402,6 +550,7 @@ export const useMouseEvents = ({
     actions.setSelectedCharacter(null);
     actions.setSelectedBubble(null);
     if (setSelectedBackground) setSelectedBackground(null);
+    if (setSelectedEffect) setSelectedEffect(null); // 🆕 効果線選択解除
     if (onPanelSelect) onPanelSelect(null);
     if (onCharacterSelect) onCharacterSelect(null);
   };
@@ -450,6 +599,93 @@ export const useMouseEvents = ({
         ));
         
         actions.setSelectedCharacter(updatedCharacter);
+      }
+      return;
+    }
+
+    // 🆕 効果線リサイズ処理（キャラクターリサイズフラグを流用）
+    if (selectedEffect && state.isCharacterResizing && state.initialCharacterBounds && setEffects) {
+      const deltaX = mouseX - state.dragOffset.x;
+      const deltaY = mouseY - state.dragOffset.y;
+      
+      const panel = panels.find(p => p.id === selectedEffect.panelId);
+      if (!panel) return;
+      
+      // パネル内の相対座標でリサイズ計算
+      const relativeScaleX = deltaX / panel.width;
+      const relativeScaleY = deltaY / panel.height;
+      
+      let newWidth = state.initialCharacterBounds.width;
+      let newHeight = state.initialCharacterBounds.height;
+      let newX = state.initialCharacterBounds.x;
+      let newY = state.initialCharacterBounds.y;
+      
+      switch (state.resizeDirection) {
+        case 'se': // 右下
+          newWidth = Math.max(0.1, state.initialCharacterBounds.width + relativeScaleX);
+          newHeight = Math.max(0.1, state.initialCharacterBounds.height + relativeScaleY);
+          break;
+        case 'sw': // 左下
+          newWidth = Math.max(0.1, state.initialCharacterBounds.width - relativeScaleX);
+          newHeight = Math.max(0.1, state.initialCharacterBounds.height + relativeScaleY);
+          newX = state.initialCharacterBounds.x + relativeScaleX;
+          break;
+        case 'ne': // 右上
+          newWidth = Math.max(0.1, state.initialCharacterBounds.width + relativeScaleX);
+          newHeight = Math.max(0.1, state.initialCharacterBounds.height - relativeScaleY);
+          newY = state.initialCharacterBounds.y + relativeScaleY;
+          break;
+        case 'nw': // 左上
+          newWidth = Math.max(0.1, state.initialCharacterBounds.width - relativeScaleX);
+          newHeight = Math.max(0.1, state.initialCharacterBounds.height - relativeScaleY);
+          newX = state.initialCharacterBounds.x + relativeScaleX;
+          newY = state.initialCharacterBounds.y + relativeScaleY;
+          break;
+      }
+      
+      const updatedEffect = {
+        ...selectedEffect,
+        x: Math.max(0, Math.min(newX, 1 - newWidth)),
+        y: Math.max(0, Math.min(newY, 1 - newHeight)),
+        width: newWidth,
+        height: newHeight,
+      };
+      
+      if (setEffects) {
+        setEffects(effects.map(effect => 
+          effect.id === selectedEffect.id ? updatedEffect : effect
+        ));
+      }
+      if (setSelectedEffect) {
+        setSelectedEffect(updatedEffect);
+      }
+      return;
+    }
+
+    // 🆕 効果線移動処理
+    if (selectedEffect && state.isDragging && setEffects) {
+      const panel = panels.find(p => p.id === selectedEffect.panelId);
+      if (!panel) return;
+      
+      // パネル内の相対座標で移動計算
+      const absoluteX = mouseX - state.dragOffset.x;
+      const absoluteY = mouseY - state.dragOffset.y;
+      const relativeX = (absoluteX - panel.x) / panel.width;
+      const relativeY = (absoluteY - panel.y) / panel.height;
+      
+      const updatedEffect = {
+        ...selectedEffect,
+        x: Math.max(0, Math.min(relativeX, 1 - selectedEffect.width)),
+        y: Math.max(0, Math.min(relativeY, 1 - selectedEffect.height)),
+      };
+      
+      if (setEffects) {
+        setEffects(effects.map(effect => 
+          effect.id === selectedEffect.id ? updatedEffect : effect
+        ));
+      }
+      if (setSelectedEffect) {
+        setSelectedEffect(updatedEffect);
       }
       return;
     }
@@ -604,6 +840,26 @@ export const useMouseEvents = ({
       return;
     }
     
+    // 🆕 効果線操作終了時の選択状態維持
+    if ((state.isDragging || state.isCharacterResizing) && selectedEffect && setSelectedEffect) {
+      console.log("⚡ 効果線操作完了 - 選択状態維持:", selectedEffect.type);
+      const currentEffect = selectedEffect;
+      
+      // 状態リセット
+      actions.resetDragStates();
+      actions.setSnapLines([]);
+      
+      // 選択状態を明示的に再設定
+      setTimeout(() => {
+        if (setSelectedEffect) {
+          setSelectedEffect(currentEffect);
+        }
+        console.log("✅ 効果線操作後選択状態復元:", currentEffect.type);
+      }, 0);
+      
+      return;
+    }
+    
     // その他の操作終了処理
     actions.resetDragStates();
     actions.setSnapLines([]);
@@ -619,7 +875,7 @@ export const useMouseEvents = ({
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    // 🔧 右クリックメニューでも優先順位を修正
+    // 右クリックメニューでも優先順位を調整（効果線追加）
     // 1. 吹き出し右クリック判定（最優先）
     const clickedBubble = BubbleRenderer.findBubbleAt(x, y, speechBubbles, panels);
     if (clickedBubble) {
@@ -646,7 +902,22 @@ export const useMouseEvents = ({
       return;
     }
 
-    // 3. パネル右クリック判定（背景より優先）
+    // 🆕 3. 効果線右クリック判定（3番目の優先度）
+    if (effects.length > 0) {
+      const clickedEffect = findEffectAt(x, y, effects, panels);
+      if (clickedEffect) {
+        setContextMenu({
+          visible: true,
+          x: e.clientX,
+          y: e.clientY,
+          target: 'effect',
+          targetElement: clickedEffect,
+        });
+        return;
+      }
+    }
+
+    // 4. パネル右クリック判定（背景より優先）
     const clickedPanel = PanelManager.findPanelAt(x, y, panels);
     if (clickedPanel) {
       setContextMenu({
@@ -659,7 +930,7 @@ export const useMouseEvents = ({
       return;
     }
 
-    // 🔧 4. 背景右クリック判定（最後の優先度）
+    // 5. 背景右クリック判定（最後の優先度）
     if (backgrounds.length > 0) {
       const clickedBackground = findBackgroundAt(x, y, backgrounds, panels);
       if (clickedBackground) {
@@ -674,7 +945,7 @@ export const useMouseEvents = ({
       }
     }
 
-    // 5. 空白右クリック
+    // 6. 空白右クリック
     setContextMenu({
       visible: true,
       x: e.clientX,
@@ -691,6 +962,16 @@ export const useMouseEvents = ({
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
+    
+    // 🆕 効果線ダブルクリック処理
+    if (effects.length > 0) {
+      const clickedEffect = findEffectAt(x, y, effects, panels);
+      if (clickedEffect && contextMenuActions.onOpenEffectPanel) {
+        contextMenuActions.onOpenEffectPanel(clickedEffect);
+        console.log("⚡ 効果線設定パネル開く:", clickedEffect.type);
+        return;
+      }
+    }
     
     // 背景ダブルクリック処理
     if (backgrounds.length > 0) {
