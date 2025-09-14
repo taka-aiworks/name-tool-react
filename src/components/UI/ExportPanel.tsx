@@ -1,7 +1,7 @@
-// src/components/UI/ExportPanel.tsx - 効果線対応修正版
+// src/components/UI/ExportPanel.tsx - トーン対応修正版
 import React, { useState } from 'react';
 import { ExportService, ExportOptions, ExportProgress } from '../../services/ExportService';
-import { Panel, Character, SpeechBubble, BackgroundElement, EffectElement } from '../../types'; // 🆕 EffectElement追加
+import { Panel, Character, SpeechBubble, BackgroundElement, EffectElement, ToneElement } from '../../types'; // 🆕 ToneElement追加
 
 type ExportPurpose = 'print' | 'image' | 'clipstudio';
 
@@ -29,13 +29,14 @@ const purposeDefaults: Record<ExportPurpose, Partial<ExportOptions>> = {
   }
 };
 
-// ExportPanelProps に effects を追加
+// ExportPanelProps に tones を追加
 interface ExportPanelProps {
   panels: Panel[];
   characters: Character[];
   bubbles: SpeechBubble[];
   backgrounds: BackgroundElement[];
-  effects: EffectElement[]; // 🆕 効果線データ追加
+  effects: EffectElement[];
+  tones: ToneElement[]; // 🆕 トーンデータ追加
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
 }
 
@@ -43,8 +44,9 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
   panels,
   characters,
   bubbles,
-  backgrounds, // 🆕 背景データ受け取り
-  effects, // 🆕 効果線データ受け取り
+  backgrounds,
+  effects,
+  tones, // 🆕 トーンデータ受け取り
   canvasRef
 }) => {
   const [selectedPurpose, setSelectedPurpose] = useState<ExportPurpose | null>(null);
@@ -99,8 +101,8 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
           await exportService.exportToPNG(canvasRef.current, panels, exportOptions, setExportProgress);
           break;
         case 'psd':
-          // 🆕 効果線データも渡す
-          await exportService.exportToPSD(canvasRef.current, panels, characters, bubbles, backgrounds, effects, exportOptions, setExportProgress);
+          // 🆕 トーンデータも渡す
+          await exportService.exportToPSD(canvasRef.current, panels, characters, bubbles, backgrounds, effects, tones, exportOptions, setExportProgress);
           break;
       }
     } catch (error) {
@@ -134,8 +136,8 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
     }
   ];
 
-  // 🆕 総要素数の計算に効果線を含める
-  const totalElements = characters.length + bubbles.length + backgrounds.length + effects.length;
+  // 🆕 総要素数の計算にトーンを含める
+  const totalElements = characters.length + bubbles.length + backgrounds.length + effects.length + tones.length;
 
   return (
     <div 
@@ -162,7 +164,7 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
         出力
       </h3>
 
-      {/* 🆕 出力統計情報 - 効果線対応 */}
+      {/* 🆕 出力統計情報 - トーン対応 */}
       <div 
         style={{
           background: isDarkMode ? "#404040" : "#f9f9f9",
@@ -179,7 +181,8 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
         👥 キャラクター: {characters.length}体<br/>
         💬 吹き出し: {bubbles.length}個<br/>
         🎨 背景: {backgrounds.length}個<br/>
-        ⚡ 効果線: {effects.length}個 {/* 🆕 効果線数表示 */}
+        ⚡ 効果線: {effects.length}個<br/>
+        🎯 トーン: {tones.length}個 {/* 🆕 トーン数表示 */}
         <hr style={{ margin: "4px 0", borderColor: isDarkMode ? "#666666" : "#ddd" }} />
         📊 総要素数: {totalElements}個
       </div>
@@ -409,8 +412,8 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
                             margin: 0,
                           }}
                         >
-                          {/* 🆕 効果線レイヤーの説明追加 */}
-                          レイヤー構造のJSONファイルと各要素（背景・キャラクター・吹き出し・効果線）のPNG画像を出力
+                          {/* 🆕 トーンレイヤーの説明追加 */}
+                          レイヤー構造のJSONファイルと各要素（背景・キャラクター・吹き出し・効果線・トーン）のPNG画像を出力
                         </p>
                       </div>
                       

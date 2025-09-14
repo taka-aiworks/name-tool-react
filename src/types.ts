@@ -97,15 +97,23 @@ export interface CanvasComponentProps {
   backgrounds: BackgroundElement[];
   setBackgrounds: (backgrounds: BackgroundElement[]) => void;
   
-  // 🆕 効果線関連プロパティ（修正版）
+  // 効果線関連プロパティ
   effects: EffectElement[];
   setEffects: (effects: EffectElement[]) => void;
-  // 🔧 以下のプロパティをオプショナルに修正（CanvasComponent内で管理するため）
   selectedEffect?: EffectElement | null;
   onEffectSelect?: (effect: EffectElement | null) => void;
   onEffectRightClick?: (effect: EffectElement) => void;
   showEffectPanel?: boolean;
   onEffectPanelToggle?: () => void;
+  
+  // 🆕 トーン関連プロパティ（修正版）
+  tones: ToneElement[];
+  setTones: (tones: ToneElement[]) => void;
+  selectedTone?: ToneElement | null;
+  onToneSelect?: (tone: ToneElement | null) => void;
+  onToneRightClick?: (tone: ToneElement) => void;
+  showTonePanel?: boolean;
+  onTonePanelToggle?: () => void;
   
   // 既存プロパティ
   onCharacterAdd: (func: (type: string) => void) => void;
