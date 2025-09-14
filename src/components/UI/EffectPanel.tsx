@@ -1,7 +1,119 @@
-// src/components/UI/EffectPanel.tsx
+// src/components/UI/EffectPanel.tsx - 完全版（重複解消）
 import React, { useState } from 'react';
-import { EffectElement, EffectTemplate } from '../../types';
-import { effectTemplates, getEffectTemplatesByCategory, createEffectFromTemplate } from '../CanvasArea/effectTemplates';
+import { EffectElement, EffectTemplate, Panel } from '../../types';
+
+// 効果線テンプレート定義
+const effectTemplates: EffectTemplate[] = [
+  // アクションカテゴリ
+  {
+    id: 'speed_horizontal',
+    name: 'スピード線（水平）',
+    type: 'speed',
+    direction: 'horizontal',
+    intensity: 0.8,
+    density: 0.6,
+    length: 0.7,
+    angle: 0,
+    color: '#333333',
+    opacity: 0.8,
+    blur: 0,
+    description: '水平方向のスピード線',
+    category: 'action'
+  },
+  {
+    id: 'speed_diagonal',
+    name: 'スピード線（斜め）',
+    type: 'speed',
+    direction: 'custom',
+    intensity: 0.7,
+    density: 0.5,
+    length: 0.8,
+    angle: 45,
+    color: '#444444',
+    opacity: 0.9,
+    blur: 0,
+    description: '斜め方向のスピード線',
+    category: 'action'
+  },
+  {
+    id: 'explosion_impact',
+    name: '爆発（衝撃）',
+    type: 'explosion',
+    direction: 'radial',
+    intensity: 0.9,
+    density: 0.8,
+    length: 0.6,
+    angle: 0,
+    color: '#FF4444',
+    opacity: 0.7,
+    blur: 1,
+    description: '強烈な衝撃表現',
+    category: 'action'
+  },
+  // 感情カテゴリ
+  {
+    id: 'focus_attention',
+    name: '集中線（注目）',
+    type: 'focus',
+    direction: 'radial',
+    intensity: 0.6,
+    density: 0.4,
+    length: 0.9,
+    angle: 0,
+    color: '#222222',
+    opacity: 0.6,
+    blur: 0,
+    description: '注目ポイントの強調',
+    category: 'emotion'
+  },
+  {
+    id: 'flash_realization',
+    name: 'フラッシュ（気づき）',
+    type: 'flash',
+    direction: 'radial',
+    intensity: 0.5,
+    density: 0.7,
+    length: 0.5,
+    angle: 0,
+    color: '#FFD700',
+    opacity: 0.8,
+    blur: 2,
+    description: 'ひらめき・気づきの表現',
+    category: 'emotion'
+  },
+  // 環境カテゴリ
+  {
+    id: 'speed_wind',
+    name: '風のスピード線',
+    type: 'speed',
+    direction: 'custom',
+    intensity: 0.4,
+    density: 0.3,
+    length: 0.8,
+    angle: 15,
+    color: '#87CEEB',
+    opacity: 0.5,
+    blur: 1,
+    description: '風の流れを表現',
+    category: 'environment'
+  },
+  // 特殊カテゴリ
+  {
+    id: 'focus_dramatic',
+    name: '集中線（ドラマチック）',
+    type: 'focus',
+    direction: 'radial',
+    intensity: 0.8,
+    density: 0.6,
+    length: 1.0,
+    angle: 0,
+    color: '#000000',
+    opacity: 0.9,
+    blur: 0,
+    description: 'ドラマチックな演出',
+    category: 'special'
+  }
+];
 
 interface EffectPanelProps {
   isOpen: boolean;
@@ -10,6 +122,8 @@ interface EffectPanelProps {
   selectedEffect: EffectElement | null;
   onUpdateEffect: (effect: EffectElement) => void;
   isDarkMode: boolean;
+  selectedPanel: Panel | null;
+  effects: EffectElement[];
 }
 
 const EffectPanel: React.FC<EffectPanelProps> = ({
@@ -18,316 +132,472 @@ const EffectPanel: React.FC<EffectPanelProps> = ({
   onAddEffect,
   selectedEffect,
   onUpdateEffect,
-  isDarkMode
+  isDarkMode,
+  selectedPanel,
+  effects
 }) => {
   const [activeCategory, setActiveCategory] = useState<'action' | 'emotion' | 'environment' | 'special'>('action');
-  const [selectedTemplate, setSelectedTemplate] = useState<EffectTemplate | null>(null);
 
   if (!isOpen) return null;
 
+  // テンプレートから効果線要素を作成（背景と同じ方式）
+  const createEffectFromTemplate = (template: EffectTemplate): EffectElement => {
+    if (!selectedPanel) {
+      alert('効果線を追加するコマを選択してください');
+      return null as any;
+    }
+
+    return {
+      id: `effect_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+      panelId: selectedPanel.id,
+      type: template.type,
+      x: 0, // パネル全体に適用（背景と同じ）
+      y: 0,
+      width: 1, // パネル全体の幅
+      height: 1, // パネル全体の高さ
+      direction: template.direction,
+      intensity: template.intensity,
+      density: template.density,
+      length: template.length,
+      angle: template.angle,
+      color: template.color,
+      opacity: template.opacity,
+      blur: template.blur,
+      centerX: template.direction === 'radial' ? 0.5 : undefined,
+      centerY: template.direction === 'radial' ? 0.5 : undefined,
+      selected: false,
+      zIndex: 0,
+      isGlobalPosition: false
+    };
+  };
+
+  // カテゴリ別テンプレート取得
+  const getTemplatesByCategory = (category: string) => {
+    return effectTemplates.filter(template => template.category === category);
+  };
+
+  // 選択中のコマの効果線を取得
+  const getPanelEffects = () => {
+    if (!selectedPanel) return [];
+    return effects.filter(effect => effect.panelId === selectedPanel.id);
+  };
+
+  // カテゴリ情報
   const categories = [
-    { key: 'action' as const, name: 'アクション', icon: '⚡' },
-    { key: 'emotion' as const, name: '感情', icon: '💥' },
-    { key: 'environment' as const, name: '環境', icon: '🌪️' },
-    { key: 'special' as const, name: '特殊', icon: '✨' }
+    { id: 'action' as const, name: 'アクション', icon: '⚡', color: '#FF5722' },
+    { id: 'emotion' as const, name: '感情', icon: '💭', color: '#9C27B0' },
+    { id: 'environment' as const, name: '環境', icon: '🌪️', color: '#2196F3' },
+    { id: 'special' as const, name: '特殊', icon: '✨', color: '#FF9800' }
   ];
 
-  const currentTemplates = getEffectTemplatesByCategory(activeCategory);
-
-  const handleTemplateSelect = (template: EffectTemplate) => {
-    setSelectedTemplate(template);
-    // デフォルト位置に効果線を追加
-    const newEffect = createEffectFromTemplate(template, 100, 100, 200, 200);
-    onAddEffect(newEffect);
+  // 効果線タイプのアイコン取得
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case 'speed': return '💨';
+      case 'focus': return '🎯';
+      case 'explosion': return '💥';
+      case 'flash': return '✨';
+      default: return '⚡';
+    }
   };
 
-  const handleEffectPropertyChange = (property: keyof EffectElement, value: any) => {
-    if (!selectedEffect) return;
-    
-    const updatedEffect = { ...selectedEffect, [property]: value };
-    onUpdateEffect(updatedEffect);
-  };
-
-  const renderTemplateGrid = () => (
-    <div className="grid grid-cols-2 gap-3">
-      {currentTemplates.map((template) => (
-        <div
-          key={template.id}
-          className={`
-            p-3 rounded-lg border cursor-pointer transition-all
-            ${isDarkMode 
-              ? 'border-gray-600 bg-gray-700 hover:bg-gray-600' 
-              : 'border-gray-300 bg-white hover:bg-gray-50'
-            }
-            ${selectedTemplate?.id === template.id ? 'ring-2 ring-blue-500' : ''}
-          `}
-          onClick={() => handleTemplateSelect(template)}
-        >
-          <div className="text-sm font-medium mb-1">{template.name}</div>
-          <div className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-            {template.description}
-          </div>
-          
-          {/* 効果線プレビュー */}
-          <div className="mt-2 h-8 relative overflow-hidden rounded">
-            <svg width="100%" height="100%" className="border border-gray-300">
-              {template.direction === 'radial' ? (
-                // 放射状効果のプレビュー
-                Array.from({ length: 8 }, (_, i) => {
-                  const angle = (i / 8) * 2 * Math.PI;
-                  const centerX = 50;
-                  const centerY = 16;
-                  const length = 20;
-                  return (
-                    <line
-                      key={i}
-                      x1={centerX}
-                      y1={centerY}
-                      x2={centerX + Math.cos(angle) * length}
-                      y2={centerY + Math.sin(angle) * length}
-                      stroke={template.color}
-                      strokeWidth={template.intensity * 2}
-                      opacity={template.opacity}
-                    />
-                  );
-                })
-              ) : (
-                // 直線効果のプレビュー
-                Array.from({ length: 4 }, (_, i) => (
-                  <line
-                    key={i}
-                    x1={10 + i * 20}
-                    y1={8 + Math.random() * 16}
-                    x2={25 + i * 20}
-                    y2={8 + Math.random() * 16}
-                    stroke={template.color}
-                    strokeWidth={template.intensity * 2}
-                    opacity={template.opacity}
-                  />
-                ))
-              )}
-            </svg>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-
-  const renderEffectControls = () => {
-    if (!selectedEffect) return null;
-
-    return (
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold">効果線の設定</h3>
-        
-        {/* 強度 */}
-        <div>
-          <label className="block text-sm font-medium mb-1">強度</label>
-          <input
-            type="range"
-            min="0.1"
-            max="1"
-            step="0.1"
-            value={selectedEffect.intensity}
-            onChange={(e) => handleEffectPropertyChange('intensity', parseFloat(e.target.value))}
-            className="w-full"
-          />
-          <span className="text-xs text-gray-500">{selectedEffect.intensity}</span>
-        </div>
-
-        {/* 密度 */}
-        <div>
-          <label className="block text-sm font-medium mb-1">密度</label>
-          <input
-            type="range"
-            min="0.1"
-            max="1"
-            step="0.1"
-            value={selectedEffect.density}
-            onChange={(e) => handleEffectPropertyChange('density', parseFloat(e.target.value))}
-            className="w-full"
-          />
-          <span className="text-xs text-gray-500">{selectedEffect.density}</span>
-        </div>
-
-        {/* 長さ */}
-        <div>
-          <label className="block text-sm font-medium mb-1">長さ</label>
-          <input
-            type="range"
-            min="0.1"
-            max="1"
-            step="0.1"
-            value={selectedEffect.length}
-            onChange={(e) => handleEffectPropertyChange('length', parseFloat(e.target.value))}
-            className="w-full"
-          />
-          <span className="text-xs text-gray-500">{selectedEffect.length}</span>
-        </div>
-
-        {/* 角度（カスタム方向用） */}
-        {selectedEffect.direction === 'custom' && (
-          <div>
-            <label className="block text-sm font-medium mb-1">角度</label>
-            <input
-              type="range"
-              min="0"
-              max="360"
-              step="5"
-              value={selectedEffect.angle}
-              onChange={(e) => handleEffectPropertyChange('angle', parseInt(e.target.value))}
-              className="w-full"
-            />
-            <span className="text-xs text-gray-500">{selectedEffect.angle}°</span>
-          </div>
-        )}
-
-        {/* 色 */}
-        <div>
-          <label className="block text-sm font-medium mb-1">色</label>
-          <input
-            type="color"
-            value={selectedEffect.color}
-            onChange={(e) => handleEffectPropertyChange('color', e.target.value)}
-            className="w-full h-10 rounded border"
-          />
-        </div>
-
-        {/* 透明度 */}
-        <div>
-          <label className="block text-sm font-medium mb-1">透明度</label>
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.1"
-            value={selectedEffect.opacity}
-            onChange={(e) => handleEffectPropertyChange('opacity', parseFloat(e.target.value))}
-            className="w-full"
-          />
-          <span className="text-xs text-gray-500">{selectedEffect.opacity}</span>
-        </div>
-
-        {/* ぼかし */}
-        <div>
-          <label className="block text-sm font-medium mb-1">ぼかし</label>
-          <input
-            type="range"
-            min="0"
-            max="10"
-            step="0.5"
-            value={selectedEffect.blur}
-            onChange={(e) => handleEffectPropertyChange('blur', parseFloat(e.target.value))}
-            className="w-full"
-          />
-          <span className="text-xs text-gray-500">{selectedEffect.blur}</span>
-        </div>
-
-        {/* 方向切り替え */}
-        <div>
-          <label className="block text-sm font-medium mb-1">方向</label>
-          <select
-            value={selectedEffect.direction}
-            onChange={(e) => handleEffectPropertyChange('direction', e.target.value)}
-            className={`w-full p-2 border rounded ${
-              isDarkMode 
-                ? 'bg-gray-700 border-gray-600 text-white' 
-                : 'bg-white border-gray-300'
-            }`}
-          >
-            <option value="horizontal">水平</option>
-            <option value="vertical">垂直</option>
-            <option value="radial">放射状</option>
-            <option value="custom">カスタム</option>
-          </select>
-        </div>
-      </div>
-    );
-  };
+  const panelEffects = getPanelEffects();
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className={`
-        w-96 max-h-[80vh] rounded-lg shadow-xl overflow-hidden
-        ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}
-      `}>
+    <div 
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: 'rgba(0, 0, 0, 0.7)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 1000
+      }}
+      onClick={onClose}
+    >
+      <div 
+        style={{
+          background: 'var(--bg-primary)',
+          borderRadius: '12px',
+          border: '1px solid var(--border-color)',
+          boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)',
+          maxWidth: '700px',
+          width: '90%',
+          maxHeight: '80vh',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column'
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* ヘッダー */}
-        <div className={`
-          p-4 border-b flex items-center justify-between
-          ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}
-        `}>
-          <h2 className="text-xl font-bold">効果線</h2>
-          <button
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '16px 20px',
+          borderBottom: '1px solid var(--border-color)',
+          background: 'var(--bg-secondary)'
+        }}>
+          <div>
+            <h3 style={{ margin: 0, fontSize: '18px', color: 'var(--text-primary)' }}>
+              ⚡ 効果線設定
+            </h3>
+            {selectedPanel ? (
+              <div style={{ 
+                fontSize: '12px', 
+                color: 'var(--text-muted)', 
+                marginTop: '4px' 
+              }}>
+                📍 コマ{selectedPanel.id}に効果線を追加
+              </div>
+            ) : (
+              <div style={{ 
+                fontSize: '12px', 
+                color: '#ff6b6b', 
+                marginTop: '4px' 
+              }}>
+                ⚠️ コマを選択してください
+              </div>
+            )}
+          </div>
+          <button 
             onClick={onClose}
-            className={`
-              text-2xl hover:bg-opacity-20 hover:bg-gray-500 rounded p-1
-              ${isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-black'}
-            `}
+            style={{
+              background: 'none',
+              border: 'none',
+              fontSize: '18px',
+              cursor: 'pointer',
+              color: 'var(--text-primary)',
+              padding: '4px',
+              borderRadius: '4px',
+              transition: 'background-color 0.2s'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'var(--bg-tertiary)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'none';
+            }}
           >
-            ×
+            ✕
           </button>
         </div>
 
+        {/* 現在のコマの効果線表示 */}
+        {selectedPanel && panelEffects.length > 0 && (
+          <div style={{
+            background: 'var(--bg-tertiary)',
+            border: '1px solid var(--border-color)',
+            borderRadius: '6px',
+            margin: '12px 16px',
+            padding: '12px'
+          }}>
+            <h4 style={{
+              margin: '0 0 8px 0',
+              fontSize: '14px',
+              color: 'var(--text-primary)'
+            }}>
+              コマ{selectedPanel.id}の効果線 ({panelEffects.length}個)
+            </h4>
+            <div style={{
+              display: 'flex',
+              gap: '6px',
+              flexWrap: 'wrap'
+            }}>
+              {panelEffects.map((effect) => (
+                <span
+                  key={effect.id}
+                  style={{
+                    background: 'var(--bg-primary)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '12px',
+                    padding: '4px 8px',
+                    fontSize: '11px',
+                    color: 'var(--text-muted)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}
+                >
+                  {getTypeIcon(effect.type)} {effect.type}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* コンテンツ */}
-        <div className="p-4 overflow-y-auto max-h-96">
+        <div style={{ 
+          flex: 1, 
+          display: 'flex', 
+          flexDirection: 'column',
+          overflow: 'hidden'
+        }}>
           {/* カテゴリタブ */}
-          <div className="flex mb-4 space-x-1">
+          <div style={{
+            display: 'flex',
+            borderBottom: '1px solid var(--border-color)',
+            background: 'var(--bg-secondary)'
+          }}>
             {categories.map((category) => (
               <button
-                key={category.key}
-                onClick={() => setActiveCategory(category.key)}
-                className={`
-                  px-3 py-2 rounded-lg text-sm font-medium transition-colors
-                  ${activeCategory === category.key
-                    ? isDarkMode 
-                      ? 'bg-blue-600 text-white' 
-                      : 'bg-blue-500 text-white'
-                    : isDarkMode 
-                      ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                key={category.id}
+                onClick={() => setActiveCategory(category.id)}
+                disabled={!selectedPanel}
+                style={{
+                  flex: 1,
+                  padding: '12px 8px',
+                  border: 'none',
+                  background: activeCategory === category.id ? category.color : 'transparent',
+                  color: activeCategory === category.id ? 'white' : (selectedPanel ? 'var(--text-primary)' : 'var(--text-muted)'),
+                  cursor: selectedPanel ? 'pointer' : 'not-allowed',
+                  fontSize: '14px',
+                  fontWeight: activeCategory === category.id ? 'bold' : 'normal',
+                  transition: 'all 0.2s',
+                  borderBottom: activeCategory === category.id ? '3px solid ' + category.color : 'none',
+                  opacity: selectedPanel ? 1 : 0.5
+                }}
+                onMouseEnter={(e) => {
+                  if (activeCategory !== category.id && selectedPanel) {
+                    e.currentTarget.style.background = 'var(--bg-tertiary)';
                   }
-                `}
+                }}
+                onMouseLeave={(e) => {
+                  if (activeCategory !== category.id && selectedPanel) {
+                    e.currentTarget.style.background = 'transparent';
+                  }
+                }}
               >
-                <span className="mr-1">{category.icon}</span>
-                {category.name}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                  <span style={{ fontSize: '16px' }}>{category.icon}</span>
+                  <span style={{ fontSize: '12px' }}>{category.name}</span>
+                </div>
               </button>
             ))}
           </div>
 
-          {/* テンプレート選択エリア */}
-          <div className="mb-6">
-            <h3 className="text-sm font-semibold mb-3">効果線テンプレート</h3>
-            {renderTemplateGrid()}
+          {/* テンプレートグリッド */}
+          <div style={{ 
+            flex: 1, 
+            padding: '16px', 
+            overflowY: 'auto'
+          }}>
+            {!selectedPanel ? (
+              // コマ未選択時のメッセージ
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '200px',
+                color: 'var(--text-muted)',
+                textAlign: 'center'
+              }}>
+                <div style={{ fontSize: '48px', marginBottom: '16px' }}>📐</div>
+                <div style={{ fontSize: '16px', marginBottom: '8px' }}>コマを選択してください</div>
+                <div style={{ fontSize: '12px', lineHeight: 1.4 }}>
+                  Canvas上のコマをクリックしてから<br/>
+                  効果線テンプレートを選択できます
+                </div>
+              </div>
+            ) : (
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+                gap: '12px'
+              }}>
+                {getTemplatesByCategory(activeCategory).map((template) => (
+                  <div
+                    key={template.id}
+                    onClick={() => {
+                      const newEffect = createEffectFromTemplate(template);
+                      if (newEffect) {
+                        onAddEffect(newEffect);
+                      }
+                    }}
+                    style={{
+                      background: 'var(--bg-secondary)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '8px',
+                      padding: '12px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)';
+                      e.currentTarget.style.borderColor = categories.find(c => c.id === activeCategory)?.color || 'var(--border-color)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'none';
+                      e.currentTarget.style.boxShadow = 'none';
+                      e.currentTarget.style.borderColor = 'var(--border-color)';
+                    }}
+                  >
+                    {/* テンプレートヘッダー */}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}>
+                      <span style={{ fontSize: '18px' }}>
+                        {getTypeIcon(template.type)}
+                      </span>
+                      <div style={{ flex: 1 }}>
+                        <div style={{
+                          fontSize: '14px',
+                          fontWeight: 'bold',
+                          color: 'var(--text-primary)',
+                          lineHeight: 1.2
+                        }}>
+                          {template.name}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* テンプレートプレビュー */}
+                    <div style={{
+                      background: 'var(--bg-primary)',
+                      borderRadius: '4px',
+                      padding: '8px',
+                      fontSize: '11px',
+                      color: 'var(--text-muted)',
+                      lineHeight: 1.3
+                    }}>
+                      {template.description}
+                    </div>
+
+                    {/* パラメータ表示 */}
+                    <div style={{
+                      display: 'flex',
+                      gap: '8px',
+                      flexWrap: 'wrap'
+                    }}>
+                      <span style={{
+                        background: 'var(--bg-tertiary)',
+                        padding: '2px 6px',
+                        borderRadius: '12px',
+                        fontSize: '10px',
+                        color: 'var(--text-muted)'
+                      }}>
+                        強度: {Math.round(template.intensity * 100)}%
+                      </span>
+                      <span style={{
+                        background: 'var(--bg-tertiary)',
+                        padding: '2px 6px',
+                        borderRadius: '12px',
+                        fontSize: '10px',
+                        color: 'var(--text-muted)'
+                      }}>
+                        密度: {Math.round(template.density * 100)}%
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* 選択中の効果線設定 */}
+          {/* 選択中の効果線編集エリア */}
           {selectedEffect && (
-            <div className={`
-              border-t pt-4
-              ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}
-            `}>
-              {renderEffectControls()}
+            <div style={{
+              borderTop: '1px solid var(--border-color)',
+              background: 'var(--bg-secondary)',
+              padding: '16px'
+            }}>
+              <h4 style={{
+                margin: '0 0 12px 0',
+                fontSize: '14px',
+                color: 'var(--text-primary)'
+              }}>
+                選択中の効果線: {getTypeIcon(selectedEffect.type)} {selectedEffect.type}
+              </h4>
+              
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: '12px'
+              }}>
+                <div>
+                  <label style={{
+                    display: 'block',
+                    fontSize: '12px',
+                    color: 'var(--text-muted)',
+                    marginBottom: '4px'
+                  }}>
+                    強度: {Math.round(selectedEffect.intensity * 100)}%
+                  </label>
+                  <input
+                    type="range"
+                    min="0.1"
+                    max="1"
+                    step="0.1"
+                    value={selectedEffect.intensity}
+                    onChange={(e) => {
+                      const updatedEffect = {
+                        ...selectedEffect,
+                        intensity: parseFloat(e.target.value)
+                      };
+                      onUpdateEffect(updatedEffect);
+                    }}
+                    style={{
+                      width: '100%',
+                      accentColor: categories.find(c => c.id === activeCategory)?.color
+                    }}
+                  />
+                </div>
+                
+                <div>
+                  <label style={{
+                    display: 'block',
+                    fontSize: '12px',
+                    color: 'var(--text-muted)',
+                    marginBottom: '4px'
+                  }}>
+                    密度: {Math.round(selectedEffect.density * 100)}%
+                  </label>
+                  <input
+                    type="range"
+                    min="0.1"
+                    max="1"
+                    step="0.1"
+                    value={selectedEffect.density}
+                    onChange={(e) => {
+                      const updatedEffect = {
+                        ...selectedEffect,
+                        density: parseFloat(e.target.value)
+                      };
+                      onUpdateEffect(updatedEffect);
+                    }}
+                    style={{
+                      width: '100%',
+                      accentColor: categories.find(c => c.id === activeCategory)?.color
+                    }}
+                  />
+                </div>
+              </div>
             </div>
           )}
-        </div>
 
-        {/* フッター */}
-        <div className={`
-          p-4 border-t flex justify-end space-x-2
-          ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}
-        `}>
-          <button
-            onClick={onClose}
-            className={`
-              px-4 py-2 rounded font-medium
-              ${isDarkMode 
-                ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }
-            `}
-          >
-            閉じる
-          </button>
+          {/* フッター */}
+          <div style={{
+            borderTop: '1px solid var(--border-color)',
+            background: 'var(--bg-secondary)',
+            padding: '12px 16px',
+            fontSize: '12px',
+            color: 'var(--text-muted)',
+            textAlign: 'center'
+          }}>
+            💡 コマを選択してテンプレートをクリック • Canvas上で効果線を選択して編集
+          </div>
         </div>
       </div>
     </div>

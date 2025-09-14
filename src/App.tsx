@@ -998,6 +998,8 @@ function App() {
         selectedEffect={selectedEffect}
         onUpdateEffect={handleEffectUpdate}
         isDarkMode={isDarkMode}
+        selectedPanel={selectedPanel} // 🆕 追加
+        effects={effects} // 🆕 追加
       />
 
       {/* プロジェクト管理パネル */}

@@ -127,7 +127,7 @@ export const useCanvasDrawing = ({
   };
 
   /**
-   * 🆕 スピード線描画
+   * 🆕 スピード線描画（コマ全体・端から自然に）
    */
   const drawSpeedLines = (
     ctx: CanvasRenderingContext2D,
@@ -140,38 +140,81 @@ export const useCanvasDrawing = ({
     ctx.strokeStyle = effect.color;
     ctx.lineWidth = Math.max(0.5, effect.intensity * 2);
 
-    const lineCount = Math.floor(effect.density * 30);
-    const lineLength = effect.length * Math.min(width, height) * 0.3;
+    const lineCount = Math.floor(effect.density * 50);
+    const baseLength = Math.min(width, height) * effect.length * 0.6;
+
+    // コマ枠内にクリッピング
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x, y, width, height);
+    ctx.clip();
 
     for (let i = 0; i < lineCount; i++) {
       let x1, y1, x2, y2;
 
       if (effect.direction === 'horizontal') {
-        // 水平線
-        y1 = y + Math.random() * height;
-        x1 = x + Math.random() * (width - lineLength);
-        x2 = x1 + lineLength;
-        y2 = y1;
+        // 水平線 - 左右の端から
+        const isFromLeft = Math.random() > 0.5;
+        const yPos = y + height * 0.1 + Math.random() * height * 0.8; // 端を避ける
+        const lineLength = baseLength * (0.4 + Math.random() * 0.6);
+        
+        if (isFromLeft) {
+          // 左端から右へ
+          x1 = x - lineLength * 0.3; // 少し枠外から開始
+          x2 = x1 + lineLength;
+        } else {
+          // 右端から左へ
+          x1 = x + width + lineLength * 0.3; // 少し枠外から開始
+          x2 = x1 - lineLength;
+        }
+        y1 = y2 = yPos;
       } else if (effect.direction === 'vertical') {
-        // 垂直線
-        x1 = x + Math.random() * width;
-        y1 = y + Math.random() * (height - lineLength);
-        x2 = x1;
-        y2 = y1 + lineLength;
+        // 垂直線 - 上下の端から
+        const isFromTop = Math.random() > 0.5;
+        const xPos = x + width * 0.1 + Math.random() * width * 0.8; // 端を避ける
+        const lineLength = baseLength * (0.4 + Math.random() * 0.6);
+        
+        if (isFromTop) {
+          // 上端から下へ
+          y1 = y - lineLength * 0.3; // 少し枠外から開始
+          y2 = y1 + lineLength;
+        } else {
+          // 下端から上へ
+          y1 = y + height + lineLength * 0.3; // 少し枠外から開始
+          y2 = y1 - lineLength;
+        }
+        x1 = x2 = xPos;
       } else {
-        // カスタム角度
-        const centerX = x + width / 2;
-        const centerY = y + height / 2;
-        const randomX = x + Math.random() * width;
-        const randomY = y + Math.random() * height;
-        
+        // カスタム角度 - 角度に応じた端から
         const angleRad = (effect.angle * Math.PI) / 180;
-        const halfLength = lineLength / 2;
+        const lineLength = baseLength * (0.5 + Math.random() * 0.5);
         
-        x1 = randomX - Math.cos(angleRad) * halfLength;
-        y1 = randomY - Math.sin(angleRad) * halfLength;
-        x2 = randomX + Math.cos(angleRad) * halfLength;
-        y2 = randomY + Math.sin(angleRad) * halfLength;
+        // 角度の向きに応じて開始位置を決定
+        let startX, startY;
+        const normalizedAngle = ((effect.angle % 360) + 360) % 360;
+        
+        if (normalizedAngle >= 315 || normalizedAngle < 45) {
+          // 右向き - 左端から
+          startX = x - 20 + Math.random() * 40;
+          startY = y + Math.random() * height;
+        } else if (normalizedAngle >= 45 && normalizedAngle < 135) {
+          // 下向き - 上端から
+          startX = x + Math.random() * width;
+          startY = y - 20 + Math.random() * 40;
+        } else if (normalizedAngle >= 135 && normalizedAngle < 225) {
+          // 左向き - 右端から
+          startX = x + width - 20 + Math.random() * 40;
+          startY = y + Math.random() * height;
+        } else {
+          // 上向き - 下端から
+          startX = x + Math.random() * width;
+          startY = y + height - 20 + Math.random() * 40;
+        }
+        
+        x1 = startX;
+        y1 = startY;
+        x2 = startX + Math.cos(angleRad) * lineLength;
+        y2 = startY + Math.sin(angleRad) * lineLength;
       }
 
       ctx.beginPath();
@@ -179,10 +222,12 @@ export const useCanvasDrawing = ({
       ctx.lineTo(x2, y2);
       ctx.stroke();
     }
+    
+    ctx.restore();
   };
 
   /**
-   * 🆕 集中線描画
+   * 🆕 集中線描画（コマ全体・四隅からの放射）
    */
   const drawFocusLines = (
     ctx: CanvasRenderingContext2D,
@@ -194,33 +239,55 @@ export const useCanvasDrawing = ({
   ) => {
     ctx.strokeStyle = effect.color;
 
-    const lineCount = Math.floor(effect.density * 40);
-    const centerX = effect.centerX ? x + effect.centerX * width : x + width / 2;
-    const centerY = effect.centerY ? y + effect.centerY * height : y + height / 2;
-    const maxRadius = Math.max(width, height) / 2 * effect.length;
+    const lineCount = Math.floor(effect.density * 60);
+    // 集中点を設定（デフォルトは中央だが端寄りも可能）
+    const focusX = x + width * (effect.centerX || 0.5);
+    const focusY = y + height * (effect.centerY || 0.5);
+
+    // コマ枠内にクリッピング
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x, y, width, height);
+    ctx.clip();
 
     for (let i = 0; i < lineCount; i++) {
       const angle = (i / lineCount) * 2 * Math.PI;
-      const radius = maxRadius * (0.7 + Math.random() * 0.3);
       
-      const x1 = centerX + Math.cos(angle) * (maxRadius * 0.1);
-      const y1 = centerY + Math.sin(angle) * (maxRadius * 0.1);
-      const x2 = centerX + Math.cos(angle) * radius;
-      const y2 = centerY + Math.sin(angle) * radius;
+      // 焦点から線を伸ばす方向のコマ端を計算
+      const cos = Math.cos(angle);
+      const sin = Math.sin(angle);
+      
+      // 焦点からコマ端までの距離を計算
+      let endX, endY;
+      const t1 = cos > 0 ? (x + width - focusX) / cos : cos < 0 ? (x - focusX) / cos : Infinity;
+      const t2 = sin > 0 ? (y + height - focusY) / sin : sin < 0 ? (y - focusY) / sin : Infinity;
+      const t = Math.min(Math.abs(t1), Math.abs(t2)) * effect.length;
+      
+      endX = focusX + cos * t;
+      endY = focusY + sin * t;
+      
+      // 焦点近くの開始点
+      const startRadius = Math.min(width, height) * 0.05;
+      const startX = focusX + cos * startRadius;
+      const startY = focusY + sin * startRadius;
 
-      // 中心が太く外側が細い
-      const lineWidth = Math.max(0.3, effect.intensity * 3 * (1 - radius / maxRadius));
+      // 距離に応じて線の太さを調整（中心が太く端が細い）
+      const distance = Math.sqrt((endX - focusX) ** 2 + (endY - focusY) ** 2);
+      const maxDistance = Math.sqrt(width ** 2 + height ** 2) / 2;
+      const lineWidth = Math.max(0.3, effect.intensity * 3 * (1 - distance / maxDistance));
       ctx.lineWidth = lineWidth;
 
       ctx.beginPath();
-      ctx.moveTo(x1, y1);
-      ctx.lineTo(x2, y2);
+      ctx.moveTo(startX, startY);
+      ctx.lineTo(endX, endY);
       ctx.stroke();
     }
+
+    ctx.restore();
   };
 
   /**
-   * 🆕 爆発線描画
+   * 🆕 爆発線描画（コマ全体・中心からの激しい放射）
    */
   const drawExplosionLines = (
     ctx: CanvasRenderingContext2D,
@@ -233,31 +300,47 @@ export const useCanvasDrawing = ({
     ctx.strokeStyle = effect.color;
     ctx.lineWidth = Math.max(0.5, effect.intensity * 3);
 
-    const lineCount = Math.floor(effect.density * 50);
-    const centerX = effect.centerX ? x + effect.centerX * width : x + width / 2;
-    const centerY = effect.centerY ? y + effect.centerY * height : y + height / 2;
-    const maxRadius = Math.max(width, height) / 2 * effect.length;
+    const lineCount = Math.floor(effect.density * 80);
+    const centerX = x + width * (effect.centerX || 0.5);
+    const centerY = y + height * (effect.centerY || 0.5);
+
+    // コマ枠内にクリッピング
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x, y, width, height);
+    ctx.clip();
 
     for (let i = 0; i < lineCount; i++) {
       const angle = (i / lineCount) * 2 * Math.PI;
-      const radius = maxRadius * (0.8 + Math.random() * 0.2);
       
-      const x1 = centerX + Math.cos(angle) * (maxRadius * 0.2);
-      const y1 = centerY + Math.sin(angle) * (maxRadius * 0.2);
-      const x2 = centerX + Math.cos(angle) * radius;
-      const y2 = centerY + Math.sin(angle) * radius;
+      // より激しく不規則な爆発線
+      const randomFactor = 0.7 + Math.random() * 0.6;
+      const cos = Math.cos(angle) * randomFactor;
+      const sin = Math.sin(angle) * randomFactor;
+      
+      // 中心からコマ端を超えて伸びる線
+      const baseLength = Math.max(width, height) * effect.length;
+      const length = baseLength * (0.8 + Math.random() * 0.5);
+      
+      const startRadius = Math.min(width, height) * 0.1 * Math.random();
+      const x1 = centerX + cos * startRadius;
+      const y1 = centerY + sin * startRadius;
+      const x2 = centerX + cos * length;
+      const y2 = centerY + sin * length;
 
-      ctx.globalAlpha = effect.opacity * (0.7 + Math.random() * 0.3);
+      ctx.globalAlpha = effect.opacity * (0.6 + Math.random() * 0.4);
       
       ctx.beginPath();
       ctx.moveTo(x1, y1);
       ctx.lineTo(x2, y2);
       ctx.stroke();
     }
+
+    ctx.restore();
   };
 
   /**
-   * 🆕 フラッシュ線描画
+   * 🆕 フラッシュ線描画（コマ全体・十字＋斜めの主要光線）
    */
   const drawFlashLines = (
     ctx: CanvasRenderingContext2D,
@@ -268,29 +351,55 @@ export const useCanvasDrawing = ({
     height: number
   ) => {
     ctx.strokeStyle = effect.color;
-    ctx.lineWidth = Math.max(0.2, effect.intensity * 1.5);
 
-    const lineCount = Math.floor(effect.density * 60);
-    const centerX = effect.centerX ? x + effect.centerX * width : x + width / 2;
-    const centerY = effect.centerY ? y + effect.centerY * height : y + height / 2;
-    const maxRadius = Math.max(width, height) / 2 * effect.length;
+    const centerX = x + width * (effect.centerX || 0.5);
+    const centerY = y + height * (effect.centerY || 0.5);
 
-    for (let i = 0; i < lineCount; i++) {
-      const angle = (i / lineCount) * 2 * Math.PI;
-      const radius = maxRadius * (0.9 + Math.random() * 0.1);
+    // コマ枠内にクリッピング
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x, y, width, height);
+    ctx.clip();
+
+    // 主要な8方向の強い光線
+    const mainDirections = [0, 45, 90, 135, 180, 225, 270, 315];
+    mainDirections.forEach((angle) => {
+      const angleRad = (angle * Math.PI) / 180;
+      const cos = Math.cos(angleRad);
+      const sin = Math.sin(angleRad);
       
-      const x1 = centerX;
-      const y1 = centerY;
-      const x2 = centerX + Math.cos(angle) * radius;
-      const y2 = centerY + Math.sin(angle) * radius;
-
-      ctx.globalAlpha = effect.opacity * (0.5 + Math.random() * 0.5);
+      // コマ端まで伸びる長い光線
+      const length = Math.max(width, height) * effect.length * 1.2;
+      const x2 = centerX + cos * length;
+      const y2 = centerY + sin * length;
+      
+      ctx.globalAlpha = effect.opacity * 0.9;
+      ctx.lineWidth = Math.max(1, effect.intensity * 3);
       
       ctx.beginPath();
-      ctx.moveTo(x1, y1);
+      ctx.moveTo(centerX, centerY);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+    });
+
+    // 追加の細かい光線
+    const subLineCount = Math.floor(effect.density * 40);
+    for (let i = 0; i < subLineCount; i++) {
+      const angle = Math.random() * 2 * Math.PI;
+      const length = Math.max(width, height) * effect.length * (0.3 + Math.random() * 0.4);
+      const x2 = centerX + Math.cos(angle) * length;
+      const y2 = centerY + Math.sin(angle) * length;
+
+      ctx.globalAlpha = effect.opacity * (0.2 + Math.random() * 0.3);
+      ctx.lineWidth = Math.max(0.5, effect.intensity * 1);
+      
+      ctx.beginPath();
+      ctx.moveTo(centerX, centerY);
       ctx.lineTo(x2, y2);
       ctx.stroke();
     }
+
+    ctx.restore();
   };
 
   /**
