@@ -86,6 +86,9 @@ export interface SpeechBubble {
 }
 
 // CanvasComponent のプロパティ型（スナップ設定対応）
+// src/types.ts - CanvasComponentProps背景対応更新部分
+
+// 🔧 既存のCanvasComponentPropsを以下に置き換え
 export interface CanvasComponentProps {
   selectedTemplate: string;
   panels: Panel[];
@@ -94,8 +97,11 @@ export interface CanvasComponentProps {
   setCharacters: (characters: Character[]) => void;
   speechBubbles: SpeechBubble[];
   setSpeechBubbles: (speechBubbles: SpeechBubble[]) => void;
-  backgrounds: BackgroundElement[]; // 🆕 背景データ
-  setBackgrounds: (backgrounds: BackgroundElement[]) => void; // 🆕 背景更新関数
+  
+  // 🆕 背景関連プロパティ追加
+  backgrounds: BackgroundElement[];
+  setBackgrounds: (backgrounds: BackgroundElement[]) => void;
+  
   onCharacterAdd: (func: (type: string) => void) => void;
   onBubbleAdd: (func: (type: string, text: string) => void) => void;
   onPanelSelect?: (panel: Panel | null) => void;

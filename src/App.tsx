@@ -713,8 +713,9 @@ function App() {
             setCharacters={setCharacters}
             speechBubbles={speechBubbles}
             setSpeechBubbles={setSpeechBubbles}
-            backgrounds={backgrounds} // 🆕 背景データを渡す
-            setBackgrounds={setBackgrounds} // 🆕 背景更新関数を渡す
+              // 🆕 背景関連プロパティ追加
+            backgrounds={backgrounds}
+            setBackgrounds={setBackgrounds}
             // 🔧 型修正: 明示的に型を指定
             onCharacterAdd={(func: (type: string) => void) => setAddCharacterFunc(() => func)}
             onBubbleAdd={(func: (type: string, text: string) => void) => setAddBubbleFunc(() => func)}

@@ -27,8 +27,8 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
     setCharacters,
     speechBubbles,
     setSpeechBubbles,
-    backgrounds,
-    setBackgrounds,
+    backgrounds, // 🆕 背景データを受け取り
+    setBackgrounds, // 🆕 背景更新関数を受け取り
     onCharacterAdd,
     onBubbleAdd,
     onPanelSelect,
@@ -56,6 +56,7 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
   const [selectedBackground, setSelectedBackground] = useState<BackgroundElement | null>(null);
   const [isBackgroundDragging, setIsBackgroundDragging] = useState<boolean>(false);
   const [isBackgroundResizing, setIsBackgroundResizing] = useState<boolean>(false);
+  
 
   // ContextMenu & Clipboard 状態
   const [contextMenu, setContextMenu] = useState<ContextMenuState>({
@@ -448,6 +449,8 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, CanvasComponentProps>((pro
     panels,
     characters,
     speechBubbles,
+    backgrounds, // 🆕 背景データを渡す
+    selectedBackground, // 🆕 選択された背景を渡す
     isPanelEditMode,
     snapSettings,
   });
