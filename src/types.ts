@@ -384,7 +384,9 @@ export type BlendMode =
   | 'normal' | 'multiply' | 'screen' | 'overlay' | 'soft-light' 
   | 'hard-light' | 'darken' | 'lighten' | 'difference' | 'exclusion';
 
-// トーン要素の定義
+// ToneElement型定義 - 必要プロパティ追加版
+// 現在のToneElementインターフェースに以下のプロパティを追加してください
+
 export interface ToneElement {
   id: string;
   panelId: number;  // 既存のPanel.idに対応
@@ -400,6 +402,12 @@ export interface ToneElement {
   opacity: number;          // 透明度 (0-1)
   rotation: number;         // 回転角度 (0-360度)
   scale: number;            // パターンスケール (0.1-3.0)
+  
+  // 🆕 描画で使用されるプロパティを追加
+  color?: string;           // 色（デフォルト: '#000000'）
+  intensity?: number;       // 強度（デフォルト: 0.5）
+  angle?: number;          // 角度（デフォルト: 0）
+  direction?: 'horizontal' | 'vertical' | 'radial';  // 方向（デフォルト: 'vertical'）
   
   // 高度な設定
   blendMode: BlendMode;     // ブレンドモード

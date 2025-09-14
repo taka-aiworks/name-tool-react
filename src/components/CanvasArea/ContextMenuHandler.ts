@@ -1,45 +1,45 @@
-// src/components/CanvasArea/ContextMenuHandler.ts - 効果線対応版
+// src/components/CanvasArea/ContextMenuHandler.ts - トーン対応版
 import React from "react";
-import { Panel, Character, SpeechBubble, BackgroundElement, EffectElement } from "../../types";
+import { Panel, Character, SpeechBubble, BackgroundElement, EffectElement, ToneElement } from "../../types";
 
 export interface ContextMenuState {
   visible: boolean;
   x: number;
   y: number;
-  target: 'character' | 'bubble' | 'panel' | 'background' | 'effect' | null; // 🆕 effect追加
-  targetElement: Character | SpeechBubble | Panel | BackgroundElement | EffectElement | null; // 🆕 EffectElement追加
+  target: 'character' | 'bubble' | 'panel' | 'background' | 'effect' | 'tone' | null; // 🆕 tone追加
+  targetElement: Character | SpeechBubble | Panel | BackgroundElement | EffectElement | ToneElement | null; // 🆕 ToneElement追加
 }
 
 export interface ClipboardState {
-  type: 'panel' | 'character' | 'bubble' | 'background' | 'effect'; // 🆕 effect追加
-  data: Panel | Character | SpeechBubble | BackgroundElement | EffectElement; // 🆕 EffectElement追加
+  type: 'panel' | 'character' | 'bubble' | 'background' | 'effect' | 'tone'; // 🆕 tone追加
+  data: Panel | Character | SpeechBubble | BackgroundElement | EffectElement | ToneElement; // 🆕 ToneElement追加
 }
 
 export interface ContextMenuActions {
   onDuplicateCharacter: (character: Character) => void;
   onDuplicatePanel: (panel: Panel) => void;
   onDuplicateBackground?: (background: BackgroundElement) => void;
-  // 🆕 効果線関連アクション追加
   onDuplicateEffect?: (effect: EffectElement) => void;
-  onCopyToClipboard: (type: 'panel' | 'character' | 'bubble' | 'background' | 'effect', element: Panel | Character | SpeechBubble | BackgroundElement | EffectElement) => void;
+  onDuplicateTone?: (tone: ToneElement) => void; // 🆕 トーン複製アクション追加
+  onCopyToClipboard: (type: 'panel' | 'character' | 'bubble' | 'background' | 'effect' | 'tone', element: Panel | Character | SpeechBubble | BackgroundElement | EffectElement | ToneElement) => void;
   onPasteFromClipboard: () => void;
-  onDeleteElement: (type: 'character' | 'bubble' | 'background' | 'effect', element: Character | SpeechBubble | BackgroundElement | EffectElement) => void;
+  onDeleteElement: (type: 'character' | 'bubble' | 'background' | 'effect' | 'tone', element: Character | SpeechBubble | BackgroundElement | EffectElement | ToneElement) => void;
   onDeletePanel: (panel: Panel) => void;
   onFlipHorizontal: () => void;
   onFlipVertical: () => void;
   onEditPanel: (panel: Panel) => void;
   onSplitPanel: (panel: Panel, direction: 'horizontal' | 'vertical') => void;
-  onSelectElement: (type: 'character' | 'bubble' | 'panel' | 'background' | 'effect', element: Character | SpeechBubble | Panel | BackgroundElement | EffectElement) => void;
+  onSelectElement: (type: 'character' | 'bubble' | 'panel' | 'background' | 'effect' | 'tone', element: Character | SpeechBubble | Panel | BackgroundElement | EffectElement | ToneElement) => void;
   onOpenCharacterPanel: (character: Character) => void;
   onOpenBackgroundPanel?: (background: BackgroundElement) => void;
-  // 🆕 効果線設定パネル
   onOpenEffectPanel?: (effect: EffectElement) => void;
+  onOpenTonePanel?: (tone: ToneElement) => void; // 🆕 トーン設定パネル
   onDeselectAll: () => void;
 }
 
 export class ContextMenuHandler {
   /**
-   * 右クリックメニューのアクション処理（効果線対応版）
+   * 右クリックメニューのアクション処理（トーン対応版）
    */
   static handleAction(
     action: string,
@@ -69,10 +69,16 @@ export class ContextMenuHandler {
         }
         break;
 
-      // 🆕 効果線複製
       case 'duplicateEffect':
         if (target === 'effect' && targetElement && actions.onDuplicateEffect) {
           actions.onDuplicateEffect(targetElement as EffectElement);
+        }
+        break;
+
+      // 🆕 トーン複製
+      case 'duplicateTone':
+        if (target === 'tone' && targetElement && actions.onDuplicateTone) {
+          actions.onDuplicateTone(targetElement as ToneElement);
         }
         break;
 
@@ -86,8 +92,10 @@ export class ContextMenuHandler {
         } else if (target === 'background' && targetElement) {
           actions.onCopyToClipboard('background', targetElement as BackgroundElement);
         } else if (target === 'effect' && targetElement) {
-          // 🆕 効果線コピー
           actions.onCopyToClipboard('effect', targetElement as EffectElement);
+        } else if (target === 'tone' && targetElement) {
+          // 🆕 トーンコピー
+          actions.onCopyToClipboard('tone', targetElement as ToneElement);
         }
         break;
 
@@ -113,8 +121,8 @@ export class ContextMenuHandler {
         if (target === 'panel' && targetElement) {
           actions.onDeletePanel(targetElement as Panel);
         } else if (target && targetElement) {
-          // 🆕 効果線削除対応
-          actions.onDeleteElement(target as 'character' | 'bubble' | 'background' | 'effect', targetElement as Character | SpeechBubble | BackgroundElement | EffectElement);
+          // 🆕 トーン削除対応
+          actions.onDeleteElement(target as 'character' | 'bubble' | 'background' | 'effect' | 'tone', targetElement as Character | SpeechBubble | BackgroundElement | EffectElement | ToneElement);
         }
         break;
 
@@ -128,8 +136,10 @@ export class ContextMenuHandler {
         } else if (target === 'background' && targetElement) {
           actions.onSelectElement('background', targetElement as BackgroundElement);
         } else if (target === 'effect' && targetElement) {
-          // 🆕 効果線選択
           actions.onSelectElement('effect', targetElement as EffectElement);
+        } else if (target === 'tone' && targetElement) {
+          // 🆕 トーン選択
+          actions.onSelectElement('tone', targetElement as ToneElement);
         }
         break;
 
@@ -145,10 +155,16 @@ export class ContextMenuHandler {
         }
         break;
 
-      // 🆕 効果線設定パネル
       case 'effectPanel':
         if (target === 'effect' && targetElement && actions.onOpenEffectPanel) {
           actions.onOpenEffectPanel(targetElement as EffectElement);
+        }
+        break;
+
+      // 🆕 トーン設定パネル
+      case 'tonePanel':
+        if (target === 'tone' && targetElement && actions.onOpenTonePanel) {
+          actions.onOpenTonePanel(targetElement as ToneElement);
         }
         break;
 
@@ -171,7 +187,7 @@ export class ContextMenuHandler {
   }
 
   /**
-   * 右クリックメニューコンポーネントの生成（効果線対応版）
+   * 右クリックメニューコンポーネントの生成（トーン対応版）
    */
   static renderContextMenu(
     contextMenu: ContextMenuState,
@@ -355,7 +371,6 @@ export class ContextMenuHandler {
         )
       ],
 
-      // 🆕 効果線右クリックメニュー
       contextMenu.target === 'effect' && [
         React.createElement(
           'div',
@@ -394,6 +409,54 @@ export class ContextMenuHandler {
           'div',
           {
             key: 'deleteEffect',
+            style: dangerItemStyle,
+            onMouseEnter: handleMouseEnter,
+            onMouseLeave: handleMouseLeave,
+            onClick: () => onAction('delete')
+          },
+          '🗑️ 削除'
+        )
+      ],
+
+      // 🆕 トーン右クリックメニュー
+      contextMenu.target === 'tone' && [
+        React.createElement(
+          'div',
+          {
+            key: 'tonePanel',
+            style: itemStyle,
+            onMouseEnter: handleMouseEnter,
+            onMouseLeave: handleMouseLeave,
+            onClick: () => onAction('tonePanel')
+          },
+          '🎯 トーン設定'
+        ),
+        React.createElement(
+          'div',
+          {
+            key: 'duplicateTone',
+            style: itemStyle,
+            onMouseEnter: handleMouseEnter,
+            onMouseLeave: handleMouseLeave,
+            onClick: () => onAction('duplicateTone')
+          },
+          '🎯 トーン複製'
+        ),
+        React.createElement(
+          'div',
+          {
+            key: 'copyTone',
+            style: itemStyle,
+            onMouseEnter: handleMouseEnter,
+            onMouseLeave: handleMouseLeave,
+            onClick: () => onAction('copy')
+          },
+          '📋 コピー (Ctrl+C)'
+        ),
+        React.createElement(
+          'div',
+          {
+            key: 'deleteTone',
             style: dangerItemStyle,
             onMouseEnter: handleMouseEnter,
             onMouseLeave: handleMouseLeave,
@@ -522,11 +585,11 @@ export class ContextMenuHandler {
   }
 
   /**
-   * クリップボード操作（効果線対応版）
+   * クリップボード操作（トーン対応版）
    */
   static copyToClipboard(
-    type: 'panel' | 'character' | 'bubble' | 'background' | 'effect', // 🆕 effect追加
-    element: Panel | Character | SpeechBubble | BackgroundElement | EffectElement // 🆕 EffectElement追加
+    type: 'panel' | 'character' | 'bubble' | 'background' | 'effect' | 'tone', // 🆕 tone追加
+    element: Panel | Character | SpeechBubble | BackgroundElement | EffectElement | ToneElement // 🆕 ToneElement追加
   ): ClipboardState {
     console.log(`📋 ${type}をクリップボードにコピー:`, element);
     return { type, data: element };
@@ -588,7 +651,7 @@ export class ContextMenuHandler {
   }
 
   /**
-   * 🆕 効果線複製
+   * 効果線複製
    */
   static duplicateEffect(
     originalEffect: EffectElement,
@@ -609,7 +672,28 @@ export class ContextMenuHandler {
   }
 
   /**
-   * 反転処理（効果線対応版）
+   * 🆕 トーン複製
+   */
+  static duplicateTone(
+    originalTone: ToneElement,
+    canvasWidth: number = 600,
+    canvasHeight: number = 800
+  ): ToneElement {
+    console.log("🎯 トーン複製開始:", originalTone.type);
+    
+    const newTone: ToneElement = {
+      ...originalTone,
+      id: `tone_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+      x: Math.min(originalTone.x + 0.1, 0.9),
+      y: Math.min(originalTone.y + 0.1, 0.9),
+    };
+    
+    console.log(`✅ トーン複製完了: ${originalTone.type} → ${newTone.id}`);
+    return newTone;
+  }
+
+  /**
+   * 反転処理（トーン対応版）
    */
   static flipElements(
     direction: 'horizontal' | 'vertical',
@@ -617,7 +701,8 @@ export class ContextMenuHandler {
     characters: Character[],
     speechBubbles: SpeechBubble[],
     backgrounds: BackgroundElement[],
-    effects: EffectElement[], // 🆕 effects追加
+    effects: EffectElement[],
+    tones: ToneElement[], // 🆕 tones追加
     canvasWidth: number = 600,
     canvasHeight: number = 800
   ): {
@@ -625,7 +710,8 @@ export class ContextMenuHandler {
     characters: Character[];
     speechBubbles: SpeechBubble[];
     backgrounds: BackgroundElement[];
-    effects: EffectElement[]; // 🆕 effects追加
+    effects: EffectElement[];
+    tones: ToneElement[]; // 🆕 tones追加
   } {
     if (direction === 'horizontal') {
       const flippedPanels = panels.map(panel => ({
@@ -644,21 +730,26 @@ export class ContextMenuHandler {
         ...bg,
         x: 1 - bg.x - bg.width
       }));
-      // 🆕 効果線も反転
       const flippedEffects = effects.map(effect => ({
         ...effect,
         x: 1 - effect.x - effect.width,
-        // スピード線の場合は角度も反転
         angle: effect.type === 'speed' ? 180 - effect.angle : effect.angle
       }));
+      // 🆕 トーンも反転
+      const flippedTones = tones.map(tone => ({
+        ...tone,
+        x: 1 - tone.x - tone.width,
+        rotation: tone.rotation !== undefined ? 360 - tone.rotation : tone.rotation
+      }));
       
-      console.log("↔️ 水平反転完了（効果線含む）");
+      console.log("↔️ 水平反転完了（トーン含む）");
       return {
         panels: flippedPanels,
         characters: flippedCharacters,
         speechBubbles: flippedBubbles,
         backgrounds: flippedBackgrounds,
-        effects: flippedEffects
+        effects: flippedEffects,
+        tones: flippedTones
       };
     } else {
       const flippedPanels = panels.map(panel => ({
@@ -677,21 +768,26 @@ export class ContextMenuHandler {
         ...bg,
         y: 1 - bg.y - bg.height
       }));
-      // 🆕 効果線も反転
       const flippedEffects = effects.map(effect => ({
         ...effect,
         y: 1 - effect.y - effect.height,
-        // スピード線の場合は角度も反転
         angle: effect.type === 'speed' ? -effect.angle : effect.angle
       }));
+      // 🆕 トーンも反転
+      const flippedTones = tones.map(tone => ({
+        ...tone,
+        y: 1 - tone.y - tone.height,
+        rotation: tone.rotation !== undefined ? -tone.rotation : tone.rotation
+      }));
       
-      console.log("↕️ 垂直反転完了（効果線含む）");
+      console.log("↕️ 垂直反転完了（トーン含む）");
       return {
         panels: flippedPanels,
         characters: flippedCharacters,
         speechBubbles: flippedBubbles,
         backgrounds: flippedBackgrounds,
-        effects: flippedEffects
+        effects: flippedEffects,
+        tones: flippedTones
       };
     }
   }
