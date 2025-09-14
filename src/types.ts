@@ -1,4 +1,4 @@
-// src/types.ts - 効果線完全対応版（CanvasComponentProps修正）
+// src/types.ts - 効果線完全対応版（CanvasComponentProps修正） + トーン型追加
 
 export interface Panel {
   id: number;
@@ -351,8 +351,117 @@ export interface EffectHandle {
   radius?: number;
 }
 
-// Canvas要素の種類に効果線を追加
-export type CanvasElementType = 'panel' | 'character' | 'bubble' | 'background' | 'effect';
+// ==========================================
+// トーンシステム用型定義（新規追加）
+// ==========================================
+
+// トーンの種類
+export type ToneType = 'halftone' | 'gradient' | 'crosshatch' | 'dots' | 'lines' | 'noise';
+
+// トーンパターンの種類
+export type TonePattern = 
+  // 網点系
+  | 'dots_60' | 'dots_85' | 'dots_100' | 'dots_120' | 'dots_150'
+  // 線系
+  | 'lines_horizontal' | 'lines_vertical' | 'lines_diagonal' | 'lines_cross'
+  // グラデーション系
+  | 'gradient_linear' | 'gradient_radial' | 'gradient_diamond'
+  // ノイズ系
+  | 'noise_fine' | 'noise_coarse' | 'noise_grain'
+  // 特殊効果
+  | 'speed_lines' | 'focus_lines' | 'explosion';
+
+// ブレンドモード
+export type BlendMode = 
+  | 'normal' | 'multiply' | 'screen' | 'overlay' | 'soft-light' 
+  | 'hard-light' | 'darken' | 'lighten' | 'difference' | 'exclusion';
+
+// トーン要素の定義
+export interface ToneElement {
+  id: string;
+  panelId: number;  // 既存のPanel.idに対応
+  type: ToneType;
+  pattern: TonePattern;
+  x: number;        // パネル内相対座標 (0-1)
+  y: number;        // パネル内相対座標 (0-1)
+  width: number;    // パネル内相対サイズ (0-1)
+  height: number;   // パネル内相対サイズ (0-1)
+  
+  // 基本設定
+  density: number;          // 密度・濃度 (0-1)
+  opacity: number;          // 透明度 (0-1)
+  rotation: number;         // 回転角度 (0-360度)
+  scale: number;            // パターンスケール (0.1-3.0)
+  
+  // 高度な設定
+  blendMode: BlendMode;     // ブレンドモード
+  contrast: number;         // コントラスト (0-2)
+  brightness: number;       // 明度 (-1 to 1)
+  invert: boolean;          // 反転
+  
+  // マスク設定
+  maskEnabled: boolean;     // マスク有効
+  maskShape: 'rectangle' | 'ellipse' | 'custom'; // マスク形状
+  maskFeather: number;      // マスクのぼかし (0-20)
+  
+  // 選択・表示設定
+  selected: boolean;        // 選択状態
+  zIndex: number;           // 重ね順
+  isGlobalPosition: boolean; // グローバル座標かどうか
+  visible: boolean;         // 表示・非表示
+}
+
+// トーンテンプレートの定義
+export interface ToneTemplate {
+  id: string;
+  name: string;
+  type: ToneType;
+  pattern: TonePattern;
+  density: number;
+  opacity: number;
+  rotation: number;
+  scale: number;
+  blendMode: BlendMode;
+  contrast: number;
+  brightness: number;
+  description: string;
+  category: 'shadow' | 'highlight' | 'texture' | 'background' | 'effect' | 'mood';
+  thumbnail?: string;       // プレビュー用サムネイル
+  preview: {                // プレビュー設定
+    backgroundColor: string;
+    showPattern: boolean;
+  };
+}
+
+// トーンパネルのプロパティ
+export interface TonePanelProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onAddTone: (tone: ToneElement) => void;
+  selectedTone: ToneElement | null;
+  onUpdateTone: (tone: ToneElement) => void;
+  isDarkMode: boolean;
+  selectedPanel: Panel | null;
+  tones: ToneElement[];
+}
+
+// トーンレンダラーのプロパティ
+export interface ToneRendererProps {
+  tones: ToneElement[];
+  canvasScale: number;
+}
+
+// トーン操作のハンドル
+export interface ToneHandle {
+  type: "move" | "resize" | "rotate" | "mask";
+  direction?: "nw" | "n" | "ne" | "e" | "se" | "s" | "sw" | "w";
+  x: number;
+  y: number;
+  radius?: number;
+}
+
+// Canvas要素の種類にトーンを追加
+export type CanvasElementType = 'panel' | 'character' | 'bubble' | 'background' | 'effect' | 'tone';
 
 // Canvas要素の統合型
-export type CanvasElement = Panel | Character | SpeechBubble | BackgroundElement | EffectElement;
+export type CanvasElement = Panel | Character | SpeechBubble | BackgroundElement | EffectElement | ToneElement;
