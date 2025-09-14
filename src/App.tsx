@@ -1,19 +1,19 @@
-// src/App.tsx (背景機能統合版)
+// src/App.tsx (効果線機能統合版)
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-// 🔧 修正: 正しいパスに変更（.tsxは不要）
 import CanvasComponent from "./components/CanvasComponent";
 import CharacterDetailPanel from "./components/UI/CharacterDetailPanel";
-import { Panel, Character, SpeechBubble, SnapSettings, BackgroundElement, BackgroundTemplate } from "./types";
+import { Panel, Character, SpeechBubble, SnapSettings, BackgroundElement, BackgroundTemplate, EffectElement } from "./types";
 import { templates } from "./components/CanvasArea/templates";
 import { sceneTemplates, applySceneTemplate } from "./components/CanvasArea/sceneTemplates";
 import { ExportPanel } from './components/UI/ExportPanel';
 import { useRef } from 'react';
 import "./App.css";
 
-// 必要なimport（3行追加 - 背景機能含む）
+// 必要なimport（効果線機能含む）
 import useProjectSave from './hooks/useProjectSave';
 import ProjectPanel from './components/UI/ProjectPanel';
 import BackgroundPanel from './components/UI/BackgroundPanel';
+import EffectPanel from './components/UI/EffectPanel';
 
 function App() {
   // デフォルトダークモード設定
@@ -26,9 +26,11 @@ function App() {
   const [panels, setPanels] = useState<Panel[]>([]);
   const [characters, setCharacters] = useState<Character[]>([]);
   const [speechBubbles, setSpeechBubbles] = useState<SpeechBubble[]>([]);
-  const [backgrounds, setBackgrounds] = useState<BackgroundElement[]>([]); // 🆕 背景データ
+  const [backgrounds, setBackgrounds] = useState<BackgroundElement[]>([]);
+  const [effects, setEffects] = useState<EffectElement[]>([]); // 🆕 効果線状態管理
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
   const [selectedPanel, setSelectedPanel] = useState<Panel | null>(null);
+  const [selectedEffect, setSelectedEffect] = useState<EffectElement | null>(null); // 🆕 効果線選択状態
   const [dialogueText, setDialogueText] = useState<string>("");
 
   // UI状態管理
@@ -37,7 +39,8 @@ function App() {
   const [showCharacterPanel, setShowCharacterPanel] = useState<boolean>(false);
   const [isPanelEditMode, setIsPanelEditMode] = useState<boolean>(false);
   const [showProjectPanel, setShowProjectPanel] = useState<boolean>(false);
-  const [showBackgroundPanel, setShowBackgroundPanel] = useState<boolean>(false); // 🆕 背景パネル表示制御
+  const [showBackgroundPanel, setShowBackgroundPanel] = useState<boolean>(false);
+  const [showEffectPanel, setShowEffectPanel] = useState<boolean>(false); // 🆕 効果線パネル表示制御
 
   // スナップ設定の状態管理
   const [snapSettings, setSnapSettings] = useState<SnapSettings>({
@@ -47,7 +50,7 @@ function App() {
     gridDisplay: 'edit-only'
   });
 
-  // 🆕 プロジェクト保存hook（背景データ対応）
+  // プロジェクト保存hook（効果線データ対応）
   const settings = useMemo(() => ({ 
     snapEnabled: snapSettings.enabled, 
     snapSize: snapSettings.gridSize, 
@@ -63,33 +66,36 @@ function App() {
     panels, 
     characters, 
     bubbles: speechBubbles,
-    backgrounds, // 🆕 背景データを保存対象に追加
+    backgrounds,
+    effects, // 🆕 効果線データを保存対象に追加
     canvasSize, 
     settings 
   });
 
-  // 🔧 型修正: 機能コールバック用の状態
+  // 機能コールバック用の状態
   const [addCharacterFunc, setAddCharacterFunc] = useState<((type: string) => void) | null>(null);
   const [addBubbleFunc, setAddBubbleFunc] = useState<((type: string, text: string) => void) | null>(null);
 
-  // アンドゥ/リドゥ機能（背景対応）
+  // アンドゥ/リドゥ機能（効果線対応）
   const [operationHistory, setOperationHistory] = useState<{
     characters: Character[][];
     speechBubbles: SpeechBubble[][];
     panels: Panel[][];
-    backgrounds: BackgroundElement[][]; // 🆕 背景履歴追加
+    backgrounds: BackgroundElement[][];
+    effects: EffectElement[][]; // 🆕 効果線履歴追加
     currentIndex: number;
   }>({
     characters: [[]],
     speechBubbles: [[]],
     panels: [[]],
-    backgrounds: [[]], // 🆕 背景履歴初期化
+    backgrounds: [[]],
+    effects: [[]], // 🆕 効果線履歴初期化
     currentIndex: 0,
   });
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  // 履歴保存の最適化 - 依存関係を文字列で管理（背景対応）
+  // 履歴保存の最適化 - 依存関係を文字列で管理（効果線対応）
   const charactersSignature = useMemo(() => 
     characters.map(char => `${char.id}-${char.x}-${char.y}-${char.scale}`).join(','), 
     [characters]
@@ -108,16 +114,28 @@ function App() {
   const backgroundsSignature = useMemo(() => 
     backgrounds.map(bg => `${bg.id}-${bg.x}-${bg.y}-${bg.width}-${bg.height}-${bg.opacity}`).join(','), 
     [backgrounds]
-  ); // 🆕 背景の変更検知
+  );
 
-  // 履歴保存関数（背景対応）
-  const saveToHistory = useCallback((newCharacters: Character[], newBubbles: SpeechBubble[], newPanels: Panel[], newBackgrounds: BackgroundElement[]) => {
+  const effectsSignature = useMemo(() => 
+    effects.map(effect => `${effect.id}-${effect.x}-${effect.y}-${effect.intensity}-${effect.density}`).join(','), 
+    [effects]
+  ); // 🆕 効果線の変更検知
+
+  // 履歴保存関数（効果線対応）
+  const saveToHistory = useCallback((
+    newCharacters: Character[], 
+    newBubbles: SpeechBubble[], 
+    newPanels: Panel[], 
+    newBackgrounds: BackgroundElement[],
+    newEffects: EffectElement[] // 🆕 効果線引数追加
+  ) => {
     setOperationHistory(prev => {
       const newHistory = {
         characters: [...prev.characters.slice(0, prev.currentIndex + 1), [...newCharacters]],
         speechBubbles: [...prev.speechBubbles.slice(0, prev.currentIndex + 1), [...newBubbles]],
         panels: [...prev.panels.slice(0, prev.currentIndex + 1), [...newPanels]],
-        backgrounds: [...prev.backgrounds.slice(0, prev.currentIndex + 1), [...newBackgrounds]], // 🆕 背景履歴追加
+        backgrounds: [...prev.backgrounds.slice(0, prev.currentIndex + 1), [...newBackgrounds]],
+        effects: [...prev.effects.slice(0, prev.currentIndex + 1), [...newEffects]], // 🆕 効果線履歴追加
         currentIndex: prev.currentIndex + 1,
       };
       
@@ -126,7 +144,8 @@ function App() {
         newHistory.characters = newHistory.characters.slice(1);
         newHistory.speechBubbles = newHistory.speechBubbles.slice(1);
         newHistory.panels = newHistory.panels.slice(1);
-        newHistory.backgrounds = newHistory.backgrounds.slice(1); // 🆕 背景履歴管理
+        newHistory.backgrounds = newHistory.backgrounds.slice(1);
+        newHistory.effects = newHistory.effects.slice(1); // 🆕 効果線履歴管理
         newHistory.currentIndex = Math.max(0, newHistory.currentIndex - 1);
       }
       
@@ -134,28 +153,30 @@ function App() {
     });
   }, []);
 
-  // 履歴保存のタイミング（背景対応）
+  // 履歴保存のタイミング（効果線対応）
   useEffect(() => {
     // 空の状態では履歴保存しない
-    if (characters.length === 0 && speechBubbles.length === 0 && panels.length === 0 && backgrounds.length === 0) {
+    if (characters.length === 0 && speechBubbles.length === 0 && panels.length === 0 && 
+        backgrounds.length === 0 && effects.length === 0) {
       return;
     }
 
     const timeoutId = setTimeout(() => {
-      saveToHistory(characters, speechBubbles, panels, backgrounds);
-    }, 500); // デバウンス時間を500msに延長
+      saveToHistory(characters, speechBubbles, panels, backgrounds, effects);
+    }, 500);
 
     return () => clearTimeout(timeoutId);
-  }, [charactersSignature, bubblesSignature, panelsSignature, backgroundsSignature, saveToHistory]);
+  }, [charactersSignature, bubblesSignature, panelsSignature, backgroundsSignature, effectsSignature, saveToHistory]);
 
-  // アンドゥ/リドゥ処理（背景対応）
+  // アンドゥ/リドゥ処理（効果線対応）
   const handleUndo = useCallback(() => {
     if (operationHistory.currentIndex > 0) {
       const newIndex = operationHistory.currentIndex - 1;
       setCharacters([...operationHistory.characters[newIndex]]);
       setSpeechBubbles([...operationHistory.speechBubbles[newIndex]]);
       setPanels([...operationHistory.panels[newIndex]]);
-      setBackgrounds([...operationHistory.backgrounds[newIndex]]); // 🆕 背景アンドゥ
+      setBackgrounds([...operationHistory.backgrounds[newIndex]]);
+      setEffects([...operationHistory.effects[newIndex]]); // 🆕 効果線アンドゥ
       setOperationHistory(prev => ({ ...prev, currentIndex: newIndex }));
     }
   }, [operationHistory]);
@@ -166,7 +187,8 @@ function App() {
       setCharacters([...operationHistory.characters[newIndex]]);
       setSpeechBubbles([...operationHistory.speechBubbles[newIndex]]);
       setPanels([...operationHistory.panels[newIndex]]);
-      setBackgrounds([...operationHistory.backgrounds[newIndex]]); // 🆕 背景リドゥ
+      setBackgrounds([...operationHistory.backgrounds[newIndex]]);
+      setEffects([...operationHistory.effects[newIndex]]); // 🆕 効果線リドゥ
       setOperationHistory(prev => ({ ...prev, currentIndex: newIndex }));
     }
   }, [operationHistory]);
@@ -179,7 +201,7 @@ function App() {
     }
   }, [selectedCharacter, characters]);
 
-  // キーボードイベント処理
+  // キーボードイベント処理（効果線対応）
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Backspace' || e.key === 'Delete') {
@@ -202,10 +224,16 @@ function App() {
         setIsPanelEditMode(prev => !prev);
       }
 
-      // 🆕 背景パネル表示ショートカット
+      // 背景パネル表示ショートカット
       if (e.key === 'b' && e.ctrlKey) {
         e.preventDefault();
         setShowBackgroundPanel(prev => !prev);
+      }
+
+      // 🆕 効果線パネル表示ショートカット
+      if (e.key === 'f' && e.ctrlKey) {
+        e.preventDefault();
+        setShowEffectPanel(prev => !prev);
       }
     };
 
@@ -237,18 +265,20 @@ function App() {
     document.documentElement.setAttribute("data-theme", newTheme);
   }, [isDarkMode]);
 
-  // テンプレート変更処理（背景クリア対応）
+  // テンプレート変更処理（効果線クリア対応）
   const handleTemplateClick = useCallback((template: string) => {
     setSelectedTemplate(template);
     setSelectedCharacter(null);
     setSelectedPanel(null);
+    setSelectedEffect(null); // 🆕 効果線選択もクリア
     
     const newPanels = [...templates[template].panels];
     setPanels(newPanels);
     
     setCharacters([]);
     setSpeechBubbles([]);
-    setBackgrounds([]); // 🆕 背景もクリア
+    setBackgrounds([]);
+    setEffects([]); // 🆕 効果線もクリア
   }, []);
 
   // シーンテンプレート適用
@@ -344,7 +374,7 @@ function App() {
     console.log(`✅ コマ追加完了: ${newPanelId} (${position})`);
   }, [panels]);
 
-  // コマ削除機能（背景も削除）
+  // コマ削除機能（効果線も削除）
   const handlePanelDelete = useCallback((panelId: string) => {
     if (panels.length <= 1) {
       console.log(`⚠️ 最後のコマは削除できません`);
@@ -355,9 +385,11 @@ function App() {
       const panelIdNum = parseInt(panelId);
       setCharacters(prev => prev.filter(char => char.panelId !== panelIdNum));
       setSpeechBubbles(prev => prev.filter(bubble => bubble.panelId !== panelIdNum));
-      setBackgrounds(prev => prev.filter(bg => bg.panelId !== panelIdNum)); // 🆕 背景も削除
+      setBackgrounds(prev => prev.filter(bg => bg.panelId !== panelIdNum));
+      setEffects(prev => prev.filter(effect => effect.panelId !== panelIdNum)); // 🆕 効果線も削除
       setPanels(prev => prev.filter(panel => panel.id !== panelIdNum));
       setSelectedPanel(null);
+      setSelectedEffect(null); // 🆕 効果線選択もクリア
       console.log(`🗑️ コマ削除: ${panelId}`);
     }
   }, [panels.length]);
@@ -367,13 +399,12 @@ function App() {
     const panelToSplit = panels.find(p => p.id === panelId);
     if (!panelToSplit) return;
 
-    const gap = 10; // 隙間サイズ
+    const gap = 10;
     const maxId = Math.max(...panels.map(p => p.id), 0);
     const newId = maxId + 1;
 
     let newPanels: Panel[];
     if (direction === "horizontal") {
-      // 水平分割（上下）- 隙間付き
       const availableHeight = panelToSplit.height - gap;
       const halfHeight = availableHeight / 2;
       
@@ -389,7 +420,6 @@ function App() {
       };
       newPanels = panels.map(p => p.id === panelId ? topPanel : p).concat([bottomPanel]);
     } else {
-      // 垂直分割（左右）- 隙間付き
       const availableWidth = panelToSplit.width - gap;
       const halfWidth = availableWidth / 2;
       
@@ -410,14 +440,16 @@ function App() {
     console.log(`${direction}分割完了（隙間: ${gap}px）`);
   }, [panels]);
 
-  // 全てクリア機能（背景対応）
+  // 全てクリア機能（効果線対応）
   const handleClearAll = useCallback(() => {
     if (window.confirm("全ての要素をクリアしますか？")) {
       setCharacters([]);
       setSpeechBubbles([]);
-      setBackgrounds([]); // 🆕 背景もクリア
+      setBackgrounds([]);
+      setEffects([]); // 🆕 効果線もクリア
       setSelectedCharacter(null);
       setSelectedPanel(null);
+      setSelectedEffect(null); // 🆕 効果線選択もクリア
     }
   }, []);
 
@@ -431,14 +463,28 @@ function App() {
     setShowCharacterPanel(true);
   }, []);
 
-  // 編集モード切り替え関数を追加（既存の編集モード管理の近くに）
+  // 編集モード切り替え関数
   const handlePanelEditModeToggle = (enabled: boolean) => {
     setIsPanelEditMode(enabled);
   };
 
-  // 🆕 背景テンプレート適用ハンドラー
+  // 背景テンプレート適用ハンドラー
   const handleBackgroundAdd = useCallback((template: BackgroundTemplate) => {
     console.log(`背景テンプレート「${template.name}」を適用しました`);
+  }, []);
+
+  // 🆕 効果線テンプレート適用ハンドラー
+  const handleEffectAdd = useCallback((effect: EffectElement) => {
+    setEffects([...effects, effect]);
+    setSelectedEffect(effect);
+    console.log(`効果線「${effect.type}」を追加しました`);
+  }, [effects]);
+
+  const handleEffectUpdate = useCallback((updatedEffect: EffectElement) => {
+    setEffects(prev => prev.map(effect => 
+      effect.id === updatedEffect.id ? updatedEffect : effect
+    ));
+    setSelectedEffect(updatedEffect);
   }, []);
 
   return (
@@ -460,7 +506,7 @@ function App() {
             🔧 {isPanelEditMode ? "編集中" : "編集"}
           </button>
 
-          {/* 🆕 背景ボタン追加 */}
+          {/* 背景ボタン */}
           <button 
             className="control-btn"
             onClick={() => setShowBackgroundPanel(true)}
@@ -475,7 +521,22 @@ function App() {
             {backgrounds.length > 0 && <span style={{ marginLeft: "4px" }}>({backgrounds.length})</span>}
           </button>
 
-          {/* 🆕 プロジェクトボタン追加 */}
+          {/* 🆕 効果線ボタン */}
+          <button 
+            className="control-btn"
+            onClick={() => setShowEffectPanel(true)}
+            title="効果線設定 (Ctrl+F)"
+            style={{
+              background: effects.length > 0 ? "#ff5722" : "var(--bg-tertiary)",
+              color: effects.length > 0 ? "white" : "var(--text-primary)",
+              border: `1px solid ${effects.length > 0 ? "#ff5722" : "var(--border-color)"}`,
+            }}
+          >
+            ⚡ 効果線
+            {effects.length > 0 && <span style={{ marginLeft: "4px" }}>({effects.length})</span>}
+          </button>
+
+          {/* プロジェクトボタン */}
           <button 
             className="control-btn"
             onClick={() => setShowProjectPanel(true)}
@@ -490,7 +551,7 @@ function App() {
             {projectSave.hasUnsavedChanges && <span style={{ marginLeft: "4px" }}>●</span>}
           </button>
 
-          {/* スナップ設定UI（インライン） */}
+          {/* スナップ設定UI */}
           <button 
             className={`control-btn ${snapSettings.enabled ? 'active' : ''}`}
             onClick={handleSnapToggle}
@@ -692,14 +753,13 @@ function App() {
               操作履歴: {operationHistory.currentIndex + 1} / {operationHistory.characters.length}
               {selectedCharacter && <span> | 選択中: {selectedCharacter.name}</span>}
               {selectedPanel && <span> | パネル{selectedPanel.id}選択中</span>}
+              {selectedEffect && <span> | 効果線選択中</span>} {/* 🆕 効果線選択状態表示 */}
               {isPanelEditMode && <span> | 🔧 コマ編集モード</span>}
-              {/* スナップ状態表示 */}
               {snapSettings.enabled && <span> | ⚙️ スナップ: {snapSettings.gridSize}px ({snapSettings.sensitivity})</span>}
-              {/* 🆕 保存状態表示 */}
               {projectSave.isAutoSaving && <span> | 💾 自動保存中...</span>}
               {projectSave.hasUnsavedChanges && <span> | ⚠️ 未保存</span>}
-              {/* 🆕 背景状態表示 */}
               {backgrounds.length > 0 && <span> | 🎨 背景: {backgrounds.length}個</span>}
+              {effects.length > 0 && <span> | ⚡ 効果線: {effects.length}個</span>} {/* 🆕 効果線状態表示 */}
             </div>
           </div>
 
@@ -713,10 +773,16 @@ function App() {
             setCharacters={setCharacters}
             speechBubbles={speechBubbles}
             setSpeechBubbles={setSpeechBubbles}
-              // 🆕 背景関連プロパティ追加
             backgrounds={backgrounds}
             setBackgrounds={setBackgrounds}
-            // 🔧 型修正: 明示的に型を指定
+            // 🆕 効果線関連プロパティ追加
+            effects={effects}
+            setEffects={setEffects}
+            selectedEffect={selectedEffect}
+            onEffectSelect={setSelectedEffect}
+            showEffectPanel={showEffectPanel}
+            onEffectPanelToggle={() => setShowEffectPanel(!showEffectPanel)}
+            // 既存のプロパティ
             onCharacterAdd={(func: (type: string) => void) => setAddCharacterFunc(() => func)}
             onBubbleAdd={(func: (type: string, text: string) => void) => setAddBubbleFunc(() => func)}
             onPanelSelect={(panel: Panel | null) => setSelectedPanel(panel)}
@@ -783,7 +849,7 @@ function App() {
             </div>
           </div>
 
-          {/* 🆕 背景セクション */}
+          {/* 背景セクション */}
           <div className="section">
             <h3>🎨 背景</h3>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
@@ -836,6 +902,59 @@ function App() {
             </div>
           </div>
 
+          {/* 🆕 効果線セクション */}
+          <div className="section">
+            <h3>⚡ 効果線</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <button 
+                className="btn btn-primary"
+                onClick={() => setShowEffectPanel(true)}
+                title="効果線設定パネルを開く (Ctrl+F)"
+                style={{
+                  background: "var(--accent-color)",
+                  color: "white",
+                  border: "1px solid var(--accent-color)",
+                  borderRadius: "6px",
+                  padding: "8px 12px",
+                  cursor: "pointer",
+                  fontSize: "14px"
+                }}
+              >
+                ⚡ 効果線設定
+              </button>
+              
+              {effects.length > 0 && (
+                <div style={{
+                  background: "var(--bg-secondary)",
+                  border: "1px solid var(--border-color)",
+                  borderRadius: "6px",
+                  padding: "8px",
+                  fontSize: "12px",
+                  color: "var(--text-muted)"
+                }}>
+                  <strong>現在の効果線:</strong><br/>
+                  {effects.length}個の効果線要素
+                  <br/>
+                  <small>• パネルを選択して効果線設定</small>
+                </div>
+              )}
+              
+              {selectedPanel && (
+                <div style={{
+                  background: "var(--bg-tertiary)",
+                  border: "1px solid var(--accent-color)",
+                  borderRadius: "6px",
+                  padding: "8px",
+                  fontSize: "12px",
+                  color: "var(--accent-color)"
+                }}>
+                  📍 パネル{selectedPanel.id}選択中<br/>
+                  <small>効果線設定パネルから効果線を追加できます</small>
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* 出力 */}
           <div className="section">
             <h3>📤 出力</h3>
@@ -843,7 +962,8 @@ function App() {
               panels={panels}
               characters={characters}
               bubbles={speechBubbles}
-              backgrounds={backgrounds} // 🆕 背景データも出力対象に
+              backgrounds={backgrounds}
+              effects={effects} // 🆕 効果線データも出力対象に
               canvasRef={canvasRef}
             />
           </div>
@@ -860,7 +980,7 @@ function App() {
         />
       )}
 
-      {/* 🆕 背景設定パネル */}
+      {/* 背景設定パネル */}
       <BackgroundPanel
         isOpen={showBackgroundPanel}
         onClose={() => setShowBackgroundPanel(false)}
@@ -870,7 +990,17 @@ function App() {
         onBackgroundAdd={handleBackgroundAdd}
       />
 
-      {/* 🆕 プロジェクト管理パネル */}
+      {/* 🆕 効果線設定パネル */}
+      <EffectPanel
+        isOpen={showEffectPanel}
+        onClose={() => setShowEffectPanel(false)}
+        onAddEffect={handleEffectAdd}
+        selectedEffect={selectedEffect}
+        onUpdateEffect={handleEffectUpdate}
+        isDarkMode={isDarkMode}
+      />
+
+      {/* プロジェクト管理パネル */}
       <ProjectPanel
         isOpen={showProjectPanel}
         onClose={() => setShowProjectPanel(false)}
@@ -880,7 +1010,8 @@ function App() {
             setPanels(project.data.panels);
             setCharacters(project.data.characters);
             setSpeechBubbles(project.data.bubbles);
-            setBackgrounds(project.data.backgrounds || []); // 🆕 背景データも復元
+            setBackgrounds(project.data.backgrounds || []);
+            setEffects(project.data.effects || []); // 🆕 効果線データも復元
             // 設定も復元
             setSnapSettings(prev => ({
               ...prev,
@@ -897,9 +1028,11 @@ function App() {
           setPanels([]);
           setCharacters([]);
           setSpeechBubbles([]);
-          setBackgrounds([]); // 🆕 背景もクリア
+          setBackgrounds([]);
+          setEffects([]); // 🆕 効果線もクリア
           setSelectedCharacter(null);
           setSelectedPanel(null);
+          setSelectedEffect(null); // 🆕 効果線選択もクリア
         }}
         currentProjectId={projectSave.currentProjectId}
         saveStatus={projectSave.saveStatus}

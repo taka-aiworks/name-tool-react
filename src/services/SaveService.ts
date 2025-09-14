@@ -1,6 +1,5 @@
 // SaveService.ts の最初のimport部分を修正
-import { Panel, Character, SpeechBubble, BackgroundElement } from '../types';
-
+import { Panel, Character, SpeechBubble, BackgroundElement, EffectElement } from '../types';
 
 // ProjectData interface を修正
 export interface ProjectData {
@@ -13,7 +12,8 @@ export interface ProjectData {
     panels: Panel[];
     characters: Character[];
     bubbles: SpeechBubble[];
-    backgrounds: BackgroundElement[]; // 🆕 背景データ追加
+    backgrounds: BackgroundElement[];
+    effects: EffectElement[]; // 🆕 効果線データ追加
     canvasSize: { width: number; height: number };
     settings: {
       snapEnabled: boolean;
@@ -22,7 +22,6 @@ export interface ProjectData {
     };
   };
 }
-
 
 export interface ProjectMetadata {
   id: string;
@@ -38,15 +37,15 @@ export class SaveService {
   private static readonly VERSION = '1.0.0';
 
   /**
-   * プロジェクトを保存
+   * プロジェクトを保存（効果線対応版）
    */
-  // SaveService.ts の saveProject メソッドを以下に置き換えてください
   static saveProject(
     name: string,
     panels: Panel[],
     characters: Character[],
     bubbles: SpeechBubble[],
-    backgrounds: BackgroundElement[], // 🆕 背景データ追加
+    backgrounds: BackgroundElement[],
+    effects: EffectElement[], // 🆕 効果線データ追加
     canvasSize: { width: number; height: number },
     settings: { snapEnabled: boolean; snapSize: number; darkMode: boolean },
     projectId?: string
@@ -65,7 +64,8 @@ export class SaveService {
           panels: JSON.parse(JSON.stringify(panels)),
           characters: JSON.parse(JSON.stringify(characters)),
           bubbles: JSON.parse(JSON.stringify(bubbles)),
-          backgrounds: JSON.parse(JSON.stringify(backgrounds)), // 🆕 背景データ保存
+          backgrounds: JSON.parse(JSON.stringify(backgrounds)),
+          effects: JSON.parse(JSON.stringify(effects)), // 🆕 効果線データ保存
           canvasSize,
           settings
         }
@@ -93,7 +93,7 @@ export class SaveService {
   }
 
   /**
-   * プロジェクトを読み込み
+   * プロジェクトを読み込み（効果線対応版）
    */
   static loadProject(projectId: string): ProjectData | null {
     try {
@@ -101,6 +101,11 @@ export class SaveService {
       const project = projects.find(p => p.id === projectId);
       
       if (project) {
+        // 🔧 後方互換性：効果線データがない場合は空配列で初期化
+        if (!project.data.effects) {
+          project.data.effects = [];
+        }
+        
         localStorage.setItem(this.CURRENT_PROJECT_KEY, projectId);
         console.log(`プロジェクト "${project.name}" を読み込みました`);
         return project;
@@ -129,12 +134,20 @@ export class SaveService {
   }
 
   /**
-   * プロジェクト一覧を取得
+   * プロジェクト一覧を取得（効果線対応版）
    */
   static getAllProjects(): ProjectData[] {
     try {
       const data = localStorage.getItem(this.STORAGE_KEY);
-      return data ? JSON.parse(data) : [];
+      const projects = data ? JSON.parse(data) : [];
+      
+      // 🔧 後方互換性：既存プロジェクトに効果線データを追加
+      return projects.map((project: ProjectData) => {
+        if (!project.data.effects) {
+          project.data.effects = [];
+        }
+        return project;
+      });
     } catch (error) {
       console.error('プロジェクト一覧取得エラー:', error);
       return [];
@@ -249,6 +262,11 @@ export class SaveService {
         throw new Error('無効なプロジェクトファイルです');
       }
 
+      // 🔧 後方互換性：効果線データがない場合は空配列で初期化
+      if (!projectData.data.effects) {
+        projectData.data.effects = [];
+      }
+
       const newId = this.generateId();
       const now = new Date().toISOString();
       
@@ -274,13 +292,13 @@ export class SaveService {
     try {
       const data = localStorage.getItem(this.STORAGE_KEY) || '';
       const used = new Blob([data]).size;
-      const available = 5 * 1024 * 1024;
+      const available = 5 * 1024 * 1024; // 🔧 修正: availableを正しく宣言
       const percentage = (used / available) * 100;
 
       return { used, available, percentage };
     } catch (error) {
       console.error('ストレージ情報取得エラー:', error);
-      return { used: 0, available: 0, percentage: 0 };
+      return { used: 0, available: 5 * 1024 * 1024, percentage: 0 }; // 🔧 修正: available値を明示
     }
   }
 
@@ -294,6 +312,7 @@ export class SaveService {
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
   }
 
+  // 🔧 効果線対応版バリデーション
   private static validateProjectData(data: any): data is ProjectData {
     return (
       data &&
@@ -303,7 +322,10 @@ export class SaveService {
       data.data &&
       Array.isArray(data.data.panels) &&
       Array.isArray(data.data.characters) &&
-      Array.isArray(data.data.bubbles)
+      Array.isArray(data.data.bubbles) &&
+      Array.isArray(data.data.backgrounds) &&
+      // effectsは後方互換性のため必須ではない
+      (data.data.effects === undefined || Array.isArray(data.data.effects))
     );
   }
 }

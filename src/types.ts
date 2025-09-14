@@ -1,4 +1,4 @@
-// src/types.ts - キャラクターリサイズ対応版
+// src/types.ts - 効果線完全対応版
 
 export interface Panel {
   id: number;
@@ -43,7 +43,6 @@ export interface Character {
   isGlobalPosition: boolean;
 }
 
-
 // 🆕 新しい型定義を追加
 export interface CharacterBounds {
   x: number;
@@ -70,7 +69,6 @@ export interface CharacterInteractionState {
   originalRotation?: number;
 }
 
-
 export interface SpeechBubble {
   id: string;
   panelId: number;
@@ -85,10 +83,7 @@ export interface SpeechBubble {
   isGlobalPosition: boolean;
 }
 
-// CanvasComponent のプロパティ型（スナップ設定対応）
-// src/types.ts - CanvasComponentProps背景対応更新部分
-
-// 🔧 既存のCanvasComponentPropsを以下に置き換え
+// CanvasComponent のプロパティ型（効果線完全対応）
 export interface CanvasComponentProps {
   selectedTemplate: string;
   panels: Panel[];
@@ -98,10 +93,20 @@ export interface CanvasComponentProps {
   speechBubbles: SpeechBubble[];
   setSpeechBubbles: (speechBubbles: SpeechBubble[]) => void;
   
-  // 🆕 背景関連プロパティ追加
+  // 背景関連プロパティ
   backgrounds: BackgroundElement[];
   setBackgrounds: (backgrounds: BackgroundElement[]) => void;
   
+  // 🆕 効果線関連プロパティ追加
+  effects: EffectElement[];
+  setEffects: (effects: EffectElement[]) => void;
+  selectedEffect: EffectElement | null;
+  onEffectSelect?: (effect: EffectElement | null) => void;
+  onEffectRightClick?: (effect: EffectElement) => void;
+  showEffectPanel?: boolean;
+  onEffectPanelToggle?: () => void;
+  
+  // 既存プロパティ
   onCharacterAdd: (func: (type: string) => void) => void;
   onBubbleAdd: (func: (type: string, text: string) => void) => void;
   onPanelSelect?: (panel: Panel | null) => void;
@@ -152,7 +157,7 @@ export interface TemplateInfo {
 
 // パネル操作関連の型
 export interface PanelHandle {
-  type: "resize" | "move" | "split" | "delete"; // 🔧 delete追加
+  type: "resize" | "move" | "split" | "delete";
   direction?: "nw" | "n" | "ne" | "e" | "se" | "s" | "sw" | "w";
   x: number;
   y: number;
@@ -172,7 +177,7 @@ export interface OperationHistory {
   currentIndex: number;
 }
 
-// 🆕 スナップ設定の型定義
+// スナップ設定の型定義
 export interface SnapSettings {
   enabled: boolean;
   gridSize: number;
@@ -180,11 +185,8 @@ export interface SnapSettings {
   gridDisplay: 'always' | 'edit-only' | 'hidden';
 }
 
-// types.ts - 背景機能型定義追加部分
-// 既存のtypes.tsの最後に以下を追加してください（既存の型定義は一切変更しない）
-
 // ==========================================
-// 背景機能用型定義（新規追加）
+// 背景機能用型定義
 // ==========================================
 
 export interface BackgroundElement {
@@ -271,3 +273,85 @@ export interface BackgroundHandle {
   y: number;
   radius?: number;
 }
+
+// ==========================================
+// 効果線機能用型定義（新規追加）
+// ==========================================
+
+// 効果線の種類
+export type EffectType = 'speed' | 'focus' | 'explosion' | 'flash';
+
+// 効果線の方向
+export type EffectDirection = 'horizontal' | 'vertical' | 'radial' | 'custom';
+
+// 効果線要素の定義
+export interface EffectElement {
+  id: string;
+  panelId: number;  // 既存のPanel.idに対応
+  type: EffectType;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  direction: EffectDirection;
+  intensity: number;        // 効果の強度 (0.1-1.0)
+  density: number;          // 線の密度 (0.1-1.0)
+  length: number;           // 線の長さ (0.1-1.0)
+  angle: number;            // カスタム方向の角度 (0-360度)
+  color: string;            // 効果線の色
+  opacity: number;          // 透明度 (0-1)
+  blur: number;             // ぼかし効果 (0-10)
+  centerX?: number;         // 放射状効果の中心X (radial用)
+  centerY?: number;         // 放射状効果の中心Y (radial用)
+  selected: boolean;        // 選択状態
+  zIndex: number;           // 重ね順
+  isGlobalPosition: boolean; // グローバル座標かどうか
+}
+
+// 効果線テンプレートの定義
+export interface EffectTemplate {
+  id: string;
+  name: string;
+  type: EffectType;
+  direction: EffectDirection;
+  intensity: number;
+  density: number;
+  length: number;
+  angle: number;
+  color: string;
+  opacity: number;
+  blur: number;
+  description: string;
+  category: 'action' | 'emotion' | 'environment' | 'special';
+}
+
+// 効果線パネルのプロパティ
+export interface EffectPanelProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onAddEffect: (effect: EffectElement) => void;
+  selectedEffect: EffectElement | null;
+  onUpdateEffect: (effect: EffectElement) => void;
+  isDarkMode: boolean;
+}
+
+// 効果線レンダラーのプロパティ
+export interface EffectRendererProps {
+  effects: EffectElement[];
+  canvasScale: number;
+}
+
+// 効果線操作のハンドル
+export interface EffectHandle {
+  type: "move" | "resize" | "rotate";
+  direction?: "nw" | "n" | "ne" | "e" | "se" | "s" | "sw" | "w";
+  x: number;
+  y: number;
+  radius?: number;
+}
+
+// Canvas要素の種類に効果線を追加
+export type CanvasElementType = 'panel' | 'character' | 'bubble' | 'background' | 'effect';
+
+// Canvas要素の統合型
+export type CanvasElement = Panel | Character | SpeechBubble | BackgroundElement | EffectElement;

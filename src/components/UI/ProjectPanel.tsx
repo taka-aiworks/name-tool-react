@@ -1,7 +1,7 @@
 // src/components/UI/ProjectPanel.tsx - 背景機能対応修正版
 import React, { useState, useRef } from 'react';
 import SaveService, { ProjectMetadata } from '../../services/SaveService';
-import { BackgroundElement } from '../../types'; // 🆕 BackgroundElement型をインポート
+import { BackgroundElement, EffectElement } from '../../types'; // 🆕 EffectElement型も追加
 
 interface ProjectPanelProps {
   isOpen: boolean;
@@ -67,19 +67,22 @@ const ProjectPanel: React.FC<ProjectPanelProps> = ({
   };
 
   // 🔧 プロジェクト名変更（背景データ対応）
+  // 🔧 プロジェクト名変更（効果線対応修正版）
   const handleRename = async (projectId: string) => {
     if (newName.trim()) {
       const project = SaveService.loadProject(projectId);
       if (project) {
-        // 🆕 背景データが存在しない古いプロジェクトに対応
+        // 🔧 後方互換性：効果線データが存在しない古いプロジェクトに対応
         const backgrounds: BackgroundElement[] = (project.data as any).backgrounds || [];
+        const effects: EffectElement[] = (project.data as any).effects || []; // 🆕 効果線データ追加
         
         SaveService.saveProject(
           newName.trim(),
           project.data.panels,
           project.data.characters,
           project.data.bubbles,
-          backgrounds, // 🆕 背景データを追加
+          backgrounds,
+          effects, // 🆕 効果線データを正しい位置に追加
           project.data.canvasSize,
           project.data.settings,
           projectId

@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-// ✅ これに変更
-import { Panel, Character, SpeechBubble } from '../types';
+// 🔧 効果線対応: EffectElementを追加
+import { Panel, Character, SpeechBubble, BackgroundElement, EffectElement } from '../types';
 
 export interface ExportOptions {
   format: 'pdf' | 'png' | 'psd';
@@ -103,13 +103,15 @@ export class ExportService {
   }
 
   /**
-   * クリスタ用PSDデータの出力（簡易版）
+   * クリスタ用PSDデータの出力（効果線対応版）
    */
   async exportToPSD(
     canvasElement: HTMLCanvasElement,
     panels: Panel[],
     characters: Character[],
     bubbles: SpeechBubble[],
+    backgrounds: BackgroundElement[], // 🆕 背景データ追加
+    effects: EffectElement[], // 🆕 効果線データ追加
     options: ExportOptions,
     onProgress?: (progress: ExportProgress) => void
   ): Promise<void> {
@@ -117,7 +119,7 @@ export class ExportService {
       onProgress?.({ step: 'initialize', progress: 0, message: 'クリスタ用データ準備中...' });
 
       // PSD形式は複雑なので、代替案として構造化されたデータを出力
-      const layerData = this.createLayerStructure(panels, characters, bubbles);
+      const layerData = this.createLayerStructure(panels, characters, bubbles, backgrounds, effects);
       
       onProgress?.({ step: 'layers', progress: 50, message: 'レイヤー情報を生成中...' });
 
@@ -267,10 +269,13 @@ export class ExportService {
     return tempCanvas;
   }
 
+  // 🔧 効果線対応版レイヤー構造作成
   private createLayerStructure(
     panels: Panel[],
     characters: Character[],
-    bubbles: SpeechBubble[]
+    bubbles: SpeechBubble[],
+    backgrounds: BackgroundElement[], // 🆕 背景データ追加
+    effects: EffectElement[] // 🆕 効果線データ追加
   ): any {
     return {
       version: '1.0',
@@ -285,19 +290,19 @@ export class ExportService {
           height: panel.height,
           visible: true
         })),
-            characters: characters.map((char, index) => ({
-            id: char.id,
-            name: `キャラクター${index + 1}`,
-            x: char.x,
-            y: char.y,
-            scale: char.scale,
-            type: char.type,
-            expression: char.faceExpression || char.expression,
-            pose: char.bodyPose || char.pose,
-            direction: char.bodyDirection || char.eyeDirection,
-            gaze: char.eyeDirection,
-            visible: true
-            })),
+        characters: characters.map((char, index) => ({
+          id: char.id,
+          name: `キャラクター${index + 1}`,
+          x: char.x,
+          y: char.y,
+          scale: char.scale,
+          type: char.type,
+          expression: char.faceExpression || char.expression,
+          pose: char.bodyPose || char.pose,
+          direction: char.bodyDirection || char.eyeDirection,
+          gaze: char.eyeDirection,
+          visible: true
+        })),
         bubbles: bubbles.map((bubble, index) => ({
           id: bubble.id,
           name: `吹き出し${index + 1}`,
@@ -307,6 +312,36 @@ export class ExportService {
           height: bubble.height,
           text: bubble.text,
           type: bubble.type,
+          visible: true
+        })),
+        // 🆕 背景レイヤー追加
+        backgrounds: backgrounds.map((bg, index) => ({
+          id: bg.id,
+          name: `背景${index + 1}`,
+          x: bg.x,
+          y: bg.y,
+          width: bg.width,
+          height: bg.height,
+          type: bg.type,
+          opacity: bg.opacity,
+          zIndex: bg.zIndex,
+          visible: true
+        })),
+        // 🆕 効果線レイヤー追加
+        effects: effects.map((effect, index) => ({
+          id: effect.id,
+          name: `効果線${index + 1}`,
+          x: effect.x,
+          y: effect.y,
+          width: effect.width,
+          height: effect.height,
+          type: effect.type,
+          direction: effect.direction,
+          intensity: effect.intensity,
+          density: effect.density,
+          color: effect.color,
+          opacity: effect.opacity,
+          zIndex: effect.zIndex,
           visible: true
         }))
       }
@@ -323,7 +358,9 @@ export class ExportService {
     const allLayers = [
       ...layerData.layers.panels,
       ...layerData.layers.characters,
-      ...layerData.layers.bubbles
+      ...layerData.layers.bubbles,
+      ...layerData.layers.backgrounds, // 🆕 背景レイヤー追加
+      ...layerData.layers.effects // 🆕 効果線レイヤー追加
     ];
 
     for (let i = 0; i < allLayers.length; i++) {
