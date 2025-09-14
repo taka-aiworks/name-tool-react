@@ -1,19 +1,20 @@
-// src/App.tsx (効果線機能統合版)
+// src/App.tsx (トーン機能統合版)
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import CanvasComponent from "./components/CanvasComponent";
 import CharacterDetailPanel from "./components/UI/CharacterDetailPanel";
-import { Panel, Character, SpeechBubble, SnapSettings, BackgroundElement, BackgroundTemplate, EffectElement } from "./types";
+import { Panel, Character, SpeechBubble, SnapSettings, BackgroundElement, EffectElement, ToneElement, BackgroundTemplate } from "./types";
 import { templates } from "./components/CanvasArea/templates";
 import { sceneTemplates, applySceneTemplate } from "./components/CanvasArea/sceneTemplates";
 import { ExportPanel } from './components/UI/ExportPanel';
 import { useRef } from 'react';
 import "./App.css";
 
-// 必要なimport（効果線機能含む）
+// 必要なimport（トーン機能含む）
 import useProjectSave from './hooks/useProjectSave';
 import ProjectPanel from './components/UI/ProjectPanel';
 import BackgroundPanel from './components/UI/BackgroundPanel';
 import EffectPanel from './components/UI/EffectPanel';
+import TonePanel from './components/UI/TonePanel';
 
 function App() {
   // デフォルトダークモード設定
@@ -27,10 +28,12 @@ function App() {
   const [characters, setCharacters] = useState<Character[]>([]);
   const [speechBubbles, setSpeechBubbles] = useState<SpeechBubble[]>([]);
   const [backgrounds, setBackgrounds] = useState<BackgroundElement[]>([]);
-  const [effects, setEffects] = useState<EffectElement[]>([]); // 🆕 効果線状態管理
+  const [effects, setEffects] = useState<EffectElement[]>([]);
+  const [tones, setTones] = useState<ToneElement[]>([]); // 🆕 トーン状態管理
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
   const [selectedPanel, setSelectedPanel] = useState<Panel | null>(null);
-  const [selectedEffect, setSelectedEffect] = useState<EffectElement | null>(null); // 🆕 効果線選択状態
+  const [selectedEffect, setSelectedEffect] = useState<EffectElement | null>(null);
+  const [selectedTone, setSelectedTone] = useState<ToneElement | null>(null); // 🆕 トーン選択状態
   const [dialogueText, setDialogueText] = useState<string>("");
 
   // UI状態管理
@@ -40,7 +43,8 @@ function App() {
   const [isPanelEditMode, setIsPanelEditMode] = useState<boolean>(false);
   const [showProjectPanel, setShowProjectPanel] = useState<boolean>(false);
   const [showBackgroundPanel, setShowBackgroundPanel] = useState<boolean>(false);
-  const [showEffectPanel, setShowEffectPanel] = useState<boolean>(false); // 🆕 効果線パネル表示制御
+  const [showEffectPanel, setShowEffectPanel] = useState<boolean>(false);
+  const [showTonePanel, setShowTonePanel] = useState<boolean>(false); // 🆕 トーンパネル表示制御
 
   // スナップ設定の状態管理
   const [snapSettings, setSnapSettings] = useState<SnapSettings>({
@@ -50,7 +54,7 @@ function App() {
     gridDisplay: 'edit-only'
   });
 
-  // プロジェクト保存hook（効果線データ対応）
+  // プロジェクト保存hook（トーンデータ対応）
   const settings = useMemo(() => ({ 
     snapEnabled: snapSettings.enabled, 
     snapSize: snapSettings.gridSize, 
@@ -67,7 +71,8 @@ function App() {
     characters, 
     bubbles: speechBubbles,
     backgrounds,
-    effects, // 🆕 効果線データを保存対象に追加
+    effects,
+    tones, // 🆕 トーンデータを保存対象に追加
     canvasSize, 
     settings 
   });
@@ -76,26 +81,28 @@ function App() {
   const [addCharacterFunc, setAddCharacterFunc] = useState<((type: string) => void) | null>(null);
   const [addBubbleFunc, setAddBubbleFunc] = useState<((type: string, text: string) => void) | null>(null);
 
-  // アンドゥ/リドゥ機能（効果線対応）
+  // アンドゥ/リドゥ機能（トーン対応）
   const [operationHistory, setOperationHistory] = useState<{
     characters: Character[][];
     speechBubbles: SpeechBubble[][];
     panels: Panel[][];
     backgrounds: BackgroundElement[][];
-    effects: EffectElement[][]; // 🆕 効果線履歴追加
+    effects: EffectElement[][];
+    tones: ToneElement[][]; // 🆕 トーン履歴追加
     currentIndex: number;
   }>({
     characters: [[]],
     speechBubbles: [[]],
     panels: [[]],
     backgrounds: [[]],
-    effects: [[]], // 🆕 効果線履歴初期化
+    effects: [[]],
+    tones: [[]], // 🆕 トーン履歴初期化
     currentIndex: 0,
   });
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  // 履歴保存の最適化 - 依存関係を文字列で管理（効果線対応）
+  // 履歴保存の最適化 - 依存関係を文字列で管理（トーン対応）
   const charactersSignature = useMemo(() => 
     characters.map(char => `${char.id}-${char.x}-${char.y}-${char.scale}`).join(','), 
     [characters]
@@ -119,15 +126,21 @@ function App() {
   const effectsSignature = useMemo(() => 
     effects.map(effect => `${effect.id}-${effect.x}-${effect.y}-${effect.intensity}-${effect.density}`).join(','), 
     [effects]
-  ); // 🆕 効果線の変更検知
+  );
 
-  // 履歴保存関数（効果線対応）
+  const tonesSignature = useMemo(() => 
+    tones.map(tone => `${tone.id}-${tone.x}-${tone.y}-${tone.density}-${tone.opacity}`).join(','), 
+    [tones]
+  ); // 🆕 トーンの変更検知
+
+  // 履歴保存関数（トーン対応）
   const saveToHistory = useCallback((
     newCharacters: Character[], 
     newBubbles: SpeechBubble[], 
     newPanels: Panel[], 
     newBackgrounds: BackgroundElement[],
-    newEffects: EffectElement[] // 🆕 効果線引数追加
+    newEffects: EffectElement[],
+    newTones: ToneElement[] // 🆕 トーン引数追加
   ) => {
     setOperationHistory(prev => {
       const newHistory = {
@@ -135,7 +148,8 @@ function App() {
         speechBubbles: [...prev.speechBubbles.slice(0, prev.currentIndex + 1), [...newBubbles]],
         panels: [...prev.panels.slice(0, prev.currentIndex + 1), [...newPanels]],
         backgrounds: [...prev.backgrounds.slice(0, prev.currentIndex + 1), [...newBackgrounds]],
-        effects: [...prev.effects.slice(0, prev.currentIndex + 1), [...newEffects]], // 🆕 効果線履歴追加
+        effects: [...prev.effects.slice(0, prev.currentIndex + 1), [...newEffects]],
+        tones: [...prev.tones.slice(0, prev.currentIndex + 1), [...newTones]], // 🆕 トーン履歴追加
         currentIndex: prev.currentIndex + 1,
       };
       
@@ -145,7 +159,8 @@ function App() {
         newHistory.speechBubbles = newHistory.speechBubbles.slice(1);
         newHistory.panels = newHistory.panels.slice(1);
         newHistory.backgrounds = newHistory.backgrounds.slice(1);
-        newHistory.effects = newHistory.effects.slice(1); // 🆕 効果線履歴管理
+        newHistory.effects = newHistory.effects.slice(1);
+        newHistory.tones = newHistory.tones.slice(1); // 🆕 トーン履歴管理
         newHistory.currentIndex = Math.max(0, newHistory.currentIndex - 1);
       }
       
@@ -153,22 +168,22 @@ function App() {
     });
   }, []);
 
-  // 履歴保存のタイミング（効果線対応）
+  // 履歴保存のタイミング（トーン対応）
   useEffect(() => {
     // 空の状態では履歴保存しない
     if (characters.length === 0 && speechBubbles.length === 0 && panels.length === 0 && 
-        backgrounds.length === 0 && effects.length === 0) {
+        backgrounds.length === 0 && effects.length === 0 && tones.length === 0) {
       return;
     }
 
     const timeoutId = setTimeout(() => {
-      saveToHistory(characters, speechBubbles, panels, backgrounds, effects);
+      saveToHistory(characters, speechBubbles, panels, backgrounds, effects, tones);
     }, 500);
 
     return () => clearTimeout(timeoutId);
-  }, [charactersSignature, bubblesSignature, panelsSignature, backgroundsSignature, effectsSignature, saveToHistory]);
+  }, [charactersSignature, bubblesSignature, panelsSignature, backgroundsSignature, effectsSignature, tonesSignature, saveToHistory]);
 
-  // アンドゥ/リドゥ処理（効果線対応）
+  // アンドゥ/リドゥ処理（トーン対応）
   const handleUndo = useCallback(() => {
     if (operationHistory.currentIndex > 0) {
       const newIndex = operationHistory.currentIndex - 1;
@@ -176,7 +191,8 @@ function App() {
       setSpeechBubbles([...operationHistory.speechBubbles[newIndex]]);
       setPanels([...operationHistory.panels[newIndex]]);
       setBackgrounds([...operationHistory.backgrounds[newIndex]]);
-      setEffects([...operationHistory.effects[newIndex]]); // 🆕 効果線アンドゥ
+      setEffects([...operationHistory.effects[newIndex]]);
+      setTones([...operationHistory.tones[newIndex]]); // 🆕 トーンアンドゥ
       setOperationHistory(prev => ({ ...prev, currentIndex: newIndex }));
     }
   }, [operationHistory]);
@@ -188,7 +204,8 @@ function App() {
       setSpeechBubbles([...operationHistory.speechBubbles[newIndex]]);
       setPanels([...operationHistory.panels[newIndex]]);
       setBackgrounds([...operationHistory.backgrounds[newIndex]]);
-      setEffects([...operationHistory.effects[newIndex]]); // 🆕 効果線リドゥ
+      setEffects([...operationHistory.effects[newIndex]]);
+      setTones([...operationHistory.tones[newIndex]]); // 🆕 トーンリドゥ
       setOperationHistory(prev => ({ ...prev, currentIndex: newIndex }));
     }
   }, [operationHistory]);
@@ -201,7 +218,7 @@ function App() {
     }
   }, [selectedCharacter, characters]);
 
-  // キーボードイベント処理（効果線対応）
+  // キーボードイベント処理（トーン対応）
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Backspace' || e.key === 'Delete') {
@@ -230,10 +247,16 @@ function App() {
         setShowBackgroundPanel(prev => !prev);
       }
 
-      // 🆕 効果線パネル表示ショートカット
+      // 効果線パネル表示ショートカット
       if (e.key === 'f' && e.ctrlKey) {
         e.preventDefault();
         setShowEffectPanel(prev => !prev);
+      }
+
+      // 🆕 トーンパネル表示ショートカット
+      if (e.key === 't' && e.ctrlKey) {
+        e.preventDefault();
+        setShowTonePanel(prev => !prev);
       }
     };
 
@@ -265,12 +288,13 @@ function App() {
     document.documentElement.setAttribute("data-theme", newTheme);
   }, [isDarkMode]);
 
-  // テンプレート変更処理（効果線クリア対応）
+  // テンプレート変更処理（トーンクリア対応）
   const handleTemplateClick = useCallback((template: string) => {
     setSelectedTemplate(template);
     setSelectedCharacter(null);
     setSelectedPanel(null);
-    setSelectedEffect(null); // 🆕 効果線選択もクリア
+    setSelectedEffect(null);
+    setSelectedTone(null); // 🆕 トーン選択もクリア
     
     const newPanels = [...templates[template].panels];
     setPanels(newPanels);
@@ -278,7 +302,8 @@ function App() {
     setCharacters([]);
     setSpeechBubbles([]);
     setBackgrounds([]);
-    setEffects([]); // 🆕 効果線もクリア
+    setEffects([]);
+    setTones([]); // 🆕 トーンもクリア
   }, []);
 
   // シーンテンプレート適用
@@ -374,7 +399,7 @@ function App() {
     console.log(`✅ コマ追加完了: ${newPanelId} (${position})`);
   }, [panels]);
 
-  // コマ削除機能（効果線も削除）
+  // コマ削除機能（トーンも削除）
   const handlePanelDelete = useCallback((panelId: string) => {
     if (panels.length <= 1) {
       console.log(`⚠️ 最後のコマは削除できません`);
@@ -386,10 +411,12 @@ function App() {
       setCharacters(prev => prev.filter(char => char.panelId !== panelIdNum));
       setSpeechBubbles(prev => prev.filter(bubble => bubble.panelId !== panelIdNum));
       setBackgrounds(prev => prev.filter(bg => bg.panelId !== panelIdNum));
-      setEffects(prev => prev.filter(effect => effect.panelId !== panelIdNum)); // 🆕 効果線も削除
+      setEffects(prev => prev.filter(effect => effect.panelId !== panelIdNum));
+      setTones(prev => prev.filter(tone => tone.panelId !== panelIdNum)); // 🆕 トーンも削除
       setPanels(prev => prev.filter(panel => panel.id !== panelIdNum));
       setSelectedPanel(null);
-      setSelectedEffect(null); // 🆕 効果線選択もクリア
+      setSelectedEffect(null);
+      setSelectedTone(null); // 🆕 トーン選択もクリア
       console.log(`🗑️ コマ削除: ${panelId}`);
     }
   }, [panels.length]);
@@ -440,16 +467,18 @@ function App() {
     console.log(`${direction}分割完了（隙間: ${gap}px）`);
   }, [panels]);
 
-  // 全てクリア機能（効果線対応）
+  // 全てクリア機能（トーン対応）
   const handleClearAll = useCallback(() => {
     if (window.confirm("全ての要素をクリアしますか？")) {
       setCharacters([]);
       setSpeechBubbles([]);
       setBackgrounds([]);
-      setEffects([]); // 🆕 効果線もクリア
+      setEffects([]);
+      setTones([]); // 🆕 トーンもクリア
       setSelectedCharacter(null);
       setSelectedPanel(null);
-      setSelectedEffect(null); // 🆕 効果線選択もクリア
+      setSelectedEffect(null);
+      setSelectedTone(null); // 🆕 トーン選択もクリア
     }
   }, []);
 
@@ -473,7 +502,7 @@ function App() {
     console.log(`背景テンプレート「${template.name}」を適用しました`);
   }, []);
 
-  // 🆕 効果線テンプレート適用ハンドラー
+  // 効果線テンプレート適用ハンドラー
   const handleEffectAdd = useCallback((effect: EffectElement) => {
     setEffects([...effects, effect]);
     setSelectedEffect(effect);
@@ -485,6 +514,20 @@ function App() {
       effect.id === updatedEffect.id ? updatedEffect : effect
     ));
     setSelectedEffect(updatedEffect);
+  }, []);
+
+  // 🆕 トーンテンプレート適用ハンドラー
+  const handleToneAdd = useCallback((tone: ToneElement) => {
+    setTones([...tones, tone]);
+    setSelectedTone(tone);
+    console.log(`トーン「${tone.type}」を追加しました`);
+  }, [tones]);
+
+  const handleToneUpdate = useCallback((updatedTone: ToneElement) => {
+    setTones(prev => prev.map(tone => 
+      tone.id === updatedTone.id ? updatedTone : tone
+    ));
+    setSelectedTone(updatedTone);
   }, []);
 
   return (
@@ -521,7 +564,7 @@ function App() {
             {backgrounds.length > 0 && <span style={{ marginLeft: "4px" }}>({backgrounds.length})</span>}
           </button>
 
-          {/* 🆕 効果線ボタン */}
+          {/* 効果線ボタン */}
           <button 
             className="control-btn"
             onClick={() => setShowEffectPanel(true)}
@@ -534,6 +577,21 @@ function App() {
           >
             ⚡ 効果線
             {effects.length > 0 && <span style={{ marginLeft: "4px" }}>({effects.length})</span>}
+          </button>
+
+          {/* 🆕 トーンボタン */}
+          <button 
+            className="control-btn"
+            onClick={() => setShowTonePanel(true)}
+            title="トーン設定 (Ctrl+T)"
+            style={{
+              background: tones.length > 0 ? "#795548" : "var(--bg-tertiary)",
+              color: tones.length > 0 ? "white" : "var(--text-primary)",
+              border: `1px solid ${tones.length > 0 ? "#795548" : "var(--border-color)"}`,
+            }}
+          >
+            🎯 トーン
+            {tones.length > 0 && <span style={{ marginLeft: "4px" }}>({tones.length})</span>}
           </button>
 
           {/* プロジェクトボタン */}
@@ -753,13 +811,15 @@ function App() {
               操作履歴: {operationHistory.currentIndex + 1} / {operationHistory.characters.length}
               {selectedCharacter && <span> | 選択中: {selectedCharacter.name}</span>}
               {selectedPanel && <span> | パネル{selectedPanel.id}選択中</span>}
-              {selectedEffect && <span> | 効果線選択中</span>} {/* 🆕 効果線選択状態表示 */}
+              {selectedEffect && <span> | 効果線選択中</span>}
+              {selectedTone && <span> | トーン選択中</span>} {/* 🆕 トーン選択状態表示 */}
               {isPanelEditMode && <span> | 🔧 コマ編集モード</span>}
               {snapSettings.enabled && <span> | ⚙️ スナップ: {snapSettings.gridSize}px ({snapSettings.sensitivity})</span>}
               {projectSave.isAutoSaving && <span> | 💾 自動保存中...</span>}
               {projectSave.hasUnsavedChanges && <span> | ⚠️ 未保存</span>}
               {backgrounds.length > 0 && <span> | 🎨 背景: {backgrounds.length}個</span>}
-              {effects.length > 0 && <span> | ⚡ 効果線: {effects.length}個</span>} {/* 🆕 効果線状態表示 */}
+              {effects.length > 0 && <span> | ⚡ 効果線: {effects.length}個</span>}
+              {tones.length > 0 && <span> | 🎯 トーン: {tones.length}個</span>} {/* 🆕 トーン状態表示 */}
             </div>
           </div>
 
@@ -775,13 +835,15 @@ function App() {
             setSpeechBubbles={setSpeechBubbles}
             backgrounds={backgrounds}
             setBackgrounds={setBackgrounds}
-            // 🆕 効果線関連プロパティ追加
             effects={effects}
             setEffects={setEffects}
-            selectedEffect={selectedEffect}
-            onEffectSelect={setSelectedEffect}
-            showEffectPanel={showEffectPanel}
-            onEffectPanelToggle={() => setShowEffectPanel(!showEffectPanel)}
+            // 🆕 トーン関連プロパティ追加
+            tones={tones}
+            setTones={setTones}
+            selectedTone={selectedTone}
+            onToneSelect={setSelectedTone}
+            showTonePanel={showTonePanel}
+            onTonePanelToggle={() => setShowTonePanel(!showTonePanel)}
             // 既存のプロパティ
             onCharacterAdd={(func: (type: string) => void) => setAddCharacterFunc(() => func)}
             onBubbleAdd={(func: (type: string, text: string) => void) => setAddBubbleFunc(() => func)}
@@ -902,7 +964,7 @@ function App() {
             </div>
           </div>
 
-          {/* 🆕 効果線セクション */}
+          {/* 効果線セクション */}
           <div className="section">
             <h3>⚡ 効果線</h3>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
@@ -955,6 +1017,59 @@ function App() {
             </div>
           </div>
 
+          {/* 🆕 トーンセクション */}
+          <div className="section">
+            <h3>🎯 トーン</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <button 
+                className="btn btn-primary"
+                onClick={() => setShowTonePanel(true)}
+                title="トーン設定パネルを開く (Ctrl+T)"
+                style={{
+                  background: "var(--accent-color)",
+                  color: "white",
+                  border: "1px solid var(--accent-color)",
+                  borderRadius: "6px",
+                  padding: "8px 12px",
+                  cursor: "pointer",
+                  fontSize: "14px"
+                }}
+              >
+                🎯 トーン設定
+              </button>
+              
+              {tones.length > 0 && (
+                <div style={{
+                  background: "var(--bg-secondary)",
+                  border: "1px solid var(--border-color)",
+                  borderRadius: "6px",
+                  padding: "8px",
+                  fontSize: "12px",
+                  color: "var(--text-muted)"
+                }}>
+                  <strong>現在のトーン:</strong><br/>
+                  {tones.length}個のトーン要素
+                  <br/>
+                  <small>• パネルを選択してトーン設定</small>
+                </div>
+              )}
+              
+              {selectedPanel && (
+                <div style={{
+                  background: "var(--bg-tertiary)",
+                  border: "1px solid var(--accent-color)",
+                  borderRadius: "6px",
+                  padding: "8px",
+                  fontSize: "12px",
+                  color: "var(--accent-color)"
+                }}>
+                  📍 パネル{selectedPanel.id}選択中<br/>
+                  <small>トーン設定パネルからトーンを追加できます</small>
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* 出力 */}
           <div className="section">
             <h3>📤 出力</h3>
@@ -963,7 +1078,8 @@ function App() {
               characters={characters}
               bubbles={speechBubbles}
               backgrounds={backgrounds}
-              effects={effects} // 🆕 効果線データも出力対象に
+              effects={effects}
+              tones={tones} // 🆕 トーンデータも出力対象に
               canvasRef={canvasRef}
             />
           </div>
@@ -990,7 +1106,7 @@ function App() {
         onBackgroundAdd={handleBackgroundAdd}
       />
 
-      {/* 🆕 効果線設定パネル */}
+      {/* 効果線設定パネル */}
       <EffectPanel
         isOpen={showEffectPanel}
         onClose={() => setShowEffectPanel(false)}
@@ -998,8 +1114,20 @@ function App() {
         selectedEffect={selectedEffect}
         onUpdateEffect={handleEffectUpdate}
         isDarkMode={isDarkMode}
-        selectedPanel={selectedPanel} // 🆕 追加
-        effects={effects} // 🆕 追加
+        selectedPanel={selectedPanel}
+        effects={effects}
+      />
+
+      {/* 🆕 トーン設定パネル */}
+      <TonePanel
+        isOpen={showTonePanel}
+        onClose={() => setShowTonePanel(false)}
+        onAddTone={handleToneAdd}
+        selectedTone={selectedTone}
+        onUpdateTone={handleToneUpdate}
+        isDarkMode={isDarkMode}
+        selectedPanel={selectedPanel}
+        tones={tones}
       />
 
       {/* プロジェクト管理パネル */}
@@ -1013,7 +1141,8 @@ function App() {
             setCharacters(project.data.characters);
             setSpeechBubbles(project.data.bubbles);
             setBackgrounds(project.data.backgrounds || []);
-            setEffects(project.data.effects || []); // 🆕 効果線データも復元
+            setEffects(project.data.effects || []);
+            setTones(project.data.tones || []); // 🆕 トーンデータも復元
             // 設定も復元
             setSnapSettings(prev => ({
               ...prev,
@@ -1031,10 +1160,12 @@ function App() {
           setCharacters([]);
           setSpeechBubbles([]);
           setBackgrounds([]);
-          setEffects([]); // 🆕 効果線もクリア
+          setEffects([]);
+          setTones([]); // 🆕 トーンもクリア
           setSelectedCharacter(null);
           setSelectedPanel(null);
-          setSelectedEffect(null); // 🆕 効果線選択もクリア
+          setSelectedEffect(null);
+          setSelectedTone(null); // 🆕 トーン選択もクリア
         }}
         currentProjectId={projectSave.currentProjectId}
         saveStatus={projectSave.saveStatus}

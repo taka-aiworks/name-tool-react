@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-// 🔧 効果線対応: EffectElementを追加
-import { Panel, Character, SpeechBubble, BackgroundElement, EffectElement } from '../types';
+// 🔧 トーン対応: ToneElementを追加
+import { Panel, Character, SpeechBubble, BackgroundElement, EffectElement, ToneElement } from '../types';
 
 export interface ExportOptions {
   format: 'pdf' | 'png' | 'psd';
@@ -103,15 +103,16 @@ export class ExportService {
   }
 
   /**
-   * クリスタ用PSDデータの出力（効果線対応版）
+   * クリスタ用PSDデータの出力（トーン対応版）
    */
   async exportToPSD(
     canvasElement: HTMLCanvasElement,
     panels: Panel[],
     characters: Character[],
     bubbles: SpeechBubble[],
-    backgrounds: BackgroundElement[], // 🆕 背景データ追加
-    effects: EffectElement[], // 🆕 効果線データ追加
+    backgrounds: BackgroundElement[],
+    effects: EffectElement[],
+    tones: ToneElement[], // 🆕 トーンデータ追加
     options: ExportOptions,
     onProgress?: (progress: ExportProgress) => void
   ): Promise<void> {
@@ -119,7 +120,7 @@ export class ExportService {
       onProgress?.({ step: 'initialize', progress: 0, message: 'クリスタ用データ準備中...' });
 
       // PSD形式は複雑なので、代替案として構造化されたデータを出力
-      const layerData = this.createLayerStructure(panels, characters, bubbles, backgrounds, effects);
+      const layerData = this.createLayerStructure(panels, characters, bubbles, backgrounds, effects, tones);
       
       onProgress?.({ step: 'layers', progress: 50, message: 'レイヤー情報を生成中...' });
 
@@ -269,13 +270,14 @@ export class ExportService {
     return tempCanvas;
   }
 
-  // 🔧 効果線対応版レイヤー構造作成
+  // 🔧 トーン対応版レイヤー構造作成
   private createLayerStructure(
     panels: Panel[],
     characters: Character[],
     bubbles: SpeechBubble[],
-    backgrounds: BackgroundElement[], // 🆕 背景データ追加
-    effects: EffectElement[] // 🆕 効果線データ追加
+    backgrounds: BackgroundElement[],
+    effects: EffectElement[],
+    tones: ToneElement[] // 🆕 トーンデータ追加
   ): any {
     return {
       version: '1.0',
@@ -314,7 +316,6 @@ export class ExportService {
           type: bubble.type,
           visible: true
         })),
-        // 🆕 背景レイヤー追加
         backgrounds: backgrounds.map((bg, index) => ({
           id: bg.id,
           name: `背景${index + 1}`,
@@ -327,7 +328,6 @@ export class ExportService {
           zIndex: bg.zIndex,
           visible: true
         })),
-        // 🆕 効果線レイヤー追加
         effects: effects.map((effect, index) => ({
           id: effect.id,
           name: `効果線${index + 1}`,
@@ -343,6 +343,27 @@ export class ExportService {
           opacity: effect.opacity,
           zIndex: effect.zIndex,
           visible: true
+        })),
+        // 🆕 トーンレイヤー追加
+        tones: tones.map((tone, index) => ({
+          id: tone.id,
+          name: `トーン${index + 1}`,
+          x: tone.x,
+          y: tone.y,
+          width: tone.width,
+          height: tone.height,
+          type: tone.type,
+          pattern: tone.pattern,
+          density: tone.density,
+          opacity: tone.opacity,
+          rotation: tone.rotation,
+          scale: tone.scale,
+          blendMode: tone.blendMode,
+          contrast: tone.contrast,
+          brightness: tone.brightness,
+          invert: tone.invert,
+          zIndex: tone.zIndex,
+          visible: tone.visible
         }))
       }
     };
@@ -359,8 +380,9 @@ export class ExportService {
       ...layerData.layers.panels,
       ...layerData.layers.characters,
       ...layerData.layers.bubbles,
-      ...layerData.layers.backgrounds, // 🆕 背景レイヤー追加
-      ...layerData.layers.effects // 🆕 効果線レイヤー追加
+      ...layerData.layers.backgrounds,
+      ...layerData.layers.effects,
+      ...layerData.layers.tones // 🆕 トーンレイヤー追加
     ];
 
     for (let i = 0; i < allLayers.length; i++) {

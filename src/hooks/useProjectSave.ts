@@ -1,14 +1,15 @@
-// src/hooks/useProjectSave.ts - 効果線対応修正版
+// src/hooks/useProjectSave.ts - トーン機能対応版
 import { useEffect, useRef, useCallback, useState } from 'react';
 import SaveService from '../services/SaveService';
-import { Panel, Character, SpeechBubble, BackgroundElement, EffectElement } from '../types';
+import { Panel, Character, SpeechBubble, BackgroundElement, EffectElement, ToneElement } from '../types';
 
 interface UseProjectSaveProps {
   panels: Panel[];
   characters: Character[];
   bubbles: SpeechBubble[];
   backgrounds: BackgroundElement[];
-  effects: EffectElement[]; // 🆕 効果線データ追加
+  effects: EffectElement[];
+  tones: ToneElement[]; // 🆕 トーンデータ追加
   canvasSize: { width: number; height: number };
   settings: { snapEnabled: boolean; snapSize: number; darkMode: boolean };
 }
@@ -25,7 +26,8 @@ export const useProjectSave = ({
   characters,
   bubbles,
   backgrounds,
-  effects, // 🆕 効果線データ受け取り
+  effects,
+  tones, // 🆕 トーンデータ受け取り
   canvasSize,
   settings
 }: UseProjectSaveProps) => {
@@ -50,11 +52,12 @@ export const useProjectSave = ({
       characters,
       bubbles,
       backgrounds,
-      effects, // 🆕 効果線データを含める
+      effects,
+      tones, // 🆕 トーンデータを含める
       canvasSize,
       settings
     });
-  }, [panels, characters, bubbles, backgrounds, effects, canvasSize, settings]);
+  }, [panels, characters, bubbles, backgrounds, effects, tones, canvasSize, settings]);
 
   const hasDataChanged = useCallback(() => {
     const currentData = getCurrentDataString();
@@ -71,7 +74,8 @@ export const useProjectSave = ({
         characters,
         bubbles,
         backgrounds,
-        effects, // 🆕 効果線データを保存
+        effects,
+        tones, // 🆕 トーンデータを保存
         canvasSize,
         settings,
         currentProjectId || undefined
@@ -93,7 +97,7 @@ export const useProjectSave = ({
       console.error('手動保存エラー:', error);
       return null;
     }
-  }, [projectName, panels, characters, bubbles, backgrounds, effects, canvasSize, settings, currentProjectId, getCurrentDataString]);
+  }, [projectName, panels, characters, bubbles, backgrounds, effects, tones, canvasSize, settings, currentProjectId, getCurrentDataString]);
 
   const autoSave = useCallback(async () => {
     if (!hasDataChanged() || saveStatus.isAutoSaving) {
@@ -193,7 +197,8 @@ export const useProjectSave = ({
             characters,
             bubbles,
             backgrounds,
-            effects, // 🆕 効果線データも保存
+            effects,
+            tones, // 🆕 トーンデータも保存
             canvasSize,
             settings,
             currentProjectId || undefined
@@ -209,7 +214,7 @@ export const useProjectSave = ({
 
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [saveStatus.hasUnsavedChanges, projectName, panels, characters, bubbles, backgrounds, effects, canvasSize, settings, currentProjectId]);
+  }, [saveStatus.hasUnsavedChanges, projectName, panels, characters, bubbles, backgrounds, effects, tones, canvasSize, settings, currentProjectId]);
 
   useEffect(() => {
     return () => {
