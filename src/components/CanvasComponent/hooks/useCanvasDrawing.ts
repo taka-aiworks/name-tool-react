@@ -1,4 +1,4 @@
-// src/components/CanvasComponent/hooks/useCanvasDrawing.ts - 効果線+トーン描画統合版
+// src/components/CanvasComponent/hooks/useCanvasDrawing.ts - ToneRenderer統合修正版
 import { RefObject, useEffect } from 'react';
 import { Panel, Character, SpeechBubble, BackgroundElement, EffectElement, ToneElement, SnapSettings } from '../../../types';
 import { CanvasState } from './useCanvasState';
@@ -6,6 +6,7 @@ import { CanvasDrawing } from '../../CanvasArea/CanvasDrawing';
 import { BubbleRenderer } from '../../CanvasArea/renderers/BubbleRenderer';
 import { CharacterRenderer } from '../../CanvasArea/renderers/CharacterRenderer/CharacterRenderer';
 import { BackgroundRenderer } from '../../CanvasArea/renderers/BackgroundRenderer';
+import { ToneRenderer } from '../../CanvasArea/renderers/ToneRenderer'; // 🆕 ToneRenderer追加
 
 export interface CanvasDrawingHookProps {
   canvasRef: RefObject<HTMLCanvasElement | null>;
@@ -72,20 +73,21 @@ export const useCanvasDrawing = ({
   };
 
   /**
-   * 🆕 トーンを描画（パネル内で zIndex 順）
+   * 🆕 トーンを描画（背景の後、効果線の前）- ToneRenderer使用
    */
   const drawTones = (ctx: CanvasRenderingContext2D) => {
     panels.forEach(panel => {
       // 各パネルのトーン要素を取得（zIndex順にソート）
       const panelTones = tones
-        .filter(tone => tone.panelId === panel.id)
+        .filter(tone => tone.panelId === panel.id && tone.visible)
         .sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
 
-      // パネル内のトーンを順番に描画
+      // パネル内のトーンを順番に描画（ToneRenderer使用）
       panelTones.forEach(tone => {
         const isSelected = selectedTone?.id === tone.id;
         
-        drawSingleTone(ctx, tone, panel, isSelected);
+        // ✅ ToneRenderer.renderToneを使用（正しい実装）
+        ToneRenderer.renderTone(ctx, tone, panel, isSelected);
       });
     });
   };
@@ -107,51 +109,6 @@ export const useCanvasDrawing = ({
         drawSingleEffect(ctx, effect, panel, isSelected);
       });
     });
-  };
-
-  /**
-   * 🆕 単一トーンの描画関数
-   */
-  const drawSingleTone = (
-    ctx: CanvasRenderingContext2D,
-    tone: ToneElement,
-    panel: Panel,
-    isSelected: boolean
-  ) => {
-    // パネル内の絶対座標を計算
-    const absoluteX = panel.x + tone.x * panel.width;
-    const absoluteY = panel.y + tone.y * panel.height;
-    const absoluteWidth = tone.width * panel.width;
-    const absoluteHeight = tone.height * panel.height;
-
-    ctx.save();
-    ctx.globalAlpha = tone.opacity;
-
-    // トーンのタイプ別描画
-    switch (tone.type) {
-      case 'dots':
-        drawDotTone(ctx, tone, absoluteX, absoluteY, absoluteWidth, absoluteHeight);
-        break;
-      case 'lines':
-        drawLineTone(ctx, tone, absoluteX, absoluteY, absoluteWidth, absoluteHeight);
-        break;
-      case 'crosshatch':
-        drawCrosshatchTone(ctx, tone, absoluteX, absoluteY, absoluteWidth, absoluteHeight);
-        break;
-      case 'gradient':
-        drawGradientTone(ctx, tone, absoluteX, absoluteY, absoluteWidth, absoluteHeight);
-        break;
-      case 'noise':
-        drawNoiseTone(ctx, tone, absoluteX, absoluteY, absoluteWidth, absoluteHeight);
-        break;
-    }
-
-    ctx.restore();
-
-    // 選択状態の描画
-    if (isSelected) {
-      drawToneSelection(ctx, absoluteX, absoluteY, absoluteWidth, absoluteHeight);
-    }
   };
 
   /**
@@ -194,235 +151,6 @@ export const useCanvasDrawing = ({
     if (isSelected) {
       drawEffectSelection(ctx, absoluteX, absoluteY, absoluteWidth, absoluteHeight);
     }
-  };
-
-  /**
-   * 🆕 ドットトーン描画
-   */
-  const drawDotTone = (
-    ctx: CanvasRenderingContext2D,
-    tone: ToneElement,
-    x: number,
-    y: number,
-    width: number,
-    height: number
-  ) => {
-    ctx.fillStyle = tone.color || '#000000';
-    
-    const spacing = Math.max(2, 20 / tone.density);
-    const dotSize = Math.max(0.5, (tone.intensity || 0.5) * 3);
-    
-    // コマ枠内にクリッピング
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(x, y, width, height);
-    ctx.clip();
-    
-    for (let i = x; i < x + width; i += spacing) {
-      for (let j = y; j < y + height; j += spacing) {
-        const offsetX = (Math.floor(j / spacing) % 2) * (spacing / 2); // 千鳥配置
-        const dotX = i + offsetX + (Math.random() - 0.5) * spacing * 0.3;
-        const dotY = j + (Math.random() - 0.5) * spacing * 0.3;
-        
-        ctx.beginPath();
-        ctx.arc(dotX, dotY, dotSize, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-    
-    ctx.restore();
-  };
-
-  /**
-   * 🆕 ライントーン描画
-   */
-  const drawLineTone = (
-    ctx: CanvasRenderingContext2D,
-    tone: ToneElement,
-    x: number,
-    y: number,
-    width: number,
-    height: number
-  ) => {
-    ctx.strokeStyle = tone.color || '#000000';
-    ctx.lineWidth = Math.max(0.5, tone.intensity || 0.5);
-    
-    const spacing = Math.max(2, 15 / tone.density);
-    const angle = (tone.angle || 0) * Math.PI / 180;
-    
-    // コマ枠内にクリッピング
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(x, y, width, height);
-    ctx.clip();
-    
-    // 角度に応じた線の描画
-    const maxDimension = Math.max(width, height) * 1.5;
-    const lineCount = Math.floor(maxDimension / spacing);
-    
-    for (let i = 0; i < lineCount; i++) {
-      const offset = i * spacing - maxDimension / 2;
-      
-      // 線の開始・終了点を計算
-      const centerX = x + width / 2;
-      const centerY = y + height / 2;
-      
-      const cos = Math.cos(angle);
-      const sin = Math.sin(angle);
-      
-      const perpX = -sin * offset;
-      const perpY = cos * offset;
-      
-      const startX = centerX + perpX - cos * maxDimension;
-      const startY = centerY + perpY - sin * maxDimension;
-      const endX = centerX + perpX + cos * maxDimension;
-      const endY = centerY + perpY + sin * maxDimension;
-      
-      ctx.beginPath();
-      ctx.moveTo(startX, startY);
-      ctx.lineTo(endX, endY);
-      ctx.stroke();
-    }
-    
-    ctx.restore();
-  };
-
-  /**
-   * 🆕 クロスハッチトーン描画
-   */
-  const drawCrosshatchTone = (
-    ctx: CanvasRenderingContext2D,
-    tone: ToneElement,
-    x: number,
-    y: number,
-    width: number,
-    height: number
-  ) => {
-    ctx.strokeStyle = tone.color || '#000000';
-    ctx.lineWidth = Math.max(0.5, (tone.intensity || 0.5) * 0.8);
-    
-    const spacing = Math.max(3, 20 / tone.density);
-    
-    // コマ枠内にクリッピング
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(x, y, width, height);
-    ctx.clip();
-    
-    // 45度と-45度の線を描画
-    const angles = [45, -45];
-    
-    angles.forEach(angleDeg => {
-      const angle = angleDeg * Math.PI / 180;
-      const maxDimension = Math.max(width, height) * 1.5;
-      const lineCount = Math.floor(maxDimension / spacing);
-      
-      for (let i = 0; i < lineCount; i++) {
-        const offset = i * spacing - maxDimension / 2;
-        
-        const centerX = x + width / 2;
-        const centerY = y + height / 2;
-        
-        const cos = Math.cos(angle);
-        const sin = Math.sin(angle);
-        
-        const perpX = -sin * offset;
-        const perpY = cos * offset;
-        
-        const startX = centerX + perpX - cos * maxDimension;
-        const startY = centerY + perpY - sin * maxDimension;
-        const endX = centerX + perpX + cos * maxDimension;
-        const endY = centerY + perpY + sin * maxDimension;
-        
-        ctx.beginPath();
-        ctx.moveTo(startX, startY);
-        ctx.lineTo(endX, endY);
-        ctx.stroke();
-      }
-    });
-    
-    ctx.restore();
-  };
-
-  /**
-   * 🆕 グラデーショントーン描画
-   */
-  const drawGradientTone = (
-    ctx: CanvasRenderingContext2D,
-    tone: ToneElement,
-    x: number,
-    y: number,
-    width: number,
-    height: number
-  ) => {
-    // グラデーション方向を決定
-    let gradient;
-    const direction = tone.direction || 'vertical';
-    
-    switch (direction) {
-      case 'horizontal':
-        gradient = ctx.createLinearGradient(x, y, x + width, y);
-        break;
-      case 'vertical':
-        gradient = ctx.createLinearGradient(x, y, x, y + height);
-        break;
-      case 'radial':
-        gradient = ctx.createRadialGradient(
-          x + width / 2, y + height / 2, 0,
-          x + width / 2, y + height / 2, Math.min(width, height) / 2
-        );
-        break;
-      default:
-        gradient = ctx.createLinearGradient(x, y, x, y + height);
-    }
-    
-    // 透明から指定色へのグラデーション
-    gradient.addColorStop(0, `rgba(0,0,0,0)`);
-    gradient.addColorStop(1, tone.color || '#000000');
-    
-    ctx.fillStyle = gradient;
-    ctx.fillRect(x, y, width, height);
-  };
-
-  /**
-   * 🆕 ノイズトーン描画
-   */
-  const drawNoiseTone = (
-    ctx: CanvasRenderingContext2D,
-    tone: ToneElement,
-    x: number,
-    y: number,
-    width: number,
-    height: number
-  ) => {
-    // トーンの色（デフォルト: 黒）
-    const color = tone.color || '#000000';
-    ctx.fillStyle = color;
-    
-    const density = tone.density * 100;
-    // トーンの強度（デフォルト: 0.5）
-    const intensity = tone.intensity || 0.5;
-    const size = Math.max(1, intensity * 2);
-    
-    // コマ枠内にクリッピング
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(x, y, width, height);
-    ctx.clip();
-    
-    for (let i = 0; i < density; i++) {
-      const dotX = x + Math.random() * width;
-      const dotY = y + Math.random() * height;
-      const dotSize = Math.random() * size;
-      
-      ctx.globalAlpha = tone.opacity * (0.3 + Math.random() * 0.7);
-      
-      ctx.beginPath();
-      ctx.arc(dotX, dotY, dotSize, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    
-    ctx.restore();
   };
 
   /**
@@ -702,47 +430,6 @@ export const useCanvasDrawing = ({
   };
 
   /**
-   * 🆕 トーン選択状態の描画
-   */
-  const drawToneSelection = (
-    ctx: CanvasRenderingContext2D,
-    x: number,
-    y: number,
-    width: number,
-    height: number
-  ) => {
-    ctx.save();
-    ctx.globalAlpha = 0.8;
-    
-    // 選択枠
-    ctx.strokeStyle = '#9C27B0';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([4, 4]);
-    ctx.strokeRect(x, y, width, height);
-    
-    // リサイズハンドル
-    const handleSize = 8;
-    const handles = [
-      { x: x - handleSize/2, y: y - handleSize/2 }, // 左上
-      { x: x + width - handleSize/2, y: y - handleSize/2 }, // 右上
-      { x: x - handleSize/2, y: y + height - handleSize/2 }, // 左下
-      { x: x + width - handleSize/2, y: y + height - handleSize/2 }, // 右下
-    ];
-    
-    ctx.setLineDash([]);
-    ctx.fillStyle = '#9C27B0';
-    ctx.strokeStyle = '#FFFFFF';
-    ctx.lineWidth = 1;
-    
-    handles.forEach(handle => {
-      ctx.fillRect(handle.x, handle.y, handleSize, handleSize);
-      ctx.strokeRect(handle.x, handle.y, handleSize, handleSize);
-    });
-    
-    ctx.restore();
-  };
-
-  /**
    * 🆕 効果線選択状態の描画
    */
   const drawEffectSelection = (
@@ -842,7 +529,7 @@ export const useCanvasDrawing = ({
       // 5. 背景要素描画（パネル内で zIndex 順）
       drawBackgrounds(ctx);
       
-      // 🆕 6. トーン描画（背景の後、効果線の前）
+      // 🆕 6. トーン描画（背景の後、効果線の前）- ToneRenderer使用
       drawTones(ctx);
       
       // 🆕 7. 効果線描画（トーンの後、吹き出しの前）

@@ -9,7 +9,7 @@ import { ToneElement, Panel } from '../../../types';
 export class ToneRenderer {
   
   /**
-   * 単一トーンを描画（メイン関数）
+   * 単一トーンを描画（メイン関数）- パネル境界対応版
    */
   static renderTone(
     ctx: CanvasRenderingContext2D,
@@ -68,9 +68,9 @@ export class ToneRenderer {
 
     ctx.restore();
 
-    // 選択状態の描画
+    // 🔧 選択状態の描画（パネル境界対応版）
     if (isSelected) {
-      this.drawToneSelection(ctx, absoluteX, absoluteY, absoluteWidth, absoluteHeight);
+      this.drawToneSelectionClipped(ctx, tone, panel, absoluteX, absoluteY, absoluteWidth, absoluteHeight);
     }
   }
 
@@ -620,46 +620,79 @@ export class ToneRenderer {
   }
 
   /**
-   * トーン選択状態の描画
+   * 🔧 トーン選択状態の描画（パネル境界対応版）
    */
-  private static drawToneSelection(
+  private static drawToneSelectionClipped(
     ctx: CanvasRenderingContext2D,
-    x: number,
-    y: number,
-    width: number,
-    height: number
+    tone: ToneElement,
+    panel: Panel,
+    absoluteX: number,
+    absoluteY: number,
+    absoluteWidth: number,
+    absoluteHeight: number
   ): void {
     ctx.save();
-    ctx.globalAlpha = 0.8;
     
-    // 選択枠
-    ctx.strokeStyle = '#00a8ff';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([4, 4]);
-    ctx.strokeRect(x, y, width, height);
+    // パネル境界でクリッピングされた選択領域を計算
+    const clippedX = Math.max(absoluteX, panel.x);
+    const clippedY = Math.max(absoluteY, panel.y);
+    const clippedRight = Math.min(absoluteX + absoluteWidth, panel.x + panel.width);
+    const clippedBottom = Math.min(absoluteY + absoluteHeight, panel.y + panel.height);
+    const clippedWidth = clippedRight - clippedX;
+    const clippedHeight = clippedBottom - clippedY;
     
-    // リサイズハンドル
-    const handleSize = 8;
-    const handles = [
-      { x: x - handleSize/2, y: y - handleSize/2 }, // 左上
-      { x: x + width - handleSize/2, y: y - handleSize/2 }, // 右上
-      { x: x - handleSize/2, y: y + height - handleSize/2 }, // 左下
-      { x: x + width - handleSize/2, y: y + height - handleSize/2 }, // 右下
-      { x: x + width/2 - handleSize/2, y: y - handleSize/2 }, // 上中央
-      { x: x + width/2 - handleSize/2, y: y + height - handleSize/2 }, // 下中央
-      { x: x - handleSize/2, y: y + height/2 - handleSize/2 }, // 左中央
-      { x: x + width - handleSize/2, y: y + height/2 - handleSize/2 }, // 右中央
-    ];
-    
-    ctx.setLineDash([]);
-    ctx.fillStyle = '#00a8ff';
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 1;
-    
-    handles.forEach(handle => {
-      ctx.fillRect(handle.x, handle.y, handleSize, handleSize);
-      ctx.strokeRect(handle.x, handle.y, handleSize, handleSize);
-    });
+    // クリッピングされた領域が有効な場合のみ描画
+    if (clippedWidth > 0 && clippedHeight > 0) {
+      ctx.globalAlpha = 0.8;
+      
+      // 選択枠（パネル境界内のみ）
+      ctx.strokeStyle = '#00a8ff';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 4]);
+      ctx.strokeRect(clippedX, clippedY, clippedWidth, clippedHeight);
+      
+      // リサイズハンドル（パネル境界内のみ）
+      const handleSize = 8;
+      const handles = [
+        { x: clippedX - handleSize/2, y: clippedY - handleSize/2 }, // 左上
+        { x: clippedRight - handleSize/2, y: clippedY - handleSize/2 }, // 右上
+        { x: clippedX - handleSize/2, y: clippedBottom - handleSize/2 }, // 左下
+        { x: clippedRight - handleSize/2, y: clippedBottom - handleSize/2 }, // 右下
+        { x: clippedX + clippedWidth/2 - handleSize/2, y: clippedY - handleSize/2 }, // 上中央
+        { x: clippedX + clippedWidth/2 - handleSize/2, y: clippedBottom - handleSize/2 }, // 下中央
+        { x: clippedX - handleSize/2, y: clippedY + clippedHeight/2 - handleSize/2 }, // 左中央
+        { x: clippedRight - handleSize/2, y: clippedY + clippedHeight/2 - handleSize/2 }, // 右中央
+      ];
+      
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#00a8ff';
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1;
+      
+      // パネル境界内にあるハンドルのみ描画
+      handles.forEach(handle => {
+        const handleCenterX = handle.x + handleSize/2;
+        const handleCenterY = handle.y + handleSize/2;
+        
+        // ハンドルの中心がパネル境界内にある場合のみ描画
+        if (handleCenterX >= panel.x && handleCenterX <= panel.x + panel.width &&
+            handleCenterY >= panel.y && handleCenterY <= panel.y + panel.height) {
+          
+          // さらにハンドル領域をパネル境界でクリッピング
+          const handleClippedX = Math.max(handle.x, panel.x);
+          const handleClippedY = Math.max(handle.y, panel.y);
+          const handleClippedRight = Math.min(handle.x + handleSize, panel.x + panel.width);
+          const handleClippedBottom = Math.min(handle.y + handleSize, panel.y + panel.height);
+          const handleClippedWidth = handleClippedRight - handleClippedX;
+          const handleClippedHeight = handleClippedBottom - handleClippedY;
+          
+          if (handleClippedWidth > 0 && handleClippedHeight > 0) {
+            ctx.fillRect(handleClippedX, handleClippedY, handleClippedWidth, handleClippedHeight);
+            ctx.strokeRect(handleClippedX, handleClippedY, handleClippedWidth, handleClippedHeight);
+          }
+        }
+      });
+    }
     
     ctx.restore();
   }
