@@ -1,7 +1,7 @@
-// src/components/UI/ProjectPanel.tsx - 背景機能対応修正版
+// src/components/UI/ProjectPanel.tsx - 引数順序修正版
 import React, { useState, useRef } from 'react';
 import SaveService, { ProjectMetadata } from '../../services/SaveService';
-import { BackgroundElement, EffectElement } from '../../types'; // 🆕 EffectElement型も追加
+import { BackgroundElement, EffectElement, ToneElement } from '../../types'; // 🆕 ToneElement型も追加
 
 interface ProjectPanelProps {
   isOpen: boolean;
@@ -66,26 +66,28 @@ const ProjectPanel: React.FC<ProjectPanelProps> = ({
     }
   };
 
-  // 🔧 プロジェクト名変更（背景データ対応）
-  // 🔧 プロジェクト名変更（効果線対応修正版）
+  // 🔧 プロジェクト名変更（トーン対応修正版）
   const handleRename = async (projectId: string) => {
     if (newName.trim()) {
       const project = SaveService.loadProject(projectId);
       if (project) {
-        // 🔧 後方互換性：効果線データが存在しない古いプロジェクトに対応
+        // 🔧 後方互換性：古いプロジェクトデータに対応
         const backgrounds: BackgroundElement[] = (project.data as any).backgrounds || [];
-        const effects: EffectElement[] = (project.data as any).effects || []; // 🆕 効果線データ追加
+        const effects: EffectElement[] = (project.data as any).effects || [];
+        const tones: ToneElement[] = (project.data as any).tones || []; // 🆕 トーンデータ追加
         
+        // 🔧 正しい引数順序で呼び出し
         SaveService.saveProject(
-          newName.trim(),
-          project.data.panels,
-          project.data.characters,
-          project.data.bubbles,
-          backgrounds,
-          effects, // 🆕 効果線データを正しい位置に追加
-          project.data.canvasSize,
-          project.data.settings,
-          projectId
+          newName.trim(),           // プロジェクト名
+          project.data.panels,      // パネルデータ
+          project.data.characters,  // キャラクターデータ
+          project.data.bubbles,     // 吹き出しデータ
+          backgrounds,              // 背景データ
+          effects,                  // 効果線データ
+          tones,                    // 🆕 トーンデータ（正しい位置）
+          project.data.canvasSize,  // キャンバスサイズ
+          project.data.settings,    // 設定
+          projectId                 // プロジェクトID
         );
         refreshProjects();
       }

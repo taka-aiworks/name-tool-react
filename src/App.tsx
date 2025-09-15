@@ -837,7 +837,7 @@ function App() {
             setBackgrounds={setBackgrounds}
             effects={effects}
             setEffects={setEffects}
-            // 🆕 トーン関連プロパティ追加
+            // 🆕 トーン関連プロパティ追加（これが不足していた）
             tones={tones}
             setTones={setTones}
             selectedTone={selectedTone}

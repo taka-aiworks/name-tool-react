@@ -106,12 +106,11 @@ export interface CanvasComponentProps {
   showEffectPanel?: boolean;
   onEffectPanelToggle?: () => void;
   
-  // 🆕 トーン関連プロパティ（修正版）
-  tones: ToneElement[];
-  setTones: (tones: ToneElement[]) => void;
+  // 🆕 トーン関連プロパティ
+  tones?: ToneElement[];
+  setTones?: (tones: ToneElement[]) => void;
   selectedTone?: ToneElement | null;
   onToneSelect?: (tone: ToneElement | null) => void;
-  onToneRightClick?: (tone: ToneElement) => void;
   showTonePanel?: boolean;
   onTonePanelToggle?: () => void;
   
