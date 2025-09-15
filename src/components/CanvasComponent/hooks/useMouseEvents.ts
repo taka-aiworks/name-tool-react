@@ -104,26 +104,45 @@ const findEffectAt = (
   return null;
 };
 
-// 🆕 トーンクリック判定ヘルパー
+// 1️⃣ findToneAt関数を以下に置き換え（パネル境界対応版）
 const findToneAt = (
   x: number, 
   y: number, 
   tones: ToneElement[], 
   panels: Panel[]
 ): ToneElement | null => {
-  for (let i = tones.length - 1; i >= 0; i--) {
-    const tone = tones[i];
+  // Z-index降順でクリック判定（上のレイヤーから）
+  const sortedTones = [...tones].sort((a, b) => (b.zIndex || 0) - (a.zIndex || 0));
+  
+  for (const tone of sortedTones) {
+    if (!tone.visible) continue; // 非表示トーンはスキップ
+    
     const panel = panels.find(p => p.id === tone.panelId);
-    if (panel) {
-      const absoluteX = panel.x + tone.x * panel.width;
-      const absoluteY = panel.y + tone.y * panel.height;
-      const absoluteWidth = tone.width * panel.width;
-      const absoluteHeight = tone.height * panel.height;
-      
-      if (x >= absoluteX && x <= absoluteX + absoluteWidth &&
-          y >= absoluteY && y <= absoluteY + absoluteHeight) {
-        return tone;
-      }
+    if (!panel) continue;
+
+    // パネル内相対座標から絶対座標に変換
+    const absoluteX = panel.x + tone.x * panel.width;
+    const absoluteY = panel.y + tone.y * panel.height;
+    const absoluteWidth = tone.width * panel.width;
+    const absoluteHeight = tone.height * panel.height;
+    
+    // 🔧 パネル境界でクリッピングされた実際の表示領域を計算
+    const clippedX = Math.max(absoluteX, panel.x);
+    const clippedY = Math.max(absoluteY, panel.y);
+    const clippedRight = Math.min(absoluteX + absoluteWidth, panel.x + panel.width);
+    const clippedBottom = Math.min(absoluteY + absoluteHeight, panel.y + panel.height);
+    
+    // クリッピングされた領域が有効で、その中にクリック位置がある場合
+    if (clippedRight > clippedX && clippedBottom > clippedY &&
+        x >= clippedX && x <= clippedRight &&
+        y >= clippedY && y <= clippedBottom) {
+      console.log("🎨 トーンクリック判定成功:", {
+        id: tone.id,
+        type: tone.type,
+        panelId: tone.panelId,
+        clippedArea: { x: clippedX, y: clippedY, width: clippedRight - clippedX, height: clippedBottom - clippedY }
+      });
+      return tone;
     }
   }
   return null;
@@ -162,7 +181,7 @@ const isEffectResizeHandleClicked = (
   return { isClicked: false, direction: '' };
 };
 
-// 🆕 トーンリサイズハンドル判定ヘルパー
+// 2️⃣ isToneResizeHandleClicked関数を以下に置き換え（パネル境界対応版）
 const isToneResizeHandleClicked = (
   mouseX: number,
   mouseY: number,
@@ -174,20 +193,37 @@ const isToneResizeHandleClicked = (
   const absoluteWidth = tone.width * panel.width;
   const absoluteHeight = tone.height * panel.height;
   
+  // 🔧 パネル境界でクリッピングされた実際のハンドル位置を計算
+  const clippedX = Math.max(absoluteX, panel.x);
+  const clippedY = Math.max(absoluteY, panel.y);
+  const clippedRight = Math.min(absoluteX + absoluteWidth, panel.x + panel.width);
+  const clippedBottom = Math.min(absoluteY + absoluteHeight, panel.y + panel.height);
+  
   const handleSize = 8;
   const tolerance = 5;
   
-  // 4つの角のハンドル判定
+  // 🔧 パネル境界内にあるハンドルのみ判定
   const handles = [
-    { x: absoluteX - handleSize/2, y: absoluteY - handleSize/2, direction: 'nw' },
-    { x: absoluteX + absoluteWidth - handleSize/2, y: absoluteY - handleSize/2, direction: 'ne' },
-    { x: absoluteX - handleSize/2, y: absoluteY + absoluteHeight - handleSize/2, direction: 'sw' },
-    { x: absoluteX + absoluteWidth - handleSize/2, y: absoluteY + absoluteHeight - handleSize/2, direction: 'se' },
+    { x: clippedX - handleSize/2, y: clippedY - handleSize/2, direction: 'nw' },
+    { x: clippedRight - handleSize/2, y: clippedY - handleSize/2, direction: 'ne' },
+    { x: clippedX - handleSize/2, y: clippedBottom - handleSize/2, direction: 'sw' },
+    { x: clippedRight - handleSize/2, y: clippedBottom - handleSize/2, direction: 'se' },
   ];
   
   for (const handle of handles) {
-    if (mouseX >= handle.x - tolerance && mouseX <= handle.x + handleSize + tolerance &&
+    // ハンドルの中心がパネル境界内にあるかチェック
+    const handleCenterX = handle.x + handleSize/2;
+    const handleCenterY = handle.y + handleSize/2;
+    
+    if (handleCenterX >= panel.x && handleCenterX <= panel.x + panel.width &&
+        handleCenterY >= panel.y && handleCenterY <= panel.y + panel.height &&
+        mouseX >= handle.x - tolerance && mouseX <= handle.x + handleSize + tolerance &&
         mouseY >= handle.y - tolerance && mouseY <= handle.y + handleSize + tolerance) {
+      console.log("🎨 トーンリサイズハンドルクリック:", {
+        direction: handle.direction,
+        handlePos: { x: handle.x, y: handle.y },
+        panelBounds: { x: panel.x, y: panel.y, width: panel.width, height: panel.height }
+      });
       return { isClicked: true, direction: handle.direction };
     }
   }
@@ -607,61 +643,66 @@ export const useMouseEvents = ({
       }
     }
 
-    // 🆕 優先順位5: トーン操作判定
-    if (tones.length > 0 && setSelectedTone) {
-      const clickedTone = findToneAt(mouseX, mouseY, tones, panels);
-      if (clickedTone) {
-        console.log("🎨 トーンクリック:", clickedTone.type);
-        
-        const isAlreadySelected = selectedTone?.id === clickedTone.id;
-        
-        if (!isAlreadySelected) {
-          setSelectedTone(clickedTone);
-          actions.setSelectedCharacter(null);
-          actions.setSelectedBubble(null);
-          actions.setSelectedPanel(null);
-          if (setSelectedBackground) setSelectedBackground(null);
-          if (setSelectedEffect) setSelectedEffect(null);
-          if (onCharacterSelect) onCharacterSelect(null);
-          if (onPanelSelect) onPanelSelect(null);
-          console.log("🎨 トーン選択状態変更実行");
-        }
-        
-        const panel = panels.find(p => p.id === clickedTone.panelId);
-        if (!panel) {
-          console.error("❌ トーンパネル未発見");
-          e.preventDefault();
-          return;
-        }
-        
-        // トーンリサイズハンドル判定
-        const resizeResult = isToneResizeHandleClicked(mouseX, mouseY, clickedTone, panel);
-        
-        if (resizeResult.isClicked) {
-          console.log("🎨 トーンリサイズ開始:", resizeResult.direction);
-          actions.setIsCharacterResizing(true); // 既存のリサイズフラグを使用
-          actions.setResizeDirection(resizeResult.direction);
-          actions.setDragOffset({ x: mouseX, y: mouseY });
-          actions.setInitialCharacterBounds({
-            x: clickedTone.x,
-            y: clickedTone.y,
-            width: clickedTone.width,
-            height: clickedTone.height
-          });
-        } else if (isAlreadySelected) {
-          // 通常ドラッグ（選択済みの場合のみ開始）
-          console.log("🎨 トーンドラッグ開始");
-          actions.setIsDragging(true);
-          actions.setDragOffset({
-            x: mouseX - (panel.x + clickedTone.x * panel.width),
-            y: mouseY - (panel.y + clickedTone.y * panel.height),
-          });
-        }
-        
-        e.preventDefault();
-        return;
-      }
+    // 🔧 優先順位5: トーン操作判定（パネル内統合版）
+if (tones.length > 0 && setSelectedTone) {
+  const clickedTone = findToneAt(mouseX, mouseY, tones, panels);
+  if (clickedTone) {
+    console.log("🎨 トーンクリック:", clickedTone.type, "パネル:", clickedTone.panelId);
+    
+    const isAlreadySelected = selectedTone?.id === clickedTone.id;
+    
+    if (!isAlreadySelected) {
+      setSelectedTone(clickedTone);
+      actions.setSelectedCharacter(null);
+      actions.setSelectedBubble(null);
+      actions.setSelectedPanel(null);
+      if (setSelectedBackground) setSelectedBackground(null);
+      if (setSelectedEffect) setSelectedEffect(null);
+      if (onCharacterSelect) onCharacterSelect(null);
+      if (onPanelSelect) onPanelSelect(null);
+      console.log("🎨 トーン選択状態変更実行");
     }
+    
+    const panel = panels.find(p => p.id === clickedTone.panelId);
+    if (!panel) {
+      console.error("❌ トーンパネル未発見");
+      e.preventDefault();
+      return;
+    }
+    
+    // 🔧 トーンリサイズハンドル判定（パネル境界対応）
+    const resizeResult = isToneResizeHandleClicked(mouseX, mouseY, clickedTone, panel);
+    
+    if (resizeResult.isClicked) {
+      console.log("🎨 トーンリサイズ開始:", resizeResult.direction);
+      actions.setIsCharacterResizing(true); // 既存のリサイズフラグを使用
+      actions.setResizeDirection(resizeResult.direction);
+      actions.setDragOffset({ x: mouseX, y: mouseY });
+      actions.setInitialCharacterBounds({
+        x: clickedTone.x,
+        y: clickedTone.y,
+        width: clickedTone.width,
+        height: clickedTone.height
+      });
+    } else if (isAlreadySelected) {
+      // 🔧 パネル内相対座標でのドラッグ開始
+      console.log("🎨 トーンドラッグ開始（パネル内相対座標）");
+      actions.setIsDragging(true);
+      
+      // パネル内相対座標でドラッグオフセットを計算
+      const absoluteX = panel.x + clickedTone.x * panel.width;
+      const absoluteY = panel.y + clickedTone.y * panel.height;
+      
+      actions.setDragOffset({
+        x: mouseX - absoluteX,
+        y: mouseY - absoluteY,
+      });
+    }
+    
+    e.preventDefault();
+    return;
+  }
+}
 
     // 優先順位6: 通常パネル処理（背景より優先）
     const clickedPanel = PanelManager.findPanelAt(mouseX, mouseY, panels);
@@ -815,64 +856,65 @@ export const useMouseEvents = ({
       return;
     }
 
-    // 🆕 トーンリサイズ処理（キャラクターリサイズフラグを流用）
-    if (selectedTone && state.isCharacterResizing && state.initialCharacterBounds && setTones) {
-      const deltaX = mouseX - state.dragOffset.x;
-      const deltaY = mouseY - state.dragOffset.y;
-      
-      const panel = panels.find(p => p.id === selectedTone.panelId);
-      if (!panel) return;
-      
-      // パネル内の相対座標でリサイズ計算
-      const relativeScaleX = deltaX / panel.width;
-      const relativeScaleY = deltaY / panel.height;
-      
-      let newWidth = state.initialCharacterBounds.width;
-      let newHeight = state.initialCharacterBounds.height;
-      let newX = state.initialCharacterBounds.x;
-      let newY = state.initialCharacterBounds.y;
-      
-      switch (state.resizeDirection) {
-        case 'se': // 右下
-          newWidth = Math.max(0.1, state.initialCharacterBounds.width + relativeScaleX);
-          newHeight = Math.max(0.1, state.initialCharacterBounds.height + relativeScaleY);
-          break;
-        case 'sw': // 左下
-          newWidth = Math.max(0.1, state.initialCharacterBounds.width - relativeScaleX);
-          newHeight = Math.max(0.1, state.initialCharacterBounds.height + relativeScaleY);
-          newX = state.initialCharacterBounds.x + relativeScaleX;
-          break;
-        case 'ne': // 右上
-          newWidth = Math.max(0.1, state.initialCharacterBounds.width + relativeScaleX);
-          newHeight = Math.max(0.1, state.initialCharacterBounds.height - relativeScaleY);
-          newY = state.initialCharacterBounds.y + relativeScaleY;
-          break;
-        case 'nw': // 左上
-          newWidth = Math.max(0.1, state.initialCharacterBounds.width - relativeScaleX);
-          newHeight = Math.max(0.1, state.initialCharacterBounds.height - relativeScaleY);
-          newX = state.initialCharacterBounds.x + relativeScaleX;
-          newY = state.initialCharacterBounds.y + relativeScaleY;
-          break;
-      }
-      
-      const updatedTone = {
-        ...selectedTone,
-        x: Math.max(0, Math.min(newX, 1 - newWidth)),
-        y: Math.max(0, Math.min(newY, 1 - newHeight)),
-        width: newWidth,
-        height: newHeight,
-      };
-      
-      if (setTones) {
-        setTones(tones.map(tone => 
-          tone.id === selectedTone.id ? updatedTone : tone
-        ));
-      }
-      if (setSelectedTone) {
-        setSelectedTone(updatedTone);
-      }
-      return;
-    }
+    // 🔧 トーンリサイズ処理（パネル内統合版）
+if (selectedTone && state.isCharacterResizing && state.initialCharacterBounds && setTones) {
+  const deltaX = mouseX - state.dragOffset.x;
+  const deltaY = mouseY - state.dragOffset.y;
+  
+  const panel = panels.find(p => p.id === selectedTone.panelId);
+  if (!panel) return;
+  
+  // パネル内の相対座標でリサイズ計算
+  const relativeScaleX = deltaX / panel.width;
+  const relativeScaleY = deltaY / panel.height;
+  
+  let newWidth = state.initialCharacterBounds.width;
+  let newHeight = state.initialCharacterBounds.height;
+  let newX = state.initialCharacterBounds.x;
+  let newY = state.initialCharacterBounds.y;
+  
+  switch (state.resizeDirection) {
+    case 'se': // 右下
+      newWidth = Math.max(0.05, state.initialCharacterBounds.width + relativeScaleX);
+      newHeight = Math.max(0.05, state.initialCharacterBounds.height + relativeScaleY);
+      break;
+    case 'sw': // 左下
+      newWidth = Math.max(0.05, state.initialCharacterBounds.width - relativeScaleX);
+      newHeight = Math.max(0.05, state.initialCharacterBounds.height + relativeScaleY);
+      newX = state.initialCharacterBounds.x + relativeScaleX;
+      break;
+    case 'ne': // 右上
+      newWidth = Math.max(0.05, state.initialCharacterBounds.width + relativeScaleX);
+      newHeight = Math.max(0.05, state.initialCharacterBounds.height - relativeScaleY);
+      newY = state.initialCharacterBounds.y + relativeScaleY;
+      break;
+    case 'nw': // 左上
+      newWidth = Math.max(0.05, state.initialCharacterBounds.width - relativeScaleX);
+      newHeight = Math.max(0.05, state.initialCharacterBounds.height - relativeScaleY);
+      newX = state.initialCharacterBounds.x + relativeScaleX;
+      newY = state.initialCharacterBounds.y + relativeScaleY;
+      break;
+  }
+  
+  // 🔧 パネル境界でクランプ（重要）
+  const updatedTone = {
+    ...selectedTone,
+    x: Math.max(0, Math.min(newX, 1 - newWidth)),
+    y: Math.max(0, Math.min(newY, 1 - newHeight)),
+    width: Math.min(newWidth, 1 - Math.max(0, newX)),
+    height: Math.min(newHeight, 1 - Math.max(0, newY)),
+  };
+  
+  setTones(tones.map(tone => 
+    tone.id === selectedTone.id ? updatedTone : tone
+  ));
+  setSelectedTone?.(updatedTone);
+  console.log("🎨 トーンリサイズ実行:", {
+    direction: state.resizeDirection,
+    newBounds: { x: updatedTone.x, y: updatedTone.y, width: updatedTone.width, height: updatedTone.height }
+  });
+  return;
+}
 
     // 🆕 効果線移動処理
     if (selectedEffect && state.isDragging && setEffects) {

@@ -80,13 +80,14 @@ const TonePanel: React.FC<TonePanelProps> = ({
     // createToneFromTemplateを使用してトーンを作成
     if (createToneFromTemplate && typeof createToneFromTemplate === 'function') {
       try {
+        // ✅ パネル全体にフィット
         const newTone = createToneFromTemplate(
           template,
           currentPanel.id,
-          0.1, // デフォルト位置
-          0.1,
-          0.8, // デフォルトサイズ
-          0.8
+          0,   // ← x位置（パネル左端）
+          0,   // ← y位置（パネル上端）
+          1,   // ← width（パネル幅100%）
+          1    // ← height（パネル高100%）
         );
         onAddTone(newTone);
         console.log(`✨ トーン「${template.name}」をパネル${currentPanel.id}に適用しました`);
