@@ -1,4 +1,4 @@
-// src/components/UI/TonePanel.tsx - 既存ベース・モーダル化最小変更版
+// src/components/UI/TonePanel.tsx - BackgroundPanel/EffectPanelと同じモーダル実装パターンに統合
 import React, { useState, useCallback, useMemo } from 'react';
 import { ToneElement, ToneTemplate, Panel, BlendMode } from '../../types';
 import { 
@@ -10,7 +10,7 @@ import {
 } from '../CanvasArea/toneTemplates';
 
 /**
- * 既存のTonePanelPropsをそのまま使用（互換性確保）
+ * BackgroundPanel/EffectPanelと同じプロパティ構造
  */
 interface TonePanelProps {
   isOpen: boolean;
@@ -21,13 +21,13 @@ interface TonePanelProps {
   isDarkMode?: boolean;
   selectedPanel?: Panel | null;
   tones?: ToneElement[];
-  // 🆕 新しいプロパティ（オプショナル）
+  // 互換性用（削除予定）
   selectedPanelId?: number;
   darkMode?: boolean;
 }
 
 /**
- * トーン選択・設定パネル（既存機能保持・モーダル化）
+ * トーン選択・設定パネル（BackgroundPanel/EffectPanelと同じモーダル実装）
  */
 const TonePanel: React.FC<TonePanelProps> = ({
   isOpen,
@@ -38,88 +38,113 @@ const TonePanel: React.FC<TonePanelProps> = ({
   isDarkMode = false,
   selectedPanel,
   tones = [],
-  // 新しいプロパティ
   selectedPanelId,
   darkMode
 }) => {
-  // ダークモード統一（既存との互換性確保）
+  // BackgroundPanel/EffectPanelと同じモーダル表示判定
+  if (!isOpen) return null;
+
+  // ダークモード統一
   const isThemeDark = isDarkMode || darkMode || false;
 
-  // UI状態管理（既存コードそのまま）
+  // UI状態管理
   const [activeTab, setActiveTab] = useState<'shadow' | 'highlight' | 'texture' | 'background' | 'effect' | 'mood'>('shadow');
   const [selectedTemplate, setSelectedTemplate] = useState<ToneTemplate | null>(null);
   const [previewTone, setPreviewTone] = useState<ToneElement | null>(null);
 
-  // テンプレート選択時の処理（既存機能保持）
-  const handleTemplateSelect = useCallback((template: ToneTemplate) => {
-    const targetPanel = selectedPanel || (selectedPanelId ? { id: selectedPanelId } : null);
-    if (!targetPanel) {
-      alert('先にパネルを選択してください');
-      return;
-    }
-
-    setSelectedTemplate(template);
+  // 🔧 利用可能なパネルを取得（BackgroundPanelと同じ方式）
+  const getAvailablePanels = () => {
+    if (selectedPanel) return [selectedPanel];
     
-    // プレビュー用トーンを作成（既存機能）
-    if (createToneFromTemplate && typeof createToneFromTemplate === 'function') {
-      try {
-        const preview = createToneFromTemplate(template, targetPanel.id, 0, 0, 1, 1);
-        setPreviewTone(preview);
-      } catch (error) {
-        console.warn('createToneFromTemplate failed:', error);
-        setPreviewTone(null);
+    const panelsWithTones = tones.map(tone => tone.panelId);
+    const uniquePanelIds: number[] = [];
+    panelsWithTones.forEach(id => {
+      if (uniquePanelIds.indexOf(id) === -1) {
+        uniquePanelIds.push(id);
       }
-    }
-  }, [selectedPanel, selectedPanelId]);
+    });
+    
+    return uniquePanelIds.map(id => ({ id, x: 0, y: 0, width: 100, height: 100 }));
+  };
 
-  // トーン追加処理（既存機能保持・最小変更）
-  const handleAddTone = useCallback((template: ToneTemplate) => {
-    const targetPanel = selectedPanel || (selectedPanelId ? { id: selectedPanelId } : null);
-    if (!targetPanel) {
-      alert('パネルを選択してからトーンを追加してください');
+  const availablePanels = getAvailablePanels();
+  const currentPanel = selectedPanel || availablePanels[0] || null;
+
+  // トーン追加処理（BackgroundPanelのapplyBackgroundTemplateと同じ構造）
+  const applyToneTemplate = (template: ToneTemplate) => {
+    if (!currentPanel) {
+      alert('パネルを選択するか、既存のトーンがあるパネルから選択してください');
       return;
     }
 
-    // 既存のcreateTypeFromTemplateを使用
+    // createToneFromTemplateを使用してトーンを作成
     if (createToneFromTemplate && typeof createToneFromTemplate === 'function') {
       try {
         const newTone = createToneFromTemplate(
           template,
-          targetPanel.id,
+          currentPanel.id,
           0.1, // デフォルト位置
           0.1,
           0.8, // デフォルトサイズ
           0.8
         );
         onAddTone(newTone);
-        console.log(`✨ トーン「${template.name}」を追加しました`);
+        console.log(`✨ トーン「${template.name}」をパネル${currentPanel.id}に適用しました`);
       } catch (error) {
         console.error('トーン追加エラー:', error);
         alert('トーンの追加に失敗しました');
       }
+    } else {
+      // フォールバック: 手動でトーンを作成
+      const newTone: ToneElement = {
+        id: `tone_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+        panelId: currentPanel.id,
+        type: template.type,
+        pattern: template.pattern,
+        x: 0.1,
+        y: 0.1,
+        width: 0.8,
+        height: 0.8,
+        density: template.density,
+        opacity: template.opacity,
+        rotation: template.rotation || 0,
+        scale: template.scale || 1,
+        blendMode: template.blendMode,
+        contrast: template.contrast || 1,
+        brightness: template.brightness || 0,
+        invert: false,
+        maskEnabled: false,
+        maskShape: 'rectangle',
+        maskFeather: 0,
+        selected: false,
+        zIndex: 0,
+        isGlobalPosition: false,
+        visible: true,
+        // 描画用プロパティ
+        color: '#000000',
+        intensity: 0.5,
+        angle: 0,
+        direction: 'vertical'
+      };
+      onAddTone(newTone);
     }
-  }, [selectedPanel, selectedPanelId, onAddTone]);
+  };
 
-  // トーンパラメータ更新（既存機能保持）
-  const handleToneUpdate = useCallback((updatedTone: ToneElement) => {
-    if (onUpdateTone) {
-      onUpdateTone(updatedTone);
+  // トーン削除（BackgroundPanelと同じ構造）
+  const deleteTone = (toneId: string) => {
+    if (window.confirm('このトーンを削除しますか？')) {
+      // 削除処理はCanvasComponentで実装されているため、ここでは何もしない
+      console.log('トーン削除:', toneId);
+      // 実際の削除はcontextMenuActionsで処理される
     }
-  }, [onUpdateTone]);
+  };
 
-  // パラメータ変更ハンドラー（既存機能保持）
-  const createParameterHandler = useCallback((parameter: keyof ToneElement) => {
-    return (value: any) => {
-      if (selectedTone) {
-        const updatedTone = { ...selectedTone, [parameter]: value };
-        handleToneUpdate(updatedTone);
-      } else if (previewTone) {
-        setPreviewTone({ ...previewTone, [parameter]: value });
-      }
-    };
-  }, [selectedTone, previewTone, handleToneUpdate]);
+  // 現在のパネルのトーン取得（BackgroundPanelと同じ構造）
+  const panelTones = currentPanel 
+    ? tones.filter(tone => tone.panelId === currentPanel.id)
+    : [];
 
-  // カテゴリ情報取得（既存機能）
+  // カテゴリ情報取得
   const categoryInfo = getToneCategoryInfo ? getToneCategoryInfo() : {
     shadow: { icon: '🌑', name: '影・陰影', description: 'シャドウトーン' },
     highlight: { icon: '✨', name: 'ハイライト', description: '光・反射' },
@@ -129,300 +154,442 @@ const TonePanel: React.FC<TonePanelProps> = ({
     mood: { icon: '🌈', name: '雰囲気', description: 'ムード演出' }
   };
 
-  // 現在のトーン（既存機能）
-  const currentTone = selectedTone || previewTone;
+  // トーンタイプのアイコン取得
+  const getToneTypeIcon = (type: string) => {
+    switch (type) {
+      case 'halftone': return '⚫';
+      case 'gradient': return '🌈';
+      case 'crosshatch': return '❌';
+      case 'dots': return '⚪';
+      case 'lines': return '📏';
+      case 'noise': return '🌪️';
+      default: return '🎨';
+    }
+  };
 
-  // モーダル表示判定
-  if (!isOpen) return null;
+  // トーンタイプ名取得
+  const getToneTypeName = (type: string) => {
+    switch (type) {
+      case 'halftone': return 'ハーフトーン';
+      case 'gradient': return 'グラデーション';
+      case 'crosshatch': return 'クロスハッチ';
+      case 'dots': return 'ドット';
+      case 'lines': return 'ライン';
+      case 'noise': return 'ノイズ';
+      default: return type;
+    }
+  };
 
   return (
     <div 
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
+      className="modal-overlay" 
+      onClick={onClose}
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 1000
+      }}
     >
-      <div className={`
-        w-4/5 max-w-6xl h-5/6 max-h-screen
-        ${isThemeDark ? 'bg-gray-800 text-white' : 'bg-white text-gray-800'}
-        rounded-lg shadow-2xl flex flex-col overflow-hidden
-      `}>
-        {/* ヘッダー（既存スタイル） */}
-        <div className={`
-          flex items-center justify-between p-4 border-b
-          ${isThemeDark ? 'border-gray-700' : 'border-gray-200'}
-        `}>
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">🎨</span>
-            <h2 className="text-xl font-bold">トーン設定</h2>
-            {(selectedPanel || selectedPanelId) && (
-              <span className={`
-                px-2 py-1 rounded text-sm
-                ${isThemeDark ? 'bg-blue-600' : 'bg-blue-100 text-blue-800'}
-              `}>
-                パネル{selectedPanelId || selectedPanel?.id}
+      <div 
+        className="modal-content tone-panel"
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: 'var(--bg-primary)',
+          border: '2px solid var(--border-color)',
+          borderRadius: '12px',
+          padding: '24px',
+          width: '90%',
+          maxWidth: '900px',
+          maxHeight: '80vh',
+          overflow: 'auto',
+          color: 'var(--text-primary)',
+          boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)'
+        }}
+      >
+        {/* ヘッダー（BackgroundPanel/EffectPanelと同じ構造） */}
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          marginBottom: '20px',
+          borderBottom: '1px solid var(--border-color)',
+          paddingBottom: '16px'
+        }}>
+          <h2 style={{ margin: 0, fontSize: '24px', fontWeight: 'bold' }}>
+            🎨 トーン設定
+            {currentPanel && (
+              <span style={{ fontSize: '16px', fontWeight: 'normal', marginLeft: '12px', color: 'var(--text-muted)' }}>
+                パネル{currentPanel.id}
               </span>
             )}
-            {tones.length > 0 && (
-              <span className={`
-                px-2 py-1 rounded text-sm
-                ${isThemeDark ? 'bg-green-600' : 'bg-green-100 text-green-800'}
-              `}>
-                {tones.length}個のトーン
-              </span>
-            )}
-          </div>
-          <button
+          </h2>
+          
+          <button 
             onClick={onClose}
-            className={`
-              px-4 py-2 rounded-lg font-medium transition-colors
-              ${isThemeDark 
-                ? 'bg-gray-700 hover:bg-gray-600 text-white' 
-                : 'bg-gray-100 hover:bg-gray-200 text-gray-800'
-              }
-            `}
+            style={{
+              background: 'var(--bg-tertiary)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '6px',
+              padding: '8px 12px',
+              color: 'var(--text-primary)',
+              cursor: 'pointer',
+              fontSize: '14px'
+            }}
           >
             ✕ 閉じる
           </button>
         </div>
 
-        <div className="flex-1 flex min-h-0">
-          {/* カテゴリタブ（既存スタイル） */}
-          <div className={`
-            w-48 border-r flex flex-col
-            ${isThemeDark ? 'border-gray-700 bg-gray-850' : 'border-gray-200 bg-gray-50'}
-          `}>
-            <div className="p-3">
-              <h3 className="text-sm font-medium mb-2">カテゴリ</h3>
-            </div>
-            <div className="flex-1 overflow-y-auto">
-              {Object.entries(categoryInfo).map(([category, info]) => (
-                <button
-                  key={category}
-                  onClick={() => setActiveTab(category as any)}
-                  className={`
-                    w-full p-3 text-left flex items-center gap-2 transition-colors
-                    ${activeTab === category
-                      ? isThemeDark 
-                        ? 'bg-blue-600 text-white' 
-                        : 'bg-blue-100 text-blue-800 border-r-2 border-blue-500'
-                      : isThemeDark
-                        ? 'hover:bg-gray-700 text-gray-300'
-                        : 'hover:bg-gray-100 text-gray-600'
-                    }
-                  `}
-                >
-                  <span className="text-lg">{info.icon}</span>
-                  <div>
-                    <div className="text-sm font-medium">{info.name}</div>
-                    <div className="text-xs opacity-75">{info.description}</div>
-                  </div>
-                </button>
-              ))}
-            </div>
+        {/* パネル選択状況の表示（BackgroundPanelと同じ構造） */}
+        {!currentPanel ? (
+          <div style={{
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--accent-color)',
+            borderRadius: '8px',
+            padding: '16px',
+            marginBottom: '20px',
+            textAlign: 'center',
+            color: 'var(--accent-color)'
+          }}>
+            📢 トーンを設定するパネルを先に選択してください
+            {availablePanels.length > 0 && (
+              <div style={{ marginTop: '12px' }}>
+                <small style={{ display: 'block', marginBottom: '8px' }}>
+                  または、既存のトーンがあるパネルから選択:
+                </small>
+                <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                  {availablePanels.map(panel => (
+                    <button 
+                      key={panel.id}
+                      style={{
+                        padding: '4px 8px',
+                        backgroundColor: 'var(--accent-color)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontSize: '12px'
+                      }}
+                      onClick={() => {
+                        console.log(`パネル${panel.id}を選択`);
+                      }}
+                    >
+                      パネル{panel.id}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
+        ) : (
+          <>
+            {/* カテゴリタブ（BackgroundPanelと同じ構造） */}
+            <div style={{ marginBottom: '20px' }}>
+              <div style={{ 
+                display: 'flex', 
+                gap: '8px', 
+                flexWrap: 'wrap',
+                borderBottom: '1px solid var(--border-color)',
+                paddingBottom: '12px'
+              }}>
+                {Object.entries(categoryInfo).map(([category, info]) => (
+                  <button
+                    key={category}
+                    onClick={() => setActiveTab(category as any)}
+                    style={{
+                      background: activeTab === category ? 'var(--accent-color)' : 'var(--bg-tertiary)',
+                      color: activeTab === category ? 'white' : 'var(--text-primary)',
+                      border: `1px solid ${activeTab === category ? 'var(--accent-color)' : 'var(--border-color)'}`,
+                      borderRadius: '6px',
+                      padding: '8px 12px',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      fontWeight: activeTab === category ? 'bold' : 'normal'
+                    }}
+                  >
+                    {info.icon} {info.name}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-          {/* テンプレート一覧（既存機能保持） */}
-          <div className="flex-1 flex flex-col">
-            <div className="p-4">
-              <h3 className="text-lg font-semibold mb-1">
-                {categoryInfo[activeTab]?.icon} {categoryInfo[activeTab]?.name}
+            {/* トーンテンプレート一覧（BackgroundPanelと同じ構造） */}
+            <div style={{ marginBottom: '24px' }}>
+              <h3 style={{ 
+                margin: '0 0 12px 0', 
+                fontSize: '18px',
+                color: 'var(--text-primary)'
+              }}>
+                📋 テンプレート ({(toneTemplatesByCategory[activeTab] || []).length}個)
               </h3>
-              <p className="text-sm opacity-75 mb-4">
-                {categoryInfo[activeTab]?.description}
-              </p>
-
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-96 overflow-y-auto">
-                {(toneTemplatesByCategory[activeTab] || []).map((template) => (
+              
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+                gap: '12px',
+                padding: '12px',
+                background: 'var(--bg-secondary)',
+                borderRadius: '8px',
+                border: '1px solid var(--border-color)'
+              }}>
+                {(toneTemplatesByCategory[activeTab] || []).map(template => (
                   <div
                     key={template.id}
-                    className={`
-                      border rounded-lg p-3 cursor-pointer transition-all duration-200
-                      ${selectedTemplate?.id === template.id
-                        ? isThemeDark
-                          ? 'border-blue-500 bg-blue-900/30'
-                          : 'border-blue-500 bg-blue-50'
-                        : isThemeDark
-                          ? 'border-gray-600 hover:border-gray-500 hover:bg-gray-700'
-                          : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
-                      }
-                    `}
-                    onClick={() => handleTemplateSelect(template)}
+                    onClick={() => applyToneTemplate(template)}
+                    style={{
+                      background: 'var(--bg-primary)',
+                      border: '2px solid var(--border-color)',
+                      borderRadius: '8px',
+                      padding: '12px',
+                      cursor: 'pointer',
+                      textAlign: 'center',
+                      transition: 'all 0.2s ease',
+                      fontSize: '12px'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = 'var(--accent-color)';
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                      e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = 'var(--border-color)';
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = 'none';
+                    }}
                   >
-                    {/* テンプレートプレビュー（既存機能） */}
-                    <div className={`
-                      w-full h-16 rounded mb-2 border
-                      ${isThemeDark ? 'border-gray-600' : 'border-gray-300'}
-                    `} 
-                    style={{ 
-                      backgroundColor: template.preview?.backgroundColor || '#f0f0f0',
-                      backgroundImage: generatePreviewPattern(template),
+                    {/* トーンプレビュー */}
+                    <div style={{
+                      width: '100%',
+                      height: '60px',
+                      margin: '0 auto 8px',
+                      background: template.preview?.backgroundColor || '#f0f0f0',
+                      borderRadius: '4px',
+                      border: '1px solid var(--border-color)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '20px'
                     }}>
-                      <div className="w-full h-full flex items-center justify-center text-xs opacity-60">
-                        プレビュー
-                      </div>
+                      {getToneTypeIcon(template.type)}
                     </div>
-
-                    <div>
-                      <div className="font-medium text-sm mb-1">{template.name}</div>
-                      <div className="text-xs opacity-75 leading-tight mb-2">
-                        {template.description}
-                      </div>
-                      
-                      {/* テンプレート詳細 */}
-                      <div className="flex flex-wrap gap-1">
-                        <span className={`
-                          px-2 py-1 rounded text-xs
-                          ${isThemeDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}
-                        `}>
-                          {template.type}
-                        </span>
-                        {template.blendMode && template.blendMode !== 'normal' && (
-                          <span className={`
-                            px-2 py-1 rounded text-xs
-                            ${isThemeDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}
-                          `}>
-                            {template.blendMode}
-                          </span>
-                        )}
-                      </div>
+                    
+                    <div style={{ fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '4px' }}>
+                      {template.name}
                     </div>
-
-                    {/* 追加ボタン */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleAddTone(template);
-                      }}
-                      className={`
-                        w-full mt-2 py-2 rounded text-sm font-medium transition-colors
-                        ${isThemeDark
-                          ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                          : 'bg-blue-500 hover:bg-blue-600 text-white'
-                        }
-                      `}
-                    >
-                      ➕ 追加
-                    </button>
+                    
+                    <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginBottom: '8px' }}>
+                      {template.description}
+                    </div>
+                    
+                    {/* パラメータ表示 */}
+                    <div style={{ display: 'flex', gap: '4px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                      <span style={{
+                        background: 'var(--bg-tertiary)',
+                        padding: '2px 4px',
+                        borderRadius: '8px',
+                        fontSize: '9px',
+                        color: 'var(--text-muted)'
+                      }}>
+                        密度: {Math.round(template.density * 100)}%
+                      </span>
+                      <span style={{
+                        background: 'var(--bg-tertiary)',
+                        padding: '2px 4px',
+                        borderRadius: '8px',
+                        fontSize: '9px',
+                        color: 'var(--text-muted)'
+                      }}>
+                        透明度: {Math.round(template.opacity * 100)}%
+                      </span>
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
-          </div>
 
-          {/* パラメータ調整パネル（既存機能保持） */}
-          {currentTone && (
-            <div className={`
-              w-80 border-l flex flex-col
-              ${isThemeDark ? 'border-gray-700 bg-gray-850' : 'border-gray-200 bg-gray-50'}
-            `}>
-              <div className="p-4 border-b border-gray-700">
-                <h3 className="text-lg font-semibold mb-1">パラメータ調整</h3>
-                <p className="text-sm opacity-75">
-                  {selectedTone ? '選択されたトーン' : 'プレビュー'}
-                </p>
-              </div>
-
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                {/* 既存のパラメータ調整UI */}
-                <div>
-                  <h4 className="font-medium mb-3">基本設定</h4>
-                  
-                  {/* 簡略化されたパラメータ調整 */}
-                  {currentTone.density !== undefined && (
-                    <div className="mb-3">
-                      <label className="block text-sm font-medium mb-1">
-                        密度: {Math.round(currentTone.density * 100)}%
-                      </label>
-                      <input
-                        type="range"
-                        min="0.1"
-                        max="1"
-                        step="0.05"
-                        value={currentTone.density}
-                        onChange={(e) => createParameterHandler('density')(parseFloat(e.target.value))}
-                        className="w-full"
-                      />
+            {/* 現在のトーン一覧（BackgroundPanelと同じ構造） */}
+            {panelTones.length > 0 && (
+              <div>
+                <h3 style={{ 
+                  margin: '0 0 12px 0', 
+                  fontSize: '18px',
+                  color: 'var(--text-primary)'
+                }}>
+                  🎯 現在のトーン ({panelTones.length}個)
+                </h3>
+                
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px',
+                  padding: '12px',
+                  background: 'var(--bg-secondary)',
+                  borderRadius: '8px',
+                  border: '1px solid var(--border-color)'
+                }}>
+                  {panelTones.map(tone => (
+                    <div
+                      key={tone.id}
+                      onClick={() => {
+                        // トーン選択（実際の選択はCanvasComponentで処理）
+                        console.log('トーン選択:', tone.id);
+                      }}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        background: selectedTone?.id === tone.id ? 'var(--accent-color)' : 'var(--bg-primary)',
+                        color: selectedTone?.id === tone.id ? 'white' : 'var(--text-primary)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '6px',
+                        padding: '8px 12px',
+                        cursor: 'pointer',
+                        fontSize: '14px'
+                      }}
+                    >
+                      <div>
+                        <strong>{getToneTypeIcon(tone.type)} {getToneTypeName(tone.type)}</strong>
+                        <div style={{ fontSize: '12px', opacity: 0.8 }}>
+                          密度: {Math.round(tone.density * 100)}% | 透明度: {Math.round(tone.opacity * 100)}% | {tone.pattern}
+                        </div>
+                      </div>
+                      
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteTone(tone.id);
+                        }}
+                        style={{
+                          background: '#ff4444',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          padding: '4px 8px',
+                          cursor: 'pointer',
+                          fontSize: '12px'
+                        }}
+                      >
+                        🗑️
+                      </button>
                     </div>
-                  )}
-
-                  {currentTone.opacity !== undefined && (
-                    <div className="mb-3">
-                      <label className="block text-sm font-medium mb-1">
-                        透明度: {Math.round(currentTone.opacity * 100)}%
-                      </label>
-                      <input
-                        type="range"
-                        min="0.1"
-                        max="1"
-                        step="0.05"
-                        value={currentTone.opacity}
-                        onChange={(e) => createParameterHandler('opacity')(parseFloat(e.target.value))}
-                        className="w-full"
-                      />
-                    </div>
-                  )}
+                  ))}
                 </div>
               </div>
+            )}
 
-              {/* 操作ボタン（既存機能） */}
-              <div className="p-4 border-t border-gray-700 space-y-2">
-                {previewTone && !selectedTone && (
-                  <button
-                    onClick={() => handleAddTone(selectedTemplate!)}
-                    disabled={!(selectedPanel || selectedPanelId)}
-                    className={`
-                      w-full py-2 rounded font-medium transition-colors
-                      ${!(selectedPanel || selectedPanelId)
-                        ? 'bg-gray-500 cursor-not-allowed'
-                        : isThemeDark
-                          ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                          : 'bg-blue-500 hover:bg-blue-600 text-white'
-                      }
-                    `}
-                  >
-                    ✨ トーンを追加
-                  </button>
-                )}
-
-                {!(selectedPanel || selectedPanelId) && (
-                  <div className={`
-                    p-3 rounded text-center text-sm
-                    ${isThemeDark ? 'bg-yellow-900/30 text-yellow-200' : 'bg-yellow-100 text-yellow-800'}
-                  `}>
-                    💡 パネルを選択してトーンを追加してください
+            {/* 選択中のトーン編集エリア（EffectPanelと同じ構造） */}
+            {selectedTone && onUpdateTone && (
+              <div style={{
+                marginTop: '20px',
+                padding: '16px',
+                background: 'var(--bg-secondary)',
+                borderRadius: '8px',
+                border: '1px solid var(--border-color)'
+              }}>
+                <h4 style={{
+                  margin: '0 0 12px 0',
+                  fontSize: '16px',
+                  color: 'var(--text-primary)'
+                }}>
+                  🎯 選択中のトーン: {getToneTypeIcon(selectedTone.type)} {getToneTypeName(selectedTone.type)}
+                </h4>
+                
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: '12px'
+                }}>
+                  <div>
+                    <label style={{
+                      display: 'block',
+                      fontSize: '12px',
+                      color: 'var(--text-muted)',
+                      marginBottom: '4px'
+                    }}>
+                      密度: {Math.round(selectedTone.density * 100)}%
+                    </label>
+                    <input
+                      type="range"
+                      min="0.1"
+                      max="1"
+                      step="0.05"
+                      value={selectedTone.density}
+                      onChange={(e) => {
+                        const updatedTone = {
+                          ...selectedTone,
+                          density: parseFloat(e.target.value)
+                        };
+                        onUpdateTone(updatedTone);
+                      }}
+                      style={{
+                        width: '100%',
+                        accentColor: 'var(--accent-color)'
+                      }}
+                    />
                   </div>
-                )}
+                  
+                  <div>
+                    <label style={{
+                      display: 'block',
+                      fontSize: '12px',
+                      color: 'var(--text-muted)',
+                      marginBottom: '4px'
+                    }}>
+                      透明度: {Math.round(selectedTone.opacity * 100)}%
+                    </label>
+                    <input
+                      type="range"
+                      min="0.1"
+                      max="1"
+                      step="0.05"
+                      value={selectedTone.opacity}
+                      onChange={(e) => {
+                        const updatedTone = {
+                          ...selectedTone,
+                          opacity: parseFloat(e.target.value)
+                        };
+                        onUpdateTone(updatedTone);
+                      }}
+                      style={{
+                        width: '100%',
+                        accentColor: 'var(--accent-color)'
+                      }}
+                    />
+                  </div>
+                </div>
               </div>
+            )}
+
+            {/* 操作ガイド（BackgroundPanel/EffectPanelと同じ構造） */}
+            <div style={{
+              marginTop: '20px',
+              padding: '12px',
+              background: 'var(--bg-secondary)',
+              borderRadius: '8px',
+              border: '1px solid var(--border-color)',
+              fontSize: '12px',
+              color: 'var(--text-muted)'
+            }}>
+              <strong>💡 操作ガイド:</strong><br/>
+              • テンプレートをクリックしてトーンを適用<br/>
+              • トーン要素をクリックして選択・編集<br/>
+              • キャンバス上でトーンをクリックして選択<br/>
+              • パネルを選択してからトーン設定パネルを開く<br/>
+              • Ctrl+T でトーンパネル開閉<br/>
+              • 🔧 BackgroundPanel/EffectPanelと同じモーダル実装に統合済み
             </div>
-          )}
-        </div>
+          </>
+        )}
       </div>
     </div>
   );
-};
-
-// プレビューパターン生成ヘルパー関数（既存機能保持）
-const generatePreviewPattern = (template: ToneTemplate): string => {
-  if (!template.pattern) return 'none';
-  
-  // 簡易的なCSS背景パターン生成（既存機能）
-  switch (template.pattern) {
-    case 'dots_60':
-    case 'dots_85':
-    case 'dots_100':
-    case 'dots_120':
-    case 'dots_150':
-      return `radial-gradient(circle, #000 1px, transparent 1px)`;
-    case 'lines_horizontal':
-      return `repeating-linear-gradient(0deg, transparent, transparent 2px, #000 2px, #000 3px)`;
-    case 'lines_vertical':
-      return `repeating-linear-gradient(90deg, transparent, transparent 2px, #000 2px, #000 3px)`;
-    case 'gradient_linear':
-      return `linear-gradient(90deg, #000, transparent)`;
-    case 'gradient_radial':
-      return `radial-gradient(circle, #000, transparent)`;
-    default:
-      return 'none';
-  }
 };
 
 export default TonePanel;

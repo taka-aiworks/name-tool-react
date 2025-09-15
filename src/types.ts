@@ -83,7 +83,7 @@ export interface SpeechBubble {
   isGlobalPosition: boolean;
 }
 
-// 🔧 CanvasComponent のプロパティ型（効果線完全対応・修正版）
+// src/types.ts - CanvasComponentProps修正版
 export interface CanvasComponentProps {
   selectedTemplate: string;
   panels: Panel[];
@@ -106,13 +106,13 @@ export interface CanvasComponentProps {
   showEffectPanel?: boolean;
   onEffectPanelToggle?: () => void;
   
-  // 🆕 トーン関連プロパティ
-  tones?: ToneElement[];
-  setTones?: (tones: ToneElement[]) => void;
-  selectedTone?: ToneElement | null;
-  onToneSelect?: (tone: ToneElement | null) => void;
-  showTonePanel?: boolean;
-  onTonePanelToggle?: () => void;
+  // 🔧 トーン関連プロパティ（?を削除して必須にする）
+  tones: ToneElement[];
+  setTones: (tones: ToneElement[]) => void;
+  selectedTone: ToneElement | null;
+  onToneSelect: (tone: ToneElement | null) => void;
+  showTonePanel: boolean;
+  onTonePanelToggle: () => void;
   
   // 既存プロパティ
   onCharacterAdd: (func: (type: string) => void) => void;
