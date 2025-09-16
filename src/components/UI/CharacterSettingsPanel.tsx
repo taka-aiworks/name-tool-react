@@ -1,4 +1,4 @@
-// src/components/UI/CharacterSettingsPanel.tsx - 名前置換対応版
+// src/components/UI/CharacterSettingsPanel.tsx - 名前入力修正版
 import React, { useState, useEffect } from 'react';
 
 // キャラクター見た目設定の型定義
@@ -37,8 +37,8 @@ interface CharacterSettingsPanelProps {
   isOpen: boolean;
   onClose: () => void;
   characterType: string;
-  currentName?: string; // 🆕 現在の名前
-  currentSettings?: any; // 🆕 現在の設定
+  currentName?: string;
+  currentSettings?: any;
   onCharacterUpdate: (characterData: Partial<ExtendedCharacter>) => void;
   isDarkMode?: boolean;
 }
@@ -87,7 +87,6 @@ const DEFAULT_APPEARANCES: Record<string, CharacterAppearance> = {
   }
 };
 
-
 const CHARACTER_NAMES: Record<string, string> = {
   hero: '主人公',
   heroine: 'ヒロイン',
@@ -99,8 +98,8 @@ export const CharacterSettingsPanel: React.FC<CharacterSettingsPanelProps> = ({
   isOpen,
   onClose,
   characterType,
-  currentName, // 🆕
-  currentSettings, // 🆕
+  currentName,
+  currentSettings,
   onCharacterUpdate,
   isDarkMode = true
 }) => {
@@ -109,10 +108,14 @@ export const CharacterSettingsPanel: React.FC<CharacterSettingsPanelProps> = ({
   const [appearance, setAppearance] = useState<CharacterAppearance>(
     DEFAULT_APPEARANCES[characterType] || DEFAULT_APPEARANCES.hero
   );
+  // 🔧 初期化完了フラグを追加
+  const [isInitialized, setIsInitialized] = useState(false);
 
-  // 🔧 初期化 - 現在の設定を反映
+  // 🔧 修正: 初期化処理を一度だけ実行
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !isInitialized) {
+      console.log(`🔧 初期化開始: ${characterType}`, { currentName, currentSettings });
+      
       // 現在の名前を使用、なければデフォルト
       const defaultName = currentName || CHARACTER_NAMES[characterType] || 'キャラクター';
       setCharacterName(defaultName);
@@ -124,8 +127,16 @@ export const CharacterSettingsPanel: React.FC<CharacterSettingsPanelProps> = ({
       // 現在の外見を使用、なければデフォルト
       const defaultAppearance = currentSettings?.appearance || DEFAULT_APPEARANCES[characterType] || DEFAULT_APPEARANCES.hero;
       setAppearance(defaultAppearance);
+      
+      setIsInitialized(true);
+      console.log(`✅ 初期化完了: ${defaultName}`);
     }
-  }, [isOpen, characterType, currentName, currentSettings]);
+    
+    // パネルが閉じられた時に初期化フラグをリセット
+    if (!isOpen) {
+      setIsInitialized(false);
+    }
+  }, [isOpen, characterType, currentName, currentSettings, isInitialized]);
 
   // 性別変更時の自動調整
   const handleGenderChange = (gender: 'male' | 'female' | 'other') => {
@@ -154,6 +165,7 @@ export const CharacterSettingsPanel: React.FC<CharacterSettingsPanelProps> = ({
       appearance: appearance
     };
     
+    console.log(`💾 保存データ:`, characterData);
     onCharacterUpdate(characterData);
     onClose();
   };
@@ -167,6 +179,7 @@ export const CharacterSettingsPanel: React.FC<CharacterSettingsPanelProps> = ({
     setCharacterName(defaultName);
     setCustomRole(defaultRole);
     setAppearance(defaultAppearance);
+    console.log(`🔄 リセット完了: ${defaultName}`);
   };
 
   // プロンプト生成
@@ -275,7 +288,7 @@ export const CharacterSettingsPanel: React.FC<CharacterSettingsPanelProps> = ({
           👥 キャラクター設定 - {currentName || CHARACTER_NAMES[characterType]}
         </h2>
 
-        {/* 🆕 現在の設定状態表示 */}
+        {/* 現在の設定状態表示 */}
         <div style={{
           background: isDarkMode ? '#1a1a1a' : '#f0f0f0',
           padding: '12px',
@@ -288,6 +301,20 @@ export const CharacterSettingsPanel: React.FC<CharacterSettingsPanelProps> = ({
           {currentSettings?.appearance && ' | 見た目設定済み'}
         </div>
 
+        {/* 🔧 デバッグ情報（開発中のみ表示） */}
+        {process.env.NODE_ENV === 'development' && (
+          <div style={{
+            background: '#1a3d5c',
+            padding: '8px',
+            borderRadius: '4px',
+            marginBottom: '16px',
+            fontSize: '11px',
+            color: '#88ccff'
+          }}>
+            <strong>🔧 デバッグ:</strong> type={characterType}, initialized={isInitialized.toString()}, currentName={characterName}
+          </div>
+        )}
+
         {/* 基本情報 */}
         <div style={sectionStyle}>
           <h3 style={{ margin: '0 0 12px 0', fontSize: '16px' }}>📝 基本情報</h3>
@@ -299,9 +326,14 @@ export const CharacterSettingsPanel: React.FC<CharacterSettingsPanelProps> = ({
             <input
               type="text"
               value={characterName}
-              onChange={(e) => setCharacterName(e.target.value)}
+              onChange={(e) => {
+                console.log(`📝 名前変更: ${e.target.value}`);
+                setCharacterName(e.target.value);
+              }}
               placeholder="キャラクター名を入力"
               style={inputStyle}
+              // 🔧 追加: オートフォーカスを防止
+              autoComplete="off"
             />
             <div style={{ fontSize: '11px', color: isDarkMode ? '#aaa' : '#666', marginTop: '4px' }}>
               この名前がツール全体で表示されます
@@ -318,6 +350,7 @@ export const CharacterSettingsPanel: React.FC<CharacterSettingsPanelProps> = ({
               onChange={(e) => setCustomRole(e.target.value)}
               placeholder="主人公、ヒロイン、など"
               style={inputStyle}
+              autoComplete="off"
             />
           </div>
 
@@ -463,6 +496,7 @@ export const CharacterSettingsPanel: React.FC<CharacterSettingsPanelProps> = ({
               onChange={(e) => setAppearance({...appearance, accessories: e.target.value})}
               placeholder="メガネ、リボン、帽子など"
               style={inputStyle}
+              autoComplete="off"
             />
           </div>
         </div>

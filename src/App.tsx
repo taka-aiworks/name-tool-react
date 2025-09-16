@@ -106,6 +106,10 @@ function App() {
     settings 
   });
 
+  // 🆕 キャラクター表示名取得関数（App.tsx内の関数群に追加）
+  const getCharacterDisplayName = useCallback((character: Character) => {
+    return characterNames[character.type] || character.name || character.displayName || 'キャラクター';
+  }, [characterNames]);
 
 
   // 機能コールバック用の状態
@@ -250,8 +254,20 @@ function App() {
   }, [selectedCharacter, characters]);
 
   // キーボードイベント処理（トーン対応）
+  // キーボードイベント処理（トーン対応）- 🔧 修正版
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // 🔧 重要: 入力フィールドがフォーカスされている場合はスキップ
+      const activeElement = document.activeElement;
+      if (activeElement && (
+        activeElement.tagName === 'INPUT' || 
+        activeElement.tagName === 'TEXTAREA' ||
+        (activeElement as HTMLElement).contentEditable === 'true'
+      )) {
+        console.log(`⌨️ 入力フィールドでのキー入力をスキップ: ${e.key}`);
+        return; // 入力フィールド内では何もしない
+      }
+
       if (e.key === 'Backspace' || e.key === 'Delete') {
         e.preventDefault();
         handleDeleteSelected();
@@ -886,17 +902,17 @@ function App() {
             </div>
             <div className="canvas-info">
               操作履歴: {operationHistory.currentIndex + 1} / {operationHistory.characters.length}
-              {selectedCharacter && <span> | 選択中: {selectedCharacter.name}</span>}
+              {selectedCharacter && <span> | 選択中: {getCharacterDisplayName(selectedCharacter)}</span>}
               {selectedPanel && <span> | パネル{selectedPanel.id}選択中</span>}
               {selectedEffect && <span> | 効果線選択中</span>}
-              {selectedTone && <span> | トーン選択中</span>} {/* 🆕 トーン選択状態表示 */}
+              {selectedTone && <span> | トーン選択中</span>}
               {isPanelEditMode && <span> | 🔧 コマ編集モード</span>}
               {snapSettings.enabled && <span> | ⚙️ スナップ: {snapSettings.gridSize}px ({snapSettings.sensitivity})</span>}
               {projectSave.isAutoSaving && <span> | 💾 自動保存中...</span>}
               {projectSave.hasUnsavedChanges && <span> | ⚠️ 未保存</span>}
               {backgrounds.length > 0 && <span> | 🎨 背景: {backgrounds.length}個</span>}
               {effects.length > 0 && <span> | ⚡ 効果線: {effects.length}個</span>}
-              {tones.length > 0 && <span> | 🎯 トーン: {tones.length}個</span>} {/* 🆕 トーン状態表示 */}
+              {tones.length > 0 && <span> | 🎯 トーン: {tones.length}個</span>}
             </div>
           </div>
 
@@ -921,6 +937,7 @@ function App() {
             onToneSelect={setSelectedTone}
             showTonePanel={showTonePanel}
             onTonePanelToggle={() => setShowTonePanel(!showTonePanel)}
+            characterNames={characterNames} // 🆕 この行を追加
             // 既存のプロパティ
             onCharacterAdd={(func: (type: string) => void) => setAddCharacterFunc(() => func)}
             onBubbleAdd={(func: (type: string, text: string) => void) => setAddBubbleFunc(() => func)}
@@ -1182,6 +1199,8 @@ function App() {
           onCharacterUpdate={handleCharacterUpdate}
           onCharacterDelete={handleCharacterDelete}
           onClose={handleCharacterPanelClose}
+          // 🆕 この行を追加
+          characterNames={characterNames}
         />
       )}
 

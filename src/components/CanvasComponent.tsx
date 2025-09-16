@@ -20,8 +20,10 @@ import { ContextMenuHandler, ContextMenuState, ContextMenuActions, ClipboardStat
  * selectedTone, onToneSelectはCanvasComponentPropsで既に必須として定義済み
  * 新規プロパティのみ追加
  */
+// CanvasComponent.tsx - 順番修正版
+
 interface ExtendedCanvasComponentProps extends CanvasComponentProps {
-  // 全てのトーン関連プロパティは継承済みのため、新規追加なし
+  characterNames?: Record<string, string>; // 🆕 追加
 }
 
 /**
@@ -48,6 +50,7 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, ExtendedCanvasComponentPro
     showTonePanel,     // 🔧 必須プロパティとして直接使用
     // 🆕 新規プロパティ（拡張分）
     onTonePanelToggle,
+    characterNames, // 🆕 ここに追加
     // 既存のprops
     onCharacterAdd,
     onBubbleAdd,
@@ -64,6 +67,11 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, ExtendedCanvasComponentPro
       gridDisplay: 'edit-only'
     }
   } = props;
+
+  // 🆕 キャラクター表示名取得関数（関数内に移動）
+  const getCharacterDisplayName = (character: Character) => {
+    return characterNames?.[character.type] || character.name || character.displayName || 'キャラクター';
+  };
 
   // Canvas ref
   const canvasRef = useRef<HTMLCanvasElement>(null!);
@@ -831,38 +839,38 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, ExtendedCanvasComponentPro
           {state.isPanelResizing && <span> | リサイズ中</span>}
         </div>
       )}
-      
-      {state.selectedCharacter && (
-        <div
-          style={{
-            position: "absolute",
-            top: "40px",
-            right: "10px",
-            background: state.isCharacterResizing 
-              ? "rgba(255, 0, 0, 0.9)"
-              : state.isDragging 
-              ? "rgba(0, 150, 255, 0.9)"
-              : "rgba(0, 102, 255, 0.9)",
-            color: "white",
-            padding: "8px 12px",
-            borderRadius: "4px",
-            fontSize: "12px",
-            fontWeight: "bold",
-          }}
-        >
-          {state.isCharacterResizing ? `リサイズ中 (${state.resizeDirection})` : 
-          state.isDragging ? "移動中" : 
-          state.selectedCharacter.name}
-          <br/>
-          <small>
-            {state.selectedCharacter.isGlobalPosition ? "自由移動" : "パネル内"}
-            {" | "}
-            {state.selectedCharacter.viewType}
-            {" | "}
-            {state.selectedCharacter.scale.toFixed(1)}x
-          </small>
-        </div>
-      )}
+    
+        {state.selectedCharacter && (
+          <div
+            style={{
+              position: "absolute",
+              top: "40px",
+              right: "10px",
+              background: state.isCharacterResizing 
+                ? "rgba(255, 0, 0, 0.9)"
+                : state.isDragging 
+                ? "rgba(0, 150, 255, 0.9)"
+                : "rgba(0, 102, 255, 0.9)",
+              color: "white",
+              padding: "8px 12px",
+              borderRadius: "4px",
+              fontSize: "12px",
+              fontWeight: "bold",
+            }}
+          >
+            {state.isCharacterResizing ? `リサイズ中 (${state.resizeDirection})` : 
+            state.isDragging ? "移動中" : 
+            getCharacterDisplayName(state.selectedCharacter)} {/* 🔧 ここを修正 */}
+            <br/>
+            <small>
+              {state.selectedCharacter.isGlobalPosition ? "自由移動" : "パネル内"}
+              {" | "}
+              {state.selectedCharacter.viewType}
+              {" | "}
+              {state.selectedCharacter.scale.toFixed(1)}x
+            </small>
+          </div>
+        )}
       
       {state.selectedBubble && (
         <div

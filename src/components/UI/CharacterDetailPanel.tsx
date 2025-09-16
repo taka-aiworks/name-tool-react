@@ -1,4 +1,4 @@
-// src/components/UI/CharacterDetailPanel.tsx (分かりやすいUI・大幅改良版)
+// src/components/UI/CharacterDetailPanel.tsx (動的名前表示版)
 import React from "react";
 import { Character } from "../../types";
 
@@ -7,6 +7,8 @@ interface CharacterDetailPanelProps {
   onCharacterUpdate: (character: Character) => void;
   onCharacterDelete?: (character: Character) => void;
   onClose?: () => void;
+  // 🆕 キャラクター名前管理を追加
+  characterNames?: Record<string, string>;
 }
 
 const CharacterDetailPanel: React.FC<CharacterDetailPanelProps> = ({
@@ -14,17 +16,25 @@ const CharacterDetailPanel: React.FC<CharacterDetailPanelProps> = ({
   onCharacterUpdate,
   onCharacterDelete,
   onClose,
+  characterNames = {} // 🆕 デフォルト値を設定
 }) => {
   if (!selectedCharacter) return null;
 
   const isDarkMode = document.documentElement.getAttribute("data-theme") === "dark";
+
+  // 🆕 動的名前取得 - characterNames から取得、なければ既存の名前
+  const getCharacterDisplayName = (character: Character) => {
+    return characterNames[character.type] || character.name || character.displayName || 'キャラクター';
+  };
+
+  const displayName = getCharacterDisplayName(selectedCharacter);
 
   const handleUpdate = (updates: Partial<Character>) => {
     onCharacterUpdate({ ...selectedCharacter, ...updates });
   };
 
   const handleDelete = () => {
-    if (window.confirm(`「${selectedCharacter.name}」を削除しますか？`)) {
+    if (window.confirm(`「${displayName}」を削除しますか？`)) {
       if (onCharacterDelete) {
         onCharacterDelete(selectedCharacter);
       }
@@ -136,7 +146,7 @@ const CharacterDetailPanel: React.FC<CharacterDetailPanelProps> = ({
 
   return (
     <div style={panelStyle}>
-      {/* ヘッダー */}
+      {/* ヘッダー - 🆕 動的名前表示 */}
       <div style={{ 
         display: "flex", 
         justifyContent: "space-between", 
@@ -151,7 +161,8 @@ const CharacterDetailPanel: React.FC<CharacterDetailPanelProps> = ({
           fontSize: "18px",
           fontWeight: "bold",
         }}>
-          🎭 {selectedCharacter.name}の設定
+          {/* 🆕 動的名前表示 */}
+          🎭 {displayName}の設定
         </h4>
         {onClose && (
           <button
