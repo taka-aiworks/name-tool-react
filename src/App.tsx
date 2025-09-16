@@ -16,6 +16,10 @@ import BackgroundPanel from './components/UI/BackgroundPanel';
 import EffectPanel from './components/UI/EffectPanel';
 import TonePanel from './components/UI/TonePanel';
 
+// 1. importに追加（1行）
+import { CharacterSettingsPanel } from './components/UI/CharacterSettingsPanel';
+
+
 function App() {
   // デフォルトダークモード設定
   useEffect(() => {
@@ -46,6 +50,11 @@ function App() {
   const [showEffectPanel, setShowEffectPanel] = useState<boolean>(false);
   const [showTonePanel, setShowTonePanel] = useState<boolean>(false); // 🆕 トーンパネル表示制御
 
+  // 2. 状態管理に追加（2行）
+  const [showCharacterSettingsPanel, setShowCharacterSettingsPanel] = useState<boolean>(false);
+  const [editingCharacterType, setEditingCharacterType] = useState<string>('');
+
+
   // スナップ設定の状態管理
   const [snapSettings, setSnapSettings] = useState<SnapSettings>({
     enabled: true,
@@ -66,16 +75,38 @@ function App() {
     height: 600 
   }), []);
 
+
+    // 🆕 1. 状態管理に追加（既存の状態管理セクションに追加）
+  const [characterNames, setCharacterNames] = useState<Record<string, string>>({
+    hero: '主人公',
+    heroine: 'ヒロイン',
+    rival: 'ライバル',
+    friend: '友人'
+  });
+
+  // 🆕 2. キャラクター情報管理の追加（既存の状態管理の下に追加）
+  const [characterSettings, setCharacterSettings] = useState<Record<string, any>>({
+    hero: { appearance: null, role: '主人公' },
+    heroine: { appearance: null, role: 'ヒロイン' },
+    rival: { appearance: null, role: 'ライバル' },
+    friend: { appearance: null, role: '友人' }
+  });
+
+  // 🔧 3. プロジェクト保存hookの拡張（既存のuseProjectSaveを修正）
   const projectSave = useProjectSave({ 
     panels, 
     characters, 
     bubbles: speechBubbles,
     backgrounds,
     effects,
-    tones, // 🆕 トーンデータを保存対象に追加
+    tones,
+    characterNames, // 🆕 名前データを保存対象に追加
+    characterSettings, // 🆕 設定データを保存対象に追加
     canvasSize, 
     settings 
   });
+
+
 
   // 機能コールバック用の状態
   const [addCharacterFunc, setAddCharacterFunc] = useState<((type: string) => void) | null>(null);
@@ -279,6 +310,37 @@ function App() {
 
   const handleGridDisplayChange = useCallback((display: 'always' | 'edit-only' | 'hidden') => {
     setSnapSettings(prev => ({ ...prev, gridDisplay: display }));
+  }, []);
+
+  // 🆕 4. キャラクター名前更新ハンドラー（既存のハンドラーの下に追加）
+  const handleCharacterNameUpdate = useCallback((type: string, newName: string, newRole: string, appearance: any) => {
+    // 名前を更新
+    setCharacterNames(prev => ({
+      ...prev,
+      [type]: newName
+    }));
+    
+    // 設定を更新
+    setCharacterSettings(prev => ({
+      ...prev,
+      [type]: {
+        appearance,
+        role: newRole
+      }
+    }));
+    
+    // 既存のキャラクターも更新
+    setCharacters(prev => prev.map(char => 
+      char.type === type ? {
+        ...char,
+        name: newName,
+        displayName: newName,
+        role: newRole,
+        appearance
+      } : char
+    ));
+    
+    console.log(`✅ キャラクター更新: ${type} → ${newName} (${newRole})`);
   }, []);
 
   // ダークモード切り替え
@@ -487,7 +549,14 @@ function App() {
     alert(`${format}でのエクスポート機能は実装予定です`);
   }, []);
 
-  const handleCharacterRightClick = useCallback((character: Character) => {
+  const handleCharacterRightClick = useCallback((e: React.MouseEvent, charType: string) => {
+  e.preventDefault();
+  setEditingCharacterType(charType);
+  setShowCharacterSettingsPanel(true);
+  }, []);
+
+  // 🔧 修正2: Canvas右クリック用の別関数を追加
+  const handleCanvasCharacterRightClick = useCallback((character: Character) => {
     setSelectedCharacter(character);
     setShowCharacterPanel(true);
   }, []);
@@ -529,6 +598,14 @@ function App() {
     ));
     setSelectedTone(updatedTone);
   }, []);
+
+  
+  // 🔧 5. 既存のhandleCharacterSettingsUpdateを修正
+  const handleCharacterSettingsUpdate = useCallback((characterData: any) => {
+    const { name, role, appearance } = characterData;
+    handleCharacterNameUpdate(editingCharacterType, name || characterNames[editingCharacterType], role || characterSettings[editingCharacterType].role, appearance);
+  }, [editingCharacterType, characterNames, characterSettings, handleCharacterNameUpdate]);
+
 
   return (
     <div className={`app ${isDarkMode ? 'dark' : 'light'}`}>
@@ -849,7 +926,7 @@ function App() {
             onBubbleAdd={(func: (type: string, text: string) => void) => setAddBubbleFunc(() => func)}
             onPanelSelect={(panel: Panel | null) => setSelectedPanel(panel)}
             onCharacterSelect={(character: Character | null) => setSelectedCharacter(character)}
-            onCharacterRightClick={handleCharacterRightClick}
+            onCharacterRightClick={handleCanvasCharacterRightClick}
             isPanelEditMode={isPanelEditMode}
             onPanelSplit={handlePanelSplit}
             onPanelEditModeToggle={handlePanelEditModeToggle}
@@ -861,25 +938,37 @@ function App() {
 
         {/* 右サイドバー */}
         <div className="sidebar right-sidebar">
-          {/* キャラクター */}
+          {/* キャラクター選択 - 動的名前表示 */}
           <div className="section">
             <h3>👥 キャラクター</h3>
             <div className="character-grid">
               {[
-                { type: 'hero', icon: '🦸‍♂️', name: '主人公' },
-                { type: 'heroine', icon: '🦸‍♀️', name: 'ヒロイン' },
-                { type: 'rival', icon: '😤', name: 'ライバル' },
-                { type: 'friend', icon: '😊', name: '友人' }
+                { type: 'hero', icon: '🦸‍♂️' },
+                { type: 'heroine', icon: '🦸‍♀️' },
+                { type: 'rival', icon: '😤' },
+                { type: 'friend', icon: '😊' }
               ].map((char) => (
                 <div
                   key={char.type}
                   className="char-btn"
                   onClick={() => handleCharacterClick(char.type)}
+                  onContextMenu={(e) => handleCharacterRightClick(e, char.type)}
+                  title={`${characterNames[char.type]}を追加 (右クリックで設定)`}
                 >
                   <div className="char-icon">{char.icon}</div>
-                  <span>{char.name}</span>
+                  <span>{characterNames[char.type]}</span> {/* 🆕 動的名前表示 */}
                 </div>
               ))}
+            </div>
+            <div style={{
+              fontSize: "11px", 
+              color: "var(--text-muted)",
+              padding: "4px 8px",
+              background: "var(--bg-secondary)",
+              borderRadius: "4px",
+              marginTop: "8px"
+            }}>
+              💡 右クリックで名前・見た目を設定できます
             </div>
           </div>
 
@@ -1129,11 +1218,22 @@ function App() {
         selectedPanel={selectedPanel}
         tones={tones}
       />
+        {/* キャラクター設定パネル */}
+        <CharacterSettingsPanel
+          isOpen={showCharacterSettingsPanel}
+          onClose={() => setShowCharacterSettingsPanel(false)}
+          characterType={editingCharacterType}
+          currentName={characterNames[editingCharacterType]} // 🆕 現在の名前を渡す
+          currentSettings={characterSettings[editingCharacterType]} // 🆕 現在の設定を渡す
+          onCharacterUpdate={handleCharacterSettingsUpdate}
+          isDarkMode={isDarkMode}
+        />
 
       {/* プロジェクト管理パネル */}
       <ProjectPanel
         isOpen={showProjectPanel}
         onClose={() => setShowProjectPanel(false)}
+        // 🔧 8. プロジェクト読み込み時の復元処理（onLoadProjectの中を修正）
         onLoadProject={(projectId) => {
           const project = projectSave.loadProject(projectId);
           if (project) {
@@ -1142,7 +1242,16 @@ function App() {
             setSpeechBubbles(project.data.bubbles);
             setBackgrounds(project.data.backgrounds || []);
             setEffects(project.data.effects || []);
-            setTones(project.data.tones || []); // 🆕 トーンデータも復元
+            setTones(project.data.tones || []);
+            
+            // 🆕 キャラクター名前・設定も復元
+            if (project.data.characterNames) {
+              setCharacterNames(project.data.characterNames);
+            }
+            if (project.data.characterSettings) {
+              setCharacterSettings(project.data.characterSettings);
+            }
+            
             // 設定も復元
             setSnapSettings(prev => ({
               ...prev,
@@ -1150,23 +1259,38 @@ function App() {
               gridSize: project.data.settings.snapSize
             }));
             setIsDarkMode(project.data.settings.darkMode);
-            // テーマも更新
             document.documentElement.setAttribute("data-theme", project.data.settings.darkMode ? "dark" : "light");
           }
         }}
-        onNewProject={() => {
-          projectSave.newProject();
-          setPanels([]);
-          setCharacters([]);
-          setSpeechBubbles([]);
-          setBackgrounds([]);
-          setEffects([]);
-          setTones([]); // 🆕 トーンもクリア
-          setSelectedCharacter(null);
-          setSelectedPanel(null);
-          setSelectedEffect(null);
-          setSelectedTone(null); // 🆕 トーン選択もクリア
-        }}
+        // 🔧 9. プロジェクト新規作成時のリセット処理（onNewProjectの中を修正）
+          onNewProject={() => {
+            projectSave.newProject();
+            setPanels([]);
+            setCharacters([]);
+            setSpeechBubbles([]);
+            setBackgrounds([]);
+            setEffects([]);
+            setTones([]);
+            
+            // 🆕 キャラクター名前・設定もリセット
+            setCharacterNames({
+              hero: '主人公',
+              heroine: 'ヒロイン',
+              rival: 'ライバル',
+              friend: '友人'
+            });
+            setCharacterSettings({
+              hero: { appearance: null, role: '主人公' },
+              heroine: { appearance: null, role: 'ヒロイン' },
+              rival: { appearance: null, role: 'ライバル' },
+              friend: { appearance: null, role: '友人' }
+            });
+            
+            setSelectedCharacter(null);
+            setSelectedPanel(null);
+            setSelectedEffect(null);
+            setSelectedTone(null);
+          }}
         currentProjectId={projectSave.currentProjectId}
         saveStatus={projectSave.saveStatus}
         onSaveProject={projectSave.saveProject}

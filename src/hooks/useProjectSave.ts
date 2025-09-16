@@ -1,17 +1,22 @@
-// src/hooks/useProjectSave.ts - トーン機能対応版
+// src/hooks/useProjectSave.ts - キャラクター名前データ対応版
 import { useEffect, useRef, useCallback, useState } from 'react';
 import SaveService from '../services/SaveService';
 import { Panel, Character, SpeechBubble, BackgroundElement, EffectElement, ToneElement } from '../types';
 
+// 🔧 UseProjectSavePropsを拡張
 interface UseProjectSaveProps {
   panels: Panel[];
   characters: Character[];
   bubbles: SpeechBubble[];
   backgrounds: BackgroundElement[];
   effects: EffectElement[];
-  tones: ToneElement[]; // 🆕 トーンデータ追加
+  tones: ToneElement[];
   canvasSize: { width: number; height: number };
   settings: { snapEnabled: boolean; snapSize: number; darkMode: boolean };
+  
+  // 🆕 キャラクター名前・設定データ追加
+  characterNames?: Record<string, string>;
+  characterSettings?: Record<string, any>;
 }
 
 interface SaveStatus {
@@ -27,9 +32,11 @@ export const useProjectSave = ({
   bubbles,
   backgrounds,
   effects,
-  tones, // 🆕 トーンデータ受け取り
+  tones,
   canvasSize,
-  settings
+  settings,
+  characterNames, // 🆕 追加
+  characterSettings // 🆕 追加
 }: UseProjectSaveProps) => {
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>({
@@ -46,6 +53,7 @@ export const useProjectSave = ({
   const projectName = '新規プロジェクト';
   const autoSaveInterval = 30000; // 30秒
 
+  // 🔧 getCurrentDataStringを拡張
   const getCurrentDataString = useCallback(() => {
     return JSON.stringify({
       panels,
@@ -53,17 +61,20 @@ export const useProjectSave = ({
       bubbles,
       backgrounds,
       effects,
-      tones, // 🆕 トーンデータを含める
+      tones,
       canvasSize,
-      settings
+      settings,
+      characterNames, // 🆕 追加
+      characterSettings // 🆕 追加
     });
-  }, [panels, characters, bubbles, backgrounds, effects, tones, canvasSize, settings]);
+  }, [panels, characters, bubbles, backgrounds, effects, tones, canvasSize, settings, characterNames, characterSettings]);
 
   const hasDataChanged = useCallback(() => {
     const currentData = getCurrentDataString();
     return currentData !== lastDataRef.current;
   }, [getCurrentDataString]);
 
+  // 🔧 saveProjectを拡張
   const saveProject = useCallback(async (name?: string): Promise<string | null> => {
     try {
       setSaveStatus(prev => ({ ...prev, error: null }));
@@ -75,10 +86,12 @@ export const useProjectSave = ({
         bubbles,
         backgrounds,
         effects,
-        tones, // 🆕 トーンデータを保存
+        tones,
         canvasSize,
         settings,
-        currentProjectId || undefined
+        currentProjectId || undefined,
+        characterNames, // 🆕 追加
+        characterSettings // 🆕 追加
       );
 
       lastDataRef.current = getCurrentDataString();
@@ -97,7 +110,7 @@ export const useProjectSave = ({
       console.error('手動保存エラー:', error);
       return null;
     }
-  }, [projectName, panels, characters, bubbles, backgrounds, effects, tones, canvasSize, settings, currentProjectId, getCurrentDataString]);
+  }, [projectName, panels, characters, bubbles, backgrounds, effects, tones, canvasSize, settings, currentProjectId, getCurrentDataString, characterNames, characterSettings]);
 
   const autoSave = useCallback(async () => {
     if (!hasDataChanged() || saveStatus.isAutoSaving) {
@@ -187,6 +200,7 @@ export const useProjectSave = ({
     }
   }, []);
 
+  // 🔧 beforeunloadイベントを拡張
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (saveStatus.hasUnsavedChanges) {
@@ -198,10 +212,12 @@ export const useProjectSave = ({
             bubbles,
             backgrounds,
             effects,
-            tones, // 🆕 トーンデータも保存
+            tones,
             canvasSize,
             settings,
-            currentProjectId || undefined
+            currentProjectId || undefined,
+            characterNames, // 🆕 追加
+            characterSettings // 🆕 追加
           );
         } catch (error) {
           console.error('ページ離脱時の保存エラー:', error);
@@ -214,7 +230,7 @@ export const useProjectSave = ({
 
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [saveStatus.hasUnsavedChanges, projectName, panels, characters, bubbles, backgrounds, effects, tones, canvasSize, settings, currentProjectId]);
+  }, [saveStatus.hasUnsavedChanges, projectName, panels, characters, bubbles, backgrounds, effects, tones, canvasSize, settings, currentProjectId, characterNames, characterSettings]);
 
   useEffect(() => {
     return () => {

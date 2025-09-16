@@ -41,6 +41,11 @@ export interface Character {
   faceAngle: "front" | "left" | "right" | "back" | "leftFront" | "rightFront" | "leftBack" | "rightBack";
   
   isGlobalPosition: boolean;
+
+  // 🆕 新規プロパティ（オプション）- この3行だけ追加
+  displayName?: string;           // 表示用名前
+  role?: string;                  // カスタム役割
+  appearance?: CharacterAppearance; // 見た目設定
 }
 
 // 🆕 新しい型定義を追加
@@ -480,3 +485,15 @@ export type CanvasElementType = 'panel' | 'character' | 'bubble' | 'background' 
 
 // Canvas要素の統合型
 export type CanvasElement = Panel | Character | SpeechBubble | BackgroundElement | EffectElement | ToneElement;
+
+// 🆕 キャラクター見た目設定の型定義（新規追加）
+export interface CharacterAppearance {
+  gender: 'male' | 'female' | 'other';
+  hairColor: 'black' | 'brown' | 'blonde' | 'red' | 'blue' | 'green' | 'white' | 'silver';
+  hairStyle: 'short' | 'medium' | 'long' | 'ponytail' | 'twintails' | 'bun';
+  eyeColor: 'brown' | 'blue' | 'green' | 'gray' | 'black' | 'red' | 'purple';
+  skinTone: 'light' | 'medium' | 'dark' | 'tan';
+  clothing: 'school' | 'casual' | 'formal' | 'sports' | 'traditional' | 'fantasy';
+  clothingColor: 'blue' | 'red' | 'green' | 'black' | 'white' | 'pink' | 'purple';
+  accessories: string;
+}

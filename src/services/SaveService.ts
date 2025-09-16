@@ -1,7 +1,7 @@
 // SaveService.ts - トーン機能対応版
 import { Panel, Character, SpeechBubble, BackgroundElement, EffectElement, ToneElement } from '../types';
 
-// ProjectData interface を修正
+// 🔧 ProjectData interface を拡張
 export interface ProjectData {
   id: string;
   name: string;
@@ -14,13 +14,16 @@ export interface ProjectData {
     bubbles: SpeechBubble[];
     backgrounds: BackgroundElement[];
     effects: EffectElement[];
-    tones: ToneElement[]; // 🆕 トーンデータ追加
+    tones: ToneElement[];
     canvasSize: { width: number; height: number };
     settings: {
       snapEnabled: boolean;
       snapSize: number;
       darkMode: boolean;
     };
+    // 🆕 キャラクター名前・設定データ追加
+    characterNames?: Record<string, string>;
+    characterSettings?: Record<string, any>;
   };
 }
 
@@ -40,6 +43,7 @@ export class SaveService {
   /**
    * プロジェクトを保存（トーン対応版）
    */
+  // 🔧 saveProject関数を拡張（12個のパラメータに対応）
   static saveProject(
     name: string,
     panels: Panel[],
@@ -47,10 +51,12 @@ export class SaveService {
     bubbles: SpeechBubble[],
     backgrounds: BackgroundElement[],
     effects: EffectElement[],
-    tones: ToneElement[], // 🆕 トーンデータ追加
+    tones: ToneElement[],
     canvasSize: { width: number; height: number },
     settings: { snapEnabled: boolean; snapSize: number; darkMode: boolean },
-    projectId?: string
+    projectId?: string,
+    characterNames?: Record<string, string>, // 🆕 追加
+    characterSettings?: Record<string, any>  // 🆕 追加
   ): string {
     try {
       const id = projectId || this.generateId();
@@ -68,9 +74,11 @@ export class SaveService {
           bubbles: JSON.parse(JSON.stringify(bubbles)),
           backgrounds: JSON.parse(JSON.stringify(backgrounds)),
           effects: JSON.parse(JSON.stringify(effects)),
-          tones: JSON.parse(JSON.stringify(tones)), // 🆕 トーンデータ保存
+          tones: JSON.parse(JSON.stringify(tones)),
           canvasSize,
-          settings
+          settings,
+          characterNames, // 🆕 追加
+          characterSettings // 🆕 追加
         }
       };
 
@@ -98,6 +106,7 @@ export class SaveService {
   /**
    * プロジェクトを読み込み（トーン対応版）
    */
+  // 🔧 loadProject関数も後方互換性を追加
   static loadProject(projectId: string): ProjectData | null {
     try {
       const projects = this.getAllProjects();
@@ -112,6 +121,23 @@ export class SaveService {
         if (!project.data.tones) {
           project.data.tones = [];
         }
+        // 🆕 後方互換性：キャラクター名前・設定データがない場合は初期化
+        if (!project.data.characterNames) {
+          project.data.characterNames = {
+            hero: '主人公',
+            heroine: 'ヒロイン',
+            rival: 'ライバル',
+            friend: '友人'
+          };
+        }
+        if (!project.data.characterSettings) {
+          project.data.characterSettings = {
+            hero: { appearance: null, role: '主人公' },
+            heroine: { appearance: null, role: 'ヒロイン' },
+            rival: { appearance: null, role: 'ライバル' },
+            friend: { appearance: null, role: '友人' }
+          };
+        }
         
         localStorage.setItem(this.CURRENT_PROJECT_KEY, projectId);
         console.log(`プロジェクト "${project.name}" を読み込みました`);
@@ -124,6 +150,7 @@ export class SaveService {
       return null;
     }
   }
+
 
   /**
    * 現在のプロジェクトIDを取得
@@ -143,18 +170,36 @@ export class SaveService {
   /**
    * プロジェクト一覧を取得（トーン対応版）
    */
+  // 🔧 getAllProjects関数も後方互換性を追加
   static getAllProjects(): ProjectData[] {
     try {
       const data = localStorage.getItem(this.STORAGE_KEY);
       const projects = data ? JSON.parse(data) : [];
       
-      // 🔧 後方互換性：既存プロジェクトに効果線・トーンデータを追加
+      // 🔧 後方互換性：既存プロジェクトに効果線・トーン・キャラクター名前データを追加
       return projects.map((project: ProjectData) => {
         if (!project.data.effects) {
           project.data.effects = [];
         }
         if (!project.data.tones) {
           project.data.tones = [];
+        }
+        // 🆕 キャラクター名前・設定データの後方互換性
+        if (!project.data.characterNames) {
+          project.data.characterNames = {
+            hero: '主人公',
+            heroine: 'ヒロイン',
+            rival: 'ライバル',
+            friend: '友人'
+          };
+        }
+        if (!project.data.characterSettings) {
+          project.data.characterSettings = {
+            hero: { appearance: null, role: '主人公' },
+            heroine: { appearance: null, role: 'ヒロイン' },
+            rival: { appearance: null, role: 'ライバル' },
+            friend: { appearance: null, role: '友人' }
+          };
         }
         return project;
       });
