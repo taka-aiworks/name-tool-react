@@ -329,34 +329,53 @@ function App() {
   }, []);
 
   // ✅ こちらを使用
+  // 🔧 既存のhandleCharacterNameUpdateを以下に修正
   const handleCharacterNameUpdate = useCallback((type: string, newName: string, newRole: string, appearance: any) => {
-    // 名前を更新
-    setCharacterNames(prev => ({
-      ...prev,
-      [type]: newName
-    }));
+    console.log(`🔧 キャラクター名前更新開始: ${type} → ${newName}`);
     
-    // 設定を更新  
-    setCharacterSettings(prev => ({
-      ...prev,
-      [type]: {
-        appearance,
-        role: newRole
-      }
-    }));
+    // 1. 名前辞書を更新
+    setCharacterNames(prev => {
+      const updated = { ...prev, [type]: newName };
+      console.log(`📝 名前辞書更新:`, updated);
+      return updated;
+    });
     
-    // 🔧 既存のキャラクターも全て更新（強制）
-    setCharacters(prev => prev.map(char => 
-      char.type === type ? {
-        ...char,
-        name: newName,
-        displayName: newName, // 確実に更新
-        role: newRole,
-        appearance
-      } : char
-    ));
+    // 2. 設定を更新  
+    setCharacterSettings(prev => {
+      const updated = {
+        ...prev,
+        [type]: {
+          appearance,
+          role: newRole
+        }
+      };
+      console.log(`⚙️ 設定更新:`, updated);
+      return updated;
+    });
     
-    console.log(`✅ キャラクター更新: ${type} → ${newName} (${newRole})`);
+    // 3. 既存のキャラクター全てを強制更新
+    setCharacters(prev => {
+      const updated = prev.map(char => {
+        if (char.type === type) {
+          console.log(`🔄 キャラクター更新: ${char.id} (${type}) → ${newName}`);
+          return {
+            ...char,
+            name: newName,
+            displayName: newName, // ⚠️ この項目が重要
+            role: newRole,
+            appearance,
+            // Canvas描画で使用される可能性のある項目も全て更新
+            label: newName,
+            title: newName
+          };
+        }
+        return char;
+      });
+      console.log(`✅ 全キャラクター更新完了:`, updated);
+      return updated;
+    });
+    
+    console.log(`✅ キャラクター名前更新完了: ${type} → ${newName}`);
   }, []);
 
   // ダークモード切り替え

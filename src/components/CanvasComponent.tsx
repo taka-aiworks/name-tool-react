@@ -715,21 +715,21 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, ExtendedCanvasComponentPro
 
   // Canvas描画hook使用
   const { drawCanvas } = useCanvasDrawing({
-    canvasRef,
-    state,
-    panels,
-    characters,
-    speechBubbles,
-    backgrounds,
-    selectedBackground,
-    effects,
-    selectedEffect,
-    // トーンデータを渡す
-    tones,
-    selectedTone,
-    isPanelEditMode,
-    snapSettings,
-  });
+  canvasRef,
+  state,
+  panels,
+  characters,
+  speechBubbles,
+  backgrounds,
+  selectedBackground,
+  effects,
+  selectedEffect,
+  tones,
+  selectedTone,
+  isPanelEditMode,
+  snapSettings,
+  getCharacterDisplayName, // 🔧 この行が重要！確実に渡す
+});
 
   // 要素追加・編集hook使用
   const { handleEditComplete, handleEditCancel } = useElementActions({

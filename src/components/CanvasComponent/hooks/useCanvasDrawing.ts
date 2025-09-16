@@ -584,6 +584,7 @@ export const useCanvasDrawing = ({
   /**
    * 描画トリガー監視useEffect（効果線+トーン対応版）
    */
+  // 1. 🔧 useEffect の依存配列に characterNames を追加
   useEffect(() => {
     drawCanvas();
     console.log("🔄 描画トリガー:", {
@@ -591,18 +592,20 @@ export const useCanvasDrawing = ({
       charactersCount: characters.length,
       bubblesCount: speechBubbles.length,
       backgroundsCount: backgrounds.length,
-      effectsCount: effects.length, // 🆕 効果線数追加
-      tonesCount: tones.length, // 🆕 トーン数追加
+      effectsCount: effects.length,
+      tonesCount: tones.length,
       selectedPanel: state.selectedPanel?.id,
       selectedCharacter: state.selectedCharacter?.name,
       selectedBubble: state.selectedBubble?.text?.substring(0, 10),
       selectedBackground: selectedBackground?.type,
-      selectedEffect: selectedEffect?.type, // 🆕 選択された効果線
-      selectedTone: selectedTone?.type, // 🆕 選択されたトーン
+      selectedEffect: selectedEffect?.type,
+      selectedTone: selectedTone?.type,
       isPanelEditMode,
       snapLinesCount: state.snapLines.length,
       showGrid,
       gridSize: snapSettings.gridSize,
+      // 🆕 characterNames の変更も監視に追加
+      characterNamesChanged: getCharacterDisplayName ? "available" : "unavailable"
     });
   }, [
     panels.length,
@@ -613,22 +616,24 @@ export const useCanvasDrawing = ({
     state.selectedBubble,
     backgrounds.length,
     selectedBackground,
-    effects.length, // 🆕 効果線の長さ監視
-    selectedEffect, // 🆕 選択された効果線監視
-    tones.length, // 🆕 トーンの長さ監視
-    selectedTone, // 🆕 選択されたトーン監視
+    effects.length,
+    selectedEffect,
+    tones.length,
+    selectedTone,
     isPanelEditMode,
     state.snapLines.length,
     showGrid,
     snapSettings.gridSize,
     snapSettings.gridDisplay,
+    // 🆕 getCharacterDisplayName関数の変更を監視
+    getCharacterDisplayName, // ← この行を追加
     // JSON.stringify も効果線+トーン対応
     JSON.stringify(panels.map(p => ({ id: p.id, x: p.x, y: p.y, width: p.width, height: p.height }))),
     JSON.stringify(characters.map(c => ({ id: c.id, x: c.x, y: c.y, scale: c.scale, width: c.width, height: c.height }))),
     JSON.stringify(speechBubbles.map(b => ({ id: b.id, x: b.x, y: b.y, width: b.width, height: b.height }))),
     JSON.stringify(backgrounds.map(bg => ({ id: bg.id, panelId: bg.panelId, type: bg.type, x: bg.x, y: bg.y, width: bg.width, height: bg.height, opacity: bg.opacity }))),
-    JSON.stringify(effects.map(effect => ({ id: effect.id, panelId: effect.panelId, type: effect.type, x: effect.x, y: effect.y, width: effect.width, height: effect.height, opacity: effect.opacity }))), // 🆕 効果線データ監視
-    JSON.stringify(tones.map(tone => ({ id: tone.id, panelId: tone.panelId, type: tone.type, x: tone.x, y: tone.y, width: tone.width, height: tone.height, opacity: tone.opacity }))), // 🆕 トーンデータ監視
+    JSON.stringify(effects.map(effect => ({ id: effect.id, panelId: effect.panelId, type: effect.type, x: effect.x, y: effect.y, width: effect.width, height: effect.height, opacity: effect.opacity }))),
+    JSON.stringify(tones.map(tone => ({ id: tone.id, panelId: tone.panelId, type: tone.type, x: tone.x, y: tone.y, width: tone.width, height: tone.height, opacity: tone.opacity }))),
   ]);
 
   /**
