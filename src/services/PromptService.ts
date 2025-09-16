@@ -1,5 +1,39 @@
 // src/services/PromptService.ts
-import { Project, Panel, Character, BubbleElement, BackgroundElement, EffectElement } from '../types';
+import { Panel, Character, SpeechBubble, BackgroundElement, EffectElement } from '../types';
+
+// 🆕 辞書型定義
+declare global {
+  interface Window {
+    DEFAULT_SFW_DICT: {
+      SFW: {
+        gender: Array<{ tag: string; label: string }>;
+        age: Array<{ tag: string; label: string }>;
+        hair_style: Array<{ tag: string; label: string }>;
+        eyes: Array<{ tag: string; label: string }>;
+        skin_features: Array<{ tag: string; label: string }>;
+        outfit: Array<{ tag: string; label: string; cat?: string }>;
+        body_type: Array<{ tag: string; label: string }>;
+        height: Array<{ tag: string; label: string }>;
+        colors: Array<{ tag: string; label: string }>;
+        background: Array<{ tag: string; label: string }>;
+        pose: Array<{ tag: string; label: string }>;
+        expressions: Array<{ tag: string; label: string }>;
+        composition: Array<{ tag: string; label: string }>;
+        view: Array<{ tag: string; label: string }>;
+        lighting: Array<{ tag: string; label: string }>;
+      };
+    };
+  }
+}
+
+// Project型を定義（現在のtypes.tsに存在しないため追加）
+export interface Project {
+  panels: Panel[];
+  characters: Character[];
+  speechBubbles: SpeechBubble[];
+  backgrounds: BackgroundElement[];
+  effects: EffectElement[];
+}
 
 export interface CharacterPrompt {
   id: string;
@@ -41,6 +75,66 @@ export interface PromptOutput {
 
 class PromptService {
   /**
+   * 🆕 辞書データを取得（フォールバック対応）
+   */
+  private getDictionary() {
+    if (typeof window !== 'undefined' && window.DEFAULT_SFW_DICT) {
+      return window.DEFAULT_SFW_DICT.SFW;
+    }
+    
+    // フォールバック辞書
+    return {
+      gender: [
+        { tag: "female", label: "女性" },
+        { tag: "male", label: "男性" }
+      ],
+      hair_style: [
+        { tag: "long hair", label: "ロング" },
+        { tag: "short hair", label: "ショート" },
+        { tag: "ponytail", label: "ポニーテール" }
+      ],
+      eyes: [
+        { tag: "brown eyes", label: "茶色い瞳" },
+        { tag: "blue eyes", label: "青い瞳" }
+      ],
+      outfit: [
+        { tag: "school uniform", label: "制服" },
+        { tag: "casual", label: "カジュアル" }
+      ],
+      colors: [
+        { tag: "blue", label: "青" },
+        { tag: "red", label: "赤" },
+        { tag: "black", label: "黒" }
+      ],
+      age: [{ tag: "teen", label: "ティーン" }],
+      skin_features: [{ tag: "fair skin", label: "色白肌" }],
+      body_type: [{ tag: "average build", label: "標準体型" }],
+      height: [{ tag: "average height", label: "中背" }],
+      background: [{ tag: "classroom", label: "教室" }],
+      pose: [{ tag: "standing", label: "立ち" }],
+      expressions: [{ tag: "smiling", label: "笑顔" }],
+      composition: [{ tag: "full_body", label: "全身" }],
+      view: [{ tag: "front_view", label: "正面" }],
+      lighting: [{ tag: "soft lighting", label: "柔らかい照明" }]
+    };
+  }
+
+  /**
+   * 🆕 辞書からタグを検索
+   */
+  private findTagByLabel(category: string, searchText: string): string {
+    const dict = this.getDictionary();
+    const categoryData = dict[category as keyof typeof dict] || [];
+    
+    const found = categoryData.find(item => 
+      item.label.includes(searchText) || 
+      item.tag.includes(searchText.toLowerCase())
+    );
+    
+    return found ? found.tag : searchText;
+  }
+
+  /**
    * プロジェクト全体からAI用プロンプトを生成
    */
   public generatePrompts(project: Project): PromptOutput {
@@ -58,18 +152,16 @@ class PromptService {
   }
 
   /**
-   * キャラクター設定からプロンプトを生成（ハイブリッド対応）
+   * キャラクター設定からプロンプトを生成（辞書対応）
    */
   private extractCharacterPrompts(project: Project): CharacterPrompt[] {
     const characterMap = new Map<string, Character>();
     
-    // 全パネルからキャラクターを収集
-    project.panels.forEach(panel => {
-      panel.characters?.forEach(char => {
-        if (!characterMap.has(char.id)) {
-          characterMap.set(char.id, char);
-        }
-      });
+    // プロジェクト内の全キャラクターを収集
+    project.characters.forEach(char => {
+      if (!characterMap.has(char.id)) {
+        characterMap.set(char.id, char);
+      }
     });
 
     return Array.from(characterMap.values()).map(char => ({
@@ -83,30 +175,35 @@ class PromptService {
   }
 
   /**
-   * キャラクター基本情報プロンプト生成（プロンプトツール連携 + 独立使用対応）
+   * 🆕 辞書を使ったキャラクター基本情報プロンプト生成
    */
   private generateBasicInfoPrompt(character: Character): string {
-    const style = "anime style, manga style";
     const appearance = this.extractAppearanceData(character);
     
-    // 基本情報：髪・目・肌・年齢・体型・服装
-    const basicParts = [
-      style,
-      this.translateGender(appearance.gender),
-      this.translateHair(appearance.hairColor, appearance.hairStyle),
-      this.translateEyes(appearance.eyeColor),
-      this.translateSkin(appearance.skinTone),
-      this.translateClothing(appearance.clothing, appearance.clothingColor)
-    ].filter(part => part && part.trim() !== '');
+    // 辞書から適切なタグを取得
+    const genderTag = this.findTagByLabel('gender', appearance.gender);
+    const hairTag = this.findTagByLabel('hair_style', appearance.hairStyle);
+    const eyeTag = this.findTagByLabel('eyes', appearance.eyeColor);
+    const outfitTag = this.findTagByLabel('outfit', appearance.clothing);
+    const colorTag = this.findTagByLabel('colors', appearance.clothingColor);
+    
+    const parts = [
+      'masterpiece, best quality',
+      genderTag,
+      hairTag,
+      eyeTag,
+      outfitTag,
+      colorTag && `${colorTag} clothing`,
+      'anime style'
+    ].filter(Boolean);
 
-    return basicParts.join(', ');
+    return parts.join(', ');
   }
 
   /**
    * ネームレイアウトから配置・ポーズ情報を生成
    */
   private generatePositionPrompt(character: Character): string {
-    // キャラクターの座標や配置から判断
     const position = this.analyzeCharacterPosition(character);
     const pose = this.analyzeCharacterPose(character);
     
@@ -114,44 +211,49 @@ class PromptService {
     if (position) parts.push(position);
     if (pose) parts.push(pose);
     
-    return parts.length > 0 ? parts.join(', ') : 'standing, neutral pose';
+    return parts.length > 0 ? parts.join(', ') : 'standing, center frame';
   }
 
   /**
    * シーン内での役割・状況を生成
    */
   private generateSceneContext(character: Character): string {
-    // パネル内での役割を分析
-    return 'main character in scene'; // 実装時に詳細化
+    return 'main character in scene';
   }
 
   /**
    * キャラクターの配置を分析
    */
   private analyzeCharacterPosition(character: Character): string {
-    // キャラクターの座標から配置を判断
-    // 実装時にcharacter.x, character.y等を使用
+    const x = character.x;
+    const y = character.y;
+    
+    if (x < 0.3) return 'left side';
+    if (x > 0.7) return 'right side';
+    if (y < 0.3) return 'upper frame';
+    if (y > 0.7) return 'lower frame';
+    
     return 'center frame';
   }
 
   /**
-   * キャラクターのポーズを分析
+   * 🆕 辞書を使ったキャラクターポーズ分析
    */
   private analyzeCharacterPose(character: Character): string {
-    // キャラクターの状態やアニメーションから判断
-    // 実装時にcharacter.animation等を使用
-    return 'standing';
+    const dict = this.getDictionary();
+    
+    // 既存のbodyPoseプロパティを辞書で変換
+    const poseTag = this.findTagByLabel('pose', character.bodyPose || 'standing');
+    return poseTag;
   }
 
   /**
-   * キャラクターの外見データを抽出（共通カテゴリ対応）
+   * 🆕 辞書対応キャラクター外見データ抽出
    */
   private extractAppearanceData(character: Character): CharacterPrompt['appearance'] {
-    // Phase 12.1で実装予定のキャラクター見た目設定システムから取得
-    // プロンプトツールと同じカテゴリを使用
+    // TODO: Character型にappearanceプロパティを追加予定
+    // 現在は基本的なフォールバック値 + 名前から推定
     
-    // TODO: 実際の設定UIから値を取得する実装
-    // 現在は基本的なフォールバック値を使用
     return {
       gender: this.detectGender(character),
       hairColor: this.detectHairColor(character),
@@ -163,44 +265,46 @@ class PromptService {
     };
   }
 
-  // === 共通カテゴリ検出関数（プロンプトツールと統一） ===
-
+  /**
+   * 🆕 辞書を使った性別検出
+   */
   private detectGender(character: Character): string {
-    // キャラクター名や設定から推定
     const name = character.name || '';
-    if (name.includes('子') || name.includes('女') || name.includes('さん')) return 'female';
-    if (name.includes('男') || name.includes('くん') || name.includes('君')) return 'male';
+    const dict = this.getDictionary();
+    
+    // 名前パターンで判定
+    if (name.includes('子') || name.includes('女') || name.includes('さん')) {
+      return dict.gender.find(g => g.tag === 'female')?.tag || 'female';
+    }
+    if (name.includes('男') || name.includes('くん') || name.includes('君')) {
+      return dict.gender.find(g => g.tag === 'male')?.tag || 'male';
+    }
+    
     return 'female'; // デフォルト
   }
 
   private detectHairColor(character: Character): string {
-    // TODO: 色設定UIから取得
-    return 'black'; // 黒髪（デフォルト）
+    return 'black'; // TODO: 実装時に辞書から取得
   }
 
   private detectHairStyle(character: Character): string {
-    // TODO: 髪型設定UIから取得
-    return 'medium'; // ミディアム（デフォルト）
+    return 'medium hair'; // TODO: 実装時に辞書から取得
   }
 
   private detectEyeColor(character: Character): string {
-    // TODO: 目色設定UIから取得
-    return 'brown'; // 茶色（デフォルト）
+    return 'brown eyes'; // TODO: 実装時に辞書から取得
   }
 
   private detectSkinTone(character: Character): string {
-    // TODO: 肌色設定UIから取得
-    return 'light'; // 明るい肌（デフォルト）
+    return 'fair skin'; // TODO: 実装時に辞書から取得
   }
 
   private detectClothing(character: Character): string {
-    // TODO: 服装設定UIから取得
-    return 'school uniform'; // 制服（デフォルト）
+    return 'school uniform'; // TODO: 実装時に辞書から取得
   }
 
   private detectClothingColor(character: Character): string {
-    // TODO: 服装色設定UIから取得
-    return 'blue'; // 青（デフォルト）
+    return 'blue'; // TODO: 実装時に辞書から取得
   }
 
   /**
@@ -209,69 +313,69 @@ class PromptService {
   private extractScenePrompts(project: Project): ScenePrompt[] {
     return project.panels.map(panel => ({
       panelId: panel.id,
-      sceneType: this.analyzeSceneType(panel),
-      backgroundPrompt: this.generateBackgroundPrompt(panel),
-      effectsPrompt: this.generateEffectsPrompt(panel),
-      compositionPrompt: this.generateCompositionPrompt(panel),
+      sceneType: this.analyzeSceneType(panel, project),
+      backgroundPrompt: this.generateBackgroundPrompt(panel, project),
+      effectsPrompt: this.generateEffectsPrompt(panel, project),
+      compositionPrompt: this.generateCompositionPrompt(panel, project),
       elements: {
-        background: this.analyzeBackground(panel),
-        effects: this.analyzeEffects(panel),
-        mood: this.analyzeMood(panel),
-        composition: this.analyzeComposition(panel)
+        background: this.analyzeBackground(panel, project),
+        effects: this.analyzeEffects(panel, project),
+        mood: this.analyzeMood(panel, project),
+        composition: this.analyzeComposition(panel, project)
       }
     }));
   }
 
   /**
-   * 背景専用プロンプト生成
+   * 🆕 辞書を使った背景専用プロンプト生成
    */
-  private generateBackgroundPrompt(panel: Panel): string | undefined {
-    const background = this.analyzeBackground(panel);
-    const mood = this.analyzeMood(panel);
+  private generateBackgroundPrompt(panel: Panel, project: Project): string | undefined {
+    const backgrounds = project.backgrounds.filter(bg => bg.panelId === panel.id);
+    if (backgrounds.length === 0) return undefined;
+
+    const bg = backgrounds[0];
+    const backgroundTag = this.findTagByLabel('background', bg.type);
     
-    if (!background) return undefined;
-    
-    const parts = [background];
-    if (mood) parts.push(mood);
-    
-    return parts.join(', ');
+    return backgroundTag;
   }
 
   /**
    * エフェクト専用プロンプト生成
    */
-  private generateEffectsPrompt(panel: Panel): string | undefined {
-    const effects = this.analyzeEffects(panel);
-    if (!effects || effects.length === 0) return undefined;
+  private generateEffectsPrompt(panel: Panel, project: Project): string | undefined {
+    const effects = project.effects.filter(effect => effect.panelId === panel.id);
+    if (effects.length === 0) return undefined;
     
-    return effects.join(', ');
+    return effects.map(effect => 
+      this.translateEffectType(effect.type, effect.direction)
+    ).filter(Boolean).join(', ');
   }
 
   /**
-   * 構図専用プロンプト生成
+   * 🆕 辞書を使った構図専用プロンプト生成
    */
-  private generateCompositionPrompt(panel: Panel): string | undefined {
-    const composition = this.analyzeComposition(panel);
-    const characterCount = panel.characters?.length || 0;
+  private generateCompositionPrompt(panel: Panel, project: Project): string | undefined {
+    const characterCount = project.characters.filter(char => char.panelId === panel.id).length;
     
-    const parts = [];
-    if (composition) parts.push(composition);
+    const dict = this.getDictionary();
+    let compositionTag = '';
     
-    // 構図の詳細情報
-    if (characterCount === 1) parts.push('single character focus');
-    else if (characterCount === 2) parts.push('two character composition');
-    else if (characterCount > 2) parts.push('group composition');
+    if (characterCount === 1) {
+      compositionTag = dict.composition.find(c => c.tag === 'full_body')?.tag || 'single character focus';
+    } else if (characterCount === 2) {
+      compositionTag = 'two character composition';
+    } else if (characterCount > 2) {
+      compositionTag = 'group composition';
+    }
     
-    return parts.length > 0 ? parts.join(', ') : undefined;
+    return compositionTag;
   }
 
-  /**
-   * シーンタイプを分析
-   */
-  private analyzeSceneType(panel: Panel): string {
-    const characterCount = panel.characters?.length || 0;
-    const bubbleCount = panel.bubbles?.length || 0;
-    const hasEffects = panel.effects && panel.effects.length > 0;
+  // 簡略化された分析メソッド群
+  private analyzeSceneType(panel: Panel, project: Project): string {
+    const characterCount = project.characters.filter(char => char.panelId === panel.id).length;
+    const bubbleCount = project.speechBubbles.filter(bubble => bubble.panelId === panel.id).length;
+    const hasEffects = project.effects.filter(effect => effect.panelId === panel.id).length > 0;
 
     if (hasEffects) return 'action';
     if (characterCount > 1) return 'dialogue';
@@ -279,52 +383,30 @@ class PromptService {
     return 'scene';
   }
 
-  /**
-   * 背景要素を分析
-   */
-  private analyzeBackground(panel: Panel): string | undefined {
-    if (!panel.backgrounds || panel.backgrounds.length === 0) {
-      return undefined;
-    }
-
-    const bg = panel.backgrounds[0]; // 最初の背景を使用
-    return this.translateBackgroundType(bg.type, bg.subtype);
+  private analyzeBackground(panel: Panel, project: Project): string | undefined {
+    const backgrounds = project.backgrounds.filter(bg => bg.panelId === panel.id);
+    return backgrounds.length > 0 ? backgrounds[0].type : undefined;
   }
 
-  /**
-   * エフェクト要素を分析
-   */
-  private analyzeEffects(panel: Panel): string[] {
-    if (!panel.effects || panel.effects.length === 0) {
-      return [];
-    }
-
-    return panel.effects.map(effect => 
-      this.translateEffectType(effect.type, effect.subtype)
-    ).filter(effect => effect !== undefined) as string[];
+  private analyzeEffects(panel: Panel, project: Project): string[] {
+    const effects = project.effects.filter(effect => effect.panelId === panel.id);
+    return effects.map(effect => effect.type);
   }
 
-  /**
-   * ムードを分析
-   */
-  private analyzeMood(panel: Panel): string | undefined {
-    const hasAction = panel.effects && panel.effects.some(e => 
-      e.type === 'speed' || e.type === 'explosion'
-    );
+  private analyzeMood(panel: Panel, project: Project): string | undefined {
+    const effects = project.effects.filter(effect => effect.panelId === panel.id);
+    const hasAction = effects.some(e => e.type === 'speed' || e.type === 'explosion');
     
     if (hasAction) return 'dynamic, energetic';
     
-    const dialogueCount = panel.bubbles?.length || 0;
+    const dialogueCount = project.speechBubbles.filter(bubble => bubble.panelId === panel.id).length;
     if (dialogueCount > 2) return 'conversational, calm';
     
     return 'peaceful, serene';
   }
 
-  /**
-   * 構図を分析
-   */
-  private analyzeComposition(panel: Panel): string | undefined {
-    const characterCount = panel.characters?.length || 0;
+  private analyzeComposition(panel: Panel, project: Project): string | undefined {
+    const characterCount = project.characters.filter(char => char.panelId === panel.id).length;
     
     if (characterCount === 0) return 'environmental shot';
     if (characterCount === 1) return 'single character focus';
@@ -332,21 +414,13 @@ class PromptService {
     return 'group composition';
   }
 
-  /**
-   * ストーリーフローを生成
-   */
   private generateStoryFlow(project: Project): string {
     const panelCount = project.panels.length;
-    const totalDialogue = project.panels.reduce((sum, panel) => 
-      sum + (panel.bubbles?.length || 0), 0
-    );
+    const totalDialogue = project.speechBubbles.length;
     
     return `${panelCount} panel manga page, ${totalDialogue} dialogue bubbles, sequential storytelling`;
   }
 
-  /**
-   * 技術的ノートを生成
-   */
   private generateTechnicalNotes(): string {
     return [
       "Generated by ネーム制作ツール",
@@ -356,139 +430,49 @@ class PromptService {
     ].join('\n');
   }
 
-  // === 翻訳ヘルパーメソッド ===
-
-  private translateGender(gender: string): string {
-    const mapping: Record<string, string> = {
-      'male': 'young man, male',
-      'female': 'young woman, female',
-      'other': 'person'
-    };
-    return mapping[gender] || 'person';
-  }
-
-  private translateHair(color: string, style: string): string {
-    const colorMap: Record<string, string> = {
-      'black': 'black hair',
-      'brown': 'brown hair', 
-      'blonde': 'blonde hair',
-      'red': 'red hair',
-      'blue': 'blue hair',
-      'green': 'green hair'
-    };
-
-    const styleMap: Record<string, string> = {
-      'short': 'short hair',
-      'medium': 'medium length hair',
-      'long': 'long hair',
-      'ponytail': 'ponytail',
-      'twintails': 'twin tails'
-    };
-
-    const colorStr = colorMap[color] || 'dark hair';
-    const styleStr = styleMap[style] || '';
-    
-    return [colorStr, styleStr].filter(s => s).join(', ');
-  }
-
-  private translateEyes(color: string): string {
-    const mapping: Record<string, string> = {
-      'brown': 'brown eyes',
-      'blue': 'blue eyes',
-      'green': 'green eyes',
-      'gray': 'gray eyes',
-      'black': 'dark eyes'
-    };
-    return mapping[color] || 'expressive eyes';
-  }
-
-  private translateSkin(tone: string): string {
-    const mapping: Record<string, string> = {
-      'light': 'fair skin',
-      'medium': 'medium skin tone',
-      'dark': 'dark skin',
-      'tan': 'tanned skin'
-    };
-    return mapping[tone] || 'natural skin tone';
-  }
-
-  private translateClothing(type: string, color: string): string {
-    const typeMap: Record<string, string> = {
-      'school': 'school uniform',
-      'casual': 'casual clothing',
-      'formal': 'formal wear',
-      'sports': 'sportswear'
-    };
-
-    const colorMap: Record<string, string> = {
-      'blue': 'blue',
-      'red': 'red',
-      'green': 'green',
-      'black': 'black',
-      'white': 'white',
-      'gray': 'gray'
-    };
-
-    const typeStr = typeMap[type] || 'clothing';
-    const colorStr = colorMap[color];
-    
-    return colorStr ? `${colorStr} ${typeStr}` : typeStr;
-  }
-
-  private translateBackgroundType(type: string, subtype?: string): string {
-    const mapping: Record<string, Record<string, string>> = {
-      'natural': {
-        'sky': 'blue sky, clouds',
-        'forest': 'forest background, trees',
-        'beach': 'beach scene, ocean',
-        'mountain': 'mountain landscape'
-      },
-      'indoor': {
-        'room': 'indoor room, furniture',
-        'kitchen': 'kitchen interior',
-        'bathroom': 'bathroom setting'
-      },
-      'school': {
-        'classroom': 'classroom, desks and chairs',
-        'hallway': 'school hallway',
-        'library': 'library, bookshelves'
-      },
-      'urban': {
-        'street': 'city street, buildings',
-        'park': 'urban park, trees',
-        'station': 'train station'
-      }
-    };
-
-    return mapping[type]?.[subtype || 'default'] || `${type} background`;
-  }
-
-  private translateEffectType(type: string, subtype?: string): string | undefined {
+  /**
+   * エフェクトタイプ変換
+   */
+  private translateEffectType(type: string, direction?: string): string | undefined {
     const mapping: Record<string, Record<string, string>> = {
       'speed': {
         'horizontal': 'speed lines, motion blur',
         'vertical': 'vertical speed lines',
-        'diagonal': 'diagonal motion lines'
+        'radial': 'radial motion lines'
       },
       'focus': {
-        'radial': 'focus lines, dramatic emphasis',
-        'parallel': 'parallel focus lines'
+        'radial': 'focus lines, dramatic emphasis'
       },
       'explosion': {
-        'burst': 'explosion effect, dynamic burst',
-        'impact': 'impact lines, collision effect'
+        'radial': 'explosion effect, dynamic burst'
       },
       'flash': {
-        'shine': 'flash effect, bright light',
-        'sparkle': 'sparkle effect, glimmer'
+        'radial': 'flash effect, bright light'
       }
     };
 
-    return mapping[type]?.[subtype || 'default'];
+    return mapping[type]?.[direction || 'radial'];
   }
 
   /**
-   * プロンプトを整形されたテキストとして出力（AI画像生成用）
+   * 🆕 負プロンプト生成（辞書対応）
+   */
+  private buildNegativePrompt(): string {
+    const dict = this.getDictionary();
+    
+    // 基本的な負プロンプト
+    const basicNegative = [
+      'lowres', 'bad anatomy', 'bad hands', 'text', 'error',
+      'worst quality', 'low quality', 'blurry', 'bad face',
+      'deformed face', 'extra fingers', 'watermark', 'signature',
+      'multiple people'
+    ];
+
+    return basicNegative.join(', ');
+  }
+
+  /**
+   * プロンプトを整形されたテキストとして出力（辞書対応版）
    */
   public formatPromptOutput(promptData: PromptOutput): string {
     let output = "=== Ready-to-Use AI Image Generation Prompts ===\n\n";
@@ -498,12 +482,9 @@ class PromptService {
       output += `━━━ Panel ${index + 1} ━━━\n`;
       
       // キャラクター情報を含む完全プロンプト
-      const panelCharacters = promptData.characters.filter(char => 
-        // 実際の実装では、パネルに含まれるキャラクターを判定
-        true // 仮実装
-      );
+      const panelCharacters = promptData.characters;
 
-      // 正プロンプト構築
+      // 正プロンプト構築（辞書対応）
       const positivePrompt = this.buildPositivePrompt(panelCharacters, scene);
       output += `【Positive Prompt】\n${positivePrompt}\n\n`;
 
@@ -511,11 +492,11 @@ class PromptService {
       const japaneseDescription = this.buildJapaneseDescription(panelCharacters, scene);
       output += `【日本語説明】\n${japaneseDescription}\n\n`;
 
-      // 負プロンプト
+      // 負プロンプト（辞書対応）
       const negativePrompt = this.buildNegativePrompt();
       output += `【Negative Prompt】\n${negativePrompt}\n\n`;
 
-      // 推奨設定（シンプル）
+      // 推奨設定
       output += `【Recommended Settings】\n`;
       output += `• Steps: 20-28\n`;
       output += `• CFG Scale: 7-9\n`;
@@ -550,41 +531,34 @@ class PromptService {
   }
 
   /**
-   * AI画像生成用の正プロンプトを構築（シンプル版）
+   * 🆕 辞書対応 正プロンプト構築
    */
   private buildPositivePrompt(characters: CharacterPrompt[], scene: ScenePrompt): string {
     const parts = [];
 
-    // 基本品質（最小限）
+    // 基本品質
     parts.push("masterpiece, best quality");
 
-    // キャラクター情報（メイン）
+    // キャラクター情報（辞書タグ使用）
     if (characters.length > 0) {
       characters.forEach(char => {
-        // 基本情報のみ（冗長性を削除）
-        const cleanBasicInfo = char.basicInfoPrompt
-          .replace(/anime style,?\s*/gi, '')
-          .replace(/manga style,?\s*/gi, '')
-          .trim();
-        parts.push(cleanBasicInfo);
+        parts.push(char.basicInfoPrompt);
         parts.push(char.positionPrompt);
       });
     }
 
-    // シーン情報（重要なもののみ）
+    // シーン情報
     if (scene.backgroundPrompt) {
       parts.push(scene.backgroundPrompt);
     }
     if (scene.compositionPrompt) {
       parts.push(scene.compositionPrompt);
     }
-    
-    // エフェクトは控えめに
-    if (scene.effectsPrompt && !scene.effectsPrompt.includes('speed lines')) {
+    if (scene.effectsPrompt) {
       parts.push(scene.effectsPrompt);
     }
 
-    // スタイル（シンプル）
+    // スタイル
     parts.push("anime style");
 
     return parts.join(", ");
@@ -601,11 +575,11 @@ class PromptService {
       characters.forEach((char, index) => {
         const appearance = char.appearance;
         const characterDesc = [
-          this.translateGenderToJapanese(appearance.gender),
-          this.translateHairToJapanese(appearance.hairColor, appearance.hairStyle),
-          this.translateEyesToJapanese(appearance.eyeColor),
-          this.translateClothingToJapanese(appearance.clothing, appearance.clothingColor),
-          this.translatePositionToJapanese(char.positionPrompt)
+          appearance.gender === 'female' ? '女性' : '男性',
+          appearance.hairStyle,
+          appearance.eyeColor,
+          appearance.clothing,
+          char.positionPrompt
         ].filter(Boolean).join('、');
         
         parts.push(`キャラクター${index + 1}: ${characterDesc}`);
@@ -615,116 +589,19 @@ class PromptService {
     // シーン説明
     const sceneDescriptions = [];
     if (scene.backgroundPrompt) {
-      sceneDescriptions.push(this.translateBackgroundToJapanese(scene.backgroundPrompt));
+      sceneDescriptions.push(scene.backgroundPrompt);
     }
     if (scene.compositionPrompt) {
-      sceneDescriptions.push(this.translateCompositionToJapanese(scene.compositionPrompt));
+      sceneDescriptions.push(scene.compositionPrompt);
     }
     
     if (sceneDescriptions.length > 0) {
       parts.push(`シーン: ${sceneDescriptions.join('、')}`);
     }
 
-    // 全体的な説明
     parts.push("画質: 高品質なアニメ風イラスト");
 
     return parts.join('\n');
-  }
-
-  // === 日本語翻訳ヘルパーメソッド ===
-
-  private translateGenderToJapanese(gender: string): string {
-    const mapping: Record<string, string> = {
-      'male': '男性',
-      'female': '女性',
-      'other': '人物'
-    };
-    return mapping[gender] || '人物';
-  }
-
-  private translateHairToJapanese(color: string, style: string): string {
-    const colorMap: Record<string, string> = {
-      'black': '黒髪',
-      'brown': '茶髪',
-      'blonde': '金髪',
-      'red': '赤髪',
-      'blue': '青髪',
-      'green': '緑髪'
-    };
-
-    const styleMap: Record<string, string> = {
-      'short': 'ショート',
-      'medium': 'ミディアム',
-      'long': 'ロング',
-      'ponytail': 'ポニーテール',
-      'twintails': 'ツインテール'
-    };
-
-    const colorStr = colorMap[color] || '髪';
-    const styleStr = styleMap[style] || '';
-    
-    return styleStr ? `${colorStr}の${styleStr}` : colorStr;
-  }
-
-  private translateEyesToJapanese(color: string): string {
-    const mapping: Record<string, string> = {
-      'brown': '茶色の瞳',
-      'blue': '青い瞳',
-      'green': '緑の瞳',
-      'gray': 'グレーの瞳',
-      'black': '黒い瞳'
-    };
-    return mapping[color] || '瞳';
-  }
-
-  private translateClothingToJapanese(type: string, color: string): string {
-    const typeMap: Record<string, string> = {
-      'school uniform': '制服',
-      'casual': 'カジュアル服',
-      'formal': 'フォーマル服',
-      'sports': 'スポーツウェア'
-    };
-
-    const colorMap: Record<string, string> = {
-      'blue': '青い',
-      'red': '赤い',
-      'green': '緑の',
-      'black': '黒い',
-      'white': '白い',
-      'gray': 'グレーの'
-    };
-
-    const typeStr = typeMap[type] || '服装';
-    const colorStr = colorMap[color];
-    
-    return colorStr ? `${colorStr}${typeStr}` : typeStr;
-  }
-
-  private translatePositionToJapanese(positionPrompt: string): string {
-    if (positionPrompt.includes('standing')) return '立っている';
-    if (positionPrompt.includes('sitting')) return '座っている';
-    if (positionPrompt.includes('walking')) return '歩いている';
-    if (positionPrompt.includes('running')) return '走っている';
-    return '立っている';
-  }
-
-  private translateBackgroundToJapanese(backgroundPrompt: string): string {
-    if (backgroundPrompt.includes('classroom')) return '教室';
-    if (backgroundPrompt.includes('school')) return '学校';
-    if (backgroundPrompt.includes('outdoor')) return '屋外';
-    if (backgroundPrompt.includes('indoor')) return '室内';
-    if (backgroundPrompt.includes('park')) return '公園';
-    if (backgroundPrompt.includes('street')) return '街中';
-    return '背景';
-  }
-
-  private translateCompositionToJapanese(compositionPrompt: string): string {
-    if (compositionPrompt.includes('close-up')) return 'クローズアップ';
-    if (compositionPrompt.includes('full body')) return '全身';
-    if (compositionPrompt.includes('upper body')) return '上半身';
-    if (compositionPrompt.includes('two character')) return '2人構図';
-    if (compositionPrompt.includes('single character')) return '1人構図';
-    return '構図';
   }
 
   /**
