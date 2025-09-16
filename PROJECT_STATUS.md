@@ -528,3 +528,58 @@ Phase 11.6で基本機能開発は完了し、Phase 12.0のリリース準備フ
 **現在の状況: Phase 12.0リリース準備フェーズ開始**  
 **次のステップ: Phase 12.1 リリース必須機能実装 → v0.9ベータリリース**  
 **全体進捗: 85%完了（リリース準備含む）**
+
+
+### **🔥 1. プロンプト出力機能（最優先・世界初）**
+**目的**: ネーム制作ツール → AI画像生成への完全自動化
+**差別化**: 世界初のネーム→プロンプト自動変換機能
+
+#### **機能仕様（詳細）**
+1. **AI画像生成用プロンプト出力**
+   - シンプル・高品質なプロンプト生成
+   - 正プロンプト: `masterpiece, best quality, キャラ情報, 配置情報, シーン情報, anime style`
+   - 負プロンプト: `lowres, bad anatomy, bad hands, text, error, worst quality, low quality, blurry, bad face, deformed face, extra fingers, watermark, signature, multiple people`
+
+2. **日本語説明付き出力**
+   - プロンプト内容の日本語解説
+   - キャラクター: 「女性、黒髪のロング、茶色の瞳、青い制服、立っている」
+   - シーン: 「教室、2人構図」
+   - 画質: 「高品質なアニメ風イラスト」
+
+3. **プロンプトツール辞書連携**
+   - `window.TAGMAP` からの辞書参照
+   - フォールバック辞書で安全動作
+   - プロンプトツールと完全統一された表現
+
+4. **推奨設定出力**
+   - Steps: 20-28
+   - CFG Scale: 7-9
+   - Size: 512x768 (portrait) or 768x512 (landscape)
+   - Sampler: DPM++ 2M Karras
+
+#### **出力形式例**
+```
+━━━ Panel 1 ━━━
+【Positive Prompt】
+masterpiece, best quality, young woman, long black hair, brown eyes, blue school uniform, standing, center frame, classroom, morning light, two character composition, anime style
+
+【日本語説明】
+キャラクター1: 女性、黒髪のロング、茶色の瞳、青い制服、立っている
+シーン: 教室、2人構図
+画質: 高品質なアニメ風イラスト
+
+【Negative Prompt】
+lowres, bad anatomy, bad hands, text, error, worst quality, low quality, blurry, bad face, deformed face, extra fingers, watermark, signature, multiple people
+
+【Recommended Settings】
+• Steps: 20-28
+• CFG Scale: 7-9
+• Size: 512x768 (portrait) or 768x512 (landscape)
+• Sampler: DPM++ 2M Karras
+```
+
+#### **技術実装**
+- **PromptService.ts**: プロンプト生成エンジン（作成済み）
+- **ExportPanel.tsx**: 「プロンプト出力」ボタン追加（実装予定）
+- **辞書連携**: プロンプトツール辞書との統合
+- **実装工数**: 2-3時間（既存出力基盤活用）
