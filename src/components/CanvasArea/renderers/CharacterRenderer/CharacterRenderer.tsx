@@ -11,11 +11,13 @@ import { CharacterHair } from "./drawing/CharacterHair";
 export class CharacterRenderer {
   
   // 🎯 キャラクター群描画（メイン制御）
+  // 1. drawCharactersメソッドに getCharacterDisplayName を追加
   static drawCharacters(
     ctx: CanvasRenderingContext2D,
     characters: Character[],
     panels: Panel[],
-    selectedCharacter: Character | null
+    selectedCharacter: Character | null,
+    getCharacterDisplayName?: (character: Character) => string // 🆕 追加
   ) {
     characters.forEach((character) => {
       const panel = panels.find((p) => String(p.id) === String(character.panelId));
@@ -25,21 +27,23 @@ export class CharacterRenderer {
         const fallbackPanel = panels[0];
         if (fallbackPanel) {
           console.log(`🚑 緊急フォールバック: パネル${fallbackPanel.id}使用`);
-          CharacterRenderer.drawCharacter(ctx, character, fallbackPanel, selectedCharacter);
+          CharacterRenderer.drawCharacter(ctx, character, fallbackPanel, selectedCharacter, getCharacterDisplayName);
         }
         return;
       }
       
-      CharacterRenderer.drawCharacter(ctx, character, panel, selectedCharacter);
+      CharacterRenderer.drawCharacter(ctx, character, panel, selectedCharacter, getCharacterDisplayName);
     });
   }
 
   // 🎯 個別キャラクター描画（回転対応・分離クラス活用）
+  // 2. drawCharacterメソッドに getCharacterDisplayName を追加
   static drawCharacter(
     ctx: CanvasRenderingContext2D,
     character: Character,
     panel: Panel,
-    selectedCharacter: Character | null
+    selectedCharacter: Character | null,
+    getCharacterDisplayName?: (character: Character) => string // 🆕 追加
   ) {
     // 🔧 描画座標計算（分離クラス使用）
     const { charX, charY, charWidth, charHeight } = 
@@ -68,8 +72,8 @@ export class CharacterRenderer {
     // 🎯 キャラクター本体描画
     CharacterRenderer.drawCharacterBody(ctx, character, charX, charY, charWidth, charHeight);
 
-    // 🎯 名前表示
-    CharacterRenderer.drawCharacterName(ctx, character, charX, charY, charWidth, charHeight);
+    // 🎯 名前表示 - 🔧 修正
+    CharacterRenderer.drawCharacterName(ctx, character, charX, charY, charWidth, charHeight, getCharacterDisplayName);
 
     // 🔄 回転変換解除
     if (rotation !== 0) {
@@ -160,21 +164,26 @@ export class CharacterRenderer {
   }
 
   // 🎯 キャラクター名前描画
+  // 3. drawCharacterNameメソッドを修正
   static drawCharacterName(
     ctx: CanvasRenderingContext2D,
     character: Character,
     charX: number,
     charY: number,
     charWidth: number,
-    charHeight: number
+    charHeight: number,
+    getCharacterDisplayName?: (character: Character) => string // 🆕 追加
   ) {
     const fontSize = Math.max(8, 6 * character.scale);
     const textY = charY + charHeight + 12;
     
+    // 🔧 動的名前取得
+    const displayName = getCharacterDisplayName ? getCharacterDisplayName(character) : character.name;
+    
     ctx.fillStyle = "#333";
     ctx.font = `${fontSize}px Arial`;
     ctx.textAlign = "center";
-    ctx.fillText(character.name, charX + charWidth / 2, textY);
+    ctx.fillText(displayName, charX + charWidth / 2, textY); // 🔧 修正
   }
 
   // 🎯 キャラクター本体描画（viewType分岐）

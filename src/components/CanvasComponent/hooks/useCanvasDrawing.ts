@@ -8,6 +8,7 @@ import { CharacterRenderer } from '../../CanvasArea/renderers/CharacterRenderer/
 import { BackgroundRenderer } from '../../CanvasArea/renderers/BackgroundRenderer';
 import { ToneRenderer } from '../../CanvasArea/renderers/ToneRenderer'; // 🆕 ToneRenderer追加
 
+// 1. インターフェース修正 - getCharacterDisplayNameを追加
 export interface CanvasDrawingHookProps {
   canvasRef: RefObject<HTMLCanvasElement | null>;
   state: CanvasState;
@@ -24,12 +25,15 @@ export interface CanvasDrawingHookProps {
   selectedTone?: ToneElement | null;
   isPanelEditMode: boolean;
   snapSettings: SnapSettings;
+  // 🆕 キャラクター名前取得関数を追加
+  getCharacterDisplayName?: (character: Character) => string;
 }
 
 /**
  * Canvas描画処理を管理するカスタムhook（効果線+トーン描画対応版）
  * 描画順序: 背景色 → グリッド → パネル → 背景要素 → トーン → 効果線 → 吹き出し → キャラクター → UI要素
  */
+// 2. useCanvasDrawing関数の引数に追加
 export const useCanvasDrawing = ({
   canvasRef,
   state,
@@ -46,6 +50,7 @@ export const useCanvasDrawing = ({
   selectedTone,
   isPanelEditMode,
   snapSettings,
+  getCharacterDisplayName, // 🆕 追加
 }: CanvasDrawingHookProps) => {
 
   /**
@@ -495,7 +500,7 @@ export const useCanvasDrawing = ({
   /**
    * Canvas描画関数（効果線+トーン描画統合版）
    */
-  const drawCanvas = () => {
+    const drawCanvas = () => {
     const canvas = canvasRef.current;
     if (!canvas) {
       console.warn("⚠️ Canvas要素が見つかりません");
@@ -538,8 +543,8 @@ export const useCanvasDrawing = ({
       // 8. 吹き出し描画
       BubbleRenderer.drawBubbles(ctx, speechBubbles, panels, state.selectedBubble);
       
-      // 9. キャラクター描画
-      CharacterRenderer.drawCharacters(ctx, characters, panels, state.selectedCharacter);
+      // 🔧 9. キャラクター描画 - getCharacterDisplayName を渡す
+      CharacterRenderer.drawCharacters(ctx, characters, panels, state.selectedCharacter, getCharacterDisplayName);
 
       // 10. スナップライン描画
       if (state.snapLines.length > 0) {

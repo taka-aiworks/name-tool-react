@@ -328,7 +328,7 @@ function App() {
     setSnapSettings(prev => ({ ...prev, gridDisplay: display }));
   }, []);
 
-  // 🆕 4. キャラクター名前更新ハンドラー（既存のハンドラーの下に追加）
+  // ✅ こちらを使用
   const handleCharacterNameUpdate = useCallback((type: string, newName: string, newRole: string, appearance: any) => {
     // 名前を更新
     setCharacterNames(prev => ({
@@ -336,7 +336,7 @@ function App() {
       [type]: newName
     }));
     
-    // 設定を更新
+    // 設定を更新  
     setCharacterSettings(prev => ({
       ...prev,
       [type]: {
@@ -345,12 +345,12 @@ function App() {
       }
     }));
     
-    // 既存のキャラクターも更新
+    // 🔧 既存のキャラクターも全て更新（強制）
     setCharacters(prev => prev.map(char => 
       char.type === type ? {
         ...char,
         name: newName,
-        displayName: newName,
+        displayName: newName, // 確実に更新
         role: newRole,
         appearance
       } : char
@@ -621,7 +621,6 @@ function App() {
     const { name, role, appearance } = characterData;
     handleCharacterNameUpdate(editingCharacterType, name || characterNames[editingCharacterType], role || characterSettings[editingCharacterType].role, appearance);
   }, [editingCharacterType, characterNames, characterSettings, handleCharacterNameUpdate]);
-
 
   return (
     <div className={`app ${isDarkMode ? 'dark' : 'light'}`}>
