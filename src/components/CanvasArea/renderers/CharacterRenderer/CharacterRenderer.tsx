@@ -163,8 +163,8 @@ export class CharacterRenderer {
     console.log("🔧 キャラクター四隅ハンドル描画完了");
   }
 
-  // 🎯 キャラクター名前描画
-  // 3. drawCharacterNameメソッドを修正
+  // CharacterRenderer.tsx の既存の drawCharacterName メソッドを以下に置き換え
+
   static drawCharacterName(
     ctx: CanvasRenderingContext2D,
     character: Character,
@@ -172,18 +172,84 @@ export class CharacterRenderer {
     charY: number,
     charWidth: number,
     charHeight: number,
-    getCharacterDisplayName?: (character: Character) => string // 🆕 追加
+    getCharacterDisplayName?: (character: Character) => string
   ) {
-    const fontSize = Math.max(8, 6 * character.scale);
-    const textY = charY + charHeight + 12;
+    // 🔧 サイズを大幅に拡大
+    const baseFontSize = 16; // 元の8-12pxから16pxに拡大
+    const fontSize = Math.max(12, baseFontSize * character.scale);
+    const padding = 6;
+    const textY = charY + charHeight + 25; // 12 → 25に下げる
+    
+    // 🌙 ダークモード検出
+    const isDarkMode = document.documentElement.getAttribute("data-theme") === "dark";
     
     // 🔧 動的名前取得
     const displayName = getCharacterDisplayName ? getCharacterDisplayName(character) : character.name;
     
-    ctx.fillStyle = "#333";
-    ctx.font = `${fontSize}px Arial`;
-    ctx.textAlign = "center";
-    ctx.fillText(displayName, charX + charWidth / 2, textY); // 🔧 修正
+    // フォント設定（太字で視認性向上）
+    ctx.font = `bold ${fontSize}px 'Hiragino Sans', 'Yu Gothic', 'Meiryo', sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    
+    // テキストサイズ測定
+    const textMetrics = ctx.measureText(displayName);
+    const textWidth = textMetrics.width;
+    const bgWidth = textWidth + padding * 2;
+    const bgHeight = fontSize + padding * 2;
+    const bgX = charX + charWidth / 2 - bgWidth / 2;
+    const bgY = textY - bgHeight / 2;
+    
+    // 🌙 ダークモード対応色
+    const colors = isDarkMode ? {
+      shadow: 'rgba(0, 0, 0, 0.6)',
+      background: 'rgba(45, 45, 45, 0.95)',
+      border: 'rgba(255, 255, 255, 0.3)',
+      textOutline: '#000000',
+      textMain: '#ffffff'
+    } : {
+      shadow: 'rgba(0, 0, 0, 0.4)',
+      background: 'rgba(255, 255, 255, 0.95)',
+      border: 'rgba(0, 0, 0, 0.2)',
+      textOutline: '#ffffff',
+      textMain: '#2c3e50'
+    };
+    
+    // 1. 影
+    ctx.save();
+    ctx.fillStyle = colors.shadow;
+    ctx.fillRect(bgX + 3, bgY + 3, bgWidth, bgHeight);
+    ctx.restore();
+    
+    // 2. 背景（角丸）
+    ctx.save();
+    ctx.fillStyle = colors.background;
+    ctx.beginPath();
+    ctx.roundRect(bgX, bgY, bgWidth, bgHeight, 4);
+    ctx.fill();
+    ctx.restore();
+    
+    // 3. 枠線
+    ctx.save();
+    ctx.strokeStyle = colors.border;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.roundRect(bgX, bgY, bgWidth, bgHeight, 4);
+    ctx.stroke();
+    ctx.restore();
+    
+    // 4. テキスト縁取り
+    ctx.save();
+    ctx.strokeStyle = colors.textOutline;
+    ctx.lineWidth = 4;
+    ctx.lineJoin = 'round';
+    ctx.strokeText(displayName, charX + charWidth / 2, textY);
+    ctx.restore();
+    
+    // 5. メインテキスト
+    ctx.save();
+    ctx.fillStyle = colors.textMain;
+    ctx.fillText(displayName, charX + charWidth / 2, textY);
+    ctx.restore();
   }
 
   // 🎯 キャラクター本体描画（viewType分岐）
