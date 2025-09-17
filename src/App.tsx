@@ -4,7 +4,7 @@ import CanvasComponent from "./components/CanvasComponent";
 import CharacterDetailPanel from "./components/UI/CharacterDetailPanel";
 import { Panel, Character, SpeechBubble, SnapSettings, BackgroundElement, EffectElement, ToneElement, BackgroundTemplate } from "./types";
 import { templates } from "./components/CanvasArea/templates";
-import { sceneTemplates, applySceneTemplate } from "./components/CanvasArea/sceneTemplates";
+//import { sceneTemplates, applySceneTemplate } from "./components/CanvasArea/sceneTemplates";
 import { ExportPanel } from './components/UI/ExportPanel';
 import { useRef } from 'react';
 import "./App.css";
@@ -21,6 +21,8 @@ import { CharacterSettingsPanel } from './components/UI/CharacterSettingsPanel';
 
 import { PageManager } from './components/UI/PageManager';
 import { usePageManager } from './hooks/usePageManager';
+// 🔧 1. import部分に追加（他のimportの近くに追加）
+import { SceneTemplatePanel } from './components/UI/SceneTemplatePanel';
 
 
 function App() {
@@ -45,7 +47,7 @@ function App() {
 
   // UI状態管理
   const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
-  const [selectedScene, setSelectedScene] = useState<string>("");
+  //const [selectedScene, setSelectedScene] = useState<string>("");
   const [showCharacterPanel, setShowCharacterPanel] = useState<boolean>(false);
   const [isPanelEditMode, setIsPanelEditMode] = useState<boolean>(false);
   const [showProjectPanel, setShowProjectPanel] = useState<boolean>(false);
@@ -407,7 +409,7 @@ function App() {
   }, []);
 
   // シーンテンプレート適用
-  const handleSceneClick = useCallback((sceneType: string) => {
+  /*const handleSceneClick = useCallback((sceneType: string) => {
     if (!panels || panels.length === 0) {
       return;
     }
@@ -424,7 +426,7 @@ function App() {
     
     setCharacters(newCharacters);
     setSpeechBubbles(newBubbles);
-  }, [panels, characters, speechBubbles, selectedPanel]);
+  }, [panels, characters, speechBubbles, selectedPanel]); */
 
   // キャラクター操作
   const handleCharacterClick = useCallback((charType: string) => {
@@ -885,35 +887,19 @@ function App() {
             </div>
           )}
 
-          {/* シーンテンプレート */}
+          {/* 一時的に置き換え：*/}
           <div className="section">
             <h3>🎭 シーンテンプレート</h3>
-            <div className="scene-grid">
-              {[
-                { key: 'daily', icon: '🌅', name: '日常' },
-                { key: 'dialogue', icon: '💬', name: '会話' },
-                { key: 'action', icon: '⚡', name: 'アクション' },
-                { key: 'emotional', icon: '😢', name: '感情' },
-                { key: 'comedy', icon: '😄', name: 'コメディ' },
-                { key: 'romance', icon: '💕', name: '恋愛' },
-                { key: 'tension', icon: '😰', name: '緊張' },
-                { key: 'surprise', icon: '😲', name: '驚き' },
-              ].map((scene) => (
-                <div
-                  key={scene.key}
-                  className={`scene-card ${selectedScene === scene.key ? 'selected' : ''}`}
-                  onClick={() => handleSceneClick(scene.key)}
-                  title={`${scene.name}シーン`}
-                >
-                  <div className="scene-icon">
-                    {scene.icon}
-                  </div>
-                  <span>{scene.name}</span>
-                </div>
-              ))}
-            </div>
-            <div className="scene-info">
-              💡 キャラクターと吹き出しが自動配置されます
+            <div style={{
+              padding: '20px',
+              textAlign: 'center',
+              color: 'var(--text-muted)',
+              background: 'var(--bg-secondary)',
+              borderRadius: '8px',
+              border: '2px dashed var(--border-color)'
+            }}>
+              🚧 新しいシーンテンプレート機能を準備中...<br/>
+              <small>より使いやすい統合テンプレートに更新予定</small>
             </div>
           </div>
         </div>

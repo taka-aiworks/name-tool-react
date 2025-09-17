@@ -1,6 +1,986 @@
-// src/components/CanvasArea/sceneTemplates.ts (エラー修正版)
-import { Character, SpeechBubble } from "../../types";
+// src/components/CanvasArea/sceneTemplates.ts - types.ts準拠版
+import { Character, SpeechBubble, BackgroundElement, EffectElement, ToneElement } from "../../types";
 
+export interface EnhancedSceneTemplate {
+  name: string;
+  description: string;
+  category: 'emotion' | 'action' | 'daily';
+  characters: Omit<Character, "id">[];
+  speechBubbles: Omit<SpeechBubble, "id">[];
+  backgrounds?: Omit<BackgroundElement, "id">[];
+  effects?: Omit<EffectElement, "id">[];
+  tones?: Omit<ToneElement, "id">[];
+}
+
+// 🎭 感情系シーンテンプレート
+export const emotionSceneTemplates: Record<string, EnhancedSceneTemplate> = {
+  // 😲 驚き・ショック系
+  surprise_shock: {
+    name: "😲 驚き・ショック",
+    description: "大きく驚いた瞬間のシーン",
+    category: 'emotion',
+    characters: [
+      {
+        panelId: 1,
+        type: "hero",
+        name: "主人公",
+        x: 280,
+        y: 120,
+        scale: 2.5,
+        facing: "front",
+        gaze: "center",
+        pose: "standing",
+        expression: "neutral",
+        viewType: "face",
+        faceAngle: "front",
+        eyeDirection: "front",
+        isGlobalPosition: true,
+        bodyDirection: "front",
+        faceExpression: "surprised",
+        bodyPose: "standing",
+      },
+    ],
+    speechBubbles: [
+      {
+        panelId: 1,
+        type: "叫び",
+        text: "えっ！？",
+        x: 150,
+        y: 60,
+        scale: 1.2,
+        width: 80,
+        height: 70,
+        vertical: true,
+        isGlobalPosition: true,
+      },
+    ],
+    effects: [
+      {
+        panelId: 1,
+        type: "speed",
+        x: 0.1,
+        y: 0.1,
+        width: 0.8,
+        height: 0.8,
+        direction: "radial",
+        intensity: 0.8,
+        density: 0.7,
+        length: 30,
+        angle: 0,
+        color: "#333333",
+        opacity: 0.6,
+        blur: 0,
+        selected: false,
+        zIndex: 1,
+        isGlobalPosition: false,
+      },
+    ],
+    tones: [
+      {
+        panelId: 1,
+        type: "dots",
+        pattern: "dots_60",
+        x: 0.0,
+        y: 0.0,
+        width: 1.0,
+        height: 0.4,
+        density: 0.5,
+        opacity: 0.3,
+        rotation: 0,
+        scale: 1.0,
+        blendMode: "multiply",
+        contrast: 1.0,
+        brightness: 0,
+        invert: false,
+        maskEnabled: false,
+        maskShape: "rectangle",
+        maskFeather: 0,
+        selected: false,
+        zIndex: 0,
+        isGlobalPosition: false,
+        visible: true,
+      },
+    ],
+  },
+
+  // 😢 悲しみ・涙系
+  sadness_tears: {
+    name: "😢 悲しみ・涙",
+    description: "悲しみに暮れる感情表現",
+    category: 'emotion',
+    characters: [
+      {
+        panelId: 1,
+        type: "heroine",
+        name: "ヒロイン",
+        x: 250,
+        y: 120,
+        scale: 2.3,
+        facing: "front",
+        gaze: "down",
+        pose: "sitting",
+        expression: "neutral",
+        viewType: "halfBody",
+        faceAngle: "front",
+        eyeDirection: "down",
+        isGlobalPosition: true,
+        bodyDirection: "front",
+        faceExpression: "sad",
+        bodyPose: "sitting",
+      },
+    ],
+    speechBubbles: [
+      {
+        panelId: 1,
+        type: "心の声",
+        text: "どうして...",
+        x: 380,
+        y: 60,
+        scale: 1.0,
+        width: 90,
+        height: 70,
+        vertical: true,
+        isGlobalPosition: true,
+      },
+    ],
+    backgrounds: [
+      {
+        panelId: 1,
+        type: "gradient",
+        x: 0.0,
+        y: 0.0,
+        width: 1.0,
+        height: 1.0,
+        rotation: 0,
+        zIndex: -1,
+        opacity: 0.4,
+        gradientType: "linear",
+        gradientColors: ["#cccccc", "#888888"],
+        gradientDirection: 270,
+      },
+    ],
+    tones: [
+      {
+        panelId: 1,
+        type: "lines",
+        pattern: "lines_diagonal",
+        x: 0.0,
+        y: 0.0,
+        width: 1.0,
+        height: 1.0,
+        density: 0.4,
+        opacity: 0.3,
+        rotation: 45,
+        scale: 1.0,
+        blendMode: "multiply",
+        contrast: 1.0,
+        brightness: 0,
+        invert: false,
+        maskEnabled: false,
+        maskShape: "rectangle",
+        maskFeather: 0,
+        selected: false,
+        zIndex: 0,
+        isGlobalPosition: false,
+        visible: true,
+      },
+    ],
+  },
+
+  // 😡 怒り・激情系
+  anger_fury: {
+    name: "😡 怒り・激情",
+    description: "激しい怒りの表現",
+    category: 'emotion',
+    characters: [
+      {
+        panelId: 1,
+        type: "hero",
+        name: "主人公",
+        x: 200,
+        y: 130,
+        scale: 2.2,
+        facing: "front",
+        gaze: "center",
+        pose: "standing",
+        expression: "neutral",
+        viewType: "halfBody",
+        faceAngle: "front",
+        eyeDirection: "front",
+        isGlobalPosition: true,
+        bodyDirection: "front",
+        faceExpression: "angry",
+        bodyPose: "arms_crossed",
+      },
+    ],
+    speechBubbles: [
+      {
+        panelId: 1,
+        type: "叫び",
+        text: "許せない！",
+        x: 80,
+        y: 60,
+        scale: 1.3,
+        width: 100,
+        height: 80,
+        vertical: true,
+        isGlobalPosition: true,
+      },
+    ],
+    effects: [
+      {
+        panelId: 1,
+        type: "explosion",
+        x: 0.15,
+        y: 0.15,
+        width: 0.7,
+        height: 0.7,
+        direction: "radial",
+        intensity: 0.9,
+        density: 0.8,
+        length: 25,
+        angle: 0,
+        color: "#ff4444",
+        opacity: 0.8,
+        blur: 1,
+        selected: false,
+        zIndex: 2,
+        isGlobalPosition: false,
+      },
+    ],
+    tones: [
+      {
+        panelId: 1,
+        type: "dots",
+        pattern: "dots_85",
+        x: 0.0,
+        y: 0.0,
+        width: 1.0,
+        height: 1.0,
+        density: 0.6,
+        opacity: 0.4,
+        rotation: 0,
+        scale: 1.2,
+        blendMode: "multiply",
+        contrast: 1.2,
+        brightness: 0,
+        invert: false,
+        maskEnabled: false,
+        maskShape: "rectangle",
+        maskFeather: 0,
+        selected: false,
+        zIndex: 0,
+        isGlobalPosition: false,
+        visible: true,
+      },
+    ],
+  },
+
+  // 😄 喜び・幸せ系
+  joy_happiness: {
+    name: "😄 喜び・幸せ",
+    description: "明るく楽しい瞬間",
+    category: 'emotion',
+    characters: [
+      {
+        panelId: 1,
+        type: "heroine",
+        name: "ヒロイン",
+        x: 150,
+        y: 120,
+        scale: 2.0,
+        facing: "front",
+        gaze: "center",
+        pose: "standing",
+        expression: "neutral",
+        viewType: "halfBody",
+        faceAngle: "front",
+        eyeDirection: "front",
+        isGlobalPosition: true,
+        bodyDirection: "front",
+        faceExpression: "smile",
+        bodyPose: "waving",
+      },
+      {
+        panelId: 1,
+        type: "hero",
+        name: "主人公",
+        x: 400,
+        y: 120,
+        scale: 2.0,
+        facing: "front",
+        gaze: "left",
+        pose: "standing",
+        expression: "neutral",
+        viewType: "halfBody",
+        faceAngle: "left",
+        eyeDirection: "left",
+        isGlobalPosition: true,
+        bodyDirection: "left",
+        faceExpression: "smile",
+        bodyPose: "pointing",
+      },
+    ],
+    speechBubbles: [
+      {
+        panelId: 1,
+        type: "普通",
+        text: "やったね！",
+        x: 80,
+        y: 70,
+        scale: 1.0,
+        width: 80,
+        height: 60,
+        vertical: true,
+        isGlobalPosition: true,
+      },
+      {
+        panelId: 1,
+        type: "普通",
+        text: "うん♪",
+        x: 450,
+        y: 65,
+        scale: 1.0,
+        width: 70,
+        height: 50,
+        vertical: true,
+        isGlobalPosition: true,
+      },
+    ],
+    backgrounds: [
+      {
+        panelId: 1,
+        type: "gradient",
+        x: 0.0,
+        y: 0.0,
+        width: 1.0,
+        height: 1.0,
+        rotation: 0,
+        zIndex: -1,
+        opacity: 0.5,
+        gradientType: "linear",
+        gradientColors: ["#87CEEB", "#F0F8FF"],
+        gradientDirection: 180,
+      },
+    ],
+    effects: [
+      {
+        panelId: 1,
+        type: "flash",
+        x: 0.2,
+        y: 0.2,
+        width: 0.6,
+        height: 0.6,
+        direction: "radial",
+        intensity: 0.7,
+        density: 0.6,
+        length: 20,
+        angle: 0,
+        color: "#ffdd44",
+        opacity: 0.7,
+        blur: 2,
+        selected: false,
+        zIndex: 1,
+        isGlobalPosition: false,
+      },
+    ],
+  },
+
+  // 😳 恥ずかしがり系
+  embarrassed_shy: {
+    name: "😳 恥ずかしがり",
+    description: "照れている可愛らしい表情",
+    category: 'emotion',
+    characters: [
+      {
+        panelId: 1,
+        type: "heroine",
+        name: "ヒロイン",
+        x: 280,
+        y: 120,
+        scale: 2.2,
+        facing: "front",
+        gaze: "down",
+        pose: "standing",
+        expression: "neutral",
+        viewType: "face",
+        faceAngle: "rightFront",
+        eyeDirection: "down",
+        isGlobalPosition: true,
+        bodyDirection: "rightFront",
+        faceExpression: "embarrassed",
+        bodyPose: "standing",
+      },
+    ],
+    speechBubbles: [
+      {
+        panelId: 1,
+        type: "小声",
+        text: "あの...",
+        x: 150,
+        y: 70,
+        scale: 0.9,
+        width: 60,
+        height: 50,
+        vertical: true,
+        isGlobalPosition: true,
+      },
+    ],
+    effects: [
+      {
+        panelId: 1,
+        type: "flash",
+        x: 0.35,
+        y: 0.25,
+        width: 0.3,
+        height: 0.2,
+        direction: "radial",
+        intensity: 0.6,
+        density: 0.5,
+        length: 15,
+        angle: 0,
+        color: "#ff8888",
+        opacity: 0.8,
+        blur: 3,
+        selected: false,
+        zIndex: 1,
+        isGlobalPosition: false,
+      },
+    ],
+  },
+};
+
+// 🚀 アクション系シーンテンプレート
+export const actionSceneTemplates: Record<string, EnhancedSceneTemplate> = {
+  // 💨 走る・スピード系
+  running_speed: {
+    name: "💨 走る・スピード",
+    description: "疾走感あふれるアクション",
+    category: 'action',
+    characters: [
+      {
+        panelId: 1,
+        type: "hero",
+        name: "主人公",
+        x: 200,
+        y: 140,
+        scale: 2.3,
+        facing: "front",
+        gaze: "right",
+        pose: "running",
+        expression: "neutral",
+        viewType: "fullBody",
+        faceAngle: "right",
+        eyeDirection: "front",
+        isGlobalPosition: true,
+        bodyDirection: "right",
+        faceExpression: "normal",
+        bodyPose: "running",
+      },
+    ],
+    speechBubbles: [
+      {
+        panelId: 1,
+        type: "叫び",
+        text: "急げ！",
+        x: 80,
+        y: 60,
+        scale: 1.1,
+        width: 70,
+        height: 60,
+        vertical: true,
+        isGlobalPosition: true,
+      },
+    ],
+    effects: [
+      {
+        panelId: 1,
+        type: "speed",
+        x: 0.0,
+        y: 0.3,
+        width: 0.6,
+        height: 0.4,
+        direction: "horizontal",
+        intensity: 0.8,
+        density: 0.9,
+        length: 40,
+        angle: 10,
+        color: "#666666",
+        opacity: 0.7,
+        blur: 1,
+        selected: false,
+        zIndex: 1,
+        isGlobalPosition: false,
+      },
+    ],
+  },
+
+  // ✊ 戦闘・バトル系
+  battle_fight: {
+    name: "✊ 戦闘・バトル",
+    description: "激しい戦闘シーン",
+    category: 'action',
+    characters: [
+      {
+        panelId: 1,
+        type: "hero",
+        name: "主人公",
+        x: 150,
+        y: 130,
+        scale: 2.4,
+        facing: "front",
+        gaze: "right",
+        pose: "standing",
+        expression: "neutral",
+        viewType: "halfBody",
+        faceAngle: "right",
+        eyeDirection: "right",
+        isGlobalPosition: true,
+        bodyDirection: "right",
+        faceExpression: "angry",
+        bodyPose: "pointing",
+      },
+      {
+        panelId: 1,
+        type: "rival",
+        name: "ライバル",
+        x: 420,
+        y: 120,
+        scale: 2.2,
+        facing: "front",
+        gaze: "left",
+        pose: "standing",
+        expression: "neutral",
+        viewType: "halfBody",
+        faceAngle: "left",
+        eyeDirection: "left",
+        isGlobalPosition: true,
+        bodyDirection: "left",
+        faceExpression: "angry",
+        bodyPose: "arms_crossed",
+      },
+    ],
+    speechBubbles: [
+      {
+        panelId: 1,
+        type: "叫び",
+        text: "行くぞ！",
+        x: 70,
+        y: 60,
+        scale: 1.2,
+        width: 80,
+        height: 70,
+        vertical: true,
+        isGlobalPosition: true,
+      },
+      {
+        panelId: 1,
+        type: "叫び",
+        text: "来い！",
+        x: 480,
+        y: 65,
+        scale: 1.1,
+        width: 70,
+        height: 60,
+        vertical: true,
+        isGlobalPosition: true,
+      },
+    ],
+    effects: [
+      {
+        panelId: 1,
+        type: "explosion",
+        x: 0.3,
+        y: 0.2,
+        width: 0.4,
+        height: 0.6,
+        direction: "radial",
+        intensity: 0.9,
+        density: 0.8,
+        length: 30,
+        angle: 0,
+        color: "#ff6666",
+        opacity: 0.8,
+        blur: 0,
+        selected: false,
+        zIndex: 2,
+        isGlobalPosition: false,
+      },
+    ],
+    tones: [
+      {
+        panelId: 1,
+        type: "lines",
+        pattern: "lines_vertical",
+        x: 0.0,
+        y: 0.0,
+        width: 1.0,
+        height: 1.0,
+        density: 0.7,
+        opacity: 0.4,
+        rotation: 0,
+        scale: 1.0,
+        blendMode: "multiply",
+        contrast: 1.1,
+        brightness: 0,
+        invert: false,
+        maskEnabled: false,
+        maskShape: "rectangle",
+        maskFeather: 0,
+        selected: false,
+        zIndex: 0,
+        isGlobalPosition: false,
+        visible: true,
+      },
+    ],
+  },
+
+  // 💫 衝撃・インパクト系
+  shock_impact: {
+    name: "💫 衝撃・インパクト",
+    description: "強烈な衝撃の瞬間",
+    category: 'action',
+    characters: [
+      {
+        panelId: 1,
+        type: "hero",
+        name: "主人公",
+        x: 280,
+        y: 140,
+        scale: 2.0,
+        facing: "front",
+        gaze: "center",
+        pose: "standing",
+        expression: "neutral",
+        viewType: "halfBody",
+        faceAngle: "front",
+        eyeDirection: "front",
+        isGlobalPosition: true,
+        bodyDirection: "front",
+        faceExpression: "surprised",
+        bodyPose: "standing",
+      },
+    ],
+    speechBubbles: [
+      {
+        panelId: 1,
+        type: "叫び",
+        text: "うわあ！",
+        x: 150,
+        y: 60,
+        scale: 1.4,
+        width: 90,
+        height: 80,
+        vertical: true,
+        isGlobalPosition: true,
+      },
+    ],
+    effects: [
+      {
+        panelId: 1,
+        type: "speed",
+        x: 0.1,
+        y: 0.1,
+        width: 0.8,
+        height: 0.8,
+        direction: "radial",
+        intensity: 1.0,
+        density: 0.9,
+        length: 35,
+        angle: 0,
+        color: "#333333",
+        opacity: 0.9,
+        blur: 0,
+        selected: false,
+        zIndex: 3,
+        isGlobalPosition: false,
+      },
+      {
+        panelId: 1,
+        type: "explosion",
+        x: 0.2,
+        y: 0.2,
+        width: 0.6,
+        height: 0.6,
+        direction: "radial",
+        intensity: 0.8,
+        density: 0.7,
+        length: 25,
+        angle: 45,
+        color: "#ffaa44",
+        opacity: 0.7,
+        blur: 1,
+        selected: false,
+        zIndex: 2,
+        isGlobalPosition: false,
+      },
+    ],
+  },
+};
+
+// 🏠 日常系シーンテンプレート
+export const dailySceneTemplates: Record<string, EnhancedSceneTemplate> = {
+  // 🏫 学校・教室系
+  school_classroom: {
+    name: "🏫 学校・教室",
+    description: "学校での日常シーン",
+    category: 'daily',
+    characters: [
+      {
+        panelId: 1,
+        type: "hero",
+        name: "主人公",
+        x: 120,
+        y: 130,
+        scale: 2.0,
+        facing: "front",
+        gaze: "right",
+        pose: "sitting",
+        expression: "neutral",
+        viewType: "halfBody",
+        faceAngle: "right",
+        eyeDirection: "right",
+        isGlobalPosition: true,
+        bodyDirection: "right",
+        faceExpression: "normal",
+        bodyPose: "sitting",
+      },
+      {
+        panelId: 1,
+        type: "friend",
+        name: "友人",
+        x: 430,
+        y: 130,
+        scale: 2.0,
+        facing: "front",
+        gaze: "left",
+        pose: "sitting",
+        expression: "neutral",
+        viewType: "halfBody",
+        faceAngle: "left",
+        eyeDirection: "left",
+        isGlobalPosition: true,
+        bodyDirection: "left",
+        faceExpression: "smile",
+        bodyPose: "sitting",
+      },
+    ],
+    speechBubbles: [
+      {
+        panelId: 1,
+        type: "普通",
+        text: "宿題やった？",
+        x: 80,
+        y: 70,
+        scale: 1.0,
+        width: 80,
+        height: 60,
+        vertical: true,
+        isGlobalPosition: true,
+      },
+      {
+        panelId: 1,
+        type: "普通",
+        text: "やばい...",
+        x: 480,
+        y: 65,
+        scale: 1.0,
+        width: 70,
+        height: 50,
+        vertical: true,
+        isGlobalPosition: true,
+      },
+    ],
+    backgrounds: [
+      {
+        panelId: 1,
+        type: "pattern",
+        x: 0.0,
+        y: 0.0,
+        width: 1.0,
+        height: 1.0,
+        rotation: 0,
+        zIndex: -1,
+        opacity: 0.6,
+        patternType: "grid",
+        patternColor: "#cccccc",
+        patternSize: 20,
+        patternSpacing: 5,
+      },
+    ],
+  },
+
+  // 🍕 食事・グルメ系
+  eating_meal: {
+    name: "🍕 食事・グルメ",
+    description: "美味しい食事のシーン",
+    category: 'daily',
+    characters: [
+      {
+        panelId: 1,
+        type: "heroine",
+        name: "ヒロイン",
+        x: 280,
+        y: 120,
+        scale: 2.2,
+        facing: "front",
+        gaze: "down",
+        pose: "sitting",
+        expression: "neutral",
+        viewType: "halfBody",
+        faceAngle: "front",
+        eyeDirection: "down",
+        isGlobalPosition: true,
+        bodyDirection: "front",
+        faceExpression: "smile",
+        bodyPose: "sitting",
+      },
+    ],
+    speechBubbles: [
+      {
+        panelId: 1,
+        type: "普通",
+        text: "美味しい♪",
+        x: 150,
+        y: 60,
+        scale: 1.0,
+        width: 80,
+        height: 60,
+        vertical: true,
+        isGlobalPosition: true,
+      },
+    ],
+    effects: [
+      {
+        panelId: 1,
+        type: "flash",
+        x: 0.3,
+        y: 0.3,
+        width: 0.4,
+        height: 0.4,
+        direction: "radial",
+        intensity: 0.6,
+        density: 0.5,
+        length: 15,
+        angle: 0,
+        color: "#ffdd88",
+        opacity: 0.6,
+        blur: 2,
+        selected: false,
+        zIndex: 1,
+        isGlobalPosition: false,
+      },
+    ],
+  },
+};
+
+// 🎯 統合関数群
+export const getAllSceneTemplates = (): Record<string, EnhancedSceneTemplate> => {
+  return {
+    ...emotionSceneTemplates,
+    ...actionSceneTemplates,
+    ...dailySceneTemplates,
+  };
+};
+
+export const getTemplatesByCategory = (category: 'emotion' | 'action' | 'daily'): Record<string, EnhancedSceneTemplate> => {
+  const allTemplates = getAllSceneTemplates();
+  const filtered: Record<string, EnhancedSceneTemplate> = {};
+  
+  Object.entries(allTemplates).forEach(([key, template]) => {
+    if (template.category === category) {
+      filtered[key] = template;
+    }
+  });
+  
+  return filtered;
+};
+
+// 🚀 統合シーンテンプレート適用関数
+export const applyEnhancedSceneTemplate = (
+  templateKey: string,
+  panels: any[],
+  existingCharacters: any[],
+  existingSpeechBubbles: any[],
+  existingBackgrounds: any[],
+  existingEffects: any[],
+  existingTones: any[],
+  selectedPanel?: any
+): {
+  characters: any[];
+  speechBubbles: any[];
+  backgrounds: any[];
+  effects: any[];
+  tones: any[];
+} => {
+  const template = getAllSceneTemplates()[templateKey];
+  if (!template || panels.length === 0) {
+    return {
+      characters: existingCharacters,
+      speechBubbles: existingSpeechBubbles,
+      backgrounds: existingBackgrounds,
+      effects: existingEffects,
+      tones: existingTones,
+    };
+  }
+
+  const targetPanel = selectedPanel || panels[0];
+  const panelOffsetX = targetPanel.x;
+  const panelOffsetY = targetPanel.y;
+
+  console.log(`🎭 統合シーンテンプレート適用: ${template.name} → パネル${targetPanel.id}`);
+
+  // キャラクター生成
+  const newCharacters = template.characters.map((char) => ({
+    ...char,
+    id: `char_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+    panelId: targetPanel.id,
+    x: char.x + panelOffsetX,
+    y: char.y + panelOffsetY,
+  }));
+
+  // 吹き出し生成
+  const newSpeechBubbles = template.speechBubbles.map((bubble) => ({
+    ...bubble,
+    id: `bubble_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+    panelId: targetPanel.id,
+    x: bubble.x + panelOffsetX,
+    y: bubble.y + panelOffsetY,
+  }));
+
+  // 背景生成
+  const newBackgrounds = (template.backgrounds || []).map((bg) => ({
+    ...bg,
+    id: `bg_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+    panelId: targetPanel.id,
+  }));
+
+  // 効果線生成
+  const newEffects = (template.effects || []).map((effect) => ({
+    ...effect,
+    id: `effect_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+    panelId: targetPanel.id,
+  }));
+
+  // トーン生成
+  const newTones = (template.tones || []).map((tone) => ({
+    ...tone,
+    id: `tone_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+    panelId: targetPanel.id,
+  }));
+
+  console.log(`✅ 統合要素追加: キャラ${newCharacters.length}個、吹き出し${newSpeechBubbles.length}個、背景${newBackgrounds.length}個、効果線${newEffects.length}個、トーン${newTones.length}個`);
+
+  return {
+    characters: [...existingCharacters, ...newCharacters],
+    speechBubbles: [...existingSpeechBubbles, ...newSpeechBubbles],
+    backgrounds: [...existingBackgrounds, ...newBackgrounds],
+    effects: [...existingEffects, ...newEffects],
+    tones: [...existingTones, ...newTones],
+  };
+};
+
+// 既存のシーンテンプレート（後方互換性のため残す）
 export interface SceneTemplate {
   characters: Omit<Character, "id">[];
   speechBubbles: Omit<SpeechBubble, "id">[];
@@ -22,9 +1002,8 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         expression: "neutral",
         viewType: "halfBody",
         faceAngle: "front",
-        eyeDirection: "front", // center → front
+        eyeDirection: "front",
         isGlobalPosition: true,
-        // 新システム
         bodyDirection: "front",
         faceExpression: "normal",
         bodyPose: "standing",
@@ -44,7 +1023,6 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         faceAngle: "left",
         eyeDirection: "left",
         isGlobalPosition: true,
-        // 新システム
         bodyDirection: "left",
         faceExpression: "normal",
         bodyPose: "standing",
@@ -94,7 +1072,6 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         faceAngle: "right",
         eyeDirection: "right",
         isGlobalPosition: true,
-        // 新システム
         bodyDirection: "right",
         faceExpression: "normal",
         bodyPose: "standing",
@@ -114,7 +1091,6 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         faceAngle: "left",
         eyeDirection: "left",
         isGlobalPosition: true,
-        // 新システム
         bodyDirection: "left",
         faceExpression: "normal",
         bodyPose: "standing",
@@ -162,9 +1138,8 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         expression: "neutral",
         viewType: "fullBody",
         faceAngle: "front",
-        eyeDirection: "front", // center → front
+        eyeDirection: "front",
         isGlobalPosition: true,
-        // 新システム
         bodyDirection: "front",
         faceExpression: "normal",
         bodyPose: "standing",
@@ -202,7 +1177,6 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         faceAngle: "front",
         eyeDirection: "down",
         isGlobalPosition: true,
-        // 新システム
         bodyDirection: "front",
         faceExpression: "sad",
         bodyPose: "standing",
@@ -238,9 +1212,8 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         expression: "neutral",
         viewType: "halfBody",
         faceAngle: "front",
-        eyeDirection: "front", // center → front
+        eyeDirection: "front",
         isGlobalPosition: true,
-        // 新システム
         bodyDirection: "front",
         faceExpression: "surprised",
         bodyPose: "standing",
@@ -260,7 +1233,6 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         faceAngle: "left",
         eyeDirection: "left",
         isGlobalPosition: true,
-        // 新システム
         bodyDirection: "left",
         faceExpression: "smile",
         bodyPose: "standing",
@@ -293,7 +1265,6 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
       },
     ],
   },
-  // 新シーンテンプレート（新システム活用）
   romance: {
     characters: [
       {
@@ -311,7 +1282,6 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         faceAngle: "rightFront",
         eyeDirection: "down",
         isGlobalPosition: true,
-        // 新システム
         bodyDirection: "rightFront",
         faceExpression: "embarrassed",
         bodyPose: "standing",
@@ -331,7 +1301,6 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         faceAngle: "leftFront",
         eyeDirection: "down",
         isGlobalPosition: true,
-        // 新システム
         bodyDirection: "leftFront",
         faceExpression: "embarrassed",
         bodyPose: "standing",
@@ -381,7 +1350,6 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         faceAngle: "back",
         eyeDirection: "front",
         isGlobalPosition: true,
-        // 新システム
         bodyDirection: "back",
         faceExpression: "worried",
         bodyPose: "standing",
@@ -401,7 +1369,6 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         faceAngle: "leftBack",
         eyeDirection: "left",
         isGlobalPosition: true,
-        // 新システム
         bodyDirection: "leftBack",
         faceExpression: "angry",
         bodyPose: "arms_crossed",
@@ -451,7 +1418,6 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         faceAngle: "front",
         eyeDirection: "up",
         isGlobalPosition: true,
-        // 新システム
         bodyDirection: "front",
         faceExpression: "surprised",
         bodyPose: "pointing",
@@ -474,7 +1440,7 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
   },
 };
 
-// シーンテンプレート適用関数（変更なし）
+// 既存のapplySceneTemplate関数（後方互換性のため残す）
 export const applySceneTemplate = (
   sceneType: string,
   panels: any[],
