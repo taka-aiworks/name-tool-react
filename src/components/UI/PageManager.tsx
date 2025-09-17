@@ -1,4 +1,4 @@
-// src/components/UI/PageManager.tsx - ページ管理UIコンポーネント
+// src/components/UI/PageManager.tsx - 完全版（エラー修正済み）
 
 import React, { useState, useRef, useEffect } from 'react';
 import { PageManagerProps, Page } from '../../types';
@@ -29,6 +29,11 @@ const PageTab: React.FC<PageTabProps> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(page.title);
   const [showMenu, setShowMenu] = useState(false);
+  // 🆕 メニュー位置の状態を追加
+  const [menuPosition, setMenuPosition] = useState<'above' | 'below'>('below');
+  // 🆕 メニュー座標の状態を追加
+  const [menuCoords, setMenuCoords] = useState<{ top?: number; bottom?: number; left: number }>({ left: 0 });
+  
   const inputRef = useRef<HTMLInputElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -72,6 +77,22 @@ const PageTab: React.FC<PageTabProps> = ({
 
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
+    
+    // 🔧 メニュー位置を判定（より厳密に）
+    const rect = e.currentTarget.getBoundingClientRect();
+    const menuHeight = canDelete ? 120 : 80; // 削除ボタンがある場合は高さを増やす
+    const shouldShowAbove = rect.bottom + menuHeight > window.innerHeight - 20;
+    
+    // 🆕 座標も保存
+    setMenuCoords({
+      ...(shouldShowAbove 
+        ? { bottom: window.innerHeight - rect.top + 4 }
+        : { top: rect.bottom + 4 }
+      ),
+      left: rect.left
+    });
+    
+    setMenuPosition(shouldShowAbove ? 'above' : 'below');
     setShowMenu(true);
   };
 
@@ -131,21 +152,25 @@ const PageTab: React.FC<PageTabProps> = ({
         </span>
       )}
 
-      {/* 右クリックメニュー */}
+      {/* 🔧 修正された右クリックメニュー */}
       {showMenu && (
         <div
           ref={menuRef}
           style={{
-            position: 'absolute',
-            top: '100%',
-            left: '0',
-            zIndex: 1000,
+            position: 'fixed', // absolute から fixed に変更
+            // 🆕 保存された座標を使用
+            top: menuCoords.top,
+            bottom: menuCoords.bottom,
+            left: menuCoords.left,
+            zIndex: 10000, // より高いz-index
             background: 'var(--bg-primary)',
-            border: '1px solid var(--border-color)',
-            borderRadius: '6px',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-            minWidth: '150px',
-            padding: '4px 0',
+            border: '2px solid var(--border-color)', // 境界線を太く
+            borderRadius: '8px',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.3)', // より強いシャドウ
+            minWidth: '160px',
+            padding: '8px 0',
+            maxHeight: '200px',
+            overflow: 'visible',
           }}
         >
           <button
@@ -164,6 +189,12 @@ const PageTab: React.FC<PageTabProps> = ({
               textAlign: 'left',
               cursor: 'pointer',
               fontSize: '13px',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'var(--bg-tertiary)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
             }}
           >
             📝 名前を変更
@@ -185,6 +216,12 @@ const PageTab: React.FC<PageTabProps> = ({
               cursor: 'pointer',
               fontSize: '13px',
             }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'var(--bg-tertiary)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+            }}
           >
             📋 複製
           </button>
@@ -198,16 +235,25 @@ const PageTab: React.FC<PageTabProps> = ({
               style={{
                 display: 'block',
                 width: '100%',
-                padding: '8px 12px',
+                padding: '10px 16px', // パディングを増やす
                 border: 'none',
                 background: 'transparent',
-                color: '#ff6b6b',
+                color: '#ff4444', // より目立つ赤色
                 textAlign: 'left',
                 cursor: 'pointer',
-                fontSize: '13px',
+                fontSize: '14px', // フォントサイズを大きく
+                fontWeight: '600', // 太字に
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 68, 68, 0.15)';
+                e.currentTarget.style.color = '#ff0000';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent';
+                e.currentTarget.style.color = '#ff4444';
               }}
             >
-              🗑️ 削除
+              🗑️ ページを削除
             </button>
           )}
         </div>
@@ -272,6 +318,9 @@ export const PageManager: React.FC<PageManagerProps> = ({
         borderBottom: '1px solid var(--border-color)',
         overflowX: 'auto',
         minHeight: isCompact ? '36px' : '44px',
+        // 🔧 スクロールバーのスタイル改善
+        scrollbarWidth: 'thin',
+        scrollbarColor: 'var(--border-color) transparent',
       }}
     >
       {/* ページタブ一覧 */}
@@ -280,8 +329,10 @@ export const PageManager: React.FC<PageManagerProps> = ({
           display: 'flex',
           alignItems: 'center',
           gap: '2px',
-          flex: 1,
+          flex: '1 1 auto', // 🔧 flex設定を調整
           minWidth: 0,
+          overflowX: 'auto', // 🔧 タブエリアもスクロール可能に
+          paddingRight: '8px', // 🔧 右側に余白を追加
         }}
       >
         {pages.map((page, index) => (
@@ -312,43 +363,52 @@ export const PageManager: React.FC<PageManagerProps> = ({
       </div>
 
       {/* ページ追加ボタン */}
-      <button
-        onClick={onPageAdd}
-        title="新しいページを追加"
-        style={{
-          padding: '6px 10px',
-          border: '1px solid var(--border-color)',
-          borderRadius: '6px',
-          background: 'var(--bg-tertiary)',
-          color: 'var(--text-primary)',
-          cursor: 'pointer',
-          fontSize: '14px',
-          fontWeight: '600',
-          whiteSpace: 'nowrap',
-          transition: 'all 0.2s ease',
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.background = 'var(--accent-color)';
-          e.currentTarget.style.color = 'white';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.background = 'var(--bg-tertiary)';
-          e.currentTarget.style.color = 'var(--text-primary)';
-        }}
-      >
-        ➕ ページ追加
-      </button>
+      <div style={{ 
+        flexShrink: 0, // 🔧 縮小禁止
+        display: 'flex',
+        gap: '8px',
+        alignItems: 'center'
+      }}>
+        <button
+          onClick={onPageAdd}
+          title="新しいページを追加"
+          style={{
+            padding: '6px 12px',
+            border: '1px solid var(--border-color)',
+            borderRadius: '6px',
+            background: 'var(--bg-tertiary)',
+            color: 'var(--text-primary)',
+            cursor: 'pointer',
+            fontSize: '14px',
+            fontWeight: '600',
+            whiteSpace: 'nowrap',
+            transition: 'all 0.2s ease',
+            minWidth: 'auto', // 🔧 最小幅を設定
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'var(--accent-color)';
+            e.currentTarget.style.color = 'white';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'var(--bg-tertiary)';
+            e.currentTarget.style.color = 'var(--text-primary)';
+          }}
+        >
+          ➕ ページ追加
+        </button>
 
-      {/* ページ情報表示 */}
-      <div
-        style={{
-          fontSize: '12px',
-          color: 'var(--text-muted)',
-          whiteSpace: 'nowrap',
-          padding: '0 8px',
-        }}
-      >
-        {currentPageIndex + 1} / {pages.length}
+        {/* ページ情報表示 */}
+        <div
+          style={{
+            fontSize: '12px',
+            color: 'var(--text-muted)',
+            whiteSpace: 'nowrap',
+            padding: '0 4px',
+            minWidth: 'auto', // 🔧 最小幅を設定
+          }}
+        >
+          {currentPageIndex + 1} / {pages.length}
+        </div>
       </div>
     </div>
   );
