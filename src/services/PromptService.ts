@@ -1,24 +1,11 @@
-// src/services/PromptService.ts - カテゴリ修正版
+// src/services/PromptService.ts - 日本語変換デバッグ修正版
 import { Panel, Character, SpeechBubble, BackgroundElement, EffectElement } from '../types';
 
-// 🆕 辞書型定義
+// 辞書型定義
 declare global {
   interface Window {
     DEFAULT_SFW_DICT: {
       SFW: {
-        gender: Array<{ tag: string; label: string }>;
-        hair_length: Array<{ tag: string; label: string }>;
-        hair_style: Array<{ tag: string; label: string }>;
-        eyes: Array<{ tag: string; label: string }>;
-        colors: Array<{ tag: string; label: string }>;
-        outfit: Array<{ tag: string; label: string; cat?: string }>;
-        expressions: Array<{ tag: string; label: string }>;
-        pose: Array<{ tag: string; label: string }>;
-        pose_manga: Array<{ tag: string; label: string }>;
-        background: Array<{ tag: string; label: string }>;
-        composition: Array<{ tag: string; label: string }>;
-        view: Array<{ tag: string; label: string }>;
-        lighting: Array<{ tag: string; label: string }>;
         [key: string]: Array<{ tag: string; label: string }>;
       };
     };
@@ -74,33 +61,39 @@ export interface PromptOutput {
 
 class PromptService {
   /**
-   * 🔧 修正版: 辞書データを取得
+   * 辞書データを取得
    */
   private getDictionary() {
     if (typeof window !== 'undefined' && window.DEFAULT_SFW_DICT) {
       return window.DEFAULT_SFW_DICT.SFW;
     }
     
-    // 🔧 修正されたフォールバック辞書
+    // 充実したフォールバック辞書
     return {
       gender: [
         { tag: "female", label: "女性" },
         { tag: "male", label: "男性" }
       ],
-      hair_length: [  // 🔧 hair_style → hair_length
+      hair_length: [
         { tag: "long hair", label: "ロングヘア" },
         { tag: "medium hair", label: "ミディアムヘア" },
-        { tag: "short hair", label: "ショートヘア" }
+        { tag: "short hair", label: "ショートヘア" },
+        { tag: "very long hair", label: "超ロングヘア" },
+        { tag: "very short hair", label: "ベリーショート" }
       ],
       hair_style: [
         { tag: "ponytail", label: "ポニーテール" },
-        { tag: "twin tails", label: "ツインテール" }
+        { tag: "twin tails", label: "ツインテール" },
+        { tag: "braid", label: "三つ編み" }
       ],
-      colors: [  // 🔧 目の色と服の色を統合
+      colors: [
         { tag: "brown", label: "茶色" },
         { tag: "blue", label: "青" },
         { tag: "black", label: "黒" },
-        { tag: "red", label: "赤" }
+        { tag: "red", label: "赤" },
+        { tag: "green", label: "緑" },
+        { tag: "white", label: "白" },
+        { tag: "blonde", label: "金髪" }
       ],
       eyes: [
         { tag: "round eyes", label: "丸い目" },
@@ -108,33 +101,87 @@ class PromptService {
       ],
       outfit: [
         { tag: "school uniform", label: "学校制服" },
-        { tag: "casual", label: "カジュアル" }
+        { tag: "casual", label: "カジュアル" },
+        { tag: "dress", label: "ワンピース" }
       ],
       expressions: [
         { tag: "smiling", label: "笑顔" },
         { tag: "happy", label: "嬉しそう" },
         { tag: "surprised", label: "驚いた" },
-        { tag: "normal", label: "普通" }
+        { tag: "normal", label: "普通" },
+        { tag: "sad", label: "悲しそう" },
+        { tag: "angry", label: "怒った" }
       ],
-      pose_manga: [  // 🔧 pose → pose_manga
+      pose_manga: [
         { tag: "standing", label: "立っている" },
         { tag: "sitting", label: "座っている" },
         { tag: "walking", label: "歩いている" },
-        { tag: "running", label: "走っている" }
+        { tag: "running", label: "走っている" },
+        { tag: "pointing", label: "指差している" },
+        { tag: "waving", label: "手を振っている" }
       ],
       background: [{ tag: "classroom", label: "教室" }],
-      composition: [{ tag: "full_body", label: "全身" }],
-      view: [{ tag: "front_view", label: "正面" }],
-      lighting: [{ tag: "soft lighting", label: "柔らかい照明" }]
+      composition: [{ tag: "full_body", label: "全身" }]
     };
   }
 
   /**
-   * 🔧 修正版: 辞書からタグを検索
+   * 🔧 修正版: 辞書から日本語ラベルを取得（デバッグ機能付き）
+   */
+  private findLabelByTag(category: string, tag: string): string {
+    const dict = this.getDictionary();
+    const categoryData = dict[category] || [];
+    
+    // 🔍 デバッグ出力
+    console.log(`🔍 日本語変換検索: カテゴリ="${category}", タグ="${tag}"`);
+    console.log(`📚 カテゴリデータ件数: ${categoryData.length}`);
+    
+    if (categoryData.length > 0) {
+      console.log(`📋 最初の3件:`, categoryData.slice(0, 3));
+    }
+
+    // 🔧 シンプルな完全一致検索を最優先
+    let found = categoryData.find(item => item.tag === tag);
+    
+    if (found) {
+      console.log(`✅ 完全一致で発見: "${tag}" → "${found.label}"`);
+      return found.label;
+    }
+
+    // 🔧 部分一致検索（前方一致）
+    found = categoryData.find(item => item.tag.startsWith(tag));
+    
+    if (found) {
+      console.log(`✅ 前方一致で発見: "${tag}" → "${found.label}"`);
+      return found.label;
+    }
+
+    // 🔧 部分一致検索（含む）
+    found = categoryData.find(item => item.tag.includes(tag));
+    
+    if (found) {
+      console.log(`✅ 部分一致で発見: "${tag}" → "${found.label}"`);
+      return found.label;
+    }
+
+    // 🔧 逆方向検索
+    found = categoryData.find(item => tag.includes(item.tag));
+    
+    if (found) {
+      console.log(`✅ 逆方向一致で発見: "${tag}" → "${found.label}"`);
+      return found.label;
+    }
+
+    console.log(`❌ 変換失敗: "${tag}" → そのまま返却`);
+    return tag; // 見つからない場合はそのまま返す
+  }
+
+  /**
+   * 辞書からタグを検索
    */
   private findTagByLabel(category: string, searchText: string): string {
     const dict = this.getDictionary();
-    const categoryData = dict[category as keyof typeof dict] || [];
+    const categoryData = dict[category] || [];
     
     const found = categoryData.find(item => 
       item.label.includes(searchText) || 
@@ -143,22 +190,6 @@ class PromptService {
     );
     
     return found ? found.tag : searchText;
-  }
-
-  /**
-   * 🔧 修正版: 辞書から日本語ラベルを取得
-   */
-  private findLabelByTag(category: string, tag: string): string {
-    const dict = this.getDictionary();
-    const categoryData = dict[category as keyof typeof dict] || [];
-    
-    const found = categoryData.find(item => 
-      item.tag === tag || 
-      item.tag.includes(tag) ||
-      tag.includes(item.tag)
-    );
-    
-    return found ? found.label : tag;
   }
 
   /**
@@ -206,17 +237,17 @@ class PromptService {
   private generateBasicInfoPrompt(character: Character): string {
     const appearance = this.extractAppearanceData(character);
     
-    // 🔧 正しいカテゴリを使用
+    // 正しいカテゴリを使用
     const genderTag = this.findTagByLabel('gender', appearance.gender);
-    const hairLengthTag = this.findTagByLabel('hair_length', appearance.hairStyle); // hair_length使用
-    const hairColorTag = this.findTagByLabel('colors', appearance.hairColor); // colors使用
-    const eyeColorTag = this.findTagByLabel('colors', appearance.eyeColor); // colors使用  
+    const hairLengthTag = this.findTagByLabel('hair_length', appearance.hairStyle);
+    const hairColorTag = this.findTagByLabel('colors', appearance.hairColor);
+    const eyeColorTag = this.findTagByLabel('colors', appearance.eyeColor);
     const outfitTag = this.findTagByLabel('outfit', appearance.clothing);
-    const clothingColorTag = this.findTagByLabel('colors', appearance.clothingColor); // colors使用
+    const clothingColorTag = this.findTagByLabel('colors', appearance.clothingColor);
 
     // 表情・ポーズ情報を追加
     const expressionTag = this.findTagByLabel('expressions', character.faceExpression || 'normal');
-    const poseTag = this.findTagByLabel('pose_manga', character.bodyPose || 'standing'); // pose_manga使用
+    const poseTag = this.findTagByLabel('pose_manga', character.bodyPose || 'standing');
 
     const parts = [
       genderTag,
@@ -237,7 +268,6 @@ class PromptService {
    */
   private generatePositionPrompt(character: Character): string {
     const position = this.analyzeCharacterPosition(character);
-    
     return position || 'center frame';
   }
 
@@ -279,12 +309,12 @@ class PromptService {
     // フォールバック
     return {
       gender: this.detectGender(character),
-      hairColor: 'black',
-      hairStyle: 'medium hair',  // 🔧 hair_lengthに存在する値
-      eyeColor: 'brown',         // 🔧 colorsに存在する値
+      hairColor: 'brown',         // colorsカテゴリに存在
+      hairStyle: 'medium hair',   // hair_lengthカテゴリに存在
+      eyeColor: 'brown',          // colorsカテゴリに存在
       skinTone: 'fair',
-      clothing: 'school uniform',
-      clothingColor: 'blue'      // 🔧 colorsに存在する値
+      clothing: 'school uniform', // outfitカテゴリに存在
+      clothingColor: 'blue'       // colorsカテゴリに存在
     };
   }
 
@@ -323,9 +353,7 @@ class PromptService {
     if (backgrounds.length === 0) return undefined;
 
     const bg = backgrounds[0];
-    const backgroundTag = this.findTagByLabel('background', bg.type);
-    
-    return backgroundTag;
+    return this.findTagByLabel('background', bg.type);
   }
 
   private generateEffectsPrompt(panel: Panel, project: Project): string | undefined {
@@ -443,7 +471,7 @@ class PromptService {
   }
 
   /**
-   * 🔧 修正版: プロンプト整形出力
+   * プロンプトを整形されたテキストとして出力
    */
   public formatPromptOutput(promptData: PromptOutput): string {
     let output = "=== Ready-to-Use AI Image Generation Prompts ===\n\n";
@@ -493,7 +521,7 @@ class PromptService {
   }
 
   /**
-   * 🔧 修正版: 重複排除された正プロンプト構築
+   * 重複排除された正プロンプト構築
    */
   private buildPositivePrompt(characters: CharacterPrompt[], scene: ScenePrompt): string {
     const parts = [];
@@ -525,7 +553,7 @@ class PromptService {
   }
 
   /**
-   * 🔧 修正版: 正しいカテゴリを使用した日本語説明
+   * 🔧 修正版: 完全日本語化された日本語説明
    */
   private buildJapaneseDescription(characters: CharacterPrompt[], scene: ScenePrompt): string {
     const parts = [];
@@ -534,10 +562,11 @@ class PromptService {
       characters.forEach((char, index) => {
         const appearance = char.appearance;
         
+        // 🔧 正しいカテゴリから日本語ラベルを取得
         const genderLabel = this.findLabelByTag('gender', appearance.gender);
-        const hairStyleLabel = this.findLabelByTag('hair_length', appearance.hairStyle); // 🔧 修正
-        const hairColorLabel = this.findLabelByTag('colors', appearance.hairColor); // 🔧 修正
-        const eyeLabel = this.findLabelByTag('colors', appearance.eyeColor); // 🔧 修正
+        const hairStyleLabel = this.findLabelByTag('hair_length', appearance.hairStyle);
+        const hairColorLabel = this.findLabelByTag('colors', appearance.hairColor);
+        const eyeLabel = this.findLabelByTag('colors', appearance.eyeColor);
         const clothingLabel = this.findLabelByTag('outfit', appearance.clothing);
         const positionLabel = this.findLabelByTag('pose_manga', char.positionPrompt.split(', ')[0] || 'standing');
         
