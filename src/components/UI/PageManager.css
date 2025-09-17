@@ -1,0 +1,129 @@
+/* src/components/UI/PageManager.css - ページ管理用スタイル */
+
+.page-manager {
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+.page-tab {
+  position: relative;
+  border-bottom: none !important;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.page-tab:hover {
+  background: var(--bg-tertiary) !important;
+}
+
+.page-tab.active {
+  background: var(--bg-primary) !important;
+  border-bottom: 2px solid var(--accent-color) !important;
+  font-weight: 600;
+}
+
+.page-tab:not(.active) {
+  margin-top: 2px;
+}
+
+/* ドラッグ中のスタイル */
+.page-tab[draggable="true"]:active {
+  cursor: grabbing;
+  transform: rotate(2deg);
+}
+
+/* タブの最大幅制限 */
+.page-tab span {
+  max-width: 160px;
+}
+
+/* 右クリックメニューのスタイル */
+.page-tab div[style*="position: absolute"] {
+  animation: fadeIn 0.15s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 右クリックメニューボタンのホバー効果 */
+.page-tab div[style*="position: absolute"] button:hover {
+  background: var(--bg-tertiary) !important;
+}
+
+/* ページ追加ボタンのスタイル */
+.page-manager button {
+  flex-shrink: 0;
+}
+
+/* スクロールバーのスタイル */
+.page-manager::-webkit-scrollbar {
+  height: 6px;
+}
+
+.page-manager::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+.page-manager::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 3px;
+}
+
+.page-manager::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* ダークモード対応 */
+[data-theme="dark"] .page-tab {
+  border-color: var(--border-color);
+}
+
+[data-theme="dark"] .page-tab.active {
+  background: var(--bg-primary) !important;
+  border-bottom-color: var(--accent-color) !important;
+}
+
+/* コンパクトモード */
+.page-manager.compact {
+  min-height: 36px;
+  padding: 4px 8px;
+}
+
+.page-manager.compact .page-tab {
+  padding: 4px 8px;
+  font-size: 12px;
+  min-width: 80px;
+  max-width: 120px;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+  .page-manager {
+    gap: 4px;
+    padding: 6px 8px;
+  }
+  
+  .page-tab {
+    min-width: 80px;
+    max-width: 120px;
+    padding: 6px 8px;
+    font-size: 12px;
+  }
+  
+  .page-manager button {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+}

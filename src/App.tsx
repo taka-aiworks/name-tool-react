@@ -19,6 +19,9 @@ import TonePanel from './components/UI/TonePanel';
 // 1. importに追加（1行）
 import { CharacterSettingsPanel } from './components/UI/CharacterSettingsPanel';
 
+import { PageManager } from './components/UI/PageManager';
+import { usePageManager } from './hooks/usePageManager';
+
 
 function App() {
   // デフォルトダークモード設定
@@ -634,6 +637,19 @@ function App() {
     setSelectedTone(updatedTone);
   }, []);
 
+    // 🆕 ページ管理hook追加（3行のみ）
+  const pageManager = usePageManager({
+    panels, characters, bubbles: speechBubbles, backgrounds, effects, tones,
+    onDataUpdate: ({ panels: newPanels, characters: newCharacters, bubbles: newBubbles, backgrounds: newBackgrounds, effects: newEffects, tones: newTones }) => {
+      setPanels(newPanels);
+      setCharacters(newCharacters);
+      setSpeechBubbles(newBubbles);
+      setBackgrounds(newBackgrounds);
+      setEffects(newEffects);
+      setTones(newTones);
+    }
+  });
+
   
   // 🔧 5. 既存のhandleCharacterSettingsUpdateを修正
   const handleCharacterSettingsUpdate = useCallback((characterData: any) => {
@@ -797,6 +813,20 @@ function App() {
           </button>
         </div>
       </header>
+      {/* 🆕 ページ管理タブ（1行追加） */}
+        <PageManager
+          currentPage={pageManager.currentPage}
+          pages={pageManager.pages}
+          currentPageIndex={pageManager.currentPageIndex}
+          onPageChange={pageManager.switchToPage}
+          onPageAdd={pageManager.addPage}
+          onPageDelete={pageManager.deletePage}
+          onPageDuplicate={pageManager.duplicatePage}
+          onPageRename={pageManager.renamePage}
+          onPageReorder={pageManager.reorderPages}
+          onCurrentPageUpdate={pageManager.updateCurrentPageData}
+          isDarkMode={isDarkMode}
+        />
 
       <div className="main-content">
         {/* 左サイドバー */}

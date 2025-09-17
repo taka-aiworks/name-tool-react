@@ -1,7 +1,9 @@
-// SaveService.ts - トーン機能対応版
-import { Panel, Character, SpeechBubble, BackgroundElement, EffectElement, ToneElement } from '../types';
+// ===== 変更1: import追加 =====
+import { Panel, Character, SpeechBubble, BackgroundElement, EffectElement, ToneElement, Page } from '../types';
+
 
 // 🔧 ProjectData interface を拡張
+// ===== 変更2: ProjectData interface拡張（5行追加） =====
 export interface ProjectData {
   id: string;
   name: string;
@@ -9,6 +11,11 @@ export interface ProjectData {
   createdAt: string;
   updatedAt: string;
   data: {
+    // 🆕 ページ対応プロパティ（追加）
+    pages?: Page[];
+    currentPageIndex?: number;
+    
+    // 既存プロパティ（後方互換性のため維持）
     panels: Panel[];
     characters: Character[];
     bubbles: SpeechBubble[];
@@ -21,7 +28,6 @@ export interface ProjectData {
       snapSize: number;
       darkMode: boolean;
     };
-    // 🆕 キャラクター名前・設定データ追加
     characterNames?: Record<string, string>;
     characterSettings?: Record<string, any>;
   };
@@ -44,7 +50,7 @@ export class SaveService {
    * プロジェクトを保存（トーン対応版）
    */
   // 🔧 saveProject関数を拡張（12個のパラメータに対応）
-  static saveProject(
+    static saveProject(
     name: string,
     panels: Panel[],
     characters: Character[],
@@ -55,8 +61,11 @@ export class SaveService {
     canvasSize: { width: number; height: number },
     settings: { snapEnabled: boolean; snapSize: number; darkMode: boolean },
     projectId?: string,
-    characterNames?: Record<string, string>, // 🆕 追加
-    characterSettings?: Record<string, any>  // 🆕 追加
+    characterNames?: Record<string, string>,
+    characterSettings?: Record<string, any>,
+    // 🆕 ページデータ引数追加（オプション）
+    pages?: Page[],
+    currentPageIndex?: number
   ): string {
     try {
       const id = projectId || this.generateId();
@@ -69,6 +78,11 @@ export class SaveService {
         createdAt: projectId ? this.getProject(projectId)?.createdAt || now : now,
         updatedAt: now,
         data: {
+          // 🆕 ページデータ保存（存在する場合のみ）
+          ...(pages && { pages: JSON.parse(JSON.stringify(pages)) }),
+          ...(currentPageIndex !== undefined && { currentPageIndex }),
+          
+          // 既存データ（後方互換性維持）
           panels: JSON.parse(JSON.stringify(panels)),
           characters: JSON.parse(JSON.stringify(characters)),
           bubbles: JSON.parse(JSON.stringify(bubbles)),
@@ -77,11 +91,12 @@ export class SaveService {
           tones: JSON.parse(JSON.stringify(tones)),
           canvasSize,
           settings,
-          characterNames, // 🆕 追加
-          characterSettings // 🆕 追加
+          characterNames,
+          characterSettings
         }
       };
 
+      // 既存の保存ロジック（変更なし）
       const projects = this.getAllProjects();
       const existingIndex = projects.findIndex(p => p.id === id);
       
@@ -94,7 +109,7 @@ export class SaveService {
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(projects));
       localStorage.setItem(this.CURRENT_PROJECT_KEY, id);
 
-      console.log(`プロジェクト "${name}" を保存しました (ID: ${id})`);
+      console.log(`プロジェクト "${name}" を保存しました (ID: ${id})${pages ? ` - ${pages.length}ページ` : ''}`);
       return id;
 
     } catch (error) {
@@ -103,25 +118,24 @@ export class SaveService {
     }
   }
 
+  // SaveService.ts に追加するloadProject関数
+
   /**
-   * プロジェクトを読み込み（トーン対応版）
+   * プロジェクトを読み込み（ページ対応版）
    */
-  // 🔧 loadProject関数も後方互換性を追加
   static loadProject(projectId: string): ProjectData | null {
     try {
       const projects = this.getAllProjects();
       const project = projects.find(p => p.id === projectId);
       
       if (project) {
-        // 🔧 後方互換性：効果線データがない場合は空配列で初期化
+        // 🔧 後方互換性：各種データがない場合は空配列で初期化
         if (!project.data.effects) {
           project.data.effects = [];
         }
-        // 🔧 後方互換性：トーンデータがない場合は空配列で初期化
         if (!project.data.tones) {
           project.data.tones = [];
         }
-        // 🆕 後方互換性：キャラクター名前・設定データがない場合は初期化
         if (!project.data.characterNames) {
           project.data.characterNames = {
             hero: '主人公',
@@ -139,8 +153,25 @@ export class SaveService {
           };
         }
         
+        // 🆕 ページデータの後方互換性：ない場合は既存データから生成
+        if (!project.data.pages) {
+          project.data.pages = [{
+            id: `page_${Date.now()}`,
+            title: 'ページ 1',
+            createdAt: project.createdAt,
+            updatedAt: project.updatedAt,
+            panels: project.data.panels,
+            characters: project.data.characters,
+            bubbles: project.data.bubbles,
+            backgrounds: project.data.backgrounds,
+            effects: project.data.effects,
+            tones: project.data.tones
+          }];
+          project.data.currentPageIndex = 0;
+        }
+        
         localStorage.setItem(this.CURRENT_PROJECT_KEY, projectId);
-        console.log(`プロジェクト "${project.name}" を読み込みました`);
+        console.log(`プロジェクト "${project.name}" を読み込みました${project.data.pages ? ` - ${project.data.pages.length}ページ` : ''}`);
         return project;
       }
       
@@ -150,7 +181,6 @@ export class SaveService {
       return null;
     }
   }
-
 
   /**
    * 現在のプロジェクトIDを取得

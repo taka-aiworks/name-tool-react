@@ -497,3 +497,117 @@ export interface CharacterAppearance {
   clothingColor: 'blue' | 'red' | 'green' | 'black' | 'white' | 'pink' | 'purple';
   accessories: string;
 }
+
+// types.ts に追加する型定義（既存ファイルの末尾に追加）
+
+// ==========================================
+// ページ管理システム用型定義（新規追加）
+// ==========================================
+
+// ページ単位のデータ構造
+export interface Page {
+  id: string;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+  panels: Panel[];
+  characters: Character[];
+  bubbles: SpeechBubble[];
+  backgrounds: BackgroundElement[];
+  effects: EffectElement[];
+  tones: ToneElement[];
+}
+
+// プロジェクトデータ構造（ページ対応版）
+export interface ProjectDataWithPages {
+  id: string;
+  name: string;
+  version: string;
+  createdAt: string;
+  updatedAt: string;
+  currentPageIndex: number;
+  pages: Page[];
+  globalSettings: {
+    canvasSize: { width: number; height: number };
+    snapSettings: SnapSettings;
+    darkMode: boolean;
+    characterNames: Record<string, string>;
+    characterSettings: Record<string, any>;
+  };
+}
+
+// ページ管理コンポーネントのプロパティ
+export interface PageManagerProps {
+  // 現在のページデータ
+  currentPage: Page;
+  pages: Page[];
+  currentPageIndex: number;
+  
+  // ページ操作コールバック
+  onPageChange: (pageIndex: number) => void;
+  onPageAdd: () => void;
+  onPageDelete: (pageIndex: number) => void;
+  onPageDuplicate: (pageIndex: number) => void;
+  onPageRename: (pageIndex: number, newTitle: string) => void;
+  onPageReorder: (fromIndex: number, toIndex: number) => void;
+  
+  // 現在のページデータ更新
+  onCurrentPageUpdate: (pageData: Partial<Page>) => void;
+  
+  // UI設定
+  isDarkMode: boolean;
+  isCompact?: boolean;
+}
+
+// ページタブのプロパティ
+export interface PageTabProps {
+  page: Page;
+  index: number;
+  isActive: boolean;
+  onClick: () => void;
+  onRename: (newTitle: string) => void;
+  onDelete: () => void;
+  onDuplicate: () => void;
+  isDarkMode: boolean;
+}
+
+// ページ操作の種類
+export type PageOperation = 
+  | { type: 'ADD_PAGE' }
+  | { type: 'DELETE_PAGE'; pageIndex: number }
+  | { type: 'DUPLICATE_PAGE'; pageIndex: number }
+  | { type: 'RENAME_PAGE'; pageIndex: number; title: string }
+  | { type: 'REORDER_PAGE'; fromIndex: number; toIndex: number }
+  | { type: 'SWITCH_PAGE'; pageIndex: number };
+
+// ページ状態管理用のhook型
+export interface UsePageManagerReturn {
+  pages: Page[];
+  currentPageIndex: number;
+  currentPage: Page;
+  
+  // ページ操作関数
+  addPage: () => void;
+  deletePage: (pageIndex: number) => void;
+  duplicatePage: (pageIndex: number) => void;
+  renamePage: (pageIndex: number, newTitle: string) => void;
+  switchToPage: (pageIndex: number) => void;
+  reorderPages: (fromIndex: number, toIndex: number) => void;
+  
+  // 現在ページデータ更新
+  updateCurrentPageData: (data: Partial<Page>) => void;
+  
+  // ページメタデータ
+  canDeletePage: boolean;
+  hasUnsavedChanges: boolean;
+}
+
+// バッチプロンプト生成用の型
+export interface BatchPromptOptions {
+  includePages: number[];
+  outputFormat: 'individual' | 'combined' | 'structured';
+  includeCharacterSettings: boolean;
+  includePageTitles: boolean;
+  customPrefix?: string;
+  customSuffix?: string;
+}
