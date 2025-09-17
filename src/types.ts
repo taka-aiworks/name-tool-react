@@ -11,41 +11,50 @@ export interface Panel {
 export interface Character {
   id: string;
   panelId: number;
-  type: string;
-  name: string;
-  x: number; // パネル内の相対位置 (0-1) または絶対座標
-  y: number; // パネル内の相対位置 (0-1) または絶対座標
+  characterId: string;    // 新：設定への参照
+  
+  // 配置（既存維持）
+  x: number;
+  y: number;
+  width?: number;
+  height?: number;
   scale: number;
-  
-  // 🆕 縦横自由リサイズ用プロパティ追加
-  width?: number;  // 幅（省略時はscaleから計算）
-  height?: number; // 高さ（省略時はscaleから計算）
-  // 🆕 2D回転機能追加
-  rotation?: number; // 回転角度（度数、0-360）デフォルト: 0
-  
-  // 旧システム（一時的に残す）
-  facing: string;
-  gaze: string;
-  pose: string;
-  expression: string;
-  
-  // 新システム
-  bodyDirection: "front" | "left" | "right" | "back" | "leftFront" | "rightFront" | "leftBack" | "rightBack";
-  faceExpression: "normal" | "smile" | "sad" | "angry" | "surprised" | "embarrassed" | "worried" | "sleepy";
-  bodyPose: "standing" | "sitting" | "walking" | "running" | "pointing" | "waving" | "thinking" | "arms_crossed";
-  eyeDirection: "front" | "left" | "right" | "up" | "down"; // 5方向に簡略化
-  
-  viewType: "face" | "halfBody" | "fullBody";
-  
-  // 後方互換性のため残す（将来削除予定）
-  faceAngle: "front" | "left" | "right" | "back" | "leftFront" | "rightFront" | "leftBack" | "rightBack";
-  
+  rotation?: number;
   isGlobalPosition: boolean;
+  
+  // シンプル化された状態
+  name: string;           // そのまま残す
+  type: string;          // そのまま残す  
+  expression: string;     // 辞書対応
+  action: string;        // 辞書対応（旧pose）
+  facing: string;        // 辞書対応（旧gaze/bodyDirection統合）
+  viewType: "face" | "upper_body" | "full_body";
+  eyeState?: string;
+  mouthState?: string; 
+  handGesture?: string;
+}
 
-  // 🆕 新規プロパティ（オプション）- この3行だけ追加
-  displayName?: string;           // 表示用名前
-  role?: string;                  // カスタム役割
-  appearance?: CharacterAppearance; // 見た目設定
+// 新しく追加する設定型
+export interface CharacterSettings {
+  id: string;
+  name: string;
+  role: string;
+  gender: 'male' | 'female' | 'other';
+  basePrompt: string;
+}
+
+// 辞書エントリ
+export interface DictionaryEntry {
+  key: string;
+  japanese: string;
+  english: string;
+}
+
+// 辞書データ
+export interface Dictionary {
+  expressions: DictionaryEntry[];
+  actions: DictionaryEntry[];
+  facings: DictionaryEntry[];
 }
 
 // 🆕 新しい型定義を追加
@@ -487,7 +496,7 @@ export type CanvasElementType = 'panel' | 'character' | 'bubble' | 'background' 
 export type CanvasElement = Panel | Character | SpeechBubble | BackgroundElement | EffectElement | ToneElement;
 
 // 🆕 キャラクター見た目設定の型定義（新規追加）
-export interface CharacterAppearance {
+/*export interface CharacterAppearance {
   gender: 'male' | 'female' | 'other';
   hairColor: 'black' | 'brown' | 'blonde' | 'red' | 'blue' | 'green' | 'white' | 'silver';
   hairStyle: 'short' | 'medium' | 'long' | 'ponytail' | 'twintails' | 'bun';
@@ -496,7 +505,7 @@ export interface CharacterAppearance {
   clothing: 'school' | 'casual' | 'formal' | 'sports' | 'traditional' | 'fantasy';
   clothingColor: 'blue' | 'red' | 'green' | 'black' | 'white' | 'pink' | 'purple';
   accessories: string;
-}
+} */
 
 // types.ts に追加する型定義（既存ファイルの末尾に追加）
 
