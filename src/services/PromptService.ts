@@ -1,4 +1,4 @@
-// src/services/PromptService.ts - 日本語変換デバッグ修正版
+// src/services/PromptService.ts - パネル別修正版
 import { Panel, Character, SpeechBubble, BackgroundElement, EffectElement } from '../types';
 
 // 辞書型定義
@@ -50,6 +50,8 @@ export interface ScenePrompt {
     mood?: string;
     composition?: string;
   };
+  // 🔧 パネル別キャラクターを追加
+  panelCharacters: CharacterPrompt[];
 }
 
 export interface PromptOutput {
@@ -197,7 +199,7 @@ class PromptService {
    */
   public generatePrompts(project: Project): PromptOutput {
     const characters = this.extractCharacterPrompts(project);
-    const scenes = this.extractScenePrompts(project);
+    const scenes = this.extractScenePrompts(project, characters); // 🔧 キャラクターデータを渡す
     const storyFlow = this.generateStoryFlow(project);
     const technicalNotes = this.generateTechnicalNotes();
 
@@ -330,22 +332,36 @@ class PromptService {
   }
 
   /**
-   * シーン構成プロンプトを生成
+   * 🔧 修正版: パネル別キャラクターを考慮したシーン構成プロンプト生成
    */
-  private extractScenePrompts(project: Project): ScenePrompt[] {
-    return project.panels.map(panel => ({
-      panelId: panel.id,
-      sceneType: this.analyzeSceneType(panel, project),
-      backgroundPrompt: this.generateBackgroundPrompt(panel, project),
-      effectsPrompt: this.generateEffectsPrompt(panel, project),
-      compositionPrompt: this.generateCompositionPrompt(panel, project),
-      elements: {
-        background: this.analyzeBackground(panel, project),
-        effects: this.analyzeEffects(panel, project),
-        mood: this.analyzeMood(panel, project),
-        composition: this.analyzeComposition(panel, project)
-      }
-    }));
+  private extractScenePrompts(project: Project, allCharacters: CharacterPrompt[]): ScenePrompt[] {
+    return project.panels.map(panel => {
+      // 🔧 このパネルのキャラクターのみを取得
+      const panelCharacterIds = project.characters
+        .filter(char => char.panelId === panel.id)
+        .map(char => char.id);
+      
+      const panelCharacters = allCharacters.filter(char => 
+        panelCharacterIds.includes(char.id)
+      );
+      
+      console.log(`🎯 パネル${panel.id}: キャラクター${panelCharacters.length}名`);
+      
+      return {
+        panelId: panel.id,
+        sceneType: this.analyzeSceneType(panel, project),
+        backgroundPrompt: this.generateBackgroundPrompt(panel, project),
+        effectsPrompt: this.generateEffectsPrompt(panel, project),
+        compositionPrompt: this.generateCompositionPrompt(panel, project),
+        panelCharacters, // 🔧 パネル別キャラクターを保存
+        elements: {
+          background: this.analyzeBackground(panel, project),
+          effects: this.analyzeEffects(panel, project),
+          mood: this.analyzeMood(panel, project),
+          composition: this.analyzeComposition(panel, project)
+        }
+      };
+    });
   }
 
   private generateBackgroundPrompt(panel: Panel, project: Project): string | undefined {
@@ -479,7 +495,21 @@ class PromptService {
     promptData.scenes.forEach((scene, index) => {
       output += `━━━ Panel ${index + 1} ━━━\n`;
       
-      const panelCharacters = promptData.characters;
+      // 🔧 パネル別キャラクターを使用
+      const panelCharacters = scene.panelCharacters;
+
+      // 🔧 空パネル判定を追加
+      if (panelCharacters.length === 0) {
+        output += `【このパネルにはキャラクターがいません】\n`;
+        output += `【Background Only】\n`;
+        if (scene.backgroundPrompt) {
+          output += `masterpiece, best quality, ${scene.backgroundPrompt}, no humans, environment shot, anime style\n`;
+        } else {
+          output += `masterpiece, best quality, simple background, no humans, environment shot, anime style\n`;
+        }
+        output += `\n───────────────────────────────\n\n`;
+        return;
+      }
 
       const positivePrompt = this.buildPositivePrompt(panelCharacters, scene);
       output += `【Positive Prompt】\n${positivePrompt}\n\n`;

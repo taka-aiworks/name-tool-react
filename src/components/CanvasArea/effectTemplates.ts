@@ -1,11 +1,11 @@
-// src/components/CanvasArea/effectTemplates.ts - エラー修正版
+// src/components/CanvasArea/effectTemplates.ts - クリスタ実用版（5種類）
 import { EffectTemplate } from '../../types';
 
 export const effectTemplates: EffectTemplate[] = [
-  // === アクション系効果線 ===
+  // === 1. スピード線（最重要）===
   {
     id: 'speed_horizontal',
-    name: '水平スピード線',
+    name: 'スピード線',
     type: 'speed',
     direction: 'horizontal',
     intensity: 0.8,
@@ -15,44 +15,14 @@ export const effectTemplates: EffectTemplate[] = [
     color: '#000000',
     opacity: 0.7,
     blur: 1,
-    description: '横方向の動きを表現',
-    category: 'action'
-  },
-  {
-    id: 'speed_vertical',
-    name: '縦スピード線',
-    type: 'speed',
-    direction: 'vertical',
-    intensity: 0.8,
-    density: 0.6,
-    length: 0.9,
-    angle: 90,
-    color: '#000000',
-    opacity: 0.7,
-    blur: 1,
-    description: '縦方向の動きを表現',
-    category: 'action'
-  },
-  {
-    id: 'speed_diagonal',
-    name: '斜めスピード線',
-    type: 'speed',
-    direction: 'custom',
-    intensity: 0.8,
-    density: 0.6,
-    length: 0.9,
-    angle: 45,
-    color: '#000000',
-    opacity: 0.7,
-    blur: 1,
-    description: '斜め方向の動きを表現',
+    description: '動きの表現（最重要）',
     category: 'action'
   },
 
-  // === 集中線 ===
+  // === 2. 集中線（最重要）===
   {
     id: 'focus_center',
-    name: '中央集中線',
+    name: '集中線',
     type: 'focus',
     direction: 'radial',
     intensity: 0.9,
@@ -62,44 +32,14 @@ export const effectTemplates: EffectTemplate[] = [
     color: '#000000',
     opacity: 0.6,
     blur: 0,
-    description: '中央への注目を表現',
-    category: 'emotion'
-  },
-  {
-    id: 'focus_intense',
-    name: '強烈集中線',
-    type: 'focus',
-    direction: 'radial',
-    intensity: 1.0,
-    density: 1.0,
-    length: 1.0,
-    angle: 0,
-    color: '#000000',
-    opacity: 0.8,
-    blur: 0,
-    description: '強い驚きや衝撃を表現',
-    category: 'emotion'
-  },
-  {
-    id: 'focus_soft',
-    name: 'ソフト集中線',
-    type: 'focus',
-    direction: 'radial',
-    intensity: 0.5,
-    density: 0.4,
-    length: 0.6,
-    angle: 0,
-    color: '#333333',
-    opacity: 0.4,
-    blur: 2,
-    description: '穏やかな注目を表現',
+    description: '注目・驚きの表現（最重要）',
     category: 'emotion'
   },
 
-  // === 爆発線 ===
+  // === 3. 爆発線 ===
   {
     id: 'explosion_intense',
-    name: '強烈爆発線',
+    name: '爆発線',
     type: 'explosion',
     direction: 'radial',
     intensity: 1.0,
@@ -109,29 +49,14 @@ export const effectTemplates: EffectTemplate[] = [
     color: '#000000',
     opacity: 0.9,
     blur: 0,
-    description: '激しい爆発や衝撃を表現',
-    category: 'action'
-  },
-  {
-    id: 'explosion_medium',
-    name: '中程度爆発線',
-    type: 'explosion',
-    direction: 'radial',
-    intensity: 0.7,
-    density: 0.6,
-    length: 0.8,
-    angle: 0,
-    color: '#111111',
-    opacity: 0.7,
-    blur: 1,
-    description: '中程度の衝撃を表現',
+    description: '衝撃・爆発シーン',
     category: 'action'
   },
 
-  // === フラッシュ線 ===
+  // === 4. フラッシュ線 ===
   {
     id: 'flash_bright',
-    name: '明るいフラッシュ',
+    name: 'フラッシュ線',
     type: 'flash',
     direction: 'radial',
     intensity: 0.8,
@@ -141,29 +66,14 @@ export const effectTemplates: EffectTemplate[] = [
     color: '#FFFFFF',
     opacity: 0.8,
     blur: 3,
-    description: '強い光や閃光を表現',
-    category: 'special'
-  },
-  {
-    id: 'flash_soft',
-    name: 'ソフトフラッシュ',
-    type: 'flash',
-    direction: 'radial',
-    intensity: 0.5,
-    density: 0.2,
-    length: 0.7,
-    angle: 0,
-    color: '#F0F0F0',
-    opacity: 0.6,
-    blur: 4,
-    description: '穏やかな光を表現',
+    description: '強い光・閃光の表現',
     category: 'special'
   },
 
-  // === 環境系効果線 ===
+  // === 5. 背景効果線 ===
   {
     id: 'wind_horizontal',
-    name: '風の線（横）',
+    name: '背景効果線',
     type: 'speed',
     direction: 'horizontal',
     intensity: 0.4,
@@ -173,22 +83,7 @@ export const effectTemplates: EffectTemplate[] = [
     color: '#666666',
     opacity: 0.5,
     blur: 2,
-    description: '風の流れを表現',
-    category: 'environment'
-  },
-  {
-    id: 'rain_lines',
-    name: '雨の線',
-    type: 'speed',
-    direction: 'custom',
-    intensity: 0.6,
-    density: 0.8,
-    length: 0.4,
-    angle: 75,
-    color: '#4A90E2',
-    opacity: 0.6,
-    blur: 1,
-    description: '雨の表現',
+    description: '雰囲気・環境表現',
     category: 'environment'
   }
 ];
@@ -203,18 +98,18 @@ export const getEffectTemplatesByType = (type: EffectTemplate['type']): EffectTe
   return effectTemplates.filter(template => template.type === type);
 };
 
-// 効果線テンプレートをEffectElementに変換（修正版）
+// 効果線テンプレートをEffectElementに変換
 export const createEffectFromTemplate = (
   template: EffectTemplate,
   x: number,
   y: number,
-  panelId: number = 1, // 🔧 panelIdを必須パラメータに
+  panelId: number = 1,
   width: number = 200,
   height: number = 200
 ): import('../../types').EffectElement => {
   return {
     id: `effect_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-    panelId, // 🔧 panelIdを設定
+    panelId,
     type: template.type,
     x,
     y,
@@ -231,7 +126,7 @@ export const createEffectFromTemplate = (
     centerX: template.direction === 'radial' ? x + width / 2 : undefined,
     centerY: template.direction === 'radial' ? y + height / 2 : undefined,
     selected: false,
-    zIndex: 10, // 🔧 zIndexを設定
-    isGlobalPosition: false // 🔧 isGlobalPositionを設定
+    zIndex: 10,
+    isGlobalPosition: false
   };
 };
