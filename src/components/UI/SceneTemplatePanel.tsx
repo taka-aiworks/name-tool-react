@@ -34,7 +34,8 @@ export const SceneTemplatePanel: React.FC<SceneTemplatePanelProps> = ({
   setTones,
   isDarkMode = true,
 }) => {
-  const [selectedCategory, setSelectedCategory] = useState<'emotion' | 'action' | 'daily'>('emotion');
+  // 修正後
+  const [selectedCategory, setSelectedCategory] = useState<'emotion' | 'action' | 'basic'>('emotion');
   const [selectedTemplate, setSelectedTemplate] = useState<string>('');
   // プレビュー機能を一時的に無効化
   // const [showPreview, setShowPreview] = useState<boolean>(false);
@@ -94,24 +95,9 @@ export const SceneTemplatePanel: React.FC<SceneTemplatePanelProps> = ({
 
   // カテゴリ情報
   const categoryInfo = {
-    emotion: {
-      icon: '🎭',
-      name: '感情表現',
-      description: '驚き、悲しみ、怒り、喜びなどの感情シーン',
-      color: '#e91e63'
-    },
-    action: {
-      icon: '🚀',
-      name: 'アクション',
-      description: '走る、戦闘、衝撃などの動的なシーン',
-      color: '#ff5722'
-    },
-    daily: {
-      icon: '🏠',
-      name: '日常生活',
-      description: '学校、食事などの日常的なシーン',
-      color: '#4caf50'
-    }
+    emotion: { icon: '😢', name: '感情', description: '感情表現', color: '#ff6b6b' },
+    action: { icon: '💨', name: 'アクション', description: '動きのあるシーン', color: '#4ecdc4' },
+    basic: { icon: '💬', name: '基本', description: '基本的なシーン', color: '#45b7d1' } // ← daily → basic
   };
 
   const currentCategory = categoryInfo[selectedCategory];
@@ -143,7 +129,7 @@ export const SceneTemplatePanel: React.FC<SceneTemplatePanelProps> = ({
           <button
             key={key}
             className={`category-tab ${selectedCategory === key ? 'active' : ''}`}
-            onClick={() => setSelectedCategory(key as 'emotion' | 'action' | 'daily')}
+            onClick={() => setSelectedCategory(key as 'emotion' | 'action' | 'basic')}
             style={{
               flex: 1,
               padding: '8px 4px',
