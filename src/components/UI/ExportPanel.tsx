@@ -1,6 +1,7 @@
-// src/components/UI/ExportPanel.tsx - 完全版
+// src/components/UI/ExportPanel.tsx - PromptService統合版
 import React, { useState } from 'react';
 import { ExportService, ExportOptions, ExportProgress } from '../../services/ExportService';
+import { promptService } from '../../services/PromptService';
 import { Panel, Character, SpeechBubble, BackgroundElement, EffectElement, ToneElement } from '../../types';
 
 type ExportPurpose = 'print' | 'image' | 'clipstudio' | 'prompt';
@@ -149,175 +150,11 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
     return nearestPanel;
   };
 
-  // プロンプト生成関数
-  const generateCharacterPrompt = (char: Character): string => {
-    const parts = [
-      "masterpiece, best quality",
-      "young woman",
-      "long black hair",
-      "brown eyes", 
-      "blue school uniform",
-      "standing",
-      "solo",
-      "anime style"
-    ];
-    return parts.join(", ");
-  };
-
-  const generateJapaneseDescription = (char: Character): string => {
-    return [
-      "キャラクター: 女性、黒髪ロング、茶色の瞳、青い制服、立っている",
-      "構図: 1人、アニメ風",
-      "画質: 高品質なアニメ風イラスト"
-    ].join("\n");
-  };
-
-  const generateBackgroundPrompt = (backgrounds: BackgroundElement[]): string => {
-    const parts = [
-      "masterpiece, best quality",
-      "detailed background",
-      "classroom",
-      "morning light",
-      "no humans",
-      "anime style"
-    ];
-    return parts.join(", ");
-  };
-
-  const generateBackgroundJapaneseDescription = (backgrounds: BackgroundElement[]): string => {
-    return [
-      "背景: 教室、机と椅子、朝の光",
-      "構図: 背景のみ、人物なし", 
-      "画質: 高品質なアニメ風背景"
-    ].join("\n");
-  };
-
-  const generateEffectsPrompt = (effects: EffectElement[]): string => {
-    const parts = [
-      "masterpiece, best quality",
-      "speed lines",
-      "dynamic effects",
-      "motion blur",
-      "anime style"
-    ];
-    return parts.join(", ");
-  };
-
-  const generateEffectsJapaneseDescription = (effects: EffectElement[]): string => {
-    return [
-      "効果: 集中線、スピード線",
-      "動き: ダイナミック、モーションブラー",
-      "画質: 高品質なアニメ風エフェクト"
-    ].join("\n");
-  };
-
-  const generateTonesPrompt = (tones: ToneElement[]): string => {
-    const parts = [
-      "masterpiece, best quality",
-      "screen tone effects",
-      "manga style shading",
-      "anime style"
-    ];
-    return parts.join(", ");
-  };
-
-  // カスタムプロンプト生成関数
-  const generateCustomPrompts = (panelsData: Array<{
-    panel: Panel;
-    characters: Character[];
-    backgrounds: BackgroundElement[];
-    effects: EffectElement[];
-    tones: ToneElement[];
-  }>): string => {
-    let output = "=== AI Image Generation Prompts ===\n\n";
-
-    panelsData.forEach(({ panel, characters, backgrounds, effects, tones }) => {
-      // パネルに何も設定されていない場合はスキップ
-      if (characters.length === 0 && backgrounds.length === 0 && effects.length === 0 && tones.length === 0) {
-        return;
-      }
-
-      // キャラクターごとにプロンプト生成
-      characters.forEach((char, charIndex) => {
-        output += `━━━ Panel ${panel.id} - Character ${charIndex + 1} (${char.name || '名無し'}) ━━━\n`;
-        
-        const characterPrompt = generateCharacterPrompt(char);
-        output += `【Positive Prompt】\n${characterPrompt}\n\n`;
-        
-        const japaneseDesc = generateJapaneseDescription(char);
-        output += `【日本語説明】\n${japaneseDesc}\n\n`;
-        
-        output += `───────────────────────────────\n\n`;
-      });
-
-      // 背景プロンプト
-      if (backgrounds.length > 0) {
-        output += `━━━ Panel ${panel.id} - Background ━━━\n`;
-        
-        const backgroundPrompt = generateBackgroundPrompt(backgrounds);
-        output += `【Positive Prompt】\n${backgroundPrompt}\n\n`;
-        
-        const bgJapaneseDesc = generateBackgroundJapaneseDescription(backgrounds);
-        output += `【日本語説明】\n${bgJapaneseDesc}\n\n`;
-        
-        output += `───────────────────────────────\n\n`;
-      }
-
-      // 効果線プロンプト
-      if (effects.length > 0) {
-        output += `━━━ Panel ${panel.id} - Effects ━━━\n`;
-        
-        const effectsPrompt = generateEffectsPrompt(effects);
-        output += `【Positive Prompt】\n${effectsPrompt}\n\n`;
-        
-        const effectsJapaneseDesc = generateEffectsJapaneseDescription(effects);
-        output += `【日本語説明】\n${effectsJapaneseDesc}\n\n`;
-        
-        output += `───────────────────────────────\n\n`;
-      }
-
-      // トーンプロンプト
-      if (tones.length > 0) {
-        output += `━━━ Panel ${panel.id} - Tones ━━━\n`;
-        
-        const tonesPrompt = generateTonesPrompt(tones);
-        output += `【Positive Prompt】\n${tonesPrompt}\n\n`;
-        
-        output += `───────────────────────────────\n\n`;
-      }
-    });
-
-    // 共通設定
-    output += "【Negative Prompt】(全共通)\n";
-    output += "lowres, bad anatomy, bad hands, text, error, worst quality, low quality, blurry, bad face, deformed face, extra fingers, watermark, signature\n\n";
-    
-    output += "【Recommended Settings】(全共通)\n";
-    output += "• Steps: 20-28\n";
-    output += "• CFG Scale: 7-9\n";
-    output += "• Size: 512x768 (portrait) or 768x512 (landscape)\n";
-    output += "• Sampler: DPM++ 2M Karras\n\n";
-
-    // 使用ガイド
-    output += "=== Usage Guide ===\n";
-    output += "1. Copy the Positive Prompt to your AI image generator\n";
-    output += "2. Copy the Negative Prompt to negative prompt field\n";
-    output += "3. Adjust settings according to recommendations\n";
-    output += "4. Generate each prompt separately for best results\n\n";
-
-    // 技術情報
-    output += "=== Technical Info ===\n";
-    output += `Generated: ${new Date().toLocaleString()}\n`;
-    output += `Tool: ネーム制作ツール - Prompt Generator\n`;
-    output += `Panels with content: ${panelsData.filter(p => 
-      p.characters.length > 0 || p.backgrounds.length > 0 || p.effects.length > 0 || p.tones.length > 0
-    ).length}\n`;
-
-    return output;
-  };
-
-  // プロンプト出力ハンドラー
+  // 🆕 PromptService統合版プロンプト出力ハンドラー
   const handlePromptExport = async () => {
     setIsExporting(true);
+    setExportProgress({ step: 'initialize', progress: 10, message: 'プロンプト分析中...' });
+
     try {
       // 各キャラクターを最寄りパネルに割り当て
       const characterAssignments = new Map<number, Character[]>();
@@ -337,24 +174,189 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
         }
       });
 
-      // パネルデータを構築
-      const panelsData = panels.map(panel => ({
-        panel,
-        characters: characterAssignments.get(panel.id) || [],
-        backgrounds: backgrounds.filter(bg => bg.panelId === panel.id),
-        effects: effects.filter(effect => effect.panelId === panel.id),
-        tones: tones.filter(tone => tone.panelId === panel.id)
-      }));
+      setExportProgress({ step: 'processing', progress: 30, message: 'キャラクター詳細分析中...' });
 
-      // カスタムプロンプト生成
-      const output = generateCustomPrompts(panelsData);
+      // 🆕 PromptServiceを使用したプロジェクト構築
+      const project = {
+        panels,
+        characters,
+        speechBubbles: bubbles,
+        backgrounds,
+        effects
+      };
+
+      setExportProgress({ step: 'processing', progress: 50, message: '辞書ベースプロンプト生成中...' });
+
+      // 🆕 PromptServiceでプロンプト生成
+      const promptData = promptService.generatePrompts(project);
+      
+      setExportProgress({ step: 'processing', progress: 70, message: 'プロンプト整形中...' });
+
+      // 🆕 PromptServiceの整形機能を使用
+      let output = promptService.formatPromptOutput(promptData);
+
+      // 追加で背景・効果線・トーン情報を統合
+      output += await generateAdditionalPrompts(characterAssignments);
+
+      setExportProgress({ step: 'finalizing', progress: 90, message: '最終調整中...' });
+
       setPromptOutput(output);
+      setExportProgress({ step: 'complete', progress: 100, message: '完了！' });
+
     } catch (error) {
       console.error('プロンプト生成エラー:', error);
       alert('プロンプト生成に失敗しました: ' + (error as Error).message);
     } finally {
       setIsExporting(false);
+      setTimeout(() => setExportProgress(null), 1000);
     }
+  };
+
+  // 🆕 追加要素（背景・効果線・トーン）のプロンプト生成
+  const generateAdditionalPrompts = async (characterAssignments: Map<number, Character[]>): Promise<string> => {
+    let additionalOutput = "";
+
+    // パネルごとの追加要素処理
+    panels.forEach(panel => {
+      const panelBackgrounds = backgrounds.filter(bg => bg.panelId === panel.id);
+      const panelEffects = effects.filter(effect => effect.panelId === panel.id);
+      const panelTones = tones.filter(tone => tone.panelId === panel.id);
+      const panelChars = characterAssignments.get(panel.id) || [];
+
+      // 背景が存在し、キャラクターがいない場合のみ背景専用プロンプト
+      if (panelBackgrounds.length > 0 && panelChars.length === 0) {
+        additionalOutput += `━━━ Panel ${panel.id} - Background Only ━━━\n`;
+        additionalOutput += `【Positive Prompt】\n`;
+        additionalOutput += generateBackgroundPrompt(panelBackgrounds);
+        additionalOutput += `\n\n【日本語説明】\n`;
+        additionalOutput += generateBackgroundJapaneseDescription(panelBackgrounds);
+        additionalOutput += `\n\n───────────────────────────────\n\n`;
+      }
+
+      // 効果線専用プロンプト
+      if (panelEffects.length > 0) {
+        additionalOutput += `━━━ Panel ${panel.id} - Effects ━━━\n`;
+        additionalOutput += `【Positive Prompt】\n`;
+        additionalOutput += generateEffectsPrompt(panelEffects);
+        additionalOutput += `\n\n【日本語説明】\n`;
+        additionalOutput += generateEffectsJapaneseDescription(panelEffects);
+        additionalOutput += `\n\n───────────────────────────────\n\n`;
+      }
+
+      // トーン専用プロンプト
+      if (panelTones.length > 0) {
+        additionalOutput += `━━━ Panel ${panel.id} - Tones ━━━\n`;
+        additionalOutput += `【Positive Prompt】\n`;
+        additionalOutput += generateTonesPrompt(panelTones);
+        additionalOutput += `\n\n───────────────────────────────\n\n`;
+      }
+    });
+
+    return additionalOutput;
+  };
+
+  // 背景プロンプト生成（改良版）
+  const generateBackgroundPrompt = (backgrounds: BackgroundElement[]): string => {
+    if (backgrounds.length === 0) return "";
+
+    const bg = backgrounds[0];
+    const parts = [
+      "masterpiece, best quality",
+      "detailed background",
+      bg.type === 'solid' ? "simple background" : "detailed environment",
+      "no humans",
+      "anime style"
+    ];
+
+    // 背景タイプに応じた詳細追加
+    switch (bg.type) {
+      case 'gradient':
+        parts.splice(2, 1, "gradient background", "soft lighting");
+        break;
+      case 'pattern':
+        parts.splice(2, 1, "patterned background", "textured surface");
+        break;
+      case 'image':
+        parts.splice(2, 1, "realistic background", "photographic style");
+        break;
+    }
+
+    return parts.join(", ");
+  };
+
+  const generateBackgroundJapaneseDescription = (backgrounds: BackgroundElement[]): string => {
+    if (backgrounds.length === 0) return "";
+
+    const bg = backgrounds[0];
+    const typeDescriptions = {
+      'solid': '単色背景',
+      'gradient': 'グラデーション背景',
+      'pattern': 'パターン背景',
+      'image': '画像背景'
+    };
+
+    return [
+      `背景: ${typeDescriptions[bg.type] || '背景'}`,
+      "構図: 背景のみ、人物なし",
+      "画質: 高品質なアニメ風背景"
+    ].join("\n");
+  };
+
+  const generateEffectsPrompt = (effects: EffectElement[]): string => {
+    if (effects.length === 0) return "";
+
+    const effectTypes = effects.map(effect => {
+      switch (effect.type) {
+        case 'speed': return "speed lines, motion blur";
+        case 'focus': return "focus lines, concentration lines";
+        case 'explosion': return "explosion effect, impact burst";
+        case 'flash': return "flash effect, bright light";
+        default: return "dynamic effects";
+      }
+    });
+
+    const parts = [
+      "masterpiece, best quality",
+      ...effectTypes,
+      "manga style effects",
+      "anime style"
+    ];
+
+    return parts.join(", ");
+  };
+
+  const generateEffectsJapaneseDescription = (effects: EffectElement[]): string => {
+    if (effects.length === 0) return "";
+
+    const effectNames = effects.map(effect => {
+      switch (effect.type) {
+        case 'speed': return 'スピード線';
+        case 'focus': return '集中線';
+        case 'explosion': return '爆発エフェクト';
+        case 'flash': return 'フラッシュ効果';
+        default: return '効果線';
+      }
+    });
+
+    return [
+      `効果: ${effectNames.join('、')}`,
+      "動き: ダイナミック、エネルギッシュ",
+      "画質: 高品質なアニメ風エフェクト"
+    ].join("\n");
+  };
+
+  const generateTonesPrompt = (tones: ToneElement[]): string => {
+    if (tones.length === 0) return "";
+
+    const parts = [
+      "masterpiece, best quality",
+      "screen tone effects",
+      "manga style shading",
+      "halftone pattern",
+      "anime style"
+    ];
+
+    return parts.join(", ");
   };
 
   // プロンプトコピー機能
@@ -373,7 +375,7 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `storyboard-prompts-${new Date().toISOString().split('T')[0]}.txt`;
+    a.download = `enhanced-prompts-${new Date().toISOString().split('T')[0]}.txt`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -385,7 +387,7 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
       id: 'prompt' as ExportPurpose,
       icon: '🎨',
       title: 'プロンプト出力',
-      desc: 'AI画像生成用'
+      desc: 'AI画像生成用（辞書対応）'
     },
     {
       id: 'print' as ExportPurpose,
@@ -433,6 +435,23 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
         <span style={{ color: "#ff8833" }}>📁</span>
         出力
       </h3>
+
+      {/* 🆕 プロンプト機能強化アピール */}
+      <div 
+        style={{
+          background: isDarkMode ? "rgba(139, 92, 246, 0.1)" : "rgba(139, 92, 246, 0.05)",
+          border: `1px solid ${isDarkMode ? "rgba(139, 92, 246, 0.3)" : "rgba(139, 92, 246, 0.2)"}`,
+          borderRadius: "6px",
+          padding: "8px",
+          marginBottom: "12px",
+          fontSize: "10px",
+          color: isDarkMode ? "#c4b5fd" : "#7c3aed"
+        }}
+      >
+        <strong>🆕 プロンプト機能強化:</strong><br/>
+        キャラクター詳細情報（表情・ポーズ・視線）を辞書ベースで高品質プロンプト化！<br/>
+        固定値から動的生成に進化しました。
+      </div>
 
       {/* 出力統計情報 */}
       <div 
@@ -530,7 +549,7 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
               >
                 <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                   
-                  {/* プロンプト出力設定 */}
+                  {/* 🆕 強化されたプロンプト出力設定 */}
                   {selectedPurpose === 'prompt' && (
                     <>
                       {!promptOutput ? (
@@ -545,7 +564,7 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
                             color: isDarkMode ? "white" : "#1f2937",
                             marginBottom: "8px"
                           }}>
-                            AI画像生成用プロンプト出力
+                            🆕 辞書対応AI画像生成プロンプト
                           </h4>
                           <p style={{ 
                             color: isDarkMode ? "#9ca3af" : "#6b7280",
@@ -553,8 +572,9 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
                             lineHeight: "1.4",
                             fontSize: "11px"
                           }}>
-                            設定されている要素のみを分析して、AI画像生成に最適化されたプロンプトを自動生成します。<br />
-                            キャラクター・背景・効果線を個別に出力します。
+                            キャラクター詳細情報（表情・ポーズ・視線）を辞書ベースで分析し、<br />
+                            高品質なAI画像生成プロンプトを自動生成します。<br />
+                            <strong>固定値→動的生成に進化！</strong>
                           </p>
                           <button
                             onClick={handlePromptExport}
@@ -573,7 +593,7 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
                               opacity: isExporting ? 0.6 : 1
                             }}
                           >
-                            {isExporting ? '生成中...' : '🎨 プロンプト生成'}
+                            {isExporting ? '🧠 辞書分析中...' : '🎨 強化プロンプト生成'}
                           </button>
                         </div>
                       ) : (
