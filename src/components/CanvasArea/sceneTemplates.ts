@@ -1,4 +1,4 @@
-// src/components/CanvasArea/sceneTemplates.ts - types.ts準拠版
+// src/components/CanvasArea/sceneTemplates.ts - 完全修正版
 import { Character, SpeechBubble, BackgroundElement, EffectElement, ToneElement } from "../../types";
 
 export interface EnhancedSceneTemplate {
@@ -14,18 +14,17 @@ export interface EnhancedSceneTemplate {
 
 // 🎭 感情系シーンテンプレート
 export const emotionSceneTemplates: Record<string, EnhancedSceneTemplate> = {
-  // 😲 驚き・ショック系
   surprise_shock: {
     name: "😲 驚き・ショック",
     description: "大きく驚いた瞬間のシーン",
     category: 'emotion',
     characters: [
       {
-        panelId: 1,
+        panelId: 1, // この値は後で選択されたパネルIDで上書きされる
         type: "hero",
         name: "主人公",
-        x: 280,
-        y: 120,
+        x: 0.5, // 🔧 相対座標に変更（パネル中央）
+        y: 0.6, // 🔧 相対座標に変更（パネル下寄り）
         scale: 2.5,
         facing: "front",
         gaze: "center",
@@ -34,7 +33,7 @@ export const emotionSceneTemplates: Record<string, EnhancedSceneTemplate> = {
         viewType: "face",
         faceAngle: "front",
         eyeDirection: "front",
-        isGlobalPosition: true,
+        isGlobalPosition: false, // 🔧 パネル内相対座標
         bodyDirection: "front",
         faceExpression: "surprised",
         bodyPose: "standing",
@@ -45,13 +44,13 @@ export const emotionSceneTemplates: Record<string, EnhancedSceneTemplate> = {
         panelId: 1,
         type: "叫び",
         text: "えっ！？",
-        x: 150,
-        y: 60,
+        x: 0.25, // 🔧 相対座標に変更（パネル左上）
+        y: 0.15, // 🔧 相対座標に変更
         scale: 1.2,
         width: 80,
         height: 70,
         vertical: true,
-        isGlobalPosition: true,
+        isGlobalPosition: false, // 🔧 パネル内相対座標
       },
     ],
     effects: [
@@ -103,7 +102,6 @@ export const emotionSceneTemplates: Record<string, EnhancedSceneTemplate> = {
     ],
   },
 
-  // 😢 悲しみ・涙系
   sadness_tears: {
     name: "😢 悲しみ・涙",
     description: "悲しみに暮れる感情表現",
@@ -113,8 +111,8 @@ export const emotionSceneTemplates: Record<string, EnhancedSceneTemplate> = {
         panelId: 1,
         type: "heroine",
         name: "ヒロイン",
-        x: 250,
-        y: 120,
+        x: 0.45, // 🔧 相対座標
+        y: 0.6,  // 🔧 相対座標
         scale: 2.3,
         facing: "front",
         gaze: "down",
@@ -123,7 +121,7 @@ export const emotionSceneTemplates: Record<string, EnhancedSceneTemplate> = {
         viewType: "halfBody",
         faceAngle: "front",
         eyeDirection: "down",
-        isGlobalPosition: true,
+        isGlobalPosition: false, // 🔧 パネル内配置
         bodyDirection: "front",
         faceExpression: "sad",
         bodyPose: "sitting",
@@ -134,13 +132,13 @@ export const emotionSceneTemplates: Record<string, EnhancedSceneTemplate> = {
         panelId: 1,
         type: "心の声",
         text: "どうして...",
-        x: 380,
-        y: 60,
+        x: 0.75, // 🔧 相対座標（パネル右上）
+        y: 0.2,  // 🔧 相対座標
         scale: 1.0,
         width: 90,
         height: 70,
         vertical: true,
-        isGlobalPosition: true,
+        isGlobalPosition: false, // 🔧 パネル内配置
       },
     ],
     backgrounds: [
@@ -159,124 +157,8 @@ export const emotionSceneTemplates: Record<string, EnhancedSceneTemplate> = {
         gradientDirection: 270,
       },
     ],
-    tones: [
-      {
-        panelId: 1,
-        type: "lines",
-        pattern: "lines_diagonal",
-        x: 0.0,
-        y: 0.0,
-        width: 1.0,
-        height: 1.0,
-        density: 0.4,
-        opacity: 0.3,
-        rotation: 45,
-        scale: 1.0,
-        blendMode: "multiply",
-        contrast: 1.0,
-        brightness: 0,
-        invert: false,
-        maskEnabled: false,
-        maskShape: "rectangle",
-        maskFeather: 0,
-        selected: false,
-        zIndex: 0,
-        isGlobalPosition: false,
-        visible: true,
-      },
-    ],
   },
 
-  // 😡 怒り・激情系
-  anger_fury: {
-    name: "😡 怒り・激情",
-    description: "激しい怒りの表現",
-    category: 'emotion',
-    characters: [
-      {
-        panelId: 1,
-        type: "hero",
-        name: "主人公",
-        x: 200,
-        y: 130,
-        scale: 2.2,
-        facing: "front",
-        gaze: "center",
-        pose: "standing",
-        expression: "neutral",
-        viewType: "halfBody",
-        faceAngle: "front",
-        eyeDirection: "front",
-        isGlobalPosition: true,
-        bodyDirection: "front",
-        faceExpression: "angry",
-        bodyPose: "arms_crossed",
-      },
-    ],
-    speechBubbles: [
-      {
-        panelId: 1,
-        type: "叫び",
-        text: "許せない！",
-        x: 80,
-        y: 60,
-        scale: 1.3,
-        width: 100,
-        height: 80,
-        vertical: true,
-        isGlobalPosition: true,
-      },
-    ],
-    effects: [
-      {
-        panelId: 1,
-        type: "explosion",
-        x: 0.15,
-        y: 0.15,
-        width: 0.7,
-        height: 0.7,
-        direction: "radial",
-        intensity: 0.9,
-        density: 0.8,
-        length: 25,
-        angle: 0,
-        color: "#ff4444",
-        opacity: 0.8,
-        blur: 1,
-        selected: false,
-        zIndex: 2,
-        isGlobalPosition: false,
-      },
-    ],
-    tones: [
-      {
-        panelId: 1,
-        type: "dots",
-        pattern: "dots_85",
-        x: 0.0,
-        y: 0.0,
-        width: 1.0,
-        height: 1.0,
-        density: 0.6,
-        opacity: 0.4,
-        rotation: 0,
-        scale: 1.2,
-        blendMode: "multiply",
-        contrast: 1.2,
-        brightness: 0,
-        invert: false,
-        maskEnabled: false,
-        maskShape: "rectangle",
-        maskFeather: 0,
-        selected: false,
-        zIndex: 0,
-        isGlobalPosition: false,
-        visible: true,
-      },
-    ],
-  },
-
-  // 😄 喜び・幸せ系
   joy_happiness: {
     name: "😄 喜び・幸せ",
     description: "明るく楽しい瞬間",
@@ -286,8 +168,8 @@ export const emotionSceneTemplates: Record<string, EnhancedSceneTemplate> = {
         panelId: 1,
         type: "heroine",
         name: "ヒロイン",
-        x: 150,
-        y: 120,
+        x: 0.25, // 🔧 相対座標（パネル左側）
+        y: 0.6,  // 🔧 相対座標
         scale: 2.0,
         facing: "front",
         gaze: "center",
@@ -296,7 +178,7 @@ export const emotionSceneTemplates: Record<string, EnhancedSceneTemplate> = {
         viewType: "halfBody",
         faceAngle: "front",
         eyeDirection: "front",
-        isGlobalPosition: true,
+        isGlobalPosition: false, // 🔧 パネル内配置
         bodyDirection: "front",
         faceExpression: "smile",
         bodyPose: "waving",
@@ -305,8 +187,8 @@ export const emotionSceneTemplates: Record<string, EnhancedSceneTemplate> = {
         panelId: 1,
         type: "hero",
         name: "主人公",
-        x: 400,
-        y: 120,
+        x: 0.75, // 🔧 相対座標（パネル右側）
+        y: 0.6,  // 🔧 相対座標
         scale: 2.0,
         facing: "front",
         gaze: "left",
@@ -315,7 +197,7 @@ export const emotionSceneTemplates: Record<string, EnhancedSceneTemplate> = {
         viewType: "halfBody",
         faceAngle: "left",
         eyeDirection: "left",
-        isGlobalPosition: true,
+        isGlobalPosition: false, // 🔧 パネル内配置
         bodyDirection: "left",
         faceExpression: "smile",
         bodyPose: "pointing",
@@ -326,25 +208,25 @@ export const emotionSceneTemplates: Record<string, EnhancedSceneTemplate> = {
         panelId: 1,
         type: "普通",
         text: "やったね！",
-        x: 80,
-        y: 70,
+        x: 0.15, // 🔧 相対座標（左上）
+        y: 0.2,  // 🔧 相対座標
         scale: 1.0,
         width: 80,
         height: 60,
         vertical: true,
-        isGlobalPosition: true,
+        isGlobalPosition: false, // 🔧 パネル内配置
       },
       {
         panelId: 1,
         type: "普通",
         text: "うん♪",
-        x: 450,
-        y: 65,
+        x: 0.85, // 🔧 相対座標（右上）
+        y: 0.15, // 🔧 相対座標
         scale: 1.0,
         width: 70,
         height: 50,
         vertical: true,
-        isGlobalPosition: true,
+        isGlobalPosition: false, // 🔧 パネル内配置
       },
     ],
     backgrounds: [
@@ -363,96 +245,11 @@ export const emotionSceneTemplates: Record<string, EnhancedSceneTemplate> = {
         gradientDirection: 180,
       },
     ],
-    effects: [
-      {
-        panelId: 1,
-        type: "flash",
-        x: 0.2,
-        y: 0.2,
-        width: 0.6,
-        height: 0.6,
-        direction: "radial",
-        intensity: 0.7,
-        density: 0.6,
-        length: 20,
-        angle: 0,
-        color: "#ffdd44",
-        opacity: 0.7,
-        blur: 2,
-        selected: false,
-        zIndex: 1,
-        isGlobalPosition: false,
-      },
-    ],
-  },
-
-  // 😳 恥ずかしがり系
-  embarrassed_shy: {
-    name: "😳 恥ずかしがり",
-    description: "照れている可愛らしい表情",
-    category: 'emotion',
-    characters: [
-      {
-        panelId: 1,
-        type: "heroine",
-        name: "ヒロイン",
-        x: 280,
-        y: 120,
-        scale: 2.2,
-        facing: "front",
-        gaze: "down",
-        pose: "standing",
-        expression: "neutral",
-        viewType: "face",
-        faceAngle: "rightFront",
-        eyeDirection: "down",
-        isGlobalPosition: true,
-        bodyDirection: "rightFront",
-        faceExpression: "embarrassed",
-        bodyPose: "standing",
-      },
-    ],
-    speechBubbles: [
-      {
-        panelId: 1,
-        type: "小声",
-        text: "あの...",
-        x: 150,
-        y: 70,
-        scale: 0.9,
-        width: 60,
-        height: 50,
-        vertical: true,
-        isGlobalPosition: true,
-      },
-    ],
-    effects: [
-      {
-        panelId: 1,
-        type: "flash",
-        x: 0.35,
-        y: 0.25,
-        width: 0.3,
-        height: 0.2,
-        direction: "radial",
-        intensity: 0.6,
-        density: 0.5,
-        length: 15,
-        angle: 0,
-        color: "#ff8888",
-        opacity: 0.8,
-        blur: 3,
-        selected: false,
-        zIndex: 1,
-        isGlobalPosition: false,
-      },
-    ],
   },
 };
 
 // 🚀 アクション系シーンテンプレート
 export const actionSceneTemplates: Record<string, EnhancedSceneTemplate> = {
-  // 💨 走る・スピード系
   running_speed: {
     name: "💨 走る・スピード",
     description: "疾走感あふれるアクション",
@@ -462,8 +259,8 @@ export const actionSceneTemplates: Record<string, EnhancedSceneTemplate> = {
         panelId: 1,
         type: "hero",
         name: "主人公",
-        x: 200,
-        y: 140,
+        x: 0.4, // 🔧 相対座標（パネル中央左）
+        y: 0.7, // 🔧 相対座標（パネル下部）
         scale: 2.3,
         facing: "front",
         gaze: "right",
@@ -472,7 +269,7 @@ export const actionSceneTemplates: Record<string, EnhancedSceneTemplate> = {
         viewType: "fullBody",
         faceAngle: "right",
         eyeDirection: "front",
-        isGlobalPosition: true,
+        isGlobalPosition: false, // 🔧 パネル内配置
         bodyDirection: "right",
         faceExpression: "normal",
         bodyPose: "running",
@@ -483,13 +280,13 @@ export const actionSceneTemplates: Record<string, EnhancedSceneTemplate> = {
         panelId: 1,
         type: "叫び",
         text: "急げ！",
-        x: 80,
-        y: 60,
+        x: 0.15, // 🔧 相対座標（パネル左上）
+        y: 0.15, // 🔧 相対座標
         scale: 1.1,
         width: 70,
         height: 60,
         vertical: true,
-        isGlobalPosition: true,
+        isGlobalPosition: false, // 🔧 パネル内配置
       },
     ],
     effects: [
@@ -515,7 +312,6 @@ export const actionSceneTemplates: Record<string, EnhancedSceneTemplate> = {
     ],
   },
 
-  // ✊ 戦闘・バトル系
   battle_fight: {
     name: "✊ 戦闘・バトル",
     description: "激しい戦闘シーン",
@@ -525,8 +321,8 @@ export const actionSceneTemplates: Record<string, EnhancedSceneTemplate> = {
         panelId: 1,
         type: "hero",
         name: "主人公",
-        x: 150,
-        y: 130,
+        x: 0.3, // 🔧 相対座標（パネル左側）
+        y: 0.65, // 🔧 相対座標
         scale: 2.4,
         facing: "front",
         gaze: "right",
@@ -535,7 +331,7 @@ export const actionSceneTemplates: Record<string, EnhancedSceneTemplate> = {
         viewType: "halfBody",
         faceAngle: "right",
         eyeDirection: "right",
-        isGlobalPosition: true,
+        isGlobalPosition: false, // 🔧 パネル内配置
         bodyDirection: "right",
         faceExpression: "angry",
         bodyPose: "pointing",
@@ -544,8 +340,8 @@ export const actionSceneTemplates: Record<string, EnhancedSceneTemplate> = {
         panelId: 1,
         type: "rival",
         name: "ライバル",
-        x: 420,
-        y: 120,
+        x: 0.75, // 🔧 相対座標（パネル右側）
+        y: 0.6, // 🔧 相対座標
         scale: 2.2,
         facing: "front",
         gaze: "left",
@@ -554,7 +350,7 @@ export const actionSceneTemplates: Record<string, EnhancedSceneTemplate> = {
         viewType: "halfBody",
         faceAngle: "left",
         eyeDirection: "left",
-        isGlobalPosition: true,
+        isGlobalPosition: false, // 🔧 パネル内配置
         bodyDirection: "left",
         faceExpression: "angry",
         bodyPose: "arms_crossed",
@@ -565,154 +361,25 @@ export const actionSceneTemplates: Record<string, EnhancedSceneTemplate> = {
         panelId: 1,
         type: "叫び",
         text: "行くぞ！",
-        x: 70,
-        y: 60,
+        x: 0.15, // 🔧 相対座標（左上）
+        y: 0.15, // 🔧 相対座標
         scale: 1.2,
         width: 80,
         height: 70,
         vertical: true,
-        isGlobalPosition: true,
+        isGlobalPosition: false, // 🔧 パネル内配置
       },
       {
         panelId: 1,
         type: "叫び",
         text: "来い！",
-        x: 480,
-        y: 65,
+        x: 0.85, // 🔧 相対座標（右上）
+        y: 0.2, // 🔧 相対座標
         scale: 1.1,
         width: 70,
         height: 60,
         vertical: true,
-        isGlobalPosition: true,
-      },
-    ],
-    effects: [
-      {
-        panelId: 1,
-        type: "explosion",
-        x: 0.3,
-        y: 0.2,
-        width: 0.4,
-        height: 0.6,
-        direction: "radial",
-        intensity: 0.9,
-        density: 0.8,
-        length: 30,
-        angle: 0,
-        color: "#ff6666",
-        opacity: 0.8,
-        blur: 0,
-        selected: false,
-        zIndex: 2,
-        isGlobalPosition: false,
-      },
-    ],
-    tones: [
-      {
-        panelId: 1,
-        type: "lines",
-        pattern: "lines_vertical",
-        x: 0.0,
-        y: 0.0,
-        width: 1.0,
-        height: 1.0,
-        density: 0.7,
-        opacity: 0.4,
-        rotation: 0,
-        scale: 1.0,
-        blendMode: "multiply",
-        contrast: 1.1,
-        brightness: 0,
-        invert: false,
-        maskEnabled: false,
-        maskShape: "rectangle",
-        maskFeather: 0,
-        selected: false,
-        zIndex: 0,
-        isGlobalPosition: false,
-        visible: true,
-      },
-    ],
-  },
-
-  // 💫 衝撃・インパクト系
-  shock_impact: {
-    name: "💫 衝撃・インパクト",
-    description: "強烈な衝撃の瞬間",
-    category: 'action',
-    characters: [
-      {
-        panelId: 1,
-        type: "hero",
-        name: "主人公",
-        x: 280,
-        y: 140,
-        scale: 2.0,
-        facing: "front",
-        gaze: "center",
-        pose: "standing",
-        expression: "neutral",
-        viewType: "halfBody",
-        faceAngle: "front",
-        eyeDirection: "front",
-        isGlobalPosition: true,
-        bodyDirection: "front",
-        faceExpression: "surprised",
-        bodyPose: "standing",
-      },
-    ],
-    speechBubbles: [
-      {
-        panelId: 1,
-        type: "叫び",
-        text: "うわあ！",
-        x: 150,
-        y: 60,
-        scale: 1.4,
-        width: 90,
-        height: 80,
-        vertical: true,
-        isGlobalPosition: true,
-      },
-    ],
-    effects: [
-      {
-        panelId: 1,
-        type: "speed",
-        x: 0.1,
-        y: 0.1,
-        width: 0.8,
-        height: 0.8,
-        direction: "radial",
-        intensity: 1.0,
-        density: 0.9,
-        length: 35,
-        angle: 0,
-        color: "#333333",
-        opacity: 0.9,
-        blur: 0,
-        selected: false,
-        zIndex: 3,
-        isGlobalPosition: false,
-      },
-      {
-        panelId: 1,
-        type: "explosion",
-        x: 0.2,
-        y: 0.2,
-        width: 0.6,
-        height: 0.6,
-        direction: "radial",
-        intensity: 0.8,
-        density: 0.7,
-        length: 25,
-        angle: 45,
-        color: "#ffaa44",
-        opacity: 0.7,
-        blur: 1,
-        selected: false,
-        zIndex: 2,
-        isGlobalPosition: false,
+        isGlobalPosition: false, // 🔧 パネル内配置
       },
     ],
   },
@@ -720,7 +387,6 @@ export const actionSceneTemplates: Record<string, EnhancedSceneTemplate> = {
 
 // 🏠 日常系シーンテンプレート
 export const dailySceneTemplates: Record<string, EnhancedSceneTemplate> = {
-  // 🏫 学校・教室系
   school_classroom: {
     name: "🏫 学校・教室",
     description: "学校での日常シーン",
@@ -730,8 +396,8 @@ export const dailySceneTemplates: Record<string, EnhancedSceneTemplate> = {
         panelId: 1,
         type: "hero",
         name: "主人公",
-        x: 120,
-        y: 130,
+        x: 0.25, // 🔧 相対座標（パネル左側）
+        y: 0.65, // 🔧 相対座標
         scale: 2.0,
         facing: "front",
         gaze: "right",
@@ -740,7 +406,7 @@ export const dailySceneTemplates: Record<string, EnhancedSceneTemplate> = {
         viewType: "halfBody",
         faceAngle: "right",
         eyeDirection: "right",
-        isGlobalPosition: true,
+        isGlobalPosition: false, // 🔧 パネル内配置
         bodyDirection: "right",
         faceExpression: "normal",
         bodyPose: "sitting",
@@ -749,8 +415,8 @@ export const dailySceneTemplates: Record<string, EnhancedSceneTemplate> = {
         panelId: 1,
         type: "friend",
         name: "友人",
-        x: 430,
-        y: 130,
+        x: 0.75, // 🔧 相対座標（パネル右側）
+        y: 0.65, // 🔧 相対座標
         scale: 2.0,
         facing: "front",
         gaze: "left",
@@ -759,7 +425,7 @@ export const dailySceneTemplates: Record<string, EnhancedSceneTemplate> = {
         viewType: "halfBody",
         faceAngle: "left",
         eyeDirection: "left",
-        isGlobalPosition: true,
+        isGlobalPosition: false, // 🔧 パネル内配置
         bodyDirection: "left",
         faceExpression: "smile",
         bodyPose: "sitting",
@@ -770,25 +436,25 @@ export const dailySceneTemplates: Record<string, EnhancedSceneTemplate> = {
         panelId: 1,
         type: "普通",
         text: "宿題やった？",
-        x: 80,
-        y: 70,
+        x: 0.15, // 🔧 相対座標（左上）
+        y: 0.2, // 🔧 相対座標
         scale: 1.0,
         width: 80,
         height: 60,
         vertical: true,
-        isGlobalPosition: true,
+        isGlobalPosition: false, // 🔧 パネル内配置
       },
       {
         panelId: 1,
         type: "普通",
         text: "やばい...",
-        x: 480,
-        y: 65,
+        x: 0.85, // 🔧 相対座標（右上）
+        y: 0.18, // 🔧 相対座標
         scale: 1.0,
         width: 70,
         height: 50,
         vertical: true,
-        isGlobalPosition: true,
+        isGlobalPosition: false, // 🔧 パネル内配置
       },
     ],
     backgrounds: [
@@ -810,7 +476,6 @@ export const dailySceneTemplates: Record<string, EnhancedSceneTemplate> = {
     ],
   },
 
-  // 🍕 食事・グルメ系
   eating_meal: {
     name: "🍕 食事・グルメ",
     description: "美味しい食事のシーン",
@@ -820,8 +485,8 @@ export const dailySceneTemplates: Record<string, EnhancedSceneTemplate> = {
         panelId: 1,
         type: "heroine",
         name: "ヒロイン",
-        x: 280,
-        y: 120,
+        x: 0.5, // 🔧 相対座標（パネル中央）
+        y: 0.6, // 🔧 相対座標
         scale: 2.2,
         facing: "front",
         gaze: "down",
@@ -830,7 +495,7 @@ export const dailySceneTemplates: Record<string, EnhancedSceneTemplate> = {
         viewType: "halfBody",
         faceAngle: "front",
         eyeDirection: "down",
-        isGlobalPosition: true,
+        isGlobalPosition: false, // 🔧 パネル内配置
         bodyDirection: "front",
         faceExpression: "smile",
         bodyPose: "sitting",
@@ -841,34 +506,13 @@ export const dailySceneTemplates: Record<string, EnhancedSceneTemplate> = {
         panelId: 1,
         type: "普通",
         text: "美味しい♪",
-        x: 150,
-        y: 60,
+        x: 0.25, // 🔧 相対座標（左上）
+        y: 0.15, // 🔧 相対座標
         scale: 1.0,
         width: 80,
         height: 60,
         vertical: true,
-        isGlobalPosition: true,
-      },
-    ],
-    effects: [
-      {
-        panelId: 1,
-        type: "flash",
-        x: 0.3,
-        y: 0.3,
-        width: 0.4,
-        height: 0.4,
-        direction: "radial",
-        intensity: 0.6,
-        density: 0.5,
-        length: 15,
-        angle: 0,
-        color: "#ffdd88",
-        opacity: 0.6,
-        blur: 2,
-        selected: false,
-        zIndex: 1,
-        isGlobalPosition: false,
+        isGlobalPosition: false, // 🔧 パネル内配置
       },
     ],
   },
@@ -896,7 +540,7 @@ export const getTemplatesByCategory = (category: 'emotion' | 'action' | 'daily')
   return filtered;
 };
 
-// 🚀 統合シーンテンプレート適用関数
+// 🚀 修正版: 統合シーンテンプレート適用関数
 export const applyEnhancedSceneTemplate = (
   templateKey: string,
   panels: any[],
@@ -925,48 +569,39 @@ export const applyEnhancedSceneTemplate = (
   }
 
   const targetPanel = selectedPanel || panels[0];
-  const panelOffsetX = targetPanel.x;
-  const panelOffsetY = targetPanel.y;
-
   console.log(`🎭 統合シーンテンプレート適用: ${template.name} → パネル${targetPanel.id}`);
 
-  // キャラクター生成
+  // 🔧 修正: オフセット計算を削除（相対座標なのでそのまま使用）
   const newCharacters = template.characters.map((char) => ({
     ...char,
     id: `char_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-    panelId: targetPanel.id,
-    x: char.x + panelOffsetX,
-    y: char.y + panelOffsetY,
+    panelId: targetPanel.id, // 🔧 選択されたパネルのID
+    // x, y はそのまま（相対座標として使用）
   }));
 
-  // 吹き出し生成
   const newSpeechBubbles = template.speechBubbles.map((bubble) => ({
     ...bubble,
     id: `bubble_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-    panelId: targetPanel.id,
-    x: bubble.x + panelOffsetX,
-    y: bubble.y + panelOffsetY,
+    panelId: targetPanel.id, // 🔧 選択されたパネルのID
+    // x, y はそのまま（相対座標として使用）
   }));
 
-  // 背景生成
   const newBackgrounds = (template.backgrounds || []).map((bg) => ({
     ...bg,
     id: `bg_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-    panelId: targetPanel.id,
+    panelId: targetPanel.id, // 🔧 選択されたパネルのID
   }));
 
-  // 効果線生成
   const newEffects = (template.effects || []).map((effect) => ({
     ...effect,
     id: `effect_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-    panelId: targetPanel.id,
+    panelId: targetPanel.id, // 🔧 選択されたパネルのID
   }));
 
-  // トーン生成
   const newTones = (template.tones || []).map((tone) => ({
     ...tone,
     id: `tone_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-    panelId: targetPanel.id,
+    panelId: targetPanel.id, // 🔧 選択されたパネルのID
   }));
 
   console.log(`✅ 統合要素追加: キャラ${newCharacters.length}個、吹き出し${newSpeechBubbles.length}個、背景${newBackgrounds.length}個、効果線${newEffects.length}個、トーン${newTones.length}個`);
@@ -993,8 +628,8 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         panelId: 1,
         type: "hero",
         name: "主人公",
-        x: 120,
-        y: 130,
+        x: 0.25, // 🔧 相対座標に変更
+        y: 0.65, // 🔧 相対座標に変更
         scale: 2.0,
         facing: "front",
         gaze: "center",
@@ -1003,7 +638,7 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         viewType: "halfBody",
         faceAngle: "front",
         eyeDirection: "front",
-        isGlobalPosition: true,
+        isGlobalPosition: false, // 🔧 パネル内配置
         bodyDirection: "front",
         faceExpression: "normal",
         bodyPose: "standing",
@@ -1012,8 +647,8 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         panelId: 1,
         type: "heroine",
         name: "ヒロイン",
-        x: 430,
-        y: 130,
+        x: 0.75, // 🔧 相対座標に変更
+        y: 0.65, // 🔧 相対座標に変更
         scale: 2.0,
         facing: "front",
         gaze: "left",
@@ -1022,7 +657,7 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         viewType: "halfBody",
         faceAngle: "left",
         eyeDirection: "left",
-        isGlobalPosition: true,
+        isGlobalPosition: false, // 🔧 パネル内配置
         bodyDirection: "left",
         faceExpression: "normal",
         bodyPose: "standing",
@@ -1033,25 +668,25 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         panelId: 1,
         type: "普通",
         text: "おはよう！",
-        x: 80,
-        y: 70,
+        x: 0.15, // 🔧 相対座標に変更
+        y: 0.2,  // 🔧 相対座標に変更
         scale: 1.0,
         width: 80,
         height: 60,
         vertical: true,
-        isGlobalPosition: true,
+        isGlobalPosition: false, // 🔧 パネル内配置
       },
       {
         panelId: 1,
         type: "普通",
         text: "おはよう",
-        x: 480,
-        y: 65,
+        x: 0.85, // 🔧 相対座標に変更
+        y: 0.18, // 🔧 相対座標に変更
         scale: 1.0,
         width: 70,
         height: 50,
         vertical: true,
-        isGlobalPosition: true,
+        isGlobalPosition: false, // 🔧 パネル内配置
       },
     ],
   },
@@ -1061,8 +696,8 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         panelId: 1,
         type: "hero",
         name: "主人公",
-        x: 100,
-        y: 120,
+        x: 0.2, // 🔧 相対座標に変更
+        y: 0.6, // 🔧 相対座標に変更
         scale: 2.2,
         facing: "front",
         gaze: "right",
@@ -1071,7 +706,7 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         viewType: "face",
         faceAngle: "right",
         eyeDirection: "right",
-        isGlobalPosition: true,
+        isGlobalPosition: false, // 🔧 パネル内配置
         bodyDirection: "right",
         faceExpression: "normal",
         bodyPose: "standing",
@@ -1080,8 +715,8 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         panelId: 1,
         type: "heroine",
         name: "ヒロイン",
-        x: 480,
-        y: 120,
+        x: 0.8, // 🔧 相対座標に変更
+        y: 0.6, // 🔧 相対座標に変更
         scale: 2.2,
         facing: "front",
         gaze: "left",
@@ -1090,7 +725,7 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         viewType: "face",
         faceAngle: "left",
         eyeDirection: "left",
-        isGlobalPosition: true,
+        isGlobalPosition: false, // 🔧 パネル内配置
         bodyDirection: "left",
         faceExpression: "normal",
         bodyPose: "standing",
@@ -1101,25 +736,25 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         panelId: 1,
         type: "普通",
         text: "何か話そうか",
-        x: 60,
-        y: 60,
+        x: 0.1, // 🔧 相対座標に変更
+        y: 0.15, // 🔧 相対座標に変更
         scale: 1.0,
         width: 90,
         height: 70,
         vertical: true,
-        isGlobalPosition: true,
+        isGlobalPosition: false, // 🔧 パネル内配置
       },
       {
         panelId: 1,
         type: "普通",
         text: "そうね",
-        x: 520,
-        y: 55,
+        x: 0.9, // 🔧 相対座標に変更
+        y: 0.12, // 🔧 相対座標に変更
         scale: 1.0,
         width: 60,
         height: 50,
         vertical: true,
-        isGlobalPosition: true,
+        isGlobalPosition: false, // 🔧 パネル内配置
       },
     ],
   },
@@ -1129,8 +764,8 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         panelId: 1,
         type: "hero",
         name: "主人公",
-        x: 300,
-        y: 140,
+        x: 0.5, // 🔧 相対座標に変更
+        y: 0.7, // 🔧 相対座標に変更
         scale: 2.5,
         facing: "front",
         gaze: "center",
@@ -1139,7 +774,7 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         viewType: "fullBody",
         faceAngle: "front",
         eyeDirection: "front",
-        isGlobalPosition: true,
+        isGlobalPosition: false, // 🔧 パネル内配置
         bodyDirection: "front",
         faceExpression: "normal",
         bodyPose: "standing",
@@ -1150,13 +785,13 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         panelId: 1,
         type: "叫び",
         text: "いくぞ！",
-        x: 150,
-        y: 60,
+        x: 0.25, // 🔧 相対座標に変更
+        y: 0.15, // 🔧 相対座標に変更
         scale: 1.0,
         width: 80,
         height: 60,
         vertical: true,
-        isGlobalPosition: true,
+        isGlobalPosition: false, // 🔧 パネル内配置
       },
     ],
   },
@@ -1166,8 +801,8 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         panelId: 1,
         type: "heroine",
         name: "ヒロイン",
-        x: 250,
-        y: 120,
+        x: 0.45, // 🔧 相対座標に変更
+        y: 0.6, // 🔧 相対座標に変更
         scale: 2.3,
         facing: "front",
         gaze: "down",
@@ -1176,7 +811,7 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         viewType: "face",
         faceAngle: "front",
         eyeDirection: "down",
-        isGlobalPosition: true,
+        isGlobalPosition: false, // 🔧 パネル内配置
         bodyDirection: "front",
         faceExpression: "sad",
         bodyPose: "standing",
@@ -1187,13 +822,13 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         panelId: 1,
         type: "心の声",
         text: "どうしよう...",
-        x: 380,
-        y: 60,
+        x: 0.75, // 🔧 相対座標に変更
+        y: 0.15, // 🔧 相対座標に変更
         scale: 1.0,
         width: 90,
         height: 70,
         vertical: true,
-        isGlobalPosition: true,
+        isGlobalPosition: false, // 🔧 パネル内配置
       },
     ],
   },
@@ -1203,8 +838,8 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         panelId: 1,
         type: "hero",
         name: "主人公",
-        x: 140,
-        y: 130,
+        x: 0.3, // 🔧 相対座標に変更
+        y: 0.65, // 🔧 相対座標に変更
         scale: 2.2,
         facing: "front",
         gaze: "center",
@@ -1213,7 +848,7 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         viewType: "halfBody",
         faceAngle: "front",
         eyeDirection: "front",
-        isGlobalPosition: true,
+        isGlobalPosition: false, // 🔧 パネル内配置
         bodyDirection: "front",
         faceExpression: "surprised",
         bodyPose: "standing",
@@ -1222,8 +857,8 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         panelId: 1,
         type: "friend",
         name: "友人",
-        x: 410,
-        y: 130,
+        x: 0.7, // 🔧 相対座標に変更
+        y: 0.65, // 🔧 相対座標に変更
         scale: 2.2,
         facing: "front",
         gaze: "left",
@@ -1232,7 +867,7 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         viewType: "halfBody",
         faceAngle: "left",
         eyeDirection: "left",
-        isGlobalPosition: true,
+        isGlobalPosition: false, // 🔧 パネル内配置
         bodyDirection: "left",
         faceExpression: "smile",
         bodyPose: "standing",
@@ -1243,25 +878,25 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         panelId: 1,
         type: "叫び",
         text: "なんてこった！",
-        x: 80,
-        y: 60,
+        x: 0.15, // 🔧 相対座標に変更
+        y: 0.15, // 🔧 相対座標に変更
         scale: 1.0,
         width: 100,
         height: 80,
         vertical: true,
-        isGlobalPosition: true,
+        isGlobalPosition: false, // 🔧 パネル内配置
       },
       {
         panelId: 1,
         type: "普通",
         text: "まあまあ",
-        x: 460,
-        y: 65,
+        x: 0.8, // 🔧 相対座標に変更
+        y: 0.18, // 🔧 相対座標に変更
         scale: 1.0,
         width: 70,
         height: 50,
         vertical: true,
-        isGlobalPosition: true,
+        isGlobalPosition: false, // 🔧 パネル内配置
       },
     ],
   },
@@ -1271,8 +906,8 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         panelId: 1,
         type: "hero",
         name: "主人公",
-        x: 150,
-        y: 120,
+        x: 0.3, // 🔧 相対座標に変更
+        y: 0.6, // 🔧 相対座標に変更
         scale: 2.0,
         facing: "front",
         gaze: "right",
@@ -1281,7 +916,7 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         viewType: "halfBody",
         faceAngle: "rightFront",
         eyeDirection: "down",
-        isGlobalPosition: true,
+        isGlobalPosition: false, // 🔧 パネル内配置
         bodyDirection: "rightFront",
         faceExpression: "embarrassed",
         bodyPose: "standing",
@@ -1290,8 +925,8 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         panelId: 1,
         type: "heroine",
         name: "ヒロイン",
-        x: 400,
-        y: 120,
+        x: 0.7, // 🔧 相対座標に変更
+        y: 0.6, // 🔧 相対座標に変更
         scale: 2.0,
         facing: "front",
         gaze: "left",
@@ -1300,7 +935,7 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         viewType: "halfBody",
         faceAngle: "leftFront",
         eyeDirection: "down",
-        isGlobalPosition: true,
+        isGlobalPosition: false, // 🔧 パネル内配置
         bodyDirection: "leftFront",
         faceExpression: "embarrassed",
         bodyPose: "standing",
@@ -1311,25 +946,25 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         panelId: 1,
         type: "小声",
         text: "あの...",
-        x: 100,
-        y: 70,
+        x: 0.2, // 🔧 相対座標に変更
+        y: 0.2, // 🔧 相対座標に変更
         scale: 1.0,
         width: 60,
         height: 50,
         vertical: true,
-        isGlobalPosition: true,
+        isGlobalPosition: false, // 🔧 パネル内配置
       },
       {
         panelId: 1,
         type: "心の声",
         text: "ドキドキ...",
-        x: 450,
-        y: 60,
+        x: 0.8, // 🔧 相対座標に変更
+        y: 0.15, // 🔧 相対座標に変更
         scale: 1.0,
         width: 70,
         height: 60,
         vertical: true,
-        isGlobalPosition: true,
+        isGlobalPosition: false, // 🔧 パネル内配置
       },
     ],
   },
@@ -1339,8 +974,8 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         panelId: 1,
         type: "hero",
         name: "主人公",
-        x: 200,
-        y: 130,
+        x: 0.35, // 🔧 相対座標に変更
+        y: 0.65, // 🔧 相対座標に変更
         scale: 2.0,
         facing: "front",
         gaze: "center",
@@ -1349,7 +984,7 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         viewType: "halfBody",
         faceAngle: "back",
         eyeDirection: "front",
-        isGlobalPosition: true,
+        isGlobalPosition: false, // 🔧 パネル内配置
         bodyDirection: "back",
         faceExpression: "worried",
         bodyPose: "standing",
@@ -1358,8 +993,8 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         panelId: 1,
         type: "rival",
         name: "ライバル",
-        x: 380,
-        y: 120,
+        x: 0.65, // 🔧 相対座標に変更
+        y: 0.6, // 🔧 相対座標に変更
         scale: 2.2,
         facing: "front",
         gaze: "left",
@@ -1368,7 +1003,7 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         viewType: "halfBody",
         faceAngle: "leftBack",
         eyeDirection: "left",
-        isGlobalPosition: true,
+        isGlobalPosition: false, // 🔧 パネル内配置
         bodyDirection: "leftBack",
         faceExpression: "angry",
         bodyPose: "arms_crossed",
@@ -1379,25 +1014,25 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         panelId: 1,
         type: "心の声",
         text: "気配が...",
-        x: 120,
-        y: 60,
+        x: 0.2, // 🔧 相対座標に変更
+        y: 0.15, // 🔧 相対座標に変更
         scale: 1.0,
         width: 80,
         height: 60,
         vertical: true,
-        isGlobalPosition: true,
+        isGlobalPosition: false, // 🔧 パネル内配置
       },
       {
         panelId: 1,
         type: "普通",
         text: "フッ...",
-        x: 450,
-        y: 70,
+        x: 0.8, // 🔧 相対座標に変更
+        y: 0.2, // 🔧 相対座標に変更
         scale: 1.0,
         width: 60,
         height: 50,
         vertical: true,
-        isGlobalPosition: true,
+        isGlobalPosition: false, // 🔧 パネル内配置
       },
     ],
   },
@@ -1407,8 +1042,8 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         panelId: 1,
         type: "heroine",
         name: "ヒロイン",
-        x: 280,
-        y: 120,
+        x: 0.5, // 🔧 相対座標に変更
+        y: 0.6, // 🔧 相対座標に変更
         scale: 2.5,
         facing: "front",
         gaze: "center",
@@ -1417,7 +1052,7 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         viewType: "face",
         faceAngle: "front",
         eyeDirection: "up",
-        isGlobalPosition: true,
+        isGlobalPosition: false, // 🔧 パネル内配置
         bodyDirection: "front",
         faceExpression: "surprised",
         bodyPose: "pointing",
@@ -1428,19 +1063,19 @@ export const sceneTemplates: Record<string, SceneTemplate> = {
         panelId: 1,
         type: "叫び",
         text: "えっ！？",
-        x: 150,
-        y: 60,
+        x: 0.25, // 🔧 相対座標に変更
+        y: 0.15, // 🔧 相対座標に変更
         scale: 1.0,
         width: 70,
         height: 60,
         vertical: true,
-        isGlobalPosition: true,
+        isGlobalPosition: false, // 🔧 パネル内配置
       },
     ],
   },
 };
 
-// 既存のapplySceneTemplate関数（後方互換性のため残す）
+// 🔧 修正版: 既存のapplySceneTemplate関数（後方互換性のため残す）
 export const applySceneTemplate = (
   sceneType: string,
   panels: any[],
@@ -1454,25 +1089,21 @@ export const applySceneTemplate = (
   }
 
   const targetPanel = selectedPanel || panels[0];
-  const panelOffsetX = targetPanel.x;
-  const panelOffsetY = targetPanel.y;
-
   console.log(`🎭 シーンテンプレート適用: ${sceneType} → パネル${targetPanel.id}`);
 
+  // 🔧 修正: 相対座標なのでオフセット計算を削除
   const newCharacters = template.characters.map((char) => ({
     ...char,
     id: `char_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-    panelId: targetPanel.id,
-    x: char.x + panelOffsetX,
-    y: char.y + panelOffsetY,
+    panelId: targetPanel.id, // 🔧 選択されたパネルのID
+    // x, y はそのまま（相対座標として使用）
   }));
 
   const newSpeechBubbles = template.speechBubbles.map((bubble) => ({
     ...bubble,
     id: `bubble_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-    panelId: targetPanel.id,
-    x: bubble.x + panelOffsetX,
-    y: bubble.y + panelOffsetY,
+    panelId: targetPanel.id, // 🔧 選択されたパネルのID
+    // x, y はそのまま（相対座標として使用）
   }));
 
   console.log(`✅ 新規要素追加: キャラクター${newCharacters.length}個、吹き出し${newSpeechBubbles.length}個`);
