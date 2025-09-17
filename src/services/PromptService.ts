@@ -1,4 +1,4 @@
-// src/services/PromptService.ts - パネル別修正版
+// src/services/PromptService.ts - 位置情報削除版
 import { Panel, Character, SpeechBubble, BackgroundElement, EffectElement } from '../types';
 
 // 辞書型定義
@@ -25,7 +25,7 @@ export interface CharacterPrompt {
   id: string;
   name: string;
   basicInfoPrompt: string;
-  positionPrompt: string;
+  // 🔧 位置情報削除: positionPrompt削除
   sceneContext?: string;
   appearance: {
     gender: string;
@@ -227,14 +227,14 @@ class PromptService {
       id: char.id,
       name: char.name || `Character_${char.id}`,
       basicInfoPrompt: this.generateBasicInfoPrompt(char),
-      positionPrompt: this.generatePositionPrompt(char),
+      // 🔧 位置情報削除: positionPrompt削除
       sceneContext: this.generateSceneContext(char),
       appearance: this.extractAppearanceData(char)
     }));
   }
 
   /**
-   * 🔧 修正版: 正しいカテゴリを使用したプロンプト生成
+   * 🔧 修正版: 正しいカテゴリを使用したプロンプト生成（位置情報除外）
    */
   private generateBasicInfoPrompt(character: Character): string {
     const appearance = this.extractAppearanceData(character);
@@ -265,31 +265,12 @@ class PromptService {
     return parts.join(', ');
   }
 
-  /**
-   * ネームレイアウトから配置情報を生成
-   */
-  private generatePositionPrompt(character: Character): string {
-    const position = this.analyzeCharacterPosition(character);
-    return position || 'center frame';
-  }
+  // 🔧 位置情報関連の関数削除
+  // private generatePositionPrompt() 削除
+  // private analyzeCharacterPosition() 削除
 
   private generateSceneContext(character: Character): string {
     return 'main character in scene';
-  }
-
-  /**
-   * キャラクターの配置を分析
-   */
-  private analyzeCharacterPosition(character: Character): string {
-    const x = character.x;
-    const y = character.y;
-    
-    if (x < 0.3) return 'left side';
-    if (x > 0.7) return 'right side';
-    if (y < 0.3) return 'upper frame';
-    if (y > 0.7) return 'lower frame';
-    
-    return 'center frame';
   }
 
   /**
@@ -533,7 +514,8 @@ class PromptService {
     promptData.characters.forEach((char, index) => {
       output += `Character ${index + 1} (${char.name}):\n`;
       output += `masterpiece, best quality, ${char.basicInfoPrompt}\n`;
-      output += `Position: ${char.positionPrompt}\n\n`;
+      // 🔧 位置情報削除: Position行を削除
+      output += `\n`;
     });
 
     output += "=== Usage Guide ===\n";
@@ -551,7 +533,7 @@ class PromptService {
   }
 
   /**
-   * 重複排除された正プロンプト構築
+   * 🔧 修正版: 位置情報を除外した正プロンプト構築
    */
   private buildPositivePrompt(characters: CharacterPrompt[], scene: ScenePrompt): string {
     const parts = [];
@@ -561,9 +543,7 @@ class PromptService {
     if (characters.length > 0) {
       characters.forEach(char => {
         parts.push(char.basicInfoPrompt);
-        if (char.positionPrompt !== 'center frame') {
-          parts.push(char.positionPrompt);
-        }
+        // 🔧 位置情報削除: positionPrompt を追加しない
       });
     }
 
@@ -583,7 +563,7 @@ class PromptService {
   }
 
   /**
-   * 🔧 修正版: 完全日本語化された日本語説明
+   * 🔧 修正版: 完全日本語化された日本語説明（位置情報除外）
    */
   private buildJapaneseDescription(characters: CharacterPrompt[], scene: ScenePrompt): string {
     const parts = [];
@@ -598,15 +578,14 @@ class PromptService {
         const hairColorLabel = this.findLabelByTag('colors', appearance.hairColor);
         const eyeLabel = this.findLabelByTag('colors', appearance.eyeColor);
         const clothingLabel = this.findLabelByTag('outfit', appearance.clothing);
-        const positionLabel = this.findLabelByTag('pose_manga', char.positionPrompt.split(', ')[0] || 'standing');
         
         const characterDesc = [
           genderLabel,
           hairStyleLabel,
           hairColorLabel && `${hairColorLabel}い髪`,
           eyeLabel && `${eyeLabel}い瞳`,
-          clothingLabel,
-          positionLabel
+          clothingLabel
+          // 🔧 位置情報削除: positionLabel を除外
         ].filter(Boolean).join('、');
         
         parts.push(`キャラクター${index + 1}: ${characterDesc}`);
