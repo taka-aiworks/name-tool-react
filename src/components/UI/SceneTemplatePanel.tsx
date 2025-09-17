@@ -36,7 +36,8 @@ export const SceneTemplatePanel: React.FC<SceneTemplatePanelProps> = ({
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<'emotion' | 'action' | 'daily'>('emotion');
   const [selectedTemplate, setSelectedTemplate] = useState<string>('');
-  const [showPreview, setShowPreview] = useState<boolean>(false);
+  // プレビュー機能を一時的に無効化
+  // const [showPreview, setShowPreview] = useState<boolean>(false);
 
   // カテゴリ別テンプレート取得
   const currentTemplates = getTemplatesByCategory(selectedCategory);
@@ -85,10 +86,10 @@ export const SceneTemplatePanel: React.FC<SceneTemplatePanelProps> = ({
     }
   }, [panels, selectedPanel, characters, speechBubbles, backgrounds, effects, tones, setCharacters, setSpeechBubbles, setBackgrounds, setEffects, setTones]);
 
-  // プレビュー表示
+  // プレビュー表示を一時的に無効化
   const handlePreview = useCallback((templateKey: string) => {
     setSelectedTemplate(templateKey);
-    setShowPreview(true);
+    // setShowPreview(true); // 一時的にコメントアウト
   }, []);
 
   // カテゴリ情報
@@ -206,8 +207,9 @@ export const SceneTemplatePanel: React.FC<SceneTemplatePanelProps> = ({
               position: 'relative'
             }}
             onClick={() => handleApplyTemplate(key)}
-            onMouseEnter={() => handlePreview(key)}
-            onMouseLeave={() => setShowPreview(false)}
+            // プレビューを一時的に無効化してチカチカを防ぐ
+            // onMouseEnter={() => handlePreview(key)}
+            // onMouseLeave={() => setShowPreview(false)}
           >
             {/* テンプレート名 */}
             <div style={{
@@ -293,7 +295,8 @@ export const SceneTemplatePanel: React.FC<SceneTemplatePanelProps> = ({
         )}
       </div>
 
-      {/* プレビューモーダル */}
+      {/* プレビューモーダルを一時的に無効化してチカチカを防ぐ */}
+      {/*
       {showPreview && selectedTemplate && getAllSceneTemplates()[selectedTemplate] && (
         <div 
           className="preview-modal"
@@ -374,8 +377,10 @@ export const SceneTemplatePanel: React.FC<SceneTemplatePanelProps> = ({
           </button>
         </div>
       )}
+      */}
 
-      {/* 背景オーバーレイ */}
+      {/* 背景オーバーレイも一時的に無効化 */}
+      {/*
       {showPreview && (
         <div
           style={{
@@ -390,6 +395,7 @@ export const SceneTemplatePanel: React.FC<SceneTemplatePanelProps> = ({
           onClick={() => setShowPreview(false)}
         />
       )}
+      */}
     </div>
   );
 };

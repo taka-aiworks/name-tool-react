@@ -887,20 +887,23 @@ function App() {
             </div>
           )}
 
-          {/* 一時的に置き換え：*/}
+          {/* 🔄 新しい統合シーンテンプレートに置き換え */}
           <div className="section">
-            <h3>🎭 シーンテンプレート</h3>
-            <div style={{
-              padding: '20px',
-              textAlign: 'center',
-              color: 'var(--text-muted)',
-              background: 'var(--bg-secondary)',
-              borderRadius: '8px',
-              border: '2px dashed var(--border-color)'
-            }}>
-              🚧 新しいシーンテンプレート機能を準備中...<br/>
-              <small>より使いやすい統合テンプレートに更新予定</small>
-            </div>
+            <SceneTemplatePanel
+              panels={panels}
+              selectedPanel={selectedPanel}
+              characters={characters}
+              setCharacters={setCharacters}
+              speechBubbles={speechBubbles}
+              setSpeechBubbles={setSpeechBubbles}
+              backgrounds={backgrounds}
+              setBackgrounds={setBackgrounds}
+              effects={effects}
+              setEffects={setEffects}
+              tones={tones}
+              setTones={setTones}
+              isDarkMode={isDarkMode}
+            />
           </div>
         </div>
 
