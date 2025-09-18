@@ -44,6 +44,7 @@ export const SceneTemplatePanel: React.FC<SceneTemplatePanelProps> = ({
   const currentTemplates = getTemplatesByCategory(selectedCategory);
 
   // 統合シーンテンプレート適用
+  // handleApplyTemplate関数の修正版
   const handleApplyTemplate = useCallback((templateKey: string) => {
     if (!panels || panels.length === 0) {
       alert('❌ パネルテンプレートを先に選択してください');
@@ -56,6 +57,46 @@ export const SceneTemplatePanel: React.FC<SceneTemplatePanelProps> = ({
       return;
     }
 
+    // 🔧 選択されたパネルを強制的に確認・取得
+    let targetPanel = selectedPanel;
+    
+    // selectedPanelがnullの場合の対策
+    if (!targetPanel) {
+      // 最後にクリックされたパネルを探す（パネルの選択状態を確認）
+      const lastSelectedPanel = panels.find(panel => {
+        // パネルが何らかの形で選択状態を保持している場合
+        return (panel as any).isSelected || (panel as any).selected;
+      });
+      
+      if (lastSelectedPanel) {
+        targetPanel = lastSelectedPanel;
+        console.log(`🔧 選択状態から対象パネルを復元: パネル${targetPanel.id}`);
+      } else {
+        // それでもない場合は確認ダイアログ
+        const panelId = prompt(
+          `どのパネルに配置しますか？\n利用可能なパネル: ${panels.map(p => p.id).join(', ')}`,
+          panels[0].id.toString()
+        );
+        
+        if (panelId) {
+          const specifiedPanel = panels.find(p => p.id.toString() === panelId);
+          if (specifiedPanel) {
+            targetPanel = specifiedPanel;
+            console.log(`🔧 ユーザー指定でパネル${targetPanel.id}に配置`);
+          }
+        }
+        
+        // それでもない場合は最初のパネル
+        if (!targetPanel) {
+          targetPanel = panels[0];
+          console.log(`⚠️ 最初のパネル${targetPanel.id}にフォールバック`);
+        }
+      }
+    }
+
+    console.log(`🎭 テンプレート適用: ${template.name} → パネル${targetPanel.id}`);
+    console.log(`📊 選択状態: selectedPanel=${selectedPanel?.id || 'null'}, targetPanel=${targetPanel.id}`);
+
     // 統合テンプレート適用
     const result = applyEnhancedSceneTemplate(
       templateKey,
@@ -65,7 +106,7 @@ export const SceneTemplatePanel: React.FC<SceneTemplatePanelProps> = ({
       backgrounds,
       effects,
       tones,
-      selectedPanel
+      targetPanel  // 🔧 確実に取得したパネルを使用
     );
 
     // 状態更新
@@ -78,13 +119,17 @@ export const SceneTemplatePanel: React.FC<SceneTemplatePanelProps> = ({
     setSelectedTemplate(templateKey);
     
     // 成功メッセージ
-    const targetPanel = selectedPanel || panels[0];
     console.log(`🎭 「${template.name}」をパネル${targetPanel.id}に適用しました`);
     
     // トースト通知（実装されている場合）
     if (typeof window !== 'undefined' && (window as any).showToast) {
-      (window as any).showToast(`🎭 「${template.name}」を適用しました`, 'success');
+      (window as any).showToast(`🎭 「${template.name}」をパネル${targetPanel.id}に適用`, 'success');
     }
+    
+    // 適用後に対象パネルを選択状態にする
+    // この部分は親コンポーネントのonPanelSelectがあれば使用
+    // onPanelSelect?.(targetPanel);
+    
   }, [panels, selectedPanel, characters, speechBubbles, backgrounds, effects, tones, setCharacters, setSpeechBubbles, setBackgrounds, setEffects, setTones]);
 
   // プレビュー表示を一時的に無効化

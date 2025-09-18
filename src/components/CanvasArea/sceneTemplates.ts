@@ -822,30 +822,35 @@ export const applyEnhancedSceneTemplate = (
   const filteredEffects = existingEffects.filter(effect => effect.panelId !== targetPanel.id);
   const filteredTones = existingTones.filter(tone => tone.panelId !== targetPanel.id);
 
-  // 🔧 キャラクター生成（既存型のみ使用・エラー回避）
+  // 🔧 applyEnhancedSceneTemplate関数の要素生成部分完全修正版
+  // 手動追加と完全に同じ座標系・フラグ設定に統一
+
+  // 🔧 キャラクター生成（手動追加と同じ座標系に修正）
   const newCharacters = template.characters.map((char, index) => {
     const uniqueId = `char_${Date.now()}_${Math.random().toString(36).substr(2, 5)}_${index}`;
     
-    // 🔧 座標を相対座標（0-1）に正規化
-    let relativeX, relativeY;
+    // 🔧 テンプレート座標→パネル内絶対座標変換
+    let absoluteX, absoluteY;
     
     if (char.x <= 1 && char.y <= 1) {
-      // 既に相対座標の場合（0-1の範囲）
-      relativeX = char.x;
-      relativeY = char.y;
+      // 相対座標の場合：パネル内の絶対座標に変換
+      absoluteX = targetPanel.x + (char.x * targetPanel.width);
+      absoluteY = targetPanel.y + (char.y * targetPanel.height);
     } else {
-      // 絶対座標の場合（600x300基準で相対座標に変換）
-      relativeX = char.x / 600;
-      relativeY = char.y / 300;
+      // 🔧 テンプレート絶対座標の場合：600x300基準からパネル内座標に変換
+      const relativeX = char.x / 600;  // 600px基準の相対座標に変換
+      const relativeY = char.y / 300;  // 300px基準の相対座標に変換
+      absoluteX = targetPanel.x + (relativeX * targetPanel.width);
+      absoluteY = targetPanel.y + (relativeY * targetPanel.height);
     }
     
     console.log(`👤 キャラクター生成: ${char.name}`);
     console.log(`   テンプレート座標: (${char.x}, ${char.y})`);
-    console.log(`   相対座標: (${relativeX.toFixed(3)}, ${relativeY.toFixed(3)})`);
+    console.log(`   絶対座標: (${absoluteX.toFixed(1)}, ${absoluteY.toFixed(1)})`);
     
     // 🔧 viewType の正規化（型安全・文字列比較修正）
     let normalizedViewType: "face" | "upper_body" | "full_body" = "upper_body";
-    const viewTypeString = String(char.viewType); // any型を文字列に変換
+    const viewTypeString = String(char.viewType);
     
     if (viewTypeString === "face") {
       normalizedViewType = "face";
@@ -855,221 +860,230 @@ export const applyEnhancedSceneTemplate = (
       normalizedViewType = "full_body";
     }
     
-    // 🔧 既存Character型のプロパティのみ使用
-    const newCharacter: any = {
+    return {
+      ...char,
       id: uniqueId,
       panelId: targetPanel.id,
-      characterId: char.characterId || char.type || `character_${index + 1}`,
-      
-      // 配置情報
-      x: relativeX,      // 🔧 相対座標で保存
-      y: relativeY,      // 🔧 相対座標で保存
-      width: char.width || 80,
-      height: char.height || 120,
-      scale: char.scale || 1.8,
-      rotation: char.rotation || 0,
-      isGlobalPosition: char.isGlobalPosition ?? false,
-      
-      // 既存型の必須プロパティのみ
-      name: char.name || "キャラクター",
+      // 🔧 絶対座標で設定（手動追加と同じ）
+      x: absoluteX,
+      y: absoluteY,
+      // 🔧 手動追加と同じフラグ設定
+      isGlobalPosition: true, // 手動追加と同じ設定
+      viewType: normalizedViewType,
+      // 基本プロパティを確実に設定
+      name: char.name || `キャラ${index + 1}`,
       type: char.type || `character_${index + 1}`,
       expression: char.expression || "neutral_expression",
       action: char.action || "standing",
       facing: char.facing || "looking_at_viewer",
-      viewType: normalizedViewType,
+      scale: char.scale || 2.0,
+      rotation: char.rotation || 0,
     };
-    
-    // 🔧 既存型のオプショナルプロパティのみ
-    // eyeState, mouthState, handGesture のみ設定
-    if (char.expression === "surprised") {
-      newCharacter.eyeState = "wide";
-    }
-    if (char.expression === "sad") {
-      newCharacter.mouthState = "frown";
-    }
-    if (char.action === "pointing") {
-      newCharacter.handGesture = "pointing";
-    }
-    
-    return newCharacter;
   });
 
-  // 🔧 吹き出し生成（位置を適切に調整）
+  // 🔧 吹き出し生成（手動追加と同じ座標系に修正）
   const newSpeechBubbles = template.speechBubbles.map((bubble, index) => {
     const uniqueId = `bubble_${Date.now()}_${Math.random().toString(36).substr(2, 5)}_${index}`;
     
-    // 🔧 吹き出し位置の計算を改善
-    let relativeX, relativeY;
+    // 🔧 テンプレート座標→パネル内絶対座標変換
+    let absoluteX, absoluteY;
     
     if (bubble.x <= 1 && bubble.y <= 1) {
-      // 既に相対座標の場合
-      relativeX = bubble.x;
-      relativeY = bubble.y;
+      // 相対座標の場合：パネル内の絶対座標に変換
+      absoluteX = targetPanel.x + (bubble.x * targetPanel.width);
+      absoluteY = targetPanel.y + (bubble.y * targetPanel.height);
     } else {
-      // 絶対座標の場合：より適切な位置に調整
-      relativeX = bubble.x / 600;
-      relativeY = bubble.y / 300;
-      
-      // 🔧 位置が左端すぎる場合は中央寄りに調整
-      if (relativeX < 0.2) {
-        relativeX = 0.4; // 中央寄り
-      }
-      if (relativeY < 0.1) {
-        relativeY = 0.15; // 上端から少し下
-      }
-    }
-    
-    // 🔧 キャラクターの右隣に配置するロジック
-    if (template.characters.length > 0) {
-      const firstChar = template.characters[0];
-      let charRelativeX, charRelativeY;
-      
-      if (firstChar.x <= 1) {
-        charRelativeX = firstChar.x;
-        charRelativeY = firstChar.y;
-      } else {
-        charRelativeX = firstChar.x / 600;
-        charRelativeY = firstChar.y / 300;
-      }
-      
-      // キャラクターの右隣に配置（重ならないように調整）
-      if (index === 0) {
-        relativeX = Math.min(charRelativeX + 0.3, 0.85); // 右隣、パネル端は避ける
-        relativeY = Math.max(charRelativeY - 0.2, 0.05); // 少し上、パネル上端は避ける
-      } else if (index === 1) {
-        relativeX = Math.max(charRelativeX - 0.25, 0.05); // 左隣
-        relativeY = Math.max(charRelativeY - 0.15, 0.05); // 少し上
-      } else {
-        // 3個目以降は中央上部
-        relativeX = 0.5;
-        relativeY = 0.1;
-      }
-    } else {
-      // キャラクターがいない場合は中央に
-      relativeX = 0.5;
-      relativeY = 0.2;
+      // 🔧 テンプレート絶対座標の場合：600x300基準からパネル内座標に変換
+      const relativeX = bubble.x / 600;  // 600px基準の相対座標に変換
+      const relativeY = bubble.y / 300;  // 300px基準の相対座標に変換
+      absoluteX = targetPanel.x + (relativeX * targetPanel.width);
+      absoluteY = targetPanel.y + (relativeY * targetPanel.height);
     }
     
     console.log(`💬 吹き出し生成: "${bubble.text}"`);
-    console.log(`   元座標: (${bubble.x}, ${bubble.y})`);
-    console.log(`   調整後相対座標: (${relativeX.toFixed(3)}, ${relativeY.toFixed(3)})`);
+    console.log(`   テンプレート座標: (${bubble.x}, ${bubble.y})`);
+    console.log(`   絶対座標: (${absoluteX.toFixed(1)}, ${absoluteY.toFixed(1)})`);
     
     return {
       ...bubble,
       id: uniqueId,
       panelId: targetPanel.id,
-      x: relativeX,      // 🔧 調整済み相対座標
-      y: relativeY,      // 🔧 調整済み相対座標
+      // 🔧 絶対座標で設定（手動追加と同じ）
+      x: absoluteX,
+      y: absoluteY,
+      // 🔧 手動追加と同じフラグ設定
+      isGlobalPosition: true, // 手動追加と同じ設定
+      // 基本プロパティを確実に設定
       type: bubble.type || "普通",
       text: bubble.text || "",
       width: bubble.width || 80,
       height: bubble.height || 60,
       scale: bubble.scale || 1.0,
       vertical: bubble.vertical ?? true,
-      isGlobalPosition: bubble.isGlobalPosition ?? false,
     };
   });
 
-  // 🔧 背景生成（パネル全体にフィット）
+  // 🔧 背景生成（手動追加と同じ座標系に修正）
   const newBackgrounds = (template.backgrounds || []).map((bg, index) => {
     const uniqueId = `bg_${Date.now()}_${Math.random().toString(36).substr(2, 5)}_${index}`;
     
+    // 🔧 手動追加と同じ座標処理（相対座標で動作）
+    let relativeX, relativeY, relativeWidth, relativeHeight;
+    
+    if (bg.x <= 1 && bg.y <= 1) {
+      // 既に相対座標の場合：そのまま使用
+      relativeX = bg.x;
+      relativeY = bg.y;
+      relativeWidth = bg.width <= 1 ? bg.width : bg.width / 600;
+      relativeHeight = bg.height <= 1 ? bg.height : bg.height / 300;
+    } else {
+      // 絶対座標の場合：相対座標に変換
+      relativeX = bg.x / 600;
+      relativeY = bg.y / 300;
+      relativeWidth = bg.width / 600;
+      relativeHeight = bg.height / 300;
+    }
+    
     console.log(`🎨 背景生成: ${bg.type}`);
+    console.log(`   相対座標: (${relativeX.toFixed(3)}, ${relativeY.toFixed(3)})`);
     
     return {
       ...bg,
       id: uniqueId,
       panelId: targetPanel.id,
-      x: 0,    // 🔧 パネル全体を覆う相対座標
-      y: 0,    // 🔧 パネル全体を覆う相対座標
-      width: 1,  // 🔧 パネル幅の100%
-      height: 1, // 🔧 パネル高さの100%
+      // 🔧 手動追加と同じ相対座標形式
+      x: relativeX,
+      y: relativeY,
+      width: relativeWidth,
+      height: relativeHeight,
+      // 手動追加と同じデフォルト値（backgroundTemplates.tsから）
+      type: bg.type || 'solid',
+      rotation: bg.rotation || 0,
+      zIndex: bg.zIndex || -10,
+      opacity: bg.opacity || 0.3,
+      // solid背景の場合
+      solidColor: bg.solidColor || '#CCCCCC',
+      // gradient背景の場合
+      gradientType: bg.gradientType || 'linear',
+      gradientColors: bg.gradientColors || ['#FFFFFF', '#CCCCCC'],
+      gradientDirection: bg.gradientDirection || 90,
+      // その他プロパティ
+      isGlobalPosition: false, // 手動追加と同じ相対座標フラグ
     };
   });
 
-  // 🔧 効果線生成（パネル座標変換を追加 - 修正版）
+  // 🔧 効果線生成（手動追加と同じ座標系に修正）
   const newEffects = (template.effects || []).map((effect, index) => {
     const uniqueId = `effect_${Date.now()}_${Math.random().toString(36).substr(2, 5)}_${index}`;
     
-    // 🔧 相対座標をパネル内の絶対座標に変換
-    let panelX, panelY, panelWidth, panelHeight;
+    // 🔧 効果線をパネル全体100%に統一（背景・トーンと同様）
+    let relativeX, relativeY, relativeWidth, relativeHeight;
     
     if (effect.x <= 1 && effect.y <= 1) {
-      // 相対座標の場合：パネル内の絶対座標に変換
-      panelX = targetPanel.x + (effect.x * targetPanel.width);
-      panelY = targetPanel.y + (effect.y * targetPanel.height);
-      panelWidth = effect.width * targetPanel.width;
-      panelHeight = effect.height * targetPanel.height;
+      // 相対座標の場合：パネル全体に拡張
+      relativeX = 0;  // パネル左端
+      relativeY = 0;  // パネル上端
+      relativeWidth = 1;   // パネル幅100%
+      relativeHeight = 1;  // パネル高さ100%
     } else {
-      // 既に絶対座標の場合：パネル内の相対位置に変換してから絶対座標に
-      const relativeX = effect.x / 600;
-      const relativeY = effect.y / 300;
-      const relativeWidth = effect.width / 600;
-      const relativeHeight = effect.height / 300;
-      
-      panelX = targetPanel.x + (relativeX * targetPanel.width);
-      panelY = targetPanel.y + (relativeY * targetPanel.height);
-      panelWidth = relativeWidth * targetPanel.width;
-      panelHeight = relativeHeight * targetPanel.height;
+      // 絶対座標の場合：パネル全体に変換
+      relativeX = 0;
+      relativeY = 0;
+      relativeWidth = 1;
+      relativeHeight = 1;
     }
     
     console.log(`⚡ 効果線生成: ${effect.type}`);
-    console.log(`   テンプレート座標: (${effect.x}, ${effect.y})`);
-    console.log(`   パネル座標: (${panelX.toFixed(1)}, ${panelY.toFixed(1)})`);
-    console.log(`   パネルサイズ: ${panelWidth.toFixed(1)} x ${panelHeight.toFixed(1)}`);
+    console.log(`   相対座標: (${relativeX.toFixed(3)}, ${relativeY.toFixed(3)})`);
     
     return {
       ...effect,
       id: uniqueId,
       panelId: targetPanel.id,
-      // 🔧 パネル内の絶対座標で保存
-      x: panelX,
-      y: panelY,
-      width: panelWidth,
-      height: panelHeight,
+      // 🔧 手動追加と同じ相対座標形式
+      x: relativeX,
+      y: relativeY,
+      width: relativeWidth,
+      height: relativeHeight,
+      // 手動追加と同じデフォルト値（effectTemplates.tsから）
+      type: effect.type || 'speed',
+      direction: effect.direction || 'horizontal',
+      intensity: effect.intensity || 0.6,
+      density: effect.density || 0.7,
+      length: effect.length || 0.8,
+      angle: effect.angle || 0,
+      color: effect.color || "#333333",
+      opacity: effect.opacity || 0.6,
+      blur: effect.blur || 0,
+      // 放射状効果の場合の中心点
+      centerX: effect.direction === 'radial' ? relativeX + relativeWidth / 2 : undefined,
+      centerY: effect.direction === 'radial' ? relativeY + relativeHeight / 2 : undefined,
+      selected: false,
+      zIndex: effect.zIndex || 100,
+      isGlobalPosition: false, // 手動追加と同じ相対座標フラグ
     };
   });
 
-  // 🔧 トーン生成（相対座標で配置）
+  // 🔧 トーン生成（手動追加と同じ座標系に修正）
   const newTones = (template.tones || []).map((tone, index) => {
     const uniqueId = `tone_${Date.now()}_${Math.random().toString(36).substr(2, 5)}_${index}`;
     
-    // 座標を相対座標に正規化
+    // 🔧 手動追加と同じ座標処理（相対座標で動作）
     let relativeX, relativeY, relativeWidth, relativeHeight;
     
     if (tone.x <= 1 && tone.y <= 1) {
-      // 既に相対座標の場合
+      // 既に相対座標の場合：そのまま使用
       relativeX = tone.x;
       relativeY = tone.y;
       relativeWidth = tone.width <= 1 ? tone.width : tone.width / 600;
       relativeHeight = tone.height <= 1 ? tone.height : tone.height / 300;
     } else {
-      // 絶対座標の場合
+      // 絶対座標の場合：相対座標に変換
       relativeX = tone.x / 600;
       relativeY = tone.y / 300;
       relativeWidth = tone.width / 600;
       relativeHeight = tone.height / 300;
     }
     
-    console.log(`🎯 トーン生成: ${tone.pattern} (${relativeX.toFixed(3)}, ${relativeY.toFixed(3)})`);
+    console.log(`🎯 トーン生成: ${tone.pattern || tone.type}`);
+    console.log(`   相対座標: (${relativeX.toFixed(3)}, ${relativeY.toFixed(3)})`);
     
     return {
       ...tone,
       id: uniqueId,
       panelId: targetPanel.id,
-      x: relativeX,      // 🔧 相対座標
-      y: relativeY,      // 🔧 相対座標
-      width: relativeWidth,  // 🔧 相対サイズ
-      height: relativeHeight, // 🔧 相対サイズ
+      // 🔧 手動追加と同じ相対座標形式
+      x: relativeX,
+      y: relativeY,
+      width: relativeWidth,
+      height: relativeHeight,
+      // 手動追加と同じデフォルト値（toneTemplates.tsから）
+      type: tone.type || 'halftone',
+      pattern: tone.pattern || 'dots_60',
+      density: tone.density || 0.5,
+      opacity: tone.opacity || 0.7,
+      rotation: tone.rotation || 0,
+      scale: tone.scale || 1.0,
+      blendMode: tone.blendMode || 'multiply',
+      contrast: tone.contrast || 1.0,
+      brightness: tone.brightness || 0,
+      invert: tone.invert || false,
+      maskEnabled: tone.maskEnabled || false,
+      maskShape: tone.maskShape || 'rectangle',
+      maskFeather: tone.maskFeather || 0,
+      selected: false,
+      zIndex: tone.zIndex || 0,
+      isGlobalPosition: false, // 手動追加と同じ相対座標フラグ
+      visible: tone.visible ?? true,
     };
   });
 
-  console.log(`✅ 座標修正版要素追加完了:`);
-  console.log(`   キャラクター: ${newCharacters.length}個`);
-  console.log(`   吹き出し: ${newSpeechBubbles.length}個`);
-  console.log(`   背景: ${newBackgrounds.length}個`);
-  console.log(`   効果線: ${newEffects.length}個`);
-  console.log(`   トーン: ${newTones.length}個`);
+  console.log(`✅ 手動追加と同じ座標系で要素生成完了:`);
+  console.log(`   キャラクター: ${newCharacters.length}個（絶対座標）`);
+  console.log(`   吹き出し: ${newSpeechBubbles.length}個（絶対座標）`);
+  console.log(`   背景: ${newBackgrounds.length}個（相対座標）`);
+  console.log(`   効果線: ${newEffects.length}個（相対座標）`);
+  console.log(`   トーン: ${newTones.length}個（相対座標）`);
 
   return {
     characters: [...filteredCharacters, ...newCharacters],
