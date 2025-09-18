@@ -715,28 +715,6 @@ export const useCanvasDrawing = ({
       // 11. 背景ハンドル描画
       drawBackgroundHandles(ctx);
 
-// 🆕 12. 要素ラベル描画（簡略化・座標修正版）
-      console.log(`🏷️ ラベル描画: 背景${backgrounds.length}個、効果線${effects.length}個、トーン${tones.length}個`);
-      
-      // 🧪 テスト用ラベル（一時的 - 後で削除）
-      ctx.fillStyle = 'rgba(255, 0, 0, 0.9)';
-      ctx.fillRect(50, 50, 150, 30);
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(50, 50, 150, 30);
-      ctx.fillStyle = 'white';
-      ctx.font = 'bold 14px Arial';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('🎨 テストラベル', 125, 65);
-      
-      ctx.fillStyle = 'rgba(0, 255, 0, 0.9)';
-      ctx.fillRect(200, 100, 120, 30);
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(200, 100, 120, 30);
-      ctx.fillStyle = 'white';
-      ctx.fillText('⚡ 効果線テスト', 260, 115);
 
       // 背景ラベル（簡潔版）
       backgrounds.forEach((bg, index) => {
