@@ -81,20 +81,20 @@ function App() {
   }), []);
 
 
-    // 🆕 1. 状態管理に追加（既存の状態管理セクションに追加）
+  // 修正後: 汎用ID
   const [characterNames, setCharacterNames] = useState<Record<string, string>>({
-    hero: '主人公',
-    heroine: 'ヒロイン',
-    rival: 'ライバル',
-    friend: '友人'
+    character_1: '主人公',    // ✅
+    character_2: 'ヒロイン',  // ✅
+    character_3: 'ライバル',   // ✅
+    character_4: '友人'      // ✅
   });
 
-  // 🆕 2. キャラクター情報管理の追加（既存の状態管理の下に追加）
+  // 修正後: 汎用ID
   const [characterSettings, setCharacterSettings] = useState<Record<string, any>>({
-    hero: { appearance: null, role: '主人公' },
-    heroine: { appearance: null, role: 'ヒロイン' },
-    rival: { appearance: null, role: 'ライバル' },
-    friend: { appearance: null, role: '友人' }
+    character_1: { appearance: null, role: '主人公' },    // ✅
+    character_2: { appearance: null, role: 'ヒロイン' },  // ✅
+    character_3: { appearance: null, role: 'ライバル' },   // ✅
+    character_4: { appearance: null, role: '友人' }      // ✅
   });
 
   // 🔧 3. プロジェクト保存hookの拡張（既存のuseProjectSaveを修正）
@@ -112,8 +112,8 @@ function App() {
   });
 
   // 🆕 キャラクター表示名取得関数（App.tsx内の関数群に追加）
-  const getCharacterDisplayName = useCallback((character: Character) => {
-    return characterNames[character.type] || character.name || character.displayName || 'キャラクター';
+    const getCharacterDisplayName = useCallback((character: Character) => {
+    return characterNames[character.type] || character.name || 'キャラクター';
   }, [characterNames]);
 
 
@@ -366,7 +366,7 @@ function App() {
           return {
             ...char,
             name: newName,
-            displayName: newName, // ⚠️ この項目が重要
+            //displayName: newName, // ⚠️ この項目が重要
             role: newRole,
             appearance,
             // Canvas描画で使用される可能性のある項目も全て更新
@@ -996,12 +996,12 @@ function App() {
           <div className="section">
             <h3>👥 キャラクター</h3>
             <div className="character-grid">
-              {[
-                { type: 'hero', icon: '🦸‍♂️' },
-                { type: 'heroine', icon: '🦸‍♀️' },
-                { type: 'rival', icon: '😤' },
-                { type: 'friend', icon: '😊' }
-              ].map((char) => (
+                  {[
+                    { type: 'character_1', icon: '🦸‍♂️' },  // ✅
+                    { type: 'character_2', icon: '🦸‍♀️' },  // ✅
+                    { type: 'character_3', icon: '😤' },     // ✅
+                    { type: 'character_4', icon: '😊' }      // ✅
+                  ].map((char) => (
                 <div
                   key={char.type}
                   className="char-btn"
