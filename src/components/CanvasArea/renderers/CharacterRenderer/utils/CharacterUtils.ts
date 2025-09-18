@@ -1,7 +1,7 @@
 // src/components/CanvasArea/renderers/CharacterRenderer/utils/CharacterUtils.ts
-// 🔧 キャラクターユーティリティ（サイズ計算・座標変換）
+// 🔧 統合・型修正版（2つのファイルを統合）
 
-import { Character, Panel } from "../../../../../types"; // ← こちらも確認
+import { Character, Panel } from "../../../../../types";
 
 export class CharacterUtils {
   
@@ -18,8 +18,8 @@ export class CharacterUtils {
     
     switch (character.viewType) {
       case "face": typeMultiplier = 0.8; break;
-      case "halfBody": typeMultiplier = 1.0; break;
-      case "fullBody": typeMultiplier = 1.1; break;
+      case "upper_body": typeMultiplier = 1.0; break; // 🔧 修正: halfBody → upper_body
+      case "full_body": typeMultiplier = 1.1; break; // 🔧 修正: fullBody → full_body
       default: typeMultiplier = 1.0;
     }
     
@@ -39,12 +39,42 @@ export class CharacterUtils {
     
     switch (character.viewType) {
       case "face": typeMultiplier = 0.8; break;
-      case "halfBody": typeMultiplier = 1.2; break;
-      case "fullBody": typeMultiplier = 1.8; break;
+      case "upper_body": typeMultiplier = 1.2; break; // 🔧 修正: halfBody → upper_body
+      case "full_body": typeMultiplier = 1.8; break; // 🔧 修正: fullBody → full_body
       default: typeMultiplier = 1.0;
     }
     
     return baseHeight * character.scale * typeMultiplier;
+  }
+
+  // 🎯 キャラクター境界ボックス計算（統合版）
+  static getCharacterBounds(character: Character, panel?: Panel): {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } {
+    let charX, charY, charWidth, charHeight;
+    
+    if (character.isGlobalPosition) {
+      charWidth = CharacterUtils.getCharacterWidth(character);
+      charHeight = CharacterUtils.getCharacterHeight(character);
+      charX = character.x - charWidth / 2;
+      charY = character.y - charHeight / 2;
+    } else if (panel) {
+      charWidth = 60 * character.scale;
+      charHeight = 40 * character.scale;
+      charX = panel.x + panel.width * character.x - charWidth / 2;
+      charY = panel.y + panel.height * character.y - charHeight / 2;
+    } else {
+      // フォールバック
+      charWidth = 60 * character.scale;
+      charHeight = 40 * character.scale;
+      charX = character.x - charWidth / 2;
+      charY = character.y - charHeight / 2;
+    }
+
+    return { x: charX, y: charY, width: charWidth, height: charHeight };
   }
 
   // 🎯 キャラクター描画座標計算
@@ -88,7 +118,7 @@ export class CharacterUtils {
     };
   }
 
-  // 🎯 頭部サイズ・位置計算（viewType別）
+  // 🎯 頭部サイズ・位置計算（viewType別・修正版）
   static calculateHeadDimensions(
     charWidth: number,
     charHeight: number,
@@ -105,13 +135,13 @@ export class CharacterUtils {
         headY = charY + charHeight / 2 - headSize / 2;
         break;
         
-      case "halfBody":
+      case "upper_body": // 🔧 修正: halfBody → upper_body
         headSize = charWidth * 0.45;
         headX = charX + charWidth / 2 - headSize / 2;
         headY = charY + charHeight * 0.05;
         break;
         
-      case "fullBody":
+      case "full_body": // 🔧 修正: fullBody → full_body
         headSize = charWidth * 0.35;
         headX = charX + charWidth / 2 - headSize / 2;
         headY = charY + charHeight * 0.02;
@@ -126,7 +156,7 @@ export class CharacterUtils {
     return { headX, headY, headSize };
   }
 
-  // 🎯 体描画開始Y座標計算
+  // 🎯 体描画開始Y座標計算（修正版）
   static calculateBodyStartY(
     charY: number,
     charHeight: number,
@@ -137,14 +167,54 @@ export class CharacterUtils {
       case "face":
         return charY + charHeight; // 顔のみなので体なし
         
-      case "halfBody":
+      case "upper_body": // 🔧 修正: halfBody → upper_body
         return charY + charHeight * 0.05 + headSize;
         
-      case "fullBody":
+      case "full_body": // 🔧 修正: fullBody → full_body
         return charY + charHeight * 0.02 + headSize;
         
       default:
         return charY + charHeight * 0.05 + headSize;
+    }
+  }
+
+  // 🎯 キャラクタータイプによる表示設定
+  static getCharacterDisplayConfig(character: Character): {
+    hairColor: string;
+    hairStyle: string;
+    bodyColor: string;
+    defaultExpression: string;
+  } {
+    switch (character.type) {
+      case "heroine": 
+        return {
+          hairColor: "#D2691E", 
+          hairStyle: "long",
+          bodyColor: "#4CAF50",
+          defaultExpression: "smiling" // 🔧 修正: smile → smiling
+        };
+      case "rival": 
+        return {
+          hairColor: "#2F4F4F", 
+          hairStyle: "spiky",
+          bodyColor: "#FF5722",
+          defaultExpression: "angry"
+        };
+      case "friend":
+        return {
+          hairColor: "#A0522D",
+          hairStyle: "curly",
+          bodyColor: "#2196F3",
+          defaultExpression: "smiling" // 🔧 修正: smile → smiling
+        };
+      case "hero":
+      default: 
+        return {
+          hairColor: "#8B4513",
+          hairStyle: "normal",
+          bodyColor: "#4CAF50",
+          defaultExpression: "neutral_expression" // 🔧 修正: normal → neutral_expression
+        };
     }
   }
 
@@ -266,7 +336,91 @@ export class CharacterUtils {
     };
   }
 
-  // 🎯 デバッグ情報出力
+  // 🎯 スケール制限チェック
+  static validateScale(scale: number): number {
+    return Math.max(0.5, Math.min(5.0, scale));
+  }
+
+  // 🎯 座標制限チェック（キャンバス内に収める）
+  static validatePosition(
+    x: number, 
+    y: number, 
+    character: Character, 
+    canvasWidth: number, 
+    canvasHeight: number
+  ): { x: number; y: number } {
+    const width = CharacterUtils.getCharacterWidth(character);
+    const height = CharacterUtils.getCharacterHeight(character);
+    
+    const minX = width / 2;
+    const maxX = canvasWidth - width / 2;
+    const minY = height / 2;
+    const maxY = canvasHeight - height / 2;
+    
+    return {
+      x: Math.max(minX, Math.min(maxX, x)),
+      y: Math.max(minY, Math.min(maxY, y))
+    };
+  }
+
+  // 🎯 キャラクターリサイズ処理（統合版）
+  static resizeCharacter(
+    character: Character,
+    direction: string,
+    deltaX: number,
+    deltaY: number,
+    initialScale: number
+  ): Character {
+    let scaleDelta = 0;
+    
+    switch (direction) {
+      case "nw":
+      case "sw":
+        scaleDelta = -deltaX / 100; // 左側のハンドルは逆方向
+        break;
+      case "ne":
+      case "se":
+      case "e":
+        scaleDelta = deltaX / 100; // 右側のハンドルは正方向
+        break;
+      case "n":
+        scaleDelta = -deltaY / 100; // 上のハンドルは逆方向
+        break;
+      case "s":
+        scaleDelta = deltaY / 100; // 下のハンドルは正方向
+        break;
+      case "w":
+        scaleDelta = -deltaX / 100; // 左のハンドルは逆方向
+        break;
+      default:
+        scaleDelta = (deltaX + deltaY) / 200; // デフォルト
+    }
+    
+    const newScale = CharacterUtils.validateScale(initialScale + scaleDelta);
+    
+    return {
+      ...character,
+      scale: newScale,
+    };
+  }
+
+  // 🎯 デバッグ情報生成（修正版）
+  static getDebugInfo(character: Character): string {
+    const bounds = CharacterUtils.getCharacterBounds(character);
+    return `Character Debug:
+      ID: ${character.id}
+      Name: ${character.name}
+      Type: ${character.type}
+      Position: (${character.x.toFixed(1)}, ${character.y.toFixed(1)})
+      Scale: ${character.scale.toFixed(2)}
+      ViewType: ${character.viewType}
+      Global: ${character.isGlobalPosition}
+      Bounds: ${bounds.width.toFixed(1)}x${bounds.height.toFixed(1)}
+      Expression: ${character.expression || 'neutral_expression'} 
+      Action: ${character.action || 'standing'}`; // 🔧 修正: faceExpression → expression, bodyPose → action
+  }
+
+  // 🎯 デバッグ情報出力（詳細版）
   static debugCharacterInfo(
     character: Character,
     panel: Panel,

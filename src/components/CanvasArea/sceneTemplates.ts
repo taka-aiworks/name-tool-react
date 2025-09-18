@@ -1,4 +1,4 @@
-// src/components/CanvasArea/sceneTemplates.ts - 辞書対応版（修正版）
+// src/components/CanvasArea/sceneTemplates.ts - 効果線座標修正版
 import { Character, SpeechBubble, BackgroundElement, EffectElement, ToneElement } from "../../types";
 
 export interface EnhancedSceneTemplate {
@@ -137,14 +137,15 @@ const createBaseScene = (
     gradientDirection: 90,
   }] : [];
 
-  // 効果線生成（コマサイズに合わせて配置）
+  // 🔧 効果線生成（相対座標で保存 - 修正完了）
   const effects: Omit<EffectElement, "id">[] = effectConfig ? [{
     panelId: 1,
     type: effectConfig.type as any,
-    x: effectConfig.position.x * 600,
-    y: effectConfig.position.y * 300,
-    width: effectConfig.position.width * 600,
-    height: effectConfig.position.height * 300,
+    // 🔧 【修正後】相対座標（0-1）として直接保存
+    x: effectConfig.position.x,        // 0-1の相対座標
+    y: effectConfig.position.y,        // 0-1の相対座標
+    width: effectConfig.position.width,   // 0-1の相対サイズ
+    height: effectConfig.position.height, // 0-1の相対サイズ
     direction: effectConfig.direction as any,
     intensity: effectConfig.intensity,
     density: 0.7,
@@ -231,7 +232,7 @@ export const createEmotionScenes = (): Record<string, EnhancedSceneTemplate> => 
       },
       {
         type: 'flash',
-        position: { x: 0.2, y: 0.2, width: 0.6, height: 0.6 },
+        position: { x: 0.2, y: 0.2, width: 0.6, height: 0.6 }, // 🔧 相対座標で定義
         intensity: 0.6,
         direction: 'radial'
       }
@@ -300,7 +301,7 @@ export const createEmotionScenes = (): Record<string, EnhancedSceneTemplate> => 
       },
       {
         type: 'explosion',
-        position: { x: 0.1, y: 0.1, width: 0.8, height: 0.8 },
+        position: { x: 0.1, y: 0.1, width: 0.8, height: 0.8 }, // 🔧 相対座標で定義
         intensity: 0.8,
         direction: 'radial'
       }
@@ -330,7 +331,7 @@ export const createEmotionScenes = (): Record<string, EnhancedSceneTemplate> => 
       undefined,
       {
         type: 'focus',
-        position: { x: 0.15, y: 0.15, width: 0.7, height: 0.7 },
+        position: { x: 0.15, y: 0.15, width: 0.7, height: 0.7 }, // 🔧 相対座標で定義
         intensity: 0.9,
         direction: 'radial'
       }
@@ -400,7 +401,7 @@ export const createActionScenes = (): Record<string, EnhancedSceneTemplate> => {
       undefined,
       {
         type: 'speed',
-        position: { x: 0.05, y: 0.3, width: 0.5, height: 0.4 },
+        position: { x: 0.05, y: 0.3, width: 0.5, height: 0.4 }, // 🔧 相対座標で定義
         intensity: 0.8,
         direction: 'horizontal'
       }
@@ -434,7 +435,7 @@ export const createActionScenes = (): Record<string, EnhancedSceneTemplate> => {
       },
       {
         type: 'focus',
-        position: { x: 0.6, y: 0.2, width: 0.3, height: 0.6 },
+        position: { x: 0.6, y: 0.2, width: 0.3, height: 0.6 }, // 🔧 相対座標で定義
         intensity: 0.5,
         direction: 'radial'
       }
@@ -636,7 +637,7 @@ export const createSpecialScenes = (): Record<string, EnhancedSceneTemplate> => 
       },
       {
         type: 'flash',
-        position: { x: 0.3, y: 0.2, width: 0.4, height: 0.6 },
+        position: { x: 0.3, y: 0.2, width: 0.4, height: 0.6 }, // 🔧 相対座標で定義
         intensity: 0.7,
         direction: 'radial'
       },
@@ -676,7 +677,7 @@ export const createSpecialScenes = (): Record<string, EnhancedSceneTemplate> => 
       },
       {
         type: 'focus',
-        position: { x: 0.2, y: 0.2, width: 0.6, height: 0.6 },
+        position: { x: 0.2, y: 0.2, width: 0.6, height: 0.6 }, // 🔧 相対座標で定義
         intensity: 0.6,
         direction: 'radial'
       }
@@ -781,8 +782,7 @@ export const getTemplatesByCategory = (category: EnhancedSceneTemplate['category
   return filtered;
 };
 
-// 統合テンプレート適用関数（コマフィット版）
-// 🔧 既存Character型対応版 - applyEnhancedSceneTemplate関数の修正
+// 🔧 applyEnhancedSceneTemplate関数内の効果線処理部分も修正
 export const applyEnhancedSceneTemplate = (
   templateKey: string,
   panels: any[],
@@ -987,37 +987,23 @@ export const applyEnhancedSceneTemplate = (
     };
   });
 
-  // 🔧 効果線生成（相対座標で配置）
+  // 🔧 効果線生成（相対座標で配置・修正完了）
   const newEffects = (template.effects || []).map((effect, index) => {
     const uniqueId = `effect_${Date.now()}_${Math.random().toString(36).substr(2, 5)}_${index}`;
     
-    // 座標を相対座標に正規化
-    let relativeX, relativeY, relativeWidth, relativeHeight;
-    
-    if (effect.x <= 1 && effect.y <= 1) {
-      // 既に相対座標の場合
-      relativeX = effect.x;
-      relativeY = effect.y;
-      relativeWidth = effect.width <= 1 ? effect.width : effect.width / 600;
-      relativeHeight = effect.height <= 1 ? effect.height : effect.height / 300;
-    } else {
-      // 絶対座標の場合
-      relativeX = effect.x / 600;
-      relativeY = effect.y / 300;
-      relativeWidth = effect.width / 600;
-      relativeHeight = effect.height / 300;
-    }
-    
-    console.log(`⚡ 効果線生成: ${effect.type} (${relativeX.toFixed(3)}, ${relativeY.toFixed(3)})`);
+    // 🔧 効果線座標は既に相対座標（0-1）で定義されているため、そのまま使用
+    console.log(`⚡ 効果線生成: ${effect.type} (${effect.x.toFixed(3)}, ${effect.y.toFixed(3)})`);
+    console.log(`   サイズ: ${effect.width.toFixed(3)} x ${effect.height.toFixed(3)}`);
     
     return {
       ...effect,
       id: uniqueId,
       panelId: targetPanel.id,
-      x: relativeX,      // 🔧 相対座標
-      y: relativeY,      // 🔧 相対座標
-      width: relativeWidth,  // 🔧 相対サイズ
-      height: relativeHeight, // 🔧 相対サイズ
+      // 🔧 既に相対座標（0-1）なのでそのまま使用
+      x: effect.x,
+      y: effect.y,
+      width: effect.width,
+      height: effect.height,
     };
   });
 

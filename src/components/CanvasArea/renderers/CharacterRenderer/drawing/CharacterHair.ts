@@ -1,7 +1,7 @@
 // src/components/CanvasArea/renderers/CharacterRenderer/drawing/CharacterHair.ts
-// 💇 キャラクター髪の毛描画専用クラス
+// 💇 キャラクター髪の毛描画専用クラス（型修正版）
 
-import { Character } from "../../../../../types"; // ← こちらも確認
+import { Character } from "../../../../../types";
 
 export class CharacterHair {
   
@@ -508,7 +508,7 @@ export class CharacterHair {
     ];
   }
 
-  // 🎯 デバッグ用髪型情報出力
+  // 🎯 デバッグ用髪型情報出力（修正版）
   static debugHairInfo(character: Character, headSize: number): void {
     const { hairColor, hairStyle } = CharacterHair.getHairStyle(character);
     
@@ -517,7 +517,7 @@ export class CharacterHair {
       hairStyle,
       hairColor,
       headSize: Math.round(headSize),
-      bodyDirection: character.bodyDirection || character.faceAngle || "front"
+      bodyDirection: character.facing || "front" // 🔧 修正: bodyDirection/faceAngle → facing
     });
   }
 

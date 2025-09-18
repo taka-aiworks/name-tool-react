@@ -1,4 +1,5 @@
 // src/components/CanvasArea/renderers/CharacterBodyRenderer.tsx (体描画専用)
+// types.ts対応修正版
 import { Character } from "../../../types";
 
 export class CharacterBodyRenderer {
@@ -12,8 +13,9 @@ export class CharacterBodyRenderer {
     charHeight: number,
     bodyStartY: number
   ) {
-    const pose = character.bodyPose || "standing";
-    const direction = character.bodyDirection || character.faceAngle || "front";
+    // 🔧 types.tsの実際のプロパティに修正
+    const pose = character.action || "standing";  // bodyPose → action
+    const direction = character.facing || "front";  // bodyDirection/faceAngle → facing
     const bodyWidth = charWidth * 0.7;
     const bodyHeight = charHeight * 0.55;
     const bodyX = charX + charWidth / 2 - bodyWidth / 2;
@@ -435,8 +437,9 @@ export class CharacterBodyRenderer {
     const legHeight = charHeight * 0.45;
     const legX = charX + charWidth / 2 - legWidth / 2;
     
+    // 🔧 types.tsの実際のプロパティに修正
     // ポーズに応じた脚の描画
-    const pose = character.bodyPose || "standing";
+    const pose = character.action || "standing";  // bodyPose → action
     switch (pose) {
       case "walking":
         CharacterBodyRenderer.drawWalkingLegs(ctx, legX, legStartY, legWidth, legHeight);

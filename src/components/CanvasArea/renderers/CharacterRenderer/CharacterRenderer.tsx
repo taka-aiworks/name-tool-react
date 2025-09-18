@@ -1,5 +1,6 @@
-// src/components/CanvasArea/renderers/CharacterRenderer.tsx 
+// src/components/CanvasArea/renderers/CharacterRenderer/CharacterRenderer.tsx 
 // 🔧 分離クラス統合版（大幅削減・高品質化）
+// types.ts対応修正版
 
 // CharacterRenderer.tsx
 import { Character, Panel } from "../../../../types"; // ← ../を1つ削除
@@ -261,14 +262,15 @@ export class CharacterRenderer {
     charWidth: number,
     charHeight: number
   ) {
+    // 🔧 viewType修正: types.tsの実際の値に合わせる
     switch (character.viewType) {
       case "face":
         CharacterRenderer.drawFaceOnly(ctx, character, charX, charY, charWidth, charHeight);
         break;
-      case "halfBody":
+      case "upper_body":  // halfBody → upper_body
         CharacterRenderer.drawHalfBody(ctx, character, charX, charY, charWidth, charHeight);
         break;
-      case "fullBody":
+      case "full_body":   // fullBody → full_body
         CharacterRenderer.drawFullBody(ctx, character, charX, charY, charWidth, charHeight);
         break;
       default:
@@ -302,10 +304,10 @@ export class CharacterRenderer {
     charHeight: number
   ) {
     const { headX, headY, headSize } = CharacterUtils.calculateHeadDimensions(
-      charWidth, charHeight, charX, charY, "halfBody"
+      charWidth, charHeight, charX, charY, "upper_body"  // halfBody → upper_body
     );
     
-    const bodyStartY = CharacterUtils.calculateBodyStartY(charY, charHeight, headSize, "halfBody");
+    const bodyStartY = CharacterUtils.calculateBodyStartY(charY, charHeight, headSize, "upper_body");  // halfBody → upper_body
     
     // 体を先に描画
     CharacterRenderer.drawBodyHalf(ctx, character, charX, charY, charWidth, charHeight, bodyStartY);
@@ -324,10 +326,10 @@ export class CharacterRenderer {
     charHeight: number
   ) {
     const { headX, headY, headSize } = CharacterUtils.calculateHeadDimensions(
-      charWidth, charHeight, charX, charY, "fullBody"
+      charWidth, charHeight, charX, charY, "full_body"  // fullBody → full_body
     );
     
-    const bodyStartY = CharacterUtils.calculateBodyStartY(charY, charHeight, headSize, "fullBody");
+    const bodyStartY = CharacterUtils.calculateBodyStartY(charY, charHeight, headSize, "full_body");  // fullBody → full_body
     
     // 体を先に描画
     CharacterRenderer.drawBodyFull(ctx, character, charX, charY, charWidth, charHeight, bodyStartY);
@@ -344,7 +346,8 @@ export class CharacterRenderer {
     headY: number,
     headSize: number
   ) {
-    const direction = character.bodyDirection || character.faceAngle || "front";
+    // 🔧 types.tsの実際のプロパティに修正
+    const direction = character.facing || "front";  // bodyDirection/faceAngle → facing
     
     // 1. 頭の基本形状
     CharacterRenderer.drawHeadShape(ctx, headX, headY, headSize);
@@ -394,8 +397,9 @@ export class CharacterRenderer {
   // メソッドをそのまま移植します（長いので省略）
 
   static drawFaceFeatures(ctx: CanvasRenderingContext2D, character: Character, headX: number, headY: number, headSize: number, direction: string) {
-    const eyeDirection = character.eyeDirection || "front";
-    const expression = character.faceExpression || "normal";
+    // 🔧 types.tsの実際のプロパティに修正
+    const eyeDirection = character.eyeState || "front";  // eyeDirection → eyeState
+    const expression = character.expression || "normal";  // faceExpression → expression
     
     // 簡略化版（実際は既存の詳細な実装を使用）
     CharacterRenderer.drawSimpleEyes(ctx, headX, headY, headSize, direction);

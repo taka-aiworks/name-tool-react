@@ -70,7 +70,7 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, ExtendedCanvasComponentPro
 
   // 🆕 キャラクター表示名取得関数（関数内に移動）
   const getCharacterDisplayName = (character: Character) => {
-    return characterNames?.[character.type] || character.name || character.displayName || 'キャラクター';
+    return characterNames?.[character.type] || character.name || 'キャラクター';
   };
 
   // Canvas ref

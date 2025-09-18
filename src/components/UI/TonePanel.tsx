@@ -1,4 +1,4 @@
-// src/components/UI/TonePanel.tsx - BackgroundPanel/EffectPanelと同じモーダル実装パターンに統合
+// src/components/UI/TonePanel.tsx - React Hooks ルール修正版
 import React, { useState, useCallback, useMemo } from 'react';
 import { ToneElement, ToneTemplate, Panel, BlendMode } from '../../types';
 import { 
@@ -27,7 +27,7 @@ interface TonePanelProps {
 }
 
 /**
- * トーン選択・設定パネル（BackgroundPanel/EffectPanelと同じモーダル実装）
+ * トーン選択・設定パネル（React Hooks ルール修正版）
  */
 const TonePanel: React.FC<TonePanelProps> = ({
   isOpen,
@@ -41,16 +41,14 @@ const TonePanel: React.FC<TonePanelProps> = ({
   selectedPanelId,
   darkMode
 }) => {
-  // BackgroundPanel/EffectPanelと同じモーダル表示判定
-  if (!isOpen) return null;
-
-  // ダークモード統一
-  const isThemeDark = isDarkMode || darkMode || false;
-
+  // 🔧 React Hooks ルール修正: useStateを早期リターンより前に移動
   // UI状態管理
   const [activeTab, setActiveTab] = useState<'shadow' | 'highlight' | 'texture' | 'background' | 'effect' | 'mood'>('shadow');
   const [selectedTemplate, setSelectedTemplate] = useState<ToneTemplate | null>(null);
   const [previewTone, setPreviewTone] = useState<ToneElement | null>(null);
+
+  // ダークモード統一
+  const isThemeDark = isDarkMode || darkMode || false;
 
   // 🔧 利用可能なパネルを取得（BackgroundPanelと同じ方式）
   const getAvailablePanels = () => {
@@ -180,6 +178,9 @@ const TonePanel: React.FC<TonePanelProps> = ({
       default: return type;
     }
   };
+
+  // 🔧 モーダル表示判定をuseStateの後に移動
+  if (!isOpen) return null;
 
   return (
     <div 
@@ -328,7 +329,7 @@ const TonePanel: React.FC<TonePanelProps> = ({
                 fontSize: '18px',
                 color: 'var(--text-primary)'
               }}>
-                📋 テンプレート ({(toneTemplatesByCategory[activeTab] || []).length}個)
+                📋 テンプレート ({(toneTemplatesByCategory[activeTab as keyof typeof toneTemplatesByCategory] || []).length}個)
               </h3>
               
               <div style={{
@@ -340,7 +341,7 @@ const TonePanel: React.FC<TonePanelProps> = ({
                 borderRadius: '8px',
                 border: '1px solid var(--border-color)'
               }}>
-                {(toneTemplatesByCategory[activeTab] || []).map(template => (
+                {(toneTemplatesByCategory[activeTab as keyof typeof toneTemplatesByCategory] || []).map((template: ToneTemplate) => (
                   <div
                     key={template.id}
                     onClick={() => applyToneTemplate(template)}

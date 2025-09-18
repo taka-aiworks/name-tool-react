@@ -1,4 +1,5 @@
 // src/components/CanvasComponent/hooks/useElementActions.ts
+// types.ts対応修正版
 import { useEffect } from 'react';
 import { Panel, Character, SpeechBubble } from '../../../types';
 import { CanvasState, CanvasStateActions } from './useCanvasState';
@@ -65,25 +66,25 @@ export const useElementActions = ({
       friend: "友人",
     };
 
-    // キャラクタータイプに応じたviewTypeとサイズ設定
-    let viewType: "face" | "halfBody" | "fullBody";
+    // 🔧 viewType修正: types.tsの実際の型に合わせる
+    let viewType: "face" | "upper_body" | "full_body";  // halfBody/fullBody → upper_body/full_body
     let initialWidth: number;
     let initialHeight: number;
 
     // キャラクタータイプに応じた設定
     switch (type) {
       case "hero":
-        viewType = "halfBody";
+        viewType = "upper_body";  // halfBody → upper_body
         initialWidth = 100;
         initialHeight = 120;
         break;
       case "heroine":
-        viewType = "halfBody";
+        viewType = "upper_body";  // halfBody → upper_body
         initialWidth = 95;
         initialHeight = 115;
         break;
       case "rival":
-        viewType = "halfBody";
+        viewType = "upper_body";  // halfBody → upper_body
         initialWidth = 105;
         initialHeight = 125;
         break;
@@ -93,14 +94,16 @@ export const useElementActions = ({
         initialHeight = 80;
         break;
       default:
-        viewType = "halfBody";
+        viewType = "upper_body";  // halfBody → upper_body
         initialWidth = 100;
         initialHeight = 120;
     }
 
+    // 🔧 Character型修正: types.tsの実際のプロパティに合わせる
     const newCharacter: Character = {
       id: `char_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
       panelId: targetPanel.id,
+      characterId: `char_${type}_${Date.now()}`, // 新プロパティ
       type: type,
       name: characterNames[type] || "キャラクター",
       x: targetPanel.x + targetPanel.width * 0.5,
@@ -111,17 +114,24 @@ export const useElementActions = ({
       width: initialWidth,
       height: initialHeight,
       
-      facing: "front",
-      gaze: "center",
-      pose: "standing",
-      expression: "neutral",
-      faceAngle: "front",
-      bodyDirection: "front",
-      faceExpression: "normal",
-      bodyPose: "standing",
-      eyeDirection: "front",
+      // 🔧 types.tsの実際のプロパティに修正
+      facing: "front",        // bodyDirection統合
+      action: "standing",     // bodyPose → action
+      expression: "normal",   // faceExpression → expression
       viewType: viewType,
+      eyeState: "front",      // eyeDirection → eyeState
+      mouthState: "normal",   // 新プロパティ
+      handGesture: "normal",  // 新プロパティ
       isGlobalPosition: true,
+      
+      // 🔧 削除: 存在しないプロパティを削除
+      // gaze: "center",          // 削除
+      // pose: "standing",        // 削除
+      // faceAngle: "front",      // 削除
+      // bodyDirection: "front",  // 削除
+      // faceExpression: "normal", // 削除
+      // bodyPose: "standing",    // 削除
+      // eyeDirection: "front",   // 削除
     };
 
     setCharacters([...characters, newCharacter]);

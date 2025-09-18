@@ -270,7 +270,7 @@ export class ExportService {
     return tempCanvas;
   }
 
-  // 🔧 トーン対応版レイヤー構造作成
+  // 🔧 トーン対応版レイヤー構造作成（types.ts対応修正版）
   private createLayerStructure(
     panels: Panel[],
     characters: Character[],
@@ -299,10 +299,11 @@ export class ExportService {
           y: char.y,
           scale: char.scale,
           type: char.type,
-          expression: char.faceExpression || char.expression,
-          pose: char.bodyPose || char.pose,
-          direction: char.bodyDirection || char.eyeDirection,
-          gaze: char.eyeDirection,
+          // 🔧 types.tsの実際のプロパティに修正
+          expression: char.expression || "normal",           // faceExpression → expression
+          pose: char.action || "standing",                   // bodyPose → action  
+          direction: char.facing || "front",                 // bodyDirection → facing
+          gaze: char.eyeState || "front",                    // eyeDirection → eyeState
           visible: true
         })),
         bubbles: bubbles.map((bubble, index) => ({
