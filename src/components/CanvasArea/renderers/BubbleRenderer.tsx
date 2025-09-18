@@ -1,4 +1,4 @@
-// src/components/CanvasArea/renderers/BubbleRenderer.tsx (リサイズ完全修正版)
+// src/components/CanvasArea/renderers/BubbleRenderer.tsx (座標変換対応版)
 import { SpeechBubble, Panel } from "../../../types";
 
 export class BubbleRenderer {
@@ -14,7 +14,36 @@ export class BubbleRenderer {
     });
   }
 
-  // 単一吹き出し描画
+  // 🔧 座標変換ヘルパー関数（新規追加）
+  static calculateBubblePosition(bubble: SpeechBubble, panel: Panel): { x: number; y: number; width: number; height: number } {
+    if (bubble.isGlobalPosition) {
+      // 絶対座標の場合：そのまま使用
+      return {
+        x: bubble.x,
+        y: bubble.y,
+        width: bubble.width,
+        height: bubble.height
+      };
+    } else {
+      // 🔧 相対座標の場合：パネル内座標に変換
+      const x = panel.x + (bubble.x * panel.width);
+      const y = panel.y + (bubble.y * panel.height);
+      
+      console.log(`💬 吹き出し座標変換: "${bubble.text}"`);
+      console.log(`   相対座標: (${bubble.x.toFixed(3)}, ${bubble.y.toFixed(3)})`);
+      console.log(`   パネル: x=${panel.x}, y=${panel.y}, w=${panel.width}, h=${panel.height}`);
+      console.log(`   絶対座標: (${x.toFixed(1)}, ${y.toFixed(1)})`);
+      
+      return {
+        x: x,
+        y: y,
+        width: bubble.width,
+        height: bubble.height
+      };
+    }
+  }
+
+  // 単一吹き出し描画（座標変換対応）
   static drawSingleBubble(
     ctx: CanvasRenderingContext2D,
     bubble: SpeechBubble,
@@ -24,17 +53,21 @@ export class BubbleRenderer {
     const panel = panels.find(p => p.id === bubble.panelId) || panels[0];
     if (!panel) return;
 
+    // 🔧 座標変換を適用
+    const bubblePos = this.calculateBubblePosition(bubble, panel);
+    const transformedBubble = { ...bubble, ...bubblePos };
+
     ctx.save();
 
     // 吹き出し背景描画
-    this.drawBubbleBackground(ctx, bubble);
+    this.drawBubbleBackground(ctx, transformedBubble);
     
     // テキスト描画
-    this.drawBubbleText(ctx, bubble);
+    this.drawBubbleText(ctx, transformedBubble);
     
     // 選択状態の場合、リサイズハンドル描画
     if (selectedBubble && selectedBubble.id === bubble.id) {
-      this.drawResizeHandles(ctx, bubble);
+      this.drawResizeHandles(ctx, transformedBubble);
     }
 
     ctx.restore();
@@ -255,47 +288,42 @@ export class BubbleRenderer {
     });
   }
 
-  // 🆕 8方向リサイズハンドル判定（完全修正版）
+  // 🆕 8方向リサイズハンドル判定（座標変換対応版）
   static isBubbleResizeHandleClicked(
     mouseX: number, 
     mouseY: number, 
     bubble: SpeechBubble, 
     panel: Panel
   ): { isClicked: boolean; direction: string } {
-    const handleSize = 12; // 描画と同じサイズに統一
-    const tolerance = 8; // クリック判定を広く
+    // 🔧 座標変換を適用してから判定
+    const bubblePos = this.calculateBubblePosition(bubble, panel);
+    const transformedBubble = { ...bubble, ...bubblePos };
+    
+    const handleSize = 12;
+    const tolerance = 8;
 
     console.log("🔍 吹き出しリサイズハンドル判定開始:", {
       mouseX, mouseY,
-      bubblePos: { x: bubble.x, y: bubble.y },
-      bubbleSize: { width: bubble.width, height: bubble.height },
-      handleSize, tolerance
+      originalPos: { x: bubble.x, y: bubble.y },
+      transformedPos: { x: transformedBubble.x, y: transformedBubble.y },
+      bubbleSize: { width: transformedBubble.width, height: transformedBubble.height }
     });
 
-    // 🔧 8方向のハンドル位置（描画と完全一致）
+    // 🔧 8方向のハンドル位置（変換済み座標で判定）
     const handles = [
-      { x: bubble.x - handleSize/2, y: bubble.y - handleSize/2, dir: "nw" },
-      { x: bubble.x + bubble.width/2 - handleSize/2, y: bubble.y - handleSize/2, dir: "n" },
-      { x: bubble.x + bubble.width - handleSize/2, y: bubble.y - handleSize/2, dir: "ne" },
-      { x: bubble.x + bubble.width - handleSize/2, y: bubble.y + bubble.height/2 - handleSize/2, dir: "e" },
-      { x: bubble.x + bubble.width - handleSize/2, y: bubble.y + bubble.height - handleSize/2, dir: "se" },
-      { x: bubble.x + bubble.width/2 - handleSize/2, y: bubble.y + bubble.height - handleSize/2, dir: "s" },
-      { x: bubble.x - handleSize/2, y: bubble.y + bubble.height - handleSize/2, dir: "sw" },
-      { x: bubble.x - handleSize/2, y: bubble.y + bubble.height/2 - handleSize/2, dir: "w" }
+      { x: transformedBubble.x - handleSize/2, y: transformedBubble.y - handleSize/2, dir: "nw" },
+      { x: transformedBubble.x + transformedBubble.width/2 - handleSize/2, y: transformedBubble.y - handleSize/2, dir: "n" },
+      { x: transformedBubble.x + transformedBubble.width - handleSize/2, y: transformedBubble.y - handleSize/2, dir: "ne" },
+      { x: transformedBubble.x + transformedBubble.width - handleSize/2, y: transformedBubble.y + transformedBubble.height/2 - handleSize/2, dir: "e" },
+      { x: transformedBubble.x + transformedBubble.width - handleSize/2, y: transformedBubble.y + transformedBubble.height - handleSize/2, dir: "se" },
+      { x: transformedBubble.x + transformedBubble.width/2 - handleSize/2, y: transformedBubble.y + transformedBubble.height - handleSize/2, dir: "s" },
+      { x: transformedBubble.x - handleSize/2, y: transformedBubble.y + transformedBubble.height - handleSize/2, dir: "sw" },
+      { x: transformedBubble.x - handleSize/2, y: transformedBubble.y + transformedBubble.height/2 - handleSize/2, dir: "w" }
     ];
 
     for (const handle of handles) {
       const inRangeX = mouseX >= handle.x - tolerance && mouseX <= handle.x + handleSize + tolerance;
       const inRangeY = mouseY >= handle.y - tolerance && mouseY <= handle.y + handleSize + tolerance;
-      
-      console.log(`🔍 ハンドル ${handle.dir} 判定:`, {
-        handlePos: { x: handle.x, y: handle.y },
-        checkRange: {
-          x: `${handle.x - tolerance} ~ ${handle.x + handleSize + tolerance}`,
-          y: `${handle.y - tolerance} ~ ${handle.y + handleSize + tolerance}`
-        },
-        inRangeX, inRangeY
-      });
       
       if (inRangeX && inRangeY) {
         console.log(`🎯 吹き出しリサイズハンドル ${handle.dir} クリック検出!`);
@@ -307,7 +335,7 @@ export class BubbleRenderer {
     return { isClicked: false, direction: "" };
   }
 
-  // 吹き出し位置判定
+  // 吹き出し位置判定（座標変換対応版）
   static findBubbleAt(
     x: number, 
     y: number, 
@@ -317,11 +345,16 @@ export class BubbleRenderer {
     // 後ろから検索（上に描画されたものを優先）
     for (let i = bubbles.length - 1; i >= 0; i--) {
       const bubble = bubbles[i];
+      const panel = panels.find(p => p.id === bubble.panelId) || panels[0];
+      if (!panel) continue;
       
-      if (x >= bubble.x && 
-          x <= bubble.x + bubble.width &&
-          y >= bubble.y && 
-          y <= bubble.y + bubble.height) {
+      // 🔧 座標変換を適用してから判定
+      const bubblePos = this.calculateBubblePosition(bubble, panel);
+      
+      if (x >= bubblePos.x && 
+          x <= bubblePos.x + bubblePos.width &&
+          y >= bubblePos.y && 
+          y <= bubblePos.y + bubblePos.height) {
         return bubble;
       }
     }

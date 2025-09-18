@@ -782,6 +782,7 @@ export const getTemplatesByCategory = (category: EnhancedSceneTemplate['category
 };
 
 // 統合テンプレート適用関数（コマフィット版）
+// 🔧 既存Character型対応版 - applyEnhancedSceneTemplate関数の修正
 export const applyEnhancedSceneTemplate = (
   templateKey: string,
   panels: any[],
@@ -800,6 +801,7 @@ export const applyEnhancedSceneTemplate = (
 } => {
   const template = getAllSceneTemplates()[templateKey];
   if (!template || panels.length === 0) {
+    console.error(`❌ テンプレート適用失敗: ${templateKey}`);
     return {
       characters: existingCharacters,
       speechBubbles: existingSpeechBubbles,
@@ -810,69 +812,262 @@ export const applyEnhancedSceneTemplate = (
   }
 
   const targetPanel = selectedPanel || panels[0];
-  console.log(`🎭 辞書ベーステンプレート適用: ${template.name} → パネル${targetPanel.id}`);
+  console.log(`🎭 座標修正版テンプレート適用: ${template.name} → パネル${targetPanel.id}`);
+  console.log(`📐 パネル情報:`, { x: targetPanel.x, y: targetPanel.y, width: targetPanel.width, height: targetPanel.height });
 
-  // キャラクター生成（パネルサイズに合わせてスケール）
-  const newCharacters = template.characters.map((char) => ({
-    ...char,
-    id: `char_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-    panelId: targetPanel.id,
-    x: targetPanel.x + (char.x / 600) * targetPanel.width,
-    y: targetPanel.y + (char.y / 300) * targetPanel.height,
-  }));
+  // 🔧 既存のパネル内要素をクリア
+  const filteredCharacters = existingCharacters.filter(char => char.panelId !== targetPanel.id);
+  const filteredBubbles = existingSpeechBubbles.filter(bubble => bubble.panelId !== targetPanel.id);
+  const filteredBackgrounds = existingBackgrounds.filter(bg => bg.panelId !== targetPanel.id);
+  const filteredEffects = existingEffects.filter(effect => effect.panelId !== targetPanel.id);
+  const filteredTones = existingTones.filter(tone => tone.panelId !== targetPanel.id);
 
-  // 吹き出し生成（パネルサイズに合わせてスケール）
-  const newSpeechBubbles = template.speechBubbles.map((bubble) => ({
-    ...bubble,
-    id: `bubble_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-    panelId: targetPanel.id,
-    x: targetPanel.x + (bubble.x / 600) * targetPanel.width,
-    y: targetPanel.y + (bubble.y / 300) * targetPanel.height,
-    width: (bubble.width / 600) * targetPanel.width,
-    height: (bubble.height / 300) * targetPanel.height,
-  }));
+  // 🔧 キャラクター生成（既存型のみ使用・エラー回避）
+  const newCharacters = template.characters.map((char, index) => {
+    const uniqueId = `char_${Date.now()}_${Math.random().toString(36).substr(2, 5)}_${index}`;
+    
+    // 🔧 座標を相対座標（0-1）に正規化
+    let relativeX, relativeY;
+    
+    if (char.x <= 1 && char.y <= 1) {
+      // 既に相対座標の場合（0-1の範囲）
+      relativeX = char.x;
+      relativeY = char.y;
+    } else {
+      // 絶対座標の場合（600x300基準で相対座標に変換）
+      relativeX = char.x / 600;
+      relativeY = char.y / 300;
+    }
+    
+    console.log(`👤 キャラクター生成: ${char.name}`);
+    console.log(`   テンプレート座標: (${char.x}, ${char.y})`);
+    console.log(`   相対座標: (${relativeX.toFixed(3)}, ${relativeY.toFixed(3)})`);
+    
+    // 🔧 viewType の正規化（型安全・文字列比較修正）
+    let normalizedViewType: "face" | "upper_body" | "full_body" = "upper_body";
+    const viewTypeString = String(char.viewType); // any型を文字列に変換
+    
+    if (viewTypeString === "face") {
+      normalizedViewType = "face";
+    } else if (viewTypeString === "upper_body" || viewTypeString === "halfBody") {
+      normalizedViewType = "upper_body";
+    } else if (viewTypeString === "full_body" || viewTypeString === "fullBody") {
+      normalizedViewType = "full_body";
+    }
+    
+    // 🔧 既存Character型のプロパティのみ使用
+    const newCharacter: any = {
+      id: uniqueId,
+      panelId: targetPanel.id,
+      characterId: char.characterId || char.type || `character_${index + 1}`,
+      
+      // 配置情報
+      x: relativeX,      // 🔧 相対座標で保存
+      y: relativeY,      // 🔧 相対座標で保存
+      width: char.width || 80,
+      height: char.height || 120,
+      scale: char.scale || 1.8,
+      rotation: char.rotation || 0,
+      isGlobalPosition: char.isGlobalPosition ?? false,
+      
+      // 既存型の必須プロパティのみ
+      name: char.name || "キャラクター",
+      type: char.type || `character_${index + 1}`,
+      expression: char.expression || "neutral_expression",
+      action: char.action || "standing",
+      facing: char.facing || "looking_at_viewer",
+      viewType: normalizedViewType,
+    };
+    
+    // 🔧 既存型のオプショナルプロパティのみ
+    // eyeState, mouthState, handGesture のみ設定
+    if (char.expression === "surprised") {
+      newCharacter.eyeState = "wide";
+    }
+    if (char.expression === "sad") {
+      newCharacter.mouthState = "frown";
+    }
+    if (char.action === "pointing") {
+      newCharacter.handGesture = "pointing";
+    }
+    
+    return newCharacter;
+  });
 
-  // 背景生成（パネル全体にぴったりフィット）
-  const newBackgrounds = (template.backgrounds || []).map((bg) => ({
-    ...bg,
-    id: `bg_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-    panelId: targetPanel.id,
-    x: targetPanel.x,
-    y: targetPanel.y,
-    width: targetPanel.width,
-    height: targetPanel.height,
-  }));
+  // 🔧 吹き出し生成（位置を適切に調整）
+  const newSpeechBubbles = template.speechBubbles.map((bubble, index) => {
+    const uniqueId = `bubble_${Date.now()}_${Math.random().toString(36).substr(2, 5)}_${index}`;
+    
+    // 🔧 吹き出し位置の計算を改善
+    let relativeX, relativeY;
+    
+    if (bubble.x <= 1 && bubble.y <= 1) {
+      // 既に相対座標の場合
+      relativeX = bubble.x;
+      relativeY = bubble.y;
+    } else {
+      // 絶対座標の場合：より適切な位置に調整
+      relativeX = bubble.x / 600;
+      relativeY = bubble.y / 300;
+      
+      // 🔧 位置が左端すぎる場合は中央寄りに調整
+      if (relativeX < 0.2) {
+        relativeX = 0.4; // 中央寄り
+      }
+      if (relativeY < 0.1) {
+        relativeY = 0.15; // 上端から少し下
+      }
+    }
+    
+    // 🔧 キャラクターの右隣に配置するロジック
+    if (template.characters.length > 0) {
+      const firstChar = template.characters[0];
+      let charRelativeX, charRelativeY;
+      
+      if (firstChar.x <= 1) {
+        charRelativeX = firstChar.x;
+        charRelativeY = firstChar.y;
+      } else {
+        charRelativeX = firstChar.x / 600;
+        charRelativeY = firstChar.y / 300;
+      }
+      
+      // キャラクターの右隣に配置（重ならないように調整）
+      if (index === 0) {
+        relativeX = Math.min(charRelativeX + 0.3, 0.85); // 右隣、パネル端は避ける
+        relativeY = Math.max(charRelativeY - 0.2, 0.05); // 少し上、パネル上端は避ける
+      } else if (index === 1) {
+        relativeX = Math.max(charRelativeX - 0.25, 0.05); // 左隣
+        relativeY = Math.max(charRelativeY - 0.15, 0.05); // 少し上
+      } else {
+        // 3個目以降は中央上部
+        relativeX = 0.5;
+        relativeY = 0.1;
+      }
+    } else {
+      // キャラクターがいない場合は中央に
+      relativeX = 0.5;
+      relativeY = 0.2;
+    }
+    
+    console.log(`💬 吹き出し生成: "${bubble.text}"`);
+    console.log(`   元座標: (${bubble.x}, ${bubble.y})`);
+    console.log(`   調整後相対座標: (${relativeX.toFixed(3)}, ${relativeY.toFixed(3)})`);
+    
+    return {
+      ...bubble,
+      id: uniqueId,
+      panelId: targetPanel.id,
+      x: relativeX,      // 🔧 調整済み相対座標
+      y: relativeY,      // 🔧 調整済み相対座標
+      type: bubble.type || "普通",
+      text: bubble.text || "",
+      width: bubble.width || 80,
+      height: bubble.height || 60,
+      scale: bubble.scale || 1.0,
+      vertical: bubble.vertical ?? true,
+      isGlobalPosition: bubble.isGlobalPosition ?? false,
+    };
+  });
 
-  // 効果線生成（パネルサイズに合わせてスケール・フィット）
-  const newEffects = (template.effects || []).map((effect) => ({
-    ...effect,
-    id: `effect_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-    panelId: targetPanel.id,
-    x: targetPanel.x + (effect.x / 600) * targetPanel.width,
-    y: targetPanel.y + (effect.y / 300) * targetPanel.height,
-    width: (effect.width / 600) * targetPanel.width,
-    height: (effect.height / 300) * targetPanel.height,
-  }));
+  // 🔧 背景生成（パネル全体にフィット）
+  const newBackgrounds = (template.backgrounds || []).map((bg, index) => {
+    const uniqueId = `bg_${Date.now()}_${Math.random().toString(36).substr(2, 5)}_${index}`;
+    
+    console.log(`🎨 背景生成: ${bg.type}`);
+    
+    return {
+      ...bg,
+      id: uniqueId,
+      panelId: targetPanel.id,
+      x: 0,    // 🔧 パネル全体を覆う相対座標
+      y: 0,    // 🔧 パネル全体を覆う相対座標
+      width: 1,  // 🔧 パネル幅の100%
+      height: 1, // 🔧 パネル高さの100%
+    };
+  });
 
-  // トーン生成（パネルサイズに合わせてスケール・フィット）
-  const newTones = (template.tones || []).map((tone) => ({
-    ...tone,
-    id: `tone_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-    panelId: targetPanel.id,
-    x: (tone.x / 600) * targetPanel.width,
-    y: (tone.y / 300) * targetPanel.height,
-    width: (tone.width / 600) * targetPanel.width,
-    height: (tone.height / 300) * targetPanel.height,
-  }));
+  // 🔧 効果線生成（相対座標で配置）
+  const newEffects = (template.effects || []).map((effect, index) => {
+    const uniqueId = `effect_${Date.now()}_${Math.random().toString(36).substr(2, 5)}_${index}`;
+    
+    // 座標を相対座標に正規化
+    let relativeX, relativeY, relativeWidth, relativeHeight;
+    
+    if (effect.x <= 1 && effect.y <= 1) {
+      // 既に相対座標の場合
+      relativeX = effect.x;
+      relativeY = effect.y;
+      relativeWidth = effect.width <= 1 ? effect.width : effect.width / 600;
+      relativeHeight = effect.height <= 1 ? effect.height : effect.height / 300;
+    } else {
+      // 絶対座標の場合
+      relativeX = effect.x / 600;
+      relativeY = effect.y / 300;
+      relativeWidth = effect.width / 600;
+      relativeHeight = effect.height / 300;
+    }
+    
+    console.log(`⚡ 効果線生成: ${effect.type} (${relativeX.toFixed(3)}, ${relativeY.toFixed(3)})`);
+    
+    return {
+      ...effect,
+      id: uniqueId,
+      panelId: targetPanel.id,
+      x: relativeX,      // 🔧 相対座標
+      y: relativeY,      // 🔧 相対座標
+      width: relativeWidth,  // 🔧 相対サイズ
+      height: relativeHeight, // 🔧 相対サイズ
+    };
+  });
 
-  console.log(`✅ 辞書ベース要素追加: キャラ${newCharacters.length}個、吹き出し${newSpeechBubbles.length}個、背景${newBackgrounds.length}個、効果線${newEffects.length}個、トーン${newTones.length}個`);
+  // 🔧 トーン生成（相対座標で配置）
+  const newTones = (template.tones || []).map((tone, index) => {
+    const uniqueId = `tone_${Date.now()}_${Math.random().toString(36).substr(2, 5)}_${index}`;
+    
+    // 座標を相対座標に正規化
+    let relativeX, relativeY, relativeWidth, relativeHeight;
+    
+    if (tone.x <= 1 && tone.y <= 1) {
+      // 既に相対座標の場合
+      relativeX = tone.x;
+      relativeY = tone.y;
+      relativeWidth = tone.width <= 1 ? tone.width : tone.width / 600;
+      relativeHeight = tone.height <= 1 ? tone.height : tone.height / 300;
+    } else {
+      // 絶対座標の場合
+      relativeX = tone.x / 600;
+      relativeY = tone.y / 300;
+      relativeWidth = tone.width / 600;
+      relativeHeight = tone.height / 300;
+    }
+    
+    console.log(`🎯 トーン生成: ${tone.pattern} (${relativeX.toFixed(3)}, ${relativeY.toFixed(3)})`);
+    
+    return {
+      ...tone,
+      id: uniqueId,
+      panelId: targetPanel.id,
+      x: relativeX,      // 🔧 相対座標
+      y: relativeY,      // 🔧 相対座標
+      width: relativeWidth,  // 🔧 相対サイズ
+      height: relativeHeight, // 🔧 相対サイズ
+    };
+  });
+
+  console.log(`✅ 座標修正版要素追加完了:`);
+  console.log(`   キャラクター: ${newCharacters.length}個`);
+  console.log(`   吹き出し: ${newSpeechBubbles.length}個`);
+  console.log(`   背景: ${newBackgrounds.length}個`);
+  console.log(`   効果線: ${newEffects.length}個`);
+  console.log(`   トーン: ${newTones.length}個`);
 
   return {
-    characters: [...existingCharacters, ...newCharacters],
-    speechBubbles: [...existingSpeechBubbles, ...newSpeechBubbles], 
-    backgrounds: [...existingBackgrounds, ...newBackgrounds],
-    effects: [...existingEffects, ...newEffects],
-    tones: [...existingTones, ...newTones],
+    characters: [...filteredCharacters, ...newCharacters],
+    speechBubbles: [...filteredBubbles, ...newSpeechBubbles], 
+    backgrounds: [...filteredBackgrounds, ...newBackgrounds],
+    effects: [...filteredEffects, ...newEffects],
+    tones: [...filteredTones, ...newTones],
   };
 };
 
