@@ -15,6 +15,9 @@ import EditBubbleModal from "./CanvasArea/EditBubbleModal";
 import { BackgroundRenderer } from "./CanvasArea/renderers/BackgroundRenderer";
 import { ContextMenuHandler, ContextMenuState, ContextMenuActions, ClipboardState } from "./CanvasArea/ContextMenuHandler";
 
+// 1. インポートを追加
+import ElementLabelRenderer from "./CanvasArea/renderers/ElementLabelRenderer";
+
 /**
  * 🔧 ExtendedCanvasComponentProps - 型競合修正版
  * selectedTone, onToneSelectはCanvasComponentPropsで既に必須として定義済み

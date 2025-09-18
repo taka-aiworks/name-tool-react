@@ -155,7 +155,7 @@ const createBaseScene = (
     opacity: 0.6,
     blur: 0,
     selected: false,
-    zIndex: 5,
+    zIndex: 100,
     isGlobalPosition: false,
   }] : [];
 
@@ -987,23 +987,46 @@ export const applyEnhancedSceneTemplate = (
     };
   });
 
-  // 🔧 効果線生成（相対座標で配置・修正完了）
+  // 🔧 効果線生成（パネル座標変換を追加 - 修正版）
   const newEffects = (template.effects || []).map((effect, index) => {
     const uniqueId = `effect_${Date.now()}_${Math.random().toString(36).substr(2, 5)}_${index}`;
     
-    // 🔧 効果線座標は既に相対座標（0-1）で定義されているため、そのまま使用
-    console.log(`⚡ 効果線生成: ${effect.type} (${effect.x.toFixed(3)}, ${effect.y.toFixed(3)})`);
-    console.log(`   サイズ: ${effect.width.toFixed(3)} x ${effect.height.toFixed(3)}`);
+    // 🔧 相対座標をパネル内の絶対座標に変換
+    let panelX, panelY, panelWidth, panelHeight;
+    
+    if (effect.x <= 1 && effect.y <= 1) {
+      // 相対座標の場合：パネル内の絶対座標に変換
+      panelX = targetPanel.x + (effect.x * targetPanel.width);
+      panelY = targetPanel.y + (effect.y * targetPanel.height);
+      panelWidth = effect.width * targetPanel.width;
+      panelHeight = effect.height * targetPanel.height;
+    } else {
+      // 既に絶対座標の場合：パネル内の相対位置に変換してから絶対座標に
+      const relativeX = effect.x / 600;
+      const relativeY = effect.y / 300;
+      const relativeWidth = effect.width / 600;
+      const relativeHeight = effect.height / 300;
+      
+      panelX = targetPanel.x + (relativeX * targetPanel.width);
+      panelY = targetPanel.y + (relativeY * targetPanel.height);
+      panelWidth = relativeWidth * targetPanel.width;
+      panelHeight = relativeHeight * targetPanel.height;
+    }
+    
+    console.log(`⚡ 効果線生成: ${effect.type}`);
+    console.log(`   テンプレート座標: (${effect.x}, ${effect.y})`);
+    console.log(`   パネル座標: (${panelX.toFixed(1)}, ${panelY.toFixed(1)})`);
+    console.log(`   パネルサイズ: ${panelWidth.toFixed(1)} x ${panelHeight.toFixed(1)}`);
     
     return {
       ...effect,
       id: uniqueId,
       panelId: targetPanel.id,
-      // 🔧 既に相対座標（0-1）なのでそのまま使用
-      x: effect.x,
-      y: effect.y,
-      width: effect.width,
-      height: effect.height,
+      // 🔧 パネル内の絶対座標で保存
+      x: panelX,
+      y: panelY,
+      width: panelWidth,
+      height: panelHeight,
     };
   });
 

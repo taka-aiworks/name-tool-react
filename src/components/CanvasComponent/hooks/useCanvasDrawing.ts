@@ -491,14 +491,175 @@ export const useCanvasDrawing = ({
     );
   };
 
+
+
+  // src/components/CanvasComponent/hooks/useCanvasDrawing.ts 内に追加
+
+  // useCanvasDrawing.ts に追加する Canvas版ラベル描画関数
+
+  /**
+   * 🆕 要素ラベルを描画（Canvas版）
+   */
+  const drawElementLabels = (ctx: CanvasRenderingContext2D) => {
+    // 背景ラベル描画
+    backgrounds.forEach((bg) => {
+      const panel = panels.find(p => p.id === bg.panelId);
+      if (!panel) return;
+
+      // 座標変換（相対座標→絶対座標）
+      let absoluteX, absoluteY, absoluteWidth, absoluteHeight;
+      if (bg.x <= 1 && bg.y <= 1) {
+        absoluteX = panel.x + (bg.x * panel.width);
+        absoluteY = panel.y + (bg.y * panel.height);
+        absoluteWidth = bg.width <= 1 ? bg.width * panel.width : bg.width;
+        absoluteHeight = bg.height <= 1 ? bg.height * panel.height : bg.height;
+      } else {
+        absoluteX = bg.x;
+        absoluteY = bg.y;
+        absoluteWidth = bg.width;
+        absoluteHeight = bg.height;
+      }
+
+      // 背景タイプのラベル作成
+      let label = "🎨 ";
+      switch (bg.type) {
+        case 'solid':
+          label += `単色背景`;
+          break;
+        case 'gradient':
+          const gradientType = bg.gradientType === 'radial' ? '放射状' : '線形';
+          label += `${gradientType}グラデーション`;
+          break;
+        case 'pattern':
+          label += `パターン背景`;
+          break;
+        case 'image':
+          label += `画像背景`;
+          break;
+        default:
+          label += bg.type;
+      }
+
+      // ラベル描画（左上）
+      drawLabel(ctx, absoluteX + 10, absoluteY + 10, label, 'rgba(0, 0, 0, 0.8)', 150);
+    });
+
+    // 効果線ラベル描画
+    effects.forEach((effect) => {
+      const panel = panels.find(p => p.id === effect.panelId);
+      if (!panel) return;
+
+      // 座標変換
+      const absoluteX = panel.x + (effect.x * panel.width);
+      const absoluteY = panel.y + (effect.y * panel.height);
+      const absoluteWidth = effect.width * panel.width;
+      const absoluteHeight = effect.height * panel.height;
+
+      // 効果線タイプのラベル作成
+      const typeNames = {
+        'speed': 'スピード線',
+        'focus': '集中線', 
+        'explosion': '爆発線',
+        'flash': 'フラッシュ線'
+      };
+      const directionNames = {
+        'horizontal': '水平',
+        'vertical': '垂直',
+        'radial': '放射状',
+        'custom': 'カスタム'
+      };
+      
+      const typeName = typeNames[effect.type] || effect.type;
+      const directionName = directionNames[effect.direction] || effect.direction;
+      const label = `⚡ ${typeName} (${directionName})`;
+
+      // ラベル描画（右下）
+      drawLabel(ctx, absoluteX + 10, absoluteY + absoluteHeight - 34, label, 'rgba(255, 0, 0, 0.8)', 140);
+    });
+
+    // トーンラベル描画
+    tones.filter(tone => tone.visible !== false).forEach((tone) => {
+      const panel = panels.find(p => p.id === tone.panelId);
+      if (!panel) return;
+
+      // 座標変換
+      let absoluteX, absoluteY, absoluteWidth, absoluteHeight;
+      if (tone.x <= 1 && tone.y <= 1) {
+        absoluteX = panel.x + (tone.x * panel.width);
+        absoluteY = panel.y + (tone.y * panel.height);
+        absoluteWidth = tone.width <= 1 ? tone.width * panel.width : tone.width;
+        absoluteHeight = tone.height <= 1 ? tone.height * panel.height : tone.height;
+      } else {
+        absoluteX = tone.x;
+        absoluteY = tone.y;
+        absoluteWidth = tone.width;
+        absoluteHeight = tone.height;
+      }
+
+      // トーンパターンのラベル作成
+      const patternNames = {
+        'dots_60': 'ドット60%',
+        'dots_85': 'ドット85%',
+        'dots_100': 'ドット100%',
+        'dots_120': 'ドット120%',
+        'dots_150': 'ドット150%',
+        'lines_horizontal': '水平線',
+        'lines_vertical': '垂直線',
+        'lines_diagonal': '斜線',
+        'lines_cross': 'クロス線',
+        'gradient_linear': '線形グラデーション',
+        'gradient_radial': '放射状グラデーション',
+        'noise_fine': '細かいノイズ',
+        'noise_coarse': '粗いノイズ'
+      };
+      
+      const patternName = patternNames[tone.pattern as keyof typeof patternNames] || tone.pattern;
+      const label = `🎯 ${patternName}トーン`;
+
+      // ラベル描画（右上）
+      drawLabel(ctx, absoluteX + absoluteWidth - 140, absoluteY + 10, label, 'rgba(0, 128, 255, 0.8)', 130);
+    });
+  };
+
+  /**
+   * 🆕 ラベル描画のヘルパー関数
+   */
+  const drawLabel = (
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    text: string,
+    bgColor: string,
+    width: number = 120
+  ) => {
+    ctx.save();
+    
+    // 背景矩形
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(x, y, width, 24);
+    
+    // 白い境界線
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x, y, width, 24);
+    
+    // テキスト
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 12px Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, x + width/2, y + 12);
+    
+    ctx.restore();
+  };
   /**
    * グリッド表示判定
    */
   const showGrid = snapSettings.gridDisplay === 'always' || 
                   (snapSettings.gridDisplay === 'edit-only' && isPanelEditMode);
 
-  /**
-   * Canvas描画関数（効果線+トーン描画統合版）
+/**
+   * Canvas描画関数（効果線+トーン描画統合版 + ラベル表示対応）
    */
     const drawCanvas = () => {
     const canvas = canvasRef.current;
@@ -554,7 +715,148 @@ export const useCanvasDrawing = ({
       // 11. 背景ハンドル描画
       drawBackgroundHandles(ctx);
 
-      console.log("✅ Canvas描画完了（効果線+トーン対応）");
+// 🆕 12. 要素ラベル描画（簡略化・座標修正版）
+      console.log(`🏷️ ラベル描画: 背景${backgrounds.length}個、効果線${effects.length}個、トーン${tones.length}個`);
+      
+      // 🧪 テスト用ラベル（一時的 - 後で削除）
+      ctx.fillStyle = 'rgba(255, 0, 0, 0.9)';
+      ctx.fillRect(50, 50, 150, 30);
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(50, 50, 150, 30);
+      ctx.fillStyle = 'white';
+      ctx.font = 'bold 14px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('🎨 テストラベル', 125, 65);
+      
+      ctx.fillStyle = 'rgba(0, 255, 0, 0.9)';
+      ctx.fillRect(200, 100, 120, 30);
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(200, 100, 120, 30);
+      ctx.fillStyle = 'white';
+      ctx.fillText('⚡ 効果線テスト', 260, 115);
+
+      // 背景ラベル（簡潔版）
+      backgrounds.forEach((bg, index) => {
+        const panel = panels.find(p => p.id === bg.panelId);
+        if (!panel) return;
+        
+        let absoluteX, absoluteY;
+        if (bg.x <= 1 && bg.y <= 1) {
+          absoluteX = panel.x + (bg.x * panel.width);
+          absoluteY = panel.y + (bg.y * panel.height);
+        } else {
+          absoluteX = bg.x;
+          absoluteY = bg.y;
+        }
+        
+        let label = "";
+        switch (bg.type) {
+          case 'solid': label = `🎨 単色背景`; break;
+          case 'gradient': label = `🎨 線形グラデーション`; break;
+          case 'pattern': label = `🎨 ${bg.patternType || 'パターン'}模様`; break;
+          case 'image': label = `🎨 画像背景`; break;
+          default: label = `🎨 ${bg.type}背景`;
+        }
+        
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+        ctx.fillRect(absoluteX + 10, absoluteY + 10, 160, 28);
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(absoluteX + 10, absoluteY + 10, 160, 28);
+        ctx.fillStyle = 'white';
+        ctx.font = 'bold 13px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(label, absoluteX + 10 + 80, absoluteY + 10 + 14);
+      });
+      
+      // 効果線ラベル（座標修正版）
+      effects.forEach((effect, index) => {
+        const panel = panels.find(p => p.id === effect.panelId);
+        if (!panel) return;
+        
+        // 🔧 座標判定修正
+        let absoluteX, absoluteY, absoluteHeight;
+        
+        if (effect.x <= 1 && effect.y <= 1 && effect.width <= 1 && effect.height <= 1) {
+          // 相対座標の場合
+          absoluteX = panel.x + (effect.x * panel.width);
+          absoluteY = panel.y + (effect.y * panel.height);
+          absoluteHeight = effect.height * panel.height;
+        } else {
+          // 絶対座標の場合
+          absoluteX = effect.x;
+          absoluteY = effect.y;
+          absoluteHeight = effect.height;
+        }
+        
+        // 🔧 異常な座標チェック
+        if (absoluteX < 0 || absoluteX > 1000 || absoluteY < 0 || absoluteY > 1000) {
+          console.warn(`⚠️ 効果線${index}: 異常座標(${absoluteX}, ${absoluteY}) - スキップ`);
+          return;
+        }
+        
+        const typeNames = { 'speed': 'スピード線', 'focus': '集中線', 'explosion': '爆発線', 'flash': 'フラッシュ線' };
+        const directionNames = { 'horizontal': '水平', 'vertical': '垂直', 'radial': '放射状', 'custom': 'カスタム' };
+        const typeName = typeNames[effect.type] || effect.type;
+        const directionName = directionNames[effect.direction] || effect.direction;
+        const label = `⚡ ${typeName}(${directionName})`;
+        
+        const labelX = Math.max(10, absoluteX + 10);
+        const labelY = Math.max(30, absoluteY + absoluteHeight - 38);
+        
+        ctx.fillStyle = 'rgba(255, 0, 0, 0.85)';
+        ctx.fillRect(labelX, labelY, 140, 28);
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(labelX, labelY, 140, 28);
+        ctx.fillStyle = 'white';
+        ctx.font = 'bold 12px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(label, labelX + 70, labelY + 14);
+      });
+      
+      // トーンラベル（簡潔版）
+      const visibleTones = tones.filter(tone => tone.visible !== false);
+      visibleTones.forEach((tone, index) => {
+        const panel = panels.find(p => p.id === tone.panelId);
+        if (!panel) return;
+        
+        let absoluteX, absoluteY, absoluteWidth;
+        if (tone.x <= 1 && tone.y <= 1) {
+          absoluteX = panel.x + (tone.x * panel.width);
+          absoluteY = panel.y + (tone.y * panel.height);
+          absoluteWidth = tone.width <= 1 ? tone.width * panel.width : tone.width;
+        } else {
+          absoluteX = tone.x;
+          absoluteY = tone.y;
+          absoluteWidth = tone.width;
+        }
+        
+        const patternNames = {
+          'dots_60': '網点60%', 'dots_85': '網点85%', 'dots_100': '網点100%',
+          'lines_horizontal': '水平線', 'lines_vertical': '垂直線', 'lines_diagonal': '斜線'
+        };
+        const patternName = patternNames[tone.pattern as keyof typeof patternNames] || tone.pattern;
+        const label = `🎯 ${patternName}`;
+        
+        ctx.fillStyle = 'rgba(0, 128, 255, 0.85)';
+        ctx.fillRect(absoluteX + absoluteWidth - 150, absoluteY + 10, 140, 28);
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(absoluteX + absoluteWidth - 150, absoluteY + 10, 140, 28);
+        ctx.fillStyle = 'white';
+        ctx.font = 'bold 12px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(label, absoluteX + absoluteWidth - 150 + 70, absoluteY + 10 + 14);
+      });
+      
+      console.log(`✅ ラベル描画完了: 効果線座標修正版`);
     } catch (error) {
       console.error("❌ Canvas描画エラー:", error);
     }
