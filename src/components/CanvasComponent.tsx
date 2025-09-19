@@ -1035,26 +1035,11 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, ExtendedCanvasComponentPro
         </div>
       )}
 
-      {/* スナップ設定状態表示 */}
+      {/* スナップ設定状態表示 - 表示を無効化
       {snapSettings.enabled && (
-        <div
-          style={{
-            position: "absolute",
-            top: showTonePanel ? "250px" : clipboard ? "220px" : "190px",
-            right: "10px",
-            background: "rgba(76, 175, 80, 0.9)",
-            color: "white",
-            padding: "6px 10px",
-            borderRadius: "4px",
-            fontSize: "11px",
-            fontWeight: "bold",
-          }}
-        >
-          ⚙️ スナップ: {snapSettings.gridSize}px ({snapSettings.sensitivity})
-          <br/>
-          <small>グリッド: {snapSettings.gridDisplay === 'always' ? '常時' : snapSettings.gridDisplay === 'edit-only' ? '編集時' : '非表示'}</small>
-        </div>
+        ...
       )}
+      */}
 
       {/* デバッグ情報表示 */}
       <div
