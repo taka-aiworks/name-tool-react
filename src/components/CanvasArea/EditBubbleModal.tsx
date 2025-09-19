@@ -1,4 +1,4 @@
-// src/components/CanvasArea/EditBubbleModal.tsx
+// src/components/CanvasArea/EditBubbleModal.tsx - 実際のセリフ編集版
 import React from "react";
 import { SpeechBubble } from "../../types";
 
@@ -20,7 +20,8 @@ const EditBubbleModal: React.FC<EditBubbleModalProps> = ({
   if (!editingBubble) return null;
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
+    if (e.key === "Enter" && e.ctrlKey) {
+      // Ctrl+Enterで完了
       e.preventDefault();
       onComplete();
     } else if (e.key === "Escape") {
@@ -42,37 +43,47 @@ const EditBubbleModal: React.FC<EditBubbleModalProps> = ({
         padding: "20px",
         boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
         zIndex: 1000,
+        minWidth: "300px",
       }}
     >
-      <div style={{ marginBottom: "10px", fontWeight: "bold" }}>
-        💬 吹き出し編集
+      <div style={{ marginBottom: "15px", fontWeight: "bold", fontSize: "16px" }}>
+        💬 セリフ編集
       </div>
+
+      {/* セリフ編集エリア */}
       <textarea
         value={editText}
         onChange={(e) => setEditText(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder="セリフを入力..."
+        placeholder="セリフを入力してください..."
         autoFocus
         style={{
-          width: "200px",
-          height: "80px",
-          padding: "8px",
+          width: "100%",
+          height: "120px",
+          padding: "12px",
           border: "1px solid #ccc",
-          borderRadius: "4px",
-          resize: "none",
-          fontFamily: "inherit",
+          borderRadius: "6px",
+          resize: "vertical",
+          fontFamily: "'Noto Sans JP', sans-serif",
+          fontSize: "14px",
+          lineHeight: "1.5",
+          minHeight: "80px",
+          maxHeight: "200px",
         }}
       />
-      <div style={{ marginTop: "10px", textAlign: "right" }}>
+
+      {/* ボタンエリア */}
+      <div style={{ marginTop: "15px", textAlign: "right" }}>
         <button
           onClick={onCancel}
           style={{
-            marginRight: "8px",
-            padding: "6px 12px",
+            marginRight: "10px",
+            padding: "8px 16px",
             border: "1px solid #ccc",
             borderRadius: "4px",
             background: "white",
             cursor: "pointer",
+            fontSize: "14px",
           }}
         >
           キャンセル
@@ -80,19 +91,29 @@ const EditBubbleModal: React.FC<EditBubbleModalProps> = ({
         <button
           onClick={onComplete}
           style={{
-            padding: "6px 12px",
+            padding: "8px 16px",
             border: "none",
             borderRadius: "4px",
             background: "#007bff",
             color: "white",
             cursor: "pointer",
+            fontSize: "14px",
           }}
         >
           完了
         </button>
       </div>
-      <div style={{ marginTop: "8px", fontSize: "12px", color: "#666" }}>
-        💡 Enter: 完了 / Escape: キャンセル
+
+      {/* 操作説明 */}
+      <div style={{ 
+        marginTop: "10px", 
+        fontSize: "12px", 
+        color: "#666",
+        textAlign: "center",
+        borderTop: "1px solid #eee",
+        paddingTop: "8px"
+      }}>
+        💡 Ctrl+Enter: 完了 / Escape: キャンセル
       </div>
     </div>
   );

@@ -1052,13 +1052,6 @@ function App() {
           {/* セリフ・吹き出し */}
           <div className="section">
             <h3>💬 セリフ・吹き出し</h3>
-            <textarea 
-              className="dialogue-input" 
-              placeholder="セリフを入力してください..."
-              value={dialogueText}
-              onChange={(e) => setDialogueText(e.target.value)}
-            />
-            
             <div className="bubble-types">
               {[
                 { id: 'normal', icon: '💬', name: '普通' },

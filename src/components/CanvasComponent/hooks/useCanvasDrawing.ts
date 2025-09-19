@@ -711,6 +711,7 @@ export const useCanvasDrawing = ({
       
       // 8. 吹き出し描画
       BubbleRenderer.drawBubbles(ctx, speechBubbles, panels, state.selectedBubble);
+
       
       // 🔧 9. キャラクター描画 - getCharacterDisplayName を渡す
       CharacterRenderer.drawCharacters(ctx, characters, panels, state.selectedCharacter, getCharacterDisplayName);

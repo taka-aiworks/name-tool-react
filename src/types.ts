@@ -83,11 +83,20 @@ export interface CharacterInteractionState {
   originalRotation?: number;
 }
 
+// EditBubbleModalProps型定義（セリフ入力関連削除）
+export interface EditBubbleModalProps {
+  editingBubble: SpeechBubble | null;
+  onComplete: () => void;
+  onCancel: () => void;
+  // 🔧 削除: editText, setEditText関連の型定義
+}
+
+// SpeechBubble型は既存のまま維持
 export interface SpeechBubble {
   id: string;
   panelId: number;
   type: string;
-  text: string;
+  text: string;  // セリフテキストは維持（表示用）
   x: number;
   y: number;
   scale: number;
@@ -95,6 +104,44 @@ export interface SpeechBubble {
   height: number;
   vertical: boolean;
   isGlobalPosition: boolean;
+}
+
+// 🆕 テキスト描画設定の型定義（新規追加）
+export interface BubbleTextSettings {
+  fontSize?: number;           // 基本フォントサイズ
+  fontFamily?: string;         // フォントファミリー
+  lineHeight?: number;         // 行の高さ倍率
+  padding?: number;           // 内側余白
+  alignment?: 'center' | 'left' | 'right' | 'justify'; // テキスト整列
+  verticalAlignment?: 'top' | 'middle' | 'bottom';     // 縦方向整列
+  autoResize?: boolean;        // フォントサイズ自動調整
+  minFontSize?: number;        // 最小フォントサイズ
+  maxFontSize?: number;        // 最大フォントサイズ
+  wordWrap?: 'character' | 'word' | 'smart';           // 折り返し方式
+}
+
+// 🆕 テキストセグメンテーション設定
+export interface TextSegmentationOptions {
+  enableJapaneseSegmentation?: boolean; // 日本語セグメント化有効
+  respectPunctuation?: boolean;         // 句読点での改行を尊重
+  preserveSpaces?: boolean;            // スペースの保持
+  breakOnLanguageChange?: boolean;     // 言語変更時の改行
+}
+
+// 🆕 描画レイアウト情報
+export interface TextLayoutInfo {
+  lines: string[];             // 分割された行
+  actualFontSize: number;      // 実際のフォントサイズ
+  totalHeight: number;         // テキスト全体の高さ
+  lineHeight: number;          // 行の高さ
+  overflow: boolean;           // オーバーフロー発生
+}
+
+// マウスイベント関連（EditBubbleModal用）
+export interface BubbleEditState {
+  isEditing: boolean;
+  editingBubbleId: string | null;
+  modalPosition?: { x: number; y: number };
 }
 
 // src/types.ts - CanvasComponentProps修正版
