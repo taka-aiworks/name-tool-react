@@ -80,6 +80,28 @@ function App() {
     height: 600 
   }), []);
 
+  const backgroundTemplateCount = useMemo(() => {
+  const uniqueNames = new Set(
+    backgrounds
+      .filter(bg => bg.name) // name が存在するもののみ
+      .map(bg => bg.name)
+    );
+    return uniqueNames.size;
+  }, [backgrounds]);
+
+  const effectTemplateCount = useMemo(() => {
+    const uniqueNames = new Set(
+      effects.map(effect => effect.type) // type のみを使用
+    );
+    return uniqueNames.size;
+  }, [effects]);
+
+  const toneTemplateCount = useMemo(() => {
+    const uniqueNames = new Set(
+      tones.map(tone => tone.type) // type のみを使用
+    );
+    return uniqueNames.size;
+  }, [tones]);
 
   // 修正後: 汎用ID
   const [characterNames, setCharacterNames] = useState<Record<string, string>>({
@@ -684,13 +706,14 @@ function App() {
             onClick={() => setShowBackgroundPanel(true)}
             title="背景設定 (Ctrl+B)"
             style={{
-              background: backgrounds.length > 0 ? "#9c27b0" : "var(--bg-tertiary)",
-              color: backgrounds.length > 0 ? "white" : "var(--text-primary)",
-              border: `1px solid ${backgrounds.length > 0 ? "#9c27b0" : "var(--border-color)"}`,
-            }}
+              background: backgroundTemplateCount > 0 ? "#9c27b0" : "var(--bg-tertiary)",
+              color: backgroundTemplateCount > 0 ? "white" : "var(--text-primary)",
+              border: `1px solid ${backgroundTemplateCount > 0 ? "#9c27b0" : "var(--border-color)"}`,
+            }}  
           >
             🎨 背景
-            {backgrounds.length > 0 && <span style={{ marginLeft: "4px" }}>({backgrounds.length})</span>}
+              {backgroundTemplateCount > 0 && <span style={{ marginLeft: "4px" }}>({backgroundTemplateCount})</span>}
+
           </button>
 
           {/* 効果線ボタン */}
@@ -699,13 +722,13 @@ function App() {
             onClick={() => setShowEffectPanel(true)}
             title="効果線設定 (Ctrl+F)"
             style={{
-              background: effects.length > 0 ? "#ff5722" : "var(--bg-tertiary)",
-              color: effects.length > 0 ? "white" : "var(--text-primary)",
-              border: `1px solid ${effects.length > 0 ? "#ff5722" : "var(--border-color)"}`,
+              background: effectTemplateCount > 0 ? "#ff5722" : "var(--bg-tertiary)",
+              color: effectTemplateCount > 0 ? "white" : "var(--text-primary)",
+              border: `1px solid ${effectTemplateCount > 0 ? "#ff5722" : "var(--border-color)"}`,
             }}
           >
             ⚡ 効果線
-            {effects.length > 0 && <span style={{ marginLeft: "4px" }}>({effects.length})</span>}
+            {effectTemplateCount > 0 && <span style={{ marginLeft: "4px" }}>({effectTemplateCount})</span>}
           </button>
 
           {/* 🆕 トーンボタン */}
@@ -714,13 +737,13 @@ function App() {
             onClick={() => setShowTonePanel(true)}
             title="トーン設定 (Ctrl+T)"
             style={{
-              background: tones.length > 0 ? "#795548" : "var(--bg-tertiary)",
-              color: tones.length > 0 ? "white" : "var(--text-primary)",
-              border: `1px solid ${tones.length > 0 ? "#795548" : "var(--border-color)"}`,
+              background: toneTemplateCount > 0 ? "#795548" : "var(--bg-tertiary)",
+              color: toneTemplateCount > 0 ? "white" : "var(--text-primary)",
+              border: `1px solid ${toneTemplateCount > 0 ? "#795548" : "var(--border-color)"}`,
             }}
           >
             🎯 トーン
-            {tones.length > 0 && <span style={{ marginLeft: "4px" }}>({tones.length})</span>}
+            {toneTemplateCount > 0 && <span style={{ marginLeft: "4px" }}>({toneTemplateCount})</span>}
           </button>
 
           {/* プロジェクトボタン */}
@@ -1051,165 +1074,6 @@ function App() {
                   {bubble.icon} {bubble.name}
                 </div>
               ))}
-            </div>
-          </div>
-
-          {/* 背景セクション */}
-          <div className="section">
-            <h3>🎨 背景</h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-              <button 
-                className="btn btn-primary"
-                onClick={() => setShowBackgroundPanel(true)}
-                title="背景設定パネルを開く (Ctrl+B)"
-                style={{
-                  background: "var(--accent-color)",
-                  color: "white",
-                  border: "1px solid var(--accent-color)",
-                  borderRadius: "6px",
-                  padding: "8px 12px",
-                  cursor: "pointer",
-                  fontSize: "14px"
-                }}
-              >
-                🎨 背景設定
-              </button>
-              
-              {backgrounds.length > 0 && (
-                <div style={{
-                  background: "var(--bg-secondary)",
-                  border: "1px solid var(--border-color)",
-                  borderRadius: "6px",
-                  padding: "8px",
-                  fontSize: "12px",
-                  color: "var(--text-muted)"
-                }}>
-                  <strong>現在の背景:</strong><br/>
-                  {backgrounds.length}個の背景要素
-                  <br/>
-                  <small>• パネルを選択して背景設定</small>
-                </div>
-              )}
-              
-              {selectedPanel && (
-                <div style={{
-                  background: "var(--bg-tertiary)",
-                  border: "1px solid var(--accent-color)",
-                  borderRadius: "6px",
-                  padding: "8px",
-                  fontSize: "12px",
-                  color: "var(--accent-color)"
-                }}>
-                  📍 パネル{selectedPanel.id}選択中<br/>
-                  <small>背景設定パネルから背景を追加できます</small>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* 効果線セクション */}
-          <div className="section">
-            <h3>⚡ 効果線</h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-              <button 
-                className="btn btn-primary"
-                onClick={() => setShowEffectPanel(true)}
-                title="効果線設定パネルを開く (Ctrl+F)"
-                style={{
-                  background: "var(--accent-color)",
-                  color: "white",
-                  border: "1px solid var(--accent-color)",
-                  borderRadius: "6px",
-                  padding: "8px 12px",
-                  cursor: "pointer",
-                  fontSize: "14px"
-                }}
-              >
-                ⚡ 効果線設定
-              </button>
-              
-              {effects.length > 0 && (
-                <div style={{
-                  background: "var(--bg-secondary)",
-                  border: "1px solid var(--border-color)",
-                  borderRadius: "6px",
-                  padding: "8px",
-                  fontSize: "12px",
-                  color: "var(--text-muted)"
-                }}>
-                  <strong>現在の効果線:</strong><br/>
-                  {effects.length}個の効果線要素
-                  <br/>
-                  <small>• パネルを選択して効果線設定</small>
-                </div>
-              )}
-              
-              {selectedPanel && (
-                <div style={{
-                  background: "var(--bg-tertiary)",
-                  border: "1px solid var(--accent-color)",
-                  borderRadius: "6px",
-                  padding: "8px",
-                  fontSize: "12px",
-                  color: "var(--accent-color)"
-                }}>
-                  📍 パネル{selectedPanel.id}選択中<br/>
-                  <small>効果線設定パネルから効果線を追加できます</small>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* 🆕 トーンセクション */}
-          <div className="section">
-            <h3>🎯 トーン</h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-              <button 
-                className="btn btn-primary"
-                onClick={() => setShowTonePanel(true)}
-                title="トーン設定パネルを開く (Ctrl+T)"
-                style={{
-                  background: "var(--accent-color)",
-                  color: "white",
-                  border: "1px solid var(--accent-color)",
-                  borderRadius: "6px",
-                  padding: "8px 12px",
-                  cursor: "pointer",
-                  fontSize: "14px"
-                }}
-              >
-                🎯 トーン設定
-              </button>
-              
-              {tones.length > 0 && (
-                <div style={{
-                  background: "var(--bg-secondary)",
-                  border: "1px solid var(--border-color)",
-                  borderRadius: "6px",
-                  padding: "8px",
-                  fontSize: "12px",
-                  color: "var(--text-muted)"
-                }}>
-                  <strong>現在のトーン:</strong><br/>
-                  {tones.length}個のトーン要素
-                  <br/>
-                  <small>• パネルを選択してトーン設定</small>
-                </div>
-              )}
-              
-              {selectedPanel && (
-                <div style={{
-                  background: "var(--bg-tertiary)",
-                  border: "1px solid var(--accent-color)",
-                  borderRadius: "6px",
-                  padding: "8px",
-                  fontSize: "12px",
-                  color: "var(--accent-color)"
-                }}>
-                  📍 パネル{selectedPanel.id}選択中<br/>
-                  <small>トーン設定パネルからトーンを追加できます</small>
-                </div>
-              )}
             </div>
           </div>
 

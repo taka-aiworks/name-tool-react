@@ -18,6 +18,8 @@ import { ContextMenuHandler, ContextMenuState, ContextMenuActions, ClipboardStat
 // 1. インポートを追加
 import ElementLabelRenderer from "./CanvasArea/renderers/ElementLabelRenderer";
 
+import { getCanvasBackgroundDisplayName } from '../utils/backgroundUtils';
+
 /**
  * 🔧 ExtendedCanvasComponentProps - 型競合修正版
  * selectedTone, onToneSelectはCanvasComponentPropsで既に必須として定義済み
@@ -291,7 +293,7 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, ExtendedCanvasComponentPro
         const newBackgrounds = backgrounds.filter(bg => bg.id !== element.id);
         setBackgrounds(newBackgrounds);
         setSelectedBackground(null);
-        console.log("背景削除:", (element as BackgroundElement).type);
+        console.log("背景削除:", getCanvasBackgroundDisplayName(element as BackgroundElement, backgrounds));
       } else if (type === 'effect') {
         const newEffects = effects.filter(effect => effect.id !== element.id);
         setEffects(newEffects);
@@ -926,9 +928,10 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, ExtendedCanvasComponentPro
           isBackgroundDragging ? "背景移動中" : 
           `背景選択中`}
           <br/>
-          <small>
-            {selectedBackground.type} | 透明度: {Math.round(selectedBackground.opacity * 100)}%
-          </small>
+          // ✅ 修正後
+            <small>
+              {getCanvasBackgroundDisplayName(selectedBackground, backgrounds)} | 透明度: {Math.round(selectedBackground.opacity * 100)}%
+            </small>
         </div>
       )}
 

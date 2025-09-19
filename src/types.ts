@@ -211,10 +211,13 @@ export interface SnapSettings {
 // 背景機能用型定義
 // ==========================================
 
+// src/types.ts - BackgroundElement修正版（nameをオプショナルに）
+
 export interface BackgroundElement {
   id: string;
   panelId: number;  // 既存のPanel.idに対応（number型を維持）
   type: 'solid' | 'gradient' | 'pattern' | 'image';
+  name?: string;    // 🔧 オプショナルに変更（既存システムと互換性保持）
   x: number;
   y: number;
   width: number;

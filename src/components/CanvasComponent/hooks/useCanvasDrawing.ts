@@ -502,26 +502,33 @@ export const useCanvasDrawing = ({
    */
   const drawElementLabels = (ctx: CanvasRenderingContext2D) => {
     // 背景ラベル描画
-    backgrounds.forEach((bg) => {
-      const panel = panels.find(p => p.id === bg.panelId);
-      if (!panel) return;
+    // 背景ラベル描画（統合版）
+    const drawnPanels = new Set<number>();
+      backgrounds.forEach((bg) => {
+    const panel = panels.find(p => p.id === bg.panelId);
+    if (!panel || drawnPanels.has(panel.id)) return;
+    
+    drawnPanels.add(panel.id);
 
-      // 座標変換（相対座標→絶対座標）
-      let absoluteX, absoluteY, absoluteWidth, absoluteHeight;
-      if (bg.x <= 1 && bg.y <= 1) {
-        absoluteX = panel.x + (bg.x * panel.width);
-        absoluteY = panel.y + (bg.y * panel.height);
-        absoluteWidth = bg.width <= 1 ? bg.width * panel.width : bg.width;
-        absoluteHeight = bg.height <= 1 ? bg.height * panel.height : bg.height;
-      } else {
-        absoluteX = bg.x;
-        absoluteY = bg.y;
-        absoluteWidth = bg.width;
-        absoluteHeight = bg.height;
-      }
+    // 座標変換（相対座標→絶対座標）
+    let absoluteX, absoluteY, absoluteWidth, absoluteHeight;
+    if (bg.x <= 1 && bg.y <= 1) {
+      absoluteX = panel.x + (bg.x * panel.width);
+      absoluteY = panel.y + (bg.y * panel.height);
+      absoluteWidth = bg.width <= 1 ? bg.width * panel.width : bg.width;
+      absoluteHeight = bg.height <= 1 ? bg.height * panel.height : bg.height;
+    } else {
+      absoluteX = bg.x;
+      absoluteY = bg.y;
+      absoluteWidth = bg.width;
+      absoluteHeight = bg.height;
+    }
 
-      // 背景タイプのラベル作成
-      let label = "🎨 ";
+    // 背景名前を優先、フォールバック付き
+    let label = "🎨 ";
+    if (bg.name) {
+      label += bg.name;
+    } else {
       switch (bg.type) {
         case 'solid':
           label += `単色背景`;
@@ -539,10 +546,11 @@ export const useCanvasDrawing = ({
         default:
           label += bg.type;
       }
+    }
 
-      // ラベル描画（左上）
-      drawLabel(ctx, absoluteX + 10, absoluteY + 10, label, 'rgba(0, 0, 0, 0.8)', 150);
-    });
+    // ラベル描画（左上）
+    drawLabel(ctx, absoluteX + 10, absoluteY + 10, label, 'rgba(0, 0, 0, 0.8)', 150);
+  });
 
     // 効果線ラベル描画
     effects.forEach((effect) => {
@@ -715,41 +723,8 @@ export const useCanvasDrawing = ({
       // 11. 背景ハンドル描画
       drawBackgroundHandles(ctx);
 
-
-      // 背景ラベル（簡潔版）
-      backgrounds.forEach((bg, index) => {
-        const panel = panels.find(p => p.id === bg.panelId);
-        if (!panel) return;
-        
-        let absoluteX, absoluteY;
-        if (bg.x <= 1 && bg.y <= 1) {
-          absoluteX = panel.x + (bg.x * panel.width);
-          absoluteY = panel.y + (bg.y * panel.height);
-        } else {
-          absoluteX = bg.x;
-          absoluteY = bg.y;
-        }
-        
-        let label = "";
-        switch (bg.type) {
-          case 'solid': label = `🎨 単色背景`; break;
-          case 'gradient': label = `🎨 線形グラデーション`; break;
-          case 'pattern': label = `🎨 ${bg.patternType || 'パターン'}模様`; break;
-          case 'image': label = `🎨 画像背景`; break;
-          default: label = `🎨 ${bg.type}背景`;
-        }
-        
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
-        ctx.fillRect(absoluteX + 10, absoluteY + 10, 160, 28);
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(absoluteX + 10, absoluteY + 10, 160, 28);
-        ctx.fillStyle = 'white';
-        ctx.font = 'bold 13px Arial';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(label, absoluteX + 10 + 80, absoluteY + 10 + 14);
-      });
+      // 12. 要素ラベル描画
+      drawElementLabels(ctx);
       
       // 効果線ラベル（座標修正版）
       effects.forEach((effect, index) => {
