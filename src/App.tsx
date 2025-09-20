@@ -23,6 +23,8 @@ import { PageManager } from './components/UI/PageManager';
 import { usePageManager } from './hooks/usePageManager';
 // 🔧 1. import部分に追加（他のimportの近くに追加）
 import { SceneTemplatePanel } from './components/UI/SceneTemplatePanel';
+// 既存のimportの下に追加
+import PanelTemplateSelector from './components/UI/PanelTemplateSelector';
 
 
 function App() {
@@ -58,6 +60,9 @@ function App() {
   // 2. 状態管理に追加（2行）
   const [showCharacterSettingsPanel, setShowCharacterSettingsPanel] = useState<boolean>(false);
   const [editingCharacterType, setEditingCharacterType] = useState<string>('');
+
+  // 既存のuseStateの下に追加
+  const [showPanelSelector, setShowPanelSelector] = useState<boolean>(false);
 
 
   // スナップ設定の状態管理
@@ -856,27 +861,27 @@ function App() {
       <div className="main-content">
         {/* 左サイドバー */}
         <div className="sidebar left-sidebar">
-          {/* パネルテンプレート */}
-          <div className="section">
-            <h3>📐 パネルテンプレート</h3>
-            <div className="template-grid">
-              {Object.keys(templates).map((template) => (
-                <div
-                  key={template}
-                  className={`template-card ${selectedTemplate === template ? 'selected' : ''}`}
-                  onClick={() => handleTemplateClick(template)}
-                >
-                  <div className="template-preview">
-                    {templates[template].panels.length}コマ
-                  </div>
-                  <span>{template}</span>
-                </div>
-              ))}
+          {/* パネルテンプレート - 改良版 */}
+            <div className="section">
+              <h3>📐 パネルテンプレート</h3>
+              <button 
+                className="control-btn"
+                onClick={() => setShowPanelSelector(true)}
+                style={{
+                  width: "100%",
+                  padding: "12px",
+                  background: "var(--accent-color)",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "6px"
+                }}
+              >
+                🎯 コマ割りを選択 ({Object.keys(templates).length}種類)
+              </button>
+              <div className="section-info">
+                ✨ コマ数別に分類された使いやすいテンプレート集
+              </div>
             </div>
-            <div className="section-info">
-              ✨ キャラクターと吹き出しも自動配置されます
-            </div>
-          </div>
 
           {/* コマ操作パネル */}
           {isPanelEditMode && (
@@ -1208,6 +1213,17 @@ function App() {
         saveStatus={projectSave.saveStatus}
         onSaveProject={projectSave.saveProject}
       />
+        <PanelTemplateSelector
+          onTemplateSelect={(templateId) => {
+            if (templateId && templates[templateId]) {
+              handleTemplateClick(templateId);
+            }
+            setShowPanelSelector(false);
+          }}
+          onClose={() => setShowPanelSelector(false)} // 🆕 この行を追加
+          isDarkMode={isDarkMode}
+          isVisible={showPanelSelector}
+        />
     </div>
   );
 }
