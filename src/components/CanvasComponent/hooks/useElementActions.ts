@@ -1,5 +1,4 @@
-// src/components/CanvasComponent/hooks/useElementActions.ts
-// types.ts対応修正版
+// src/components/CanvasComponent/hooks/useElementActions.ts - 吹き出し位置重複防止版
 import { useEffect } from 'react';
 import { Panel, Character, SpeechBubble } from '../../../types';
 import { CanvasState, CanvasStateActions } from './useCanvasState';
@@ -45,6 +44,64 @@ export const useElementActions = ({
 }: ElementActionsHookProps): ElementActionsReturn => {
 
   /**
+   * 🆕 新しい吹き出しの配置位置を計算（重複回避）
+   */
+  const calculateBubblePosition = (
+    targetPanel: Panel,
+    bubbleWidth: number,
+    bubbleHeight: number,
+    existingBubbles: SpeechBubble[]
+  ): { x: number; y: number } => {
+    
+    // パネル内の配置エリア定義（上から下、左から右の順）
+    const placementAreas = [
+      { x: 0.2, y: 0.1 }, // 左上
+      { x: 0.7, y: 0.1 }, // 右上
+      { x: 0.5, y: 0.2 }, // 上中央
+      { x: 0.1, y: 0.4 }, // 左中央
+      { x: 0.8, y: 0.4 }, // 右中央
+      { x: 0.3, y: 0.6 }, // 左下
+      { x: 0.6, y: 0.6 }, // 右下
+      { x: 0.5, y: 0.8 }, // 下中央
+    ];
+
+    // パネル内の既存吹き出し数を数える
+    const panelBubbles = existingBubbles.filter(b => b.panelId === targetPanel.id);
+    console.log(`💬 パネル${targetPanel.id}内の既存吹き出し数: ${panelBubbles.length}`);
+
+    // 配置エリアを順番に試す
+    for (let i = 0; i < placementAreas.length; i++) {
+      const areaIndex = (panelBubbles.length + i) % placementAreas.length;
+      const area = placementAreas[areaIndex];
+      
+      const candidateX = targetPanel.x + targetPanel.width * area.x - bubbleWidth / 2;
+      const candidateY = targetPanel.y + targetPanel.height * area.y - bubbleHeight / 2;
+      
+      // 既存の吹き出しと重複しないかチェック
+      const hasOverlap = existingBubbles.some(bubble => {
+        if (bubble.panelId !== targetPanel.id) return false;
+        
+        const distance = Math.sqrt(
+          Math.pow(bubble.x - candidateX, 2) + Math.pow(bubble.y - candidateY, 2)
+        );
+        return distance < 80; // 最小距離80px
+      });
+
+      if (!hasOverlap) {
+        console.log(`✅ 吹き出し配置: エリア${areaIndex + 1} (${candidateX.toFixed(1)}, ${candidateY.toFixed(1)})`);
+        return { x: candidateX, y: candidateY };
+      }
+    }
+
+    // 全エリアが埋まっている場合はランダム配置
+    const randomX = targetPanel.x + Math.random() * (targetPanel.width - bubbleWidth);
+    const randomY = targetPanel.y + Math.random() * (targetPanel.height - bubbleHeight);
+    console.log(`🎲 ランダム配置: (${randomX.toFixed(1)}, ${randomY.toFixed(1)})`);
+    
+    return { x: randomX, y: randomY };
+  };
+
+  /**
    * キャラクター追加機能
    */
   const addCharacter = (type: string) => {
@@ -66,25 +123,23 @@ export const useElementActions = ({
       friend: "友人",
     };
 
-    // 🔧 viewType修正: types.tsの実際の型に合わせる
-    let viewType: "face" | "upper_body" | "full_body";  // halfBody/fullBody → upper_body/full_body
+    let viewType: "face" | "upper_body" | "full_body";
     let initialWidth: number;
     let initialHeight: number;
 
-    // キャラクタータイプに応じた設定
     switch (type) {
       case "hero":
-        viewType = "upper_body";  // halfBody → upper_body
+        viewType = "upper_body";
         initialWidth = 100;
         initialHeight = 120;
         break;
       case "heroine":
-        viewType = "upper_body";  // halfBody → upper_body
+        viewType = "upper_body";
         initialWidth = 95;
         initialHeight = 115;
         break;
       case "rival":
-        viewType = "upper_body";  // halfBody → upper_body
+        viewType = "upper_body";
         initialWidth = 105;
         initialHeight = 125;
         break;
@@ -94,44 +149,30 @@ export const useElementActions = ({
         initialHeight = 80;
         break;
       default:
-        viewType = "upper_body";  // halfBody → upper_body
+        viewType = "upper_body";
         initialWidth = 100;
         initialHeight = 120;
     }
 
-    // 🔧 Character型修正: types.tsの実際のプロパティに合わせる
     const newCharacter: Character = {
       id: `char_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
       panelId: targetPanel.id,
-      characterId: `char_${type}_${Date.now()}`, // 新プロパティ
+      characterId: `char_${type}_${Date.now()}`,
       type: type,
       name: characterNames[type] || "キャラクター",
       x: targetPanel.x + targetPanel.width * 0.5,
       y: targetPanel.y + targetPanel.height * 0.7,
       scale: 2.0,
-      
-      // width/height を明示的に設定
       width: initialWidth,
       height: initialHeight,
-      
-      // 🔧 types.tsの実際のプロパティに修正
-      facing: "front",        // bodyDirection統合
-      action: "standing",     // bodyPose → action
-      expression: "normal",   // faceExpression → expression
+      facing: "front",
+      action: "standing",
+      expression: "normal",
       viewType: viewType,
-      eyeState: "front",      // eyeDirection → eyeState
-      mouthState: "normal",   // 新プロパティ
-      handGesture: "normal",  // 新プロパティ
+      eyeState: "front",
+      mouthState: "normal",
+      handGesture: "normal",
       isGlobalPosition: true,
-      
-      // 🔧 削除: 存在しないプロパティを削除
-      // gaze: "center",          // 削除
-      // pose: "standing",        // 削除
-      // faceAngle: "front",      // 削除
-      // bodyDirection: "front",  // 削除
-      // faceExpression: "normal", // 削除
-      // bodyPose: "standing",    // 削除
-      // eyeDirection: "front",   // 削除
     };
 
     setCharacters([...characters, newCharacter]);
@@ -141,7 +182,7 @@ export const useElementActions = ({
   };
 
   /**
-   * 吹き出し追加機能
+   * 🔧 吹き出し追加機能（重複回避版）
    */
   const addBubble = (type: string, text: string) => {
     let availablePanels = panels;
@@ -159,13 +200,16 @@ export const useElementActions = ({
     const baseWidth = Math.max(60, textLength * 8 + 20);
     const baseHeight = Math.max(80, Math.ceil(textLength / 4) * 20 + 40);
 
+    // 🔧 重複しない位置を計算
+    const position = calculateBubblePosition(targetPanel, baseWidth, baseHeight, speechBubbles);
+
     const newBubble: SpeechBubble = {
       id: `bubble_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
       panelId: targetPanel.id,
       type: type,
       text: text || "ダブルクリックで編集",
-      x: targetPanel.x + targetPanel.width * 0.5,
-      y: targetPanel.y + targetPanel.height * 0.3,
+      x: position.x,  // 🔧 計算された位置を使用
+      y: position.y,  // 🔧 計算された位置を使用
       scale: 1.0,
       width: baseWidth,
       height: baseHeight,
@@ -173,8 +217,11 @@ export const useElementActions = ({
       isGlobalPosition: true,
     };
 
+    // 🔧 既存の吹き出しの座標を保持したまま新しい吹き出しを追加
     setSpeechBubbles([...speechBubbles, newBubble]);
-    console.log("✅ 吹き出し追加:", type);
+    actions.setSelectedBubble(newBubble);
+    
+    console.log("✅ 吹き出し追加:", type, `位置:(${position.x.toFixed(1)}, ${position.y.toFixed(1)})`);
   };
 
   /**
@@ -193,6 +240,7 @@ export const useElementActions = ({
         height: newHeight,
       };
       
+      // 🔧 既存の吹き出しの位置を保持したまま更新
       setSpeechBubbles(
         speechBubbles.map((bubble) =>
           bubble.id === state.editingBubble!.id ? updatedBubble : bubble
@@ -215,9 +263,6 @@ export const useElementActions = ({
     console.log("❌ 吹き出し編集キャンセル");
   };
 
-  /**
-   * onCharacterAdd, onBubbleAdd コールバック登録
-   */
   useEffect(() => {
     onCharacterAdd(addCharacter);
   }, [state.selectedPanel, characters.length]);

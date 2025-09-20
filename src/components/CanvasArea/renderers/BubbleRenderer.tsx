@@ -2,13 +2,13 @@
 import { SpeechBubble, Panel } from "../../../types";
 
 export class BubbleRenderer {
-  // 吹き出し描画メイン関数（編集中対応版）
+  // 吹き出し描画メイン関数（editingBubble対応版）
   static drawBubbles(
     ctx: CanvasRenderingContext2D,
     bubbles: SpeechBubble[],
     panels: Panel[],
     selectedBubble: SpeechBubble | null,
-    editingBubble?: SpeechBubble | null
+    editingBubble?: SpeechBubble | null  // 🔧 5つ目の引数を追加
   ) {
     bubbles.forEach(bubble => {
       this.drawSingleBubble(ctx, bubble, panels, selectedBubble, editingBubble);
@@ -73,100 +73,117 @@ export class BubbleRenderer {
     ctx.restore();
   }
 
-  // 吹き出し背景描画
+  // 吹き出し背景描画（形状完全分離版）
   static drawBubbleBackground(ctx: CanvasRenderingContext2D, bubble: SpeechBubble) {
     const isDarkMode = document.documentElement.getAttribute("data-theme") === "dark";
     
+    // 基本色設定
     ctx.fillStyle = isDarkMode ? "#2d2d2d" : "white";
     ctx.strokeStyle = isDarkMode ? "#555" : "#333";
     ctx.lineWidth = 2;
 
-    // 吹き出し形状に応じた描画
+    console.log(`🎨 吹き出し描画: type="${bubble.type}", id="${bubble.id}"`);
+
+    // 🔧 型に応じて確実に異なる形状を描画
     switch (bubble.type) {
       case "speech":
+      case "普通":
         this.drawSpeechBubble(ctx, bubble);
+        console.log("💬 通常の吹き出しを描画");
         break;
+        
       case "thought":
+      case "心の声":
         this.drawThoughtBubble(ctx, bubble);
+        console.log("💭 思考吹き出しを描画");
         break;
+        
       case "shout":
+      case "叫び":
         this.drawShoutBubble(ctx, bubble);
+        console.log("❗ 叫び吹き出しを描画");
         break;
+        
       case "whisper":
+      case "小声":
         this.drawWhisperBubble(ctx, bubble);
+        console.log("🤫 ささやき吹き出しを描画");
         break;
+        
       default:
+        console.warn(`⚠️ 未知の吹き出しタイプ: "${bubble.type}" - 通常の吹き出しで描画`);
         this.drawSpeechBubble(ctx, bubble);
     }
   }
 
-  // 基本的な吹き出し形状
+  // 通常の吹き出し（角丸四角形＋尻尾）
   static drawSpeechBubble(ctx: CanvasRenderingContext2D, bubble: SpeechBubble) {
-    const cornerRadius = 8;
+    const cornerRadius = 12;
     
+    // メイン吹き出し部分
     ctx.beginPath();
     ctx.roundRect(bubble.x, bubble.y, bubble.width, bubble.height, cornerRadius);
     ctx.fill();
     ctx.stroke();
 
-    // 吹き出しの尻尾
-    const tailX = bubble.x + bubble.width * 0.2;
+    // 吹き出しの尻尾（三角形）
+    const tailX = bubble.x + bubble.width * 0.15;
     const tailY = bubble.y + bubble.height;
     
     ctx.beginPath();
     ctx.moveTo(tailX, tailY);
-    ctx.lineTo(tailX - 10, tailY + 15);
-    ctx.lineTo(tailX + 10, tailY + 10);
+    ctx.lineTo(tailX - 15, tailY + 20);
+    ctx.lineTo(tailX + 15, tailY + 12);
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
   }
 
-  // 思考吹き出し
+  // 思考吹き出し（楕円形＋小さな泡）
   static drawThoughtBubble(ctx: CanvasRenderingContext2D, bubble: SpeechBubble) {
+    // メインの楕円
     ctx.beginPath();
     ctx.ellipse(
       bubble.x + bubble.width / 2,
       bubble.y + bubble.height / 2,
-      bubble.width / 2,
-      bubble.height / 2,
+      bubble.width / 2 - 5,
+      bubble.height / 2 - 5,
       0, 0, Math.PI * 2
     );
     ctx.fill();
     ctx.stroke();
 
-    // 思考の泡
-    const bubbleSize1 = 8;
-    const bubbleSize2 = 5;
-    const bubbleX = bubble.x + bubble.width * 0.2;
-    const bubbleY = bubble.y + bubble.height + 10;
+    // 思考の小さな泡（3つ）
+    const bubblePositions = [
+      { x: bubble.x + bubble.width * 0.2, y: bubble.y + bubble.height + 15, size: 12 },
+      { x: bubble.x + bubble.width * 0.15, y: bubble.y + bubble.height + 35, size: 8 },
+      { x: bubble.x + bubble.width * 0.1, y: bubble.y + bubble.height + 50, size: 5 }
+    ];
 
-    ctx.beginPath();
-    ctx.arc(bubbleX, bubbleY, bubbleSize1, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.arc(bubbleX - 8, bubbleY + 8, bubbleSize2, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
+    bubblePositions.forEach(pos => {
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, pos.size, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    });
   }
 
-  // 叫び吹き出し
+  // 叫び吹き出し（ギザギザの爆発型）
   static drawShoutBubble(ctx: CanvasRenderingContext2D, bubble: SpeechBubble) {
-    const spikes = 8;
-    const spikeLength = 10;
+    const centerX = bubble.x + bubble.width / 2;
+    const centerY = bubble.y + bubble.height / 2;
+    const spikes = 12;
+    const innerRadius = Math.min(bubble.width, bubble.height) / 2 - 10;
+    const outerRadius = Math.min(bubble.width, bubble.height) / 2 + 15;
     
     ctx.beginPath();
     
     for (let i = 0; i < spikes * 2; i++) {
       const angle = (i / (spikes * 2)) * Math.PI * 2;
-      const radius = (i % 2 === 0) ? 
-        Math.min(bubble.width, bubble.height) / 2 + spikeLength :
-        Math.min(bubble.width, bubble.height) / 2;
+      const radius = (i % 2 === 0) ? outerRadius : innerRadius;
       
-      const x = bubble.x + bubble.width / 2 + Math.cos(angle) * radius;
-      const y = bubble.y + bubble.height / 2 + Math.sin(angle) * radius;
+      const x = centerX + Math.cos(angle) * radius;
+      const y = centerY + Math.sin(angle) * radius;
       
       if (i === 0) {
         ctx.moveTo(x, y);
@@ -178,17 +195,61 @@ export class BubbleRenderer {
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
+    
+    // 叫び効果線を追加
+    for (let i = 0; i < 6; i++) {
+      const angle = (i / 6) * Math.PI * 2;
+      const startRadius = outerRadius + 5;
+      const endRadius = outerRadius + 25;
+      
+      const startX = centerX + Math.cos(angle) * startRadius;
+      const startY = centerY + Math.sin(angle) * startRadius;
+      const endX = centerX + Math.cos(angle) * endRadius;
+      const endY = centerY + Math.sin(angle) * endRadius;
+      
+      ctx.beginPath();
+      ctx.moveTo(startX, startY);
+      ctx.lineTo(endX, endY);
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    }
+    
+    // 線幅を元に戻す
+    ctx.lineWidth = 2;
   }
 
-  // ささやき吹き出し
+  // ささやき吹き出し（点線の枠＋小さめ）
   static drawWhisperBubble(ctx: CanvasRenderingContext2D, bubble: SpeechBubble) {
-    ctx.setLineDash([5, 5]);
+    // 点線パターン設定
+    ctx.setLineDash([8, 6]);
+    ctx.lineWidth = 1.5;
+    
+    // 角を少し丸く
+    const cornerRadius = 15;
     
     ctx.beginPath();
-    ctx.roundRect(bubble.x, bubble.y, bubble.width, bubble.height, 8);
+    ctx.roundRect(bubble.x + 5, bubble.y + 5, bubble.width - 10, bubble.height - 10, cornerRadius);
     ctx.fill();
     ctx.stroke();
     
+    // 点線をリセット
+    ctx.setLineDash([]);
+    ctx.lineWidth = 2;
+    
+    // 小さな尻尾（点線）
+    ctx.setLineDash([4, 3]);
+    const tailX = bubble.x + bubble.width * 0.3;
+    const tailY = bubble.y + bubble.height;
+    
+    ctx.beginPath();
+    ctx.moveTo(tailX, tailY);
+    ctx.lineTo(tailX - 8, tailY + 12);
+    ctx.lineTo(tailX + 8, tailY + 8);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    
+    // 点線をリセット
     ctx.setLineDash([]);
   }
 
