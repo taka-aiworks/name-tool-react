@@ -45,6 +45,10 @@ interface ExportPanelProps {
   effects: EffectElement[];
   tones: ToneElement[];
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
+  
+  // 🆕 追加
+  characterSettings?: Record<string, any>;
+  characterNames?: Record<string, string>;
 }
 
 export const ExportPanel: React.FC<ExportPanelProps> = ({
@@ -54,7 +58,11 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
   backgrounds,
   effects,
   tones,
-  canvasRef
+  canvasRef,
+  
+  // 🆕 追加
+  characterSettings,
+  characterNames
 }) => {
   const [selectedPurpose, setSelectedPurpose] = useState<ExportPurpose | null>(null);
   const [isExporting, setIsExporting] = useState(false);
@@ -182,7 +190,11 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
         characters,
         speechBubbles: bubbles,
         backgrounds,
-        effects
+        effects,
+        
+        // 🆕 追加
+        characterSettings,
+        characterNames
       };
 
       setExportProgress({ step: 'processing', progress: 50, message: '辞書ベースプロンプト生成中...' });

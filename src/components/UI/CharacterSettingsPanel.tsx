@@ -8,7 +8,7 @@ interface CharacterSettingsPanelProps {
   characterType: string;
   currentName?: string;
   currentSettings?: CharacterSettings;
-  onCharacterUpdate: (settings: CharacterSettings) => void;
+  onCharacterUpdate: (characterData: any) => void;  // 🔧 型を any に変更
   isDarkMode?: boolean;
 }
 
@@ -36,27 +36,74 @@ export const CharacterSettingsPanel: React.FC<CharacterSettingsPanelProps> = ({
   // 初期化
   useEffect(() => {
     if (isOpen) {
+      console.log('🔍 CharacterSettingsPanel初期化:', {
+        characterType,
+        currentSettings,
+        currentName
+      });
+
       const defaultName = currentSettings?.name || currentName || DEFAULT_NAMES[characterType] || 'キャラクター';
       const defaultRole = currentSettings?.role || DEFAULT_NAMES[characterType] || '主人公';
       
       setName(defaultName);
       setRole(defaultRole);
       setGender(currentSettings?.gender || 'female');
-      setBasePrompt(currentSettings?.basePrompt || '');
+      
+      // 🔧 basePrompt の取得方法を修正（型安全）
+      let initialBasePrompt = '';
+      
+      // 1. currentSettings.basePrompt から取得
+      if (currentSettings?.basePrompt) {
+        initialBasePrompt = currentSettings.basePrompt;
+        console.log('📥 basePrompt取得（currentSettings）:', initialBasePrompt.substring(0, 50));
+      }
+      // 2. currentSettings を any として扱って appearance をチェック
+      else if ((currentSettings as any)?.appearance?.basePrompt) {
+        initialBasePrompt = (currentSettings as any).appearance.basePrompt;
+        console.log('📥 basePrompt取得（appearance）:', initialBasePrompt.substring(0, 50));
+      }
+      // 3. デフォルト値
+      else {
+        initialBasePrompt = '';
+        console.log('📥 basePrompt取得（デフォルト）: 空文字');
+      }
+      
+      setBasePrompt(initialBasePrompt);
+      
+      console.log('✅ CharacterSettingsPanel初期化完了:', {
+        name: defaultName,
+        role: defaultRole,
+        gender: currentSettings?.gender || 'female',
+        basePrompt: initialBasePrompt.substring(0, 30) + (initialBasePrompt.length > 30 ? '...' : '')
+      });
     }
   }, [isOpen, currentSettings, currentName, characterType]);
 
   const handleSave = () => {
-    const settings: CharacterSettings = {
-      id: currentSettings?.id || `char_${Date.now()}`,
+    console.log('💾 CharacterSettingsPanel保存開始:', {
+      characterType,
       name,
       role,
       gender,
-      basePrompt
+      basePrompt: basePrompt.substring(0, 50) + (basePrompt.length > 50 ? '...' : '')
+    });
+
+    // 🔧 App.tsx の handleCharacterSettingsUpdate が期待する形式
+    const characterData = {
+      name,
+      role,
+      appearance: {
+        gender,
+        basePrompt
+      }
     };
 
-    onCharacterUpdate(settings);
+    console.log('📤 送信データ:', characterData);
+    
+    onCharacterUpdate(characterData);  // ✅ 型エラー解消
     onClose();
+    
+    console.log('✅ CharacterSettingsPanel保存完了');
   };
 
   const handleReset = () => {

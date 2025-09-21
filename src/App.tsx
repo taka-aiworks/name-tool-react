@@ -125,18 +125,8 @@ function App() {
   });
 
   // 🔧 3. プロジェクト保存hookの拡張（既存のuseProjectSaveを修正）
-  const projectSave = useProjectSave({ 
-    panels, 
-    characters, 
-    bubbles: speechBubbles,
-    backgrounds,
-    effects,
-    tones,
-    characterNames, // 🆕 名前データを保存対象に追加
-    characterSettings, // 🆕 設定データを保存対象に追加
-    canvasSize, 
-    settings 
-  });
+  // ✅ 正しいコード（置き換え）
+  const projectSave = useProjectSave();
 
   // 🆕 キャラクター表示名取得関数（App.tsx内の関数群に追加）
     const getCharacterDisplayName = useCallback((character: Character) => {
@@ -471,11 +461,28 @@ function App() {
     }
   }, [addBubbleFunc, dialogueText]);
 
-  // キャラクター詳細更新
+  // ✅ 新しいコード（貼り付け）
   const handleCharacterUpdate = useCallback((updatedCharacter: Character) => {
-    setCharacters(prev => prev.map(char => 
-      char.id === updatedCharacter.id ? updatedCharacter : char
-    ));
+    console.log('🔄 キャラクター更新処理開始:', updatedCharacter.id);
+    
+    setCharacters(prevCharacters => {
+      const updated = prevCharacters.map(char => {
+        if (char.id === updatedCharacter.id) {
+          return {
+            ...char,
+            ...updatedCharacter,
+            eyeState: (updatedCharacter as any).eyeState,
+            mouthState: (updatedCharacter as any).mouthState,
+            handGesture: (updatedCharacter as any).handGesture
+          };
+        }
+        return char;
+      });
+      
+      console.log('✅ キャラクター状態更新完了');
+      return updated;
+    });
+    
     setSelectedCharacter(updatedCharacter);
   }, []);
 
@@ -1084,8 +1091,12 @@ function App() {
               bubbles={speechBubbles}
               backgrounds={backgrounds}
               effects={effects}
-              tones={tones} // 🆕 トーンデータも出力対象に
+              tones={tones}
               canvasRef={canvasRef}
+              
+              // 🆕 この2行を追加
+              characterSettings={characterSettings}
+              characterNames={characterNames}
             />
           </div>
         </div>
@@ -1211,7 +1222,24 @@ function App() {
           }}
         currentProjectId={projectSave.currentProjectId}
         saveStatus={projectSave.saveStatus}
-        onSaveProject={projectSave.saveProject}
+        // ✅ 正しいコード（置き換え）
+        onSaveProject={async (name?: string) => {
+          const projectData = {
+            panels,
+            characters,
+            bubbles: speechBubbles,
+            backgrounds,
+            effects,
+            tones,
+            canvasSize,
+            settings,
+            characterNames,
+            characterSettings
+          };
+          
+          const success = await projectSave.saveProject(projectData, name);
+          return success ? 'saved' : null;
+        }}
       />
         <PanelTemplateSelector
           onTemplateSelect={(templateId) => {
