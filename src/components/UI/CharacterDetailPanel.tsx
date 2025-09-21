@@ -1,4 +1,4 @@
-// src/components/UI/CharacterDetailPanel.tsx - フル装備版
+// src/components/UI/CharacterDetailPanel.tsx - 未選択オプション完全対応版
 import React, { useEffect, useState } from "react";
 import { Character } from "../../types";
 
@@ -26,7 +26,6 @@ interface CharacterDetailPanelProps {
   characterNames?: Record<string, string>;
 }
 
-// 検索可能プルダウンコンポーネント
 interface SearchableSelectProps {
   label: string;
   value: string;
@@ -62,9 +61,19 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
     setSearchTerm('');
   };
 
+  // 🔧 改良版: 現在の値表示（未選択判定強化）
   const getCurrentLabel = () => {
+    // 🆕 未選択値の判定
+    const isUnselected = !value || value.trim() === '' || 
+      ['未選択', '選択してください', '未設定', 'none', 'null', 'undefined', 
+       'default', 'normal', 'front', 'basic'].includes(value.toLowerCase());
+    
+    if (isUnselected) {
+      return placeholder;
+    }
+    
     const current = options.find(opt => opt.tag === value);
-    return current ? `${current.tag} (${current.label})` : value || placeholder;
+    return current ? `${current.tag} (${current.label})` : value;
   };
 
   const containerStyle = {
@@ -120,6 +129,13 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
     color: isDarkMode ? "#fff" : "#333",
   });
 
+  const unselectedOptionStyle = (isHovered: boolean) => ({
+    ...optionStyle(isHovered),
+    borderBottom: `1px solid ${isDarkMode ? "#444" : "#ddd"}`,
+    fontStyle: 'italic' as const,
+    color: isDarkMode ? "#888" : "#666",
+  });
+
   return (
     <div style={containerStyle}>
       <button
@@ -144,6 +160,21 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
             autoFocus
           />
           <div>
+            {/* 🆕 「未選択」オプションを最上位に固定表示 */}
+            <div
+              style={unselectedOptionStyle(false)}
+              onClick={() => handleSelect('')}
+              onMouseEnter={(e) => {
+                (e.target as HTMLElement).style.background = isDarkMode ? "#444" : "#f0f0f0";
+              }}
+              onMouseLeave={(e) => {
+                (e.target as HTMLElement).style.background = 'transparent';
+              }}
+            >
+              <div style={{ fontWeight: 'bold' }}>未選択</div>
+              <div style={{ fontSize: '10px', opacity: 0.7 }}>プロンプトに出力しない</div>
+            </div>
+            
             {filteredOptions.slice(0, 20).map((option) => (
               <div
                 key={option.tag}
@@ -200,7 +231,7 @@ const CharacterDetailPanel: React.FC<CharacterDetailPanelProps> = ({
     handGestures: []
   });
 
-  // 辞書データ読み込み
+  // 🔧 辞書データ読み込み（より自然な選択肢）
   useEffect(() => {
     if (typeof window !== 'undefined' && window.DEFAULT_SFW_DICT) {
       const dict = window.DEFAULT_SFW_DICT.SFW;
@@ -213,45 +244,62 @@ const CharacterDetailPanel: React.FC<CharacterDetailPanelProps> = ({
         handGestures: dict.hand_gesture || []
       });
     } else {
-      // フォールバック辞書
+      // 🔧 改良されたフォールバック辞書（より具体的で自然）
       setDictData({
         expressions: [
+          { tag: "neutral_expression", label: "普通の表情" },
           { tag: "smiling", label: "笑顔" },
+          { tag: "happy", label: "嬉しい" },
           { tag: "sad", label: "悲しい" },
           { tag: "angry", label: "怒り" },
           { tag: "surprised", label: "驚き" },
-          { tag: "neutral_expression", label: "普通" }
+          { tag: "embarrassed", label: "恥ずかしい" },
+          { tag: "serious", label: "真剣" },
+          { tag: "worried", label: "心配" },
+          { tag: "confused", label: "困惑" }
         ],
         poses: [
           { tag: "standing", label: "立ち" },
           { tag: "sitting", label: "座り" },
           { tag: "walking", label: "歩く" },
           { tag: "running", label: "走る" },
-          { tag: "arms_crossed", label: "腕組み" }
+          { tag: "arms_crossed", label: "腕組み" },
+          { tag: "hands_on_hips", label: "腰に手" },
+          { tag: "pointing", label: "指差し" },
+          { tag: "waving", label: "手を振る" },
+          { tag: "leaning", label: "もたれかかる" }
         ],
         gazes: [
-          { tag: "at_viewer", label: "正面" },
-          { tag: "to_side", label: "横向き" },
-          { tag: "away", label: "そっぽ向く" },
-          { tag: "down", label: "下向き" }
+          { tag: "at_viewer", label: "こちらを見る" },
+          { tag: "to_side", label: "横を見る" },
+          { tag: "away", label: "そっぽを向く" },
+          { tag: "down", label: "下を見る" },
+          { tag: "up", label: "上を見る" },
+          { tag: "looking_back", label: "振り返る" }
         ],
         eyeStates: [
           { tag: "eyes_open", label: "目を開ける" },
           { tag: "eyes_closed", label: "目を閉じる" },
           { tag: "wink_left", label: "左ウインク" },
-          { tag: "wink_right", label: "右ウインク" }
+          { tag: "wink_right", label: "右ウインク" },
+          { tag: "half_closed_eyes", label: "半目" },
+          { tag: "wide_eyes", label: "目を見開く" }
         ],
         mouthStates: [
           { tag: "mouth_closed", label: "口を閉じる" },
           { tag: "open_mouth", label: "口を開ける" },
           { tag: "slight_smile", label: "微笑み" },
-          { tag: "grin", label: "歯を見せて笑う" }
+          { tag: "grin", label: "歯を見せて笑う" },
+          { tag: "frown", label: "しかめ面" },
+          { tag: "pouting", label: "ふくれっ面" }
         ],
         handGestures: [
           { tag: "peace_sign", label: "ピースサイン" },
           { tag: "pointing", label: "指差し" },
           { tag: "waving", label: "手を振る" },
-          { tag: "thumbs_up", label: "サムズアップ" }
+          { tag: "thumbs_up", label: "サムズアップ" },
+          { tag: "clenched_fist", label: "握りこぶし" },
+          { tag: "open_palm", label: "手のひらを向ける" }
         ]
       });
     }
@@ -267,8 +315,17 @@ const CharacterDetailPanel: React.FC<CharacterDetailPanelProps> = ({
 
   const displayName = getCharacterDisplayName(selectedCharacter);
 
+  // 🔧 改良版: 空値を適切に処理するupdateハンドラー
   const handleUpdate = (updates: Partial<Character>) => {
-    onCharacterUpdate({ ...selectedCharacter, ...updates });
+    // 🆕 空文字列の場合は undefined に変換（プロンプト出力時に除外される）
+    const cleanedUpdates = Object.fromEntries(
+      Object.entries(updates).map(([key, value]) => [
+        key,
+        typeof value === 'string' && value.trim() === '' ? undefined : value
+      ])
+    );
+    
+    onCharacterUpdate({ ...selectedCharacter, ...cleanedUpdates });
   };
 
   const handleDelete = () => {
@@ -277,6 +334,41 @@ const CharacterDetailPanel: React.FC<CharacterDetailPanelProps> = ({
         onCharacterDelete(selectedCharacter);
       }
     }
+  };
+
+  // 🆕 設定値の表示を改善する関数（未選択判定強化）
+  const getDisplayValue = (value: any): string => {
+    if (!value || value.toString().trim() === '') return '未選択';
+    
+    const unselectedValues = ['未選択', '選択してください', '未設定', 'none', 'null', 'undefined', 'default', 'normal', 'front', 'basic'];
+    if (unselectedValues.includes(value.toString().toLowerCase())) {
+      return '未選択';
+    }
+    
+    return value.toString();
+  };
+
+  // 🆕 設定完成度の計算関数
+  const calculateCompletionRate = (): { count: number; total: number; percentage: number } => {
+    const settings = [
+      selectedCharacter.expression,
+      selectedCharacter.action,
+      selectedCharacter.facing,
+      (selectedCharacter as any).eyeState,
+      (selectedCharacter as any).mouthState,
+      (selectedCharacter as any).handGesture
+    ];
+    
+    const validSettings = settings.filter(s => 
+      s && s.toString().trim() !== '' && 
+      !['未選択', 'none', 'null', 'undefined', 'default', 'normal', 'front'].includes(s.toString().toLowerCase())
+    ).length;
+    
+    return {
+      count: validSettings,
+      total: 6,
+      percentage: Math.round((validSettings / 6) * 100)
+    };
   };
 
   // スタイル定義
@@ -341,6 +433,8 @@ const CharacterDetailPanel: React.FC<CharacterDetailPanelProps> = ({
     gap: "6px",
   };
 
+  const completion = calculateCompletionRate();
+
   return (
     <div style={panelStyle}>
       {/* ヘッダー */}
@@ -378,6 +472,24 @@ const CharacterDetailPanel: React.FC<CharacterDetailPanelProps> = ({
         )}
       </div>
 
+      {/* 🆕 v1.1.1 最終改良アピール */}
+      <div 
+        style={{
+          background: isDarkMode ? "rgba(16, 185, 129, 0.1)" : "rgba(16, 185, 129, 0.05)",
+          border: `1px solid ${isDarkMode ? "rgba(16, 185, 129, 0.3)" : "rgba(16, 185, 129, 0.2)"}`,
+          borderRadius: "6px",
+          padding: "8px",
+          marginBottom: "12px",
+          fontSize: "10px",
+          color: isDarkMode ? "#6ee7b7" : "#047857"
+        }}
+      >
+        <strong>🎯 v1.1.1 最終版:</strong><br/>
+        ✅ 未選択時は完全に出力除外<br/>
+        ✅ プルダウン最上位に「未選択」固定<br/>
+        ✅ より自然で具体的な選択肢
+      </div>
+
       {/* 📷 表示タイプ（ラジオボタン）*/}
       <div style={sectionStyle}>
         <label style={labelStyle}>📷 表示タイプ</label>
@@ -410,7 +522,7 @@ const CharacterDetailPanel: React.FC<CharacterDetailPanelProps> = ({
             value={selectedCharacter.expression || ''}
             options={dictData.expressions}
             onChange={(value) => handleUpdate({ expression: value })}
-            placeholder="表情を選択..."
+            placeholder="未選択（出力しない）"
             isDarkMode={isDarkMode}
           />
         </div>
@@ -422,7 +534,7 @@ const CharacterDetailPanel: React.FC<CharacterDetailPanelProps> = ({
             value={selectedCharacter.action || ''}
             options={dictData.poses}
             onChange={(value) => handleUpdate({ action: value })}
-            placeholder="動作を選択..."
+            placeholder="未選択（出力しない）"
             isDarkMode={isDarkMode}
           />
         </div>
@@ -434,7 +546,7 @@ const CharacterDetailPanel: React.FC<CharacterDetailPanelProps> = ({
             value={selectedCharacter.facing || ''}
             options={dictData.gazes}
             onChange={(value) => handleUpdate({ facing: value })}
-            placeholder="向きを選択..."
+            placeholder="未選択（出力しない）"
             isDarkMode={isDarkMode}
           />
         </div>
@@ -446,7 +558,7 @@ const CharacterDetailPanel: React.FC<CharacterDetailPanelProps> = ({
             value={(selectedCharacter as any).eyeState || ''}
             options={dictData.eyeStates}
             onChange={(value) => handleUpdate({ eyeState: value } as any)}
-            placeholder="目の状態を選択..."
+            placeholder="未選択（出力しない）"
             isDarkMode={isDarkMode}
           />
         </div>
@@ -458,7 +570,7 @@ const CharacterDetailPanel: React.FC<CharacterDetailPanelProps> = ({
             value={(selectedCharacter as any).mouthState || ''}
             options={dictData.mouthStates}
             onChange={(value) => handleUpdate({ mouthState: value } as any)}
-            placeholder="口の状態を選択..."
+            placeholder="未選択（出力しない）"
             isDarkMode={isDarkMode}
           />
         </div>
@@ -470,7 +582,7 @@ const CharacterDetailPanel: React.FC<CharacterDetailPanelProps> = ({
             value={(selectedCharacter as any).handGesture || ''}
             options={dictData.handGestures}
             onChange={(value) => handleUpdate({ handGesture: value } as any)}
-            placeholder="手の動作を選択..."
+            placeholder="未選択（出力しない）"
             isDarkMode={isDarkMode}
           />
         </div>
@@ -509,7 +621,7 @@ const CharacterDetailPanel: React.FC<CharacterDetailPanelProps> = ({
         </div>
       </div>
 
-      {/* 📋 現在の設定 */}
+      {/* 📋 現在の設定（改良版） */}
       <div style={{
         ...sectionStyle,
         background: isDarkMode ? "#0d1117" : "#f0f8ff",
@@ -518,12 +630,53 @@ const CharacterDetailPanel: React.FC<CharacterDetailPanelProps> = ({
         <label style={labelStyle}>📋 現在の設定</label>
         <div style={{ fontSize: "10px", color: isDarkMode ? "#8b949e" : "#666" }}>
           <div>表示: {selectedCharacter.viewType === "face" ? "顔のみ" : selectedCharacter.viewType === "upper_body" ? "上半身" : "全身"}</div>
-          <div>表情: {selectedCharacter.expression || '未設定'}</div>
-          <div>動作: {selectedCharacter.action || '未設定'}</div>
-          <div>向き: {selectedCharacter.facing || '未設定'}</div>
-          <div>目: {(selectedCharacter as any).eyeState || '未設定'}</div>
-          <div>口: {(selectedCharacter as any).mouthState || '未設定'}</div>
-          <div>手: {(selectedCharacter as any).handGesture || '未設定'}</div>
+          <div>表情: {getDisplayValue(selectedCharacter.expression)}</div>
+          <div>動作: {getDisplayValue(selectedCharacter.action)}</div>
+          <div>向き: {getDisplayValue(selectedCharacter.facing)}</div>
+          <div>目: {getDisplayValue((selectedCharacter as any).eyeState)}</div>
+          <div>口: {getDisplayValue((selectedCharacter as any).mouthState)}</div>
+          <div>手: {getDisplayValue((selectedCharacter as any).handGesture)}</div>
+        </div>
+      </div>
+
+      {/* 🆕 設定完成度スコア */}
+      <div style={{
+        ...sectionStyle,
+        background: completion.percentage >= 50 ? 
+          (isDarkMode ? "rgba(34, 197, 94, 0.1)" : "rgba(34, 197, 94, 0.05)") :
+          (isDarkMode ? "rgba(239, 68, 68, 0.1)" : "rgba(239, 68, 68, 0.05)"),
+        border: `1px solid ${completion.percentage >= 50 ? 
+          (isDarkMode ? "rgba(34, 197, 94, 0.3)" : "rgba(34, 197, 94, 0.2)") :
+          (isDarkMode ? "rgba(239, 68, 68, 0.3)" : "rgba(239, 68, 68, 0.2)")
+        }`,
+      }}>
+        <label style={{
+          ...labelStyle,
+          color: completion.percentage >= 50 ? 
+            (isDarkMode ? "#86efac" : "#16a34a") :
+            (isDarkMode ? "#fca5a5" : "#dc2626")
+        }}>
+          🎯 プロンプト品質スコア
+        </label>
+        <div style={{ 
+          fontSize: "10px", 
+          color: completion.percentage >= 50 ? 
+            (isDarkMode ? "#86efac" : "#16a34a") :
+            (isDarkMode ? "#fca5a5" : "#dc2626")
+        }}>
+          {(() => {
+            let quality = "要改善";
+            let emoji = "❌";
+            if (completion.percentage >= 80) { quality = "優秀"; emoji = "✨"; }
+            else if (completion.percentage >= 60) { quality = "良好"; emoji = "👍"; }
+            else if (completion.percentage >= 40) { quality = "普通"; emoji = "⚠️"; }
+            
+            return `${emoji} ${quality} (${completion.count}/${completion.total}設定, ${completion.percentage}%)`;
+          })()}
+          <br/>
+          <span style={{ opacity: 0.8 }}>
+            未選択項目はプロンプトに出力されません
+          </span>
         </div>
       </div>
 

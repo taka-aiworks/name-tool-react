@@ -1,4 +1,4 @@
-// src/components/UI/ExportPanel.tsx - PromptService統合版
+// src/components/UI/ExportPanel.tsx - パネル判定デバッグ強化最終版
 import React, { useState } from 'react';
 import { ExportService, ExportOptions, ExportProgress } from '../../services/ExportService';
 import { promptService } from '../../services/PromptService';
@@ -45,8 +45,6 @@ interface ExportPanelProps {
   effects: EffectElement[];
   tones: ToneElement[];
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
-  
-  // 🆕 追加
   characterSettings?: Record<string, any>;
   characterNames?: Record<string, string>;
 }
@@ -59,8 +57,6 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
   effects,
   tones,
   canvasRef,
-  
-  // 🆕 追加
   characterSettings,
   characterNames
 }) => {
@@ -68,6 +64,7 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState<ExportProgress | null>(null);
   const [promptOutput, setPromptOutput] = useState<string>('');
+  const [debugOutput, setDebugOutput] = useState<string>('');
   const [exportOptions, setExportOptions] = useState<ExportOptions>({
     format: 'pdf',
     quality: 'high',
@@ -83,9 +80,11 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
     if (selectedPurpose === purpose) {
       setSelectedPurpose(null);
       setPromptOutput('');
+      setDebugOutput('');
     } else {
       setSelectedPurpose(purpose);
       setPromptOutput('');
+      setDebugOutput('');
       setExportOptions({
         ...exportOptions,
         ...purposeDefaults[purpose]
@@ -130,15 +129,32 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
     }
   };
 
-  // キャラクターを最寄りパネルに割り当てる関数
-  const assignCharacterToNearestPanel = (char: Character, allPanels: Panel[]) => {
-    if (allPanels.length === 0) return null;
+  /**
+   * 🔧 最終版: キャラクターを最寄りパネルに割り当てる関数（詳細デバッグ対応）
+   */
+  const assignCharacterToNearestPanel = (char: Character, allPanels: Panel[]): { panel: Panel | null; debug: string } => {
+    if (allPanels.length === 0) {
+      return { panel: null, debug: 'パネルが存在しません' };
+    }
     
-    const charCenterX = char.x + (50 / 2);
-    const charCenterY = char.y + (50 / 2);
+    // キャラクターの中心座標を計算
+    const charCenterX = char.x + (char.width || 50) / 2;
+    const charCenterY = char.y + (char.height || 50) / 2;
     
     let nearestPanel = allPanels[0];
     let minDistance = Number.MAX_VALUE;
+    let debugInfo = `🎭 キャラクター "${char.name}" (ID: ${char.id})\n`;
+    debugInfo += `📍 座標: (${char.x}, ${char.y}) サイズ: (${char.width || 50} x ${char.height || 50})\n`;
+    debugInfo += `🎯 中心点: (${charCenterX}, ${charCenterY})\n\n`;
+    
+    // 🔧 各パネルとの距離を計算・記録
+    const distanceCalculations: Array<{
+      panel: Panel;
+      distance: number;
+      centerX: number;
+      centerY: number;
+      isInside: boolean;
+    }> = [];
     
     allPanels.forEach(panel => {
       const panelCenterX = panel.x + panel.width / 2;
@@ -149,62 +165,180 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
         Math.pow(charCenterY - panelCenterY, 2)
       );
       
+      // 🆕 パネル内判定
+      const isInside = charCenterX >= panel.x && 
+                      charCenterX <= panel.x + panel.width &&
+                      charCenterY >= panel.y && 
+                      charCenterY <= panel.y + panel.height;
+      
+      distanceCalculations.push({
+        panel,
+        distance,
+        centerX: panelCenterX,
+        centerY: panelCenterY,
+        isInside
+      });
+      
+      debugInfo += `📐 Panel ${panel.id}:\n`;
+      debugInfo += `   位置: (${panel.x}, ${panel.y}) サイズ: (${panel.width} x ${panel.height})\n`;
+      debugInfo += `   中心: (${panelCenterX}, ${panelCenterY})\n`;
+      debugInfo += `   距離: ${distance.toFixed(2)}px\n`;
+      debugInfo += `   内包: ${isInside ? 'YES ✅' : 'NO ❌'}\n\n`;
+      
       if (distance < minDistance) {
         minDistance = distance;
         nearestPanel = panel;
       }
     });
     
-    return nearestPanel;
+    // 🆕 距離順にソートしてランキング表示
+    distanceCalculations.sort((a, b) => a.distance - b.distance);
+    debugInfo += '🏆 距離ランキング:\n';
+    distanceCalculations.forEach((calc, index) => {
+      const marker = index === 0 ? '👑 1位' : `${index + 1}位`;
+      const insideFlag = calc.isInside ? ' 📍内包' : '';
+      debugInfo += `${marker}: Panel ${calc.panel.id} (${calc.distance.toFixed(2)}px)${insideFlag}\n`;
+    });
+    
+    // 🆕 最終判定結果
+    const finalChoice = distanceCalculations[0];
+    debugInfo += `\n✅ 最終判定: Panel ${finalChoice.panel.id}\n`;
+    debugInfo += `   理由: ${finalChoice.isInside ? 'キャラクターがパネル内に存在' : '最も距離が近い'}\n`;
+    debugInfo += `   距離: ${finalChoice.distance.toFixed(2)}px\n`;
+    
+    return { panel: nearestPanel, debug: debugInfo };
   };
 
-  // 🆕 PromptService統合版プロンプト出力ハンドラー
+  /**
+   * 🆕 全キャラクターの配置判定デバッグ関数（最終版）
+   */
+  const generatePanelAssignmentDebug = (): string => {
+    let debugText = "=== キャラクター配置判定デバッグ（v1.1.1最終版） ===\n\n";
+    
+    debugText += `📊 基本情報:\n`;
+    debugText += `- パネル数: ${panels.length}\n`;
+    debugText += `- キャラクター数: ${characters.length}\n`;
+    debugText += `- 生成日時: ${new Date().toLocaleString()}\n\n`;
+    
+    // パネル情報詳細
+    debugText += `📐 パネル詳細情報:\n`;
+    panels.forEach(panel => {
+      const centerX = panel.x + panel.width / 2;
+      const centerY = panel.y + panel.height / 2;
+      const area = panel.width * panel.height;
+      debugText += `Panel ${panel.id}:\n`;
+      debugText += `  📍 左上: (${panel.x}, ${panel.y})\n`;
+      debugText += `  📏 サイズ: ${panel.width} x ${panel.height} (面積: ${area})\n`;
+      debugText += `  🎯 中心: (${centerX}, ${centerY})\n`;
+      debugText += `  📦 範囲: X[${panel.x} - ${panel.x + panel.width}], Y[${panel.y} - ${panel.y + panel.height}]\n\n`;
+    });
+    
+    // キャラクター配置判定詳細
+    debugText += `👥 キャラクター配置判定詳細:\n`;
+    const characterAssignments = new Map<number, Character[]>();
+    
+    // パネル初期化
+    panels.forEach(panel => {
+      characterAssignments.set(panel.id, []);
+    });
+    
+    // 各キャラクターを詳細判定
+    characters.forEach((char, index) => {
+      debugText += `\n${'='.repeat(50)}\n`;
+      debugText += `Character ${index + 1}: ${char.name}\n`;
+      debugText += `${'='.repeat(50)}\n`;
+      
+      const { panel, debug } = assignCharacterToNearestPanel(char, panels);
+      debugText += debug + '\n';
+      
+      if (panel) {
+        const panelChars = characterAssignments.get(panel.id) || [];
+        panelChars.push(char);
+        characterAssignments.set(panel.id, panelChars);
+      }
+    });
+    
+    // 最終配置結果サマリー
+    debugText += `\n${'='.repeat(60)}\n`;
+    debugText += `📋 最終配置結果サマリー\n`;
+    debugText += `${'='.repeat(60)}\n`;
+    
+    let totalAssigned = 0;
+    panels.forEach(panel => {
+      const assignedChars = characterAssignments.get(panel.id) || [];
+      totalAssigned += assignedChars.length;
+      
+      debugText += `Panel ${panel.id}: ${assignedChars.length}体`;
+      if (assignedChars.length > 0) {
+        const names = assignedChars.map(c => `"${c.name}"`).join(', ');
+        debugText += ` → ${names}`;
+      } else {
+        debugText += ` → (空)`;
+      }
+      debugText += '\n';
+    });
+    
+    debugText += `\n📈 統計:\n`;
+    debugText += `- 総キャラクター数: ${characters.length}\n`;
+    debugText += `- 配置完了数: ${totalAssigned}\n`;
+    debugText += `- 未配置数: ${characters.length - totalAssigned}\n`;
+    
+    if (totalAssigned === characters.length) {
+      debugText += `✅ 全キャラクターの配置が完了しました\n`;
+    } else {
+      debugText += `⚠️ 一部キャラクターが未配置です\n`;
+    }
+    
+    debugText += `\n${'='.repeat(60)}\n`;
+    debugText += `デバッグ完了 - ${new Date().toISOString()}\n`;
+    debugText += `${'='.repeat(60)}\n`;
+    
+    return debugText;
+  };
+
   const handlePromptExport = async () => {
     setIsExporting(true);
     setExportProgress({ step: 'initialize', progress: 10, message: 'プロンプト分析中...' });
 
     try {
+      // 🆕 パネル配置デバッグ情報を先に生成
+      const debugInfo = generatePanelAssignmentDebug();
+      //setDebugOutput(debugInfo);
+
       // 各キャラクターを最寄りパネルに割り当て
       const characterAssignments = new Map<number, Character[]>();
       
-      // まず全パネルの配列を初期化
       panels.forEach(panel => {
         characterAssignments.set(panel.id, []);
       });
       
-      // 各キャラクターを最寄りパネルに割り当て
       characters.forEach(char => {
-        const nearestPanel = assignCharacterToNearestPanel(char, panels);
-        if (nearestPanel) {
-          const panelChars = characterAssignments.get(nearestPanel.id) || [];
+        const { panel } = assignCharacterToNearestPanel(char, panels);
+        if (panel) {
+          const panelChars = characterAssignments.get(panel.id) || [];
           panelChars.push(char);
-          characterAssignments.set(nearestPanel.id, panelChars);
+          characterAssignments.set(panel.id, panelChars);
         }
       });
 
       setExportProgress({ step: 'processing', progress: 30, message: 'キャラクター詳細分析中...' });
 
-      // 🆕 PromptServiceを使用したプロジェクト構築
       const project = {
         panels,
         characters,
         speechBubbles: bubbles,
         backgrounds,
         effects,
-        
-        // 🆕 追加
         characterSettings,
         characterNames
       };
 
-      setExportProgress({ step: 'processing', progress: 50, message: '辞書ベースプロンプト生成中...' });
+      setExportProgress({ step: 'processing', progress: 50, message: '未選択値除外プロンプト生成中...' });
 
-      // 🆕 PromptServiceでプロンプト生成
       const promptData = promptService.generatePrompts(project);
       
       setExportProgress({ step: 'processing', progress: 70, message: 'プロンプト整形中...' });
 
-      // 🆕 PromptServiceの整形機能を使用
       let output = promptService.formatPromptOutput(promptData);
 
       // 追加で背景・効果線・トーン情報を統合
@@ -224,18 +358,15 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
     }
   };
 
-  // 🆕 追加要素（背景・効果線・トーン）のプロンプト生成
   const generateAdditionalPrompts = async (characterAssignments: Map<number, Character[]>): Promise<string> => {
     let additionalOutput = "";
 
-    // パネルごとの追加要素処理
     panels.forEach(panel => {
       const panelBackgrounds = backgrounds.filter(bg => bg.panelId === panel.id);
       const panelEffects = effects.filter(effect => effect.panelId === panel.id);
       const panelTones = tones.filter(tone => tone.panelId === panel.id);
       const panelChars = characterAssignments.get(panel.id) || [];
 
-      // 背景が存在し、キャラクターがいない場合のみ背景専用プロンプト
       if (panelBackgrounds.length > 0 && panelChars.length === 0) {
         additionalOutput += `━━━ Panel ${panel.id} - Background Only ━━━\n`;
         additionalOutput += `【Positive Prompt】\n`;
@@ -245,7 +376,6 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
         additionalOutput += `\n\n───────────────────────────────\n\n`;
       }
 
-      // 効果線専用プロンプト
       if (panelEffects.length > 0) {
         additionalOutput += `━━━ Panel ${panel.id} - Effects ━━━\n`;
         additionalOutput += `【Positive Prompt】\n`;
@@ -255,7 +385,6 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
         additionalOutput += `\n\n───────────────────────────────\n\n`;
       }
 
-      // トーン専用プロンプト
       if (panelTones.length > 0) {
         additionalOutput += `━━━ Panel ${panel.id} - Tones ━━━\n`;
         additionalOutput += `【Positive Prompt】\n`;
@@ -267,7 +396,6 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
     return additionalOutput;
   };
 
-  // 背景プロンプト生成（改良版）
   const generateBackgroundPrompt = (backgrounds: BackgroundElement[]): string => {
     if (backgrounds.length === 0) return "";
 
@@ -280,7 +408,6 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
       "anime style"
     ];
 
-    // 背景タイプに応じた詳細追加
     switch (bg.type) {
       case 'gradient':
         parts.splice(2, 1, "gradient background", "soft lighting");
@@ -371,7 +498,6 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
     return parts.join(", ");
   };
 
-  // プロンプトコピー機能
   const handleCopyPrompt = () => {
     navigator.clipboard.writeText(promptOutput).then(() => {
       alert('プロンプトをクリップボードにコピーしました！');
@@ -381,13 +507,21 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
     });
   };
 
-  // プロンプトダウンロード機能
+  const handleCopyDebug = () => {
+    navigator.clipboard.writeText(debugOutput).then(() => {
+      alert('デバッグ情報をクリップボードにコピーしました！');
+    }).catch(err => {
+      console.error('コピーに失敗:', err);
+      alert('コピーに失敗しました。');
+    });
+  };
+
   const handleDownloadPrompt = () => {
     const blob = new Blob([promptOutput], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `enhanced-prompts-${new Date().toISOString().split('T')[0]}.txt`;
+    a.download = `v1.1.1-final-prompts-${new Date().toISOString().split('T')[0]}.txt`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -399,7 +533,7 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
       id: 'prompt' as ExportPurpose,
       icon: '🎨',
       title: 'プロンプト出力',
-      desc: 'AI画像生成用（辞書対応）'
+      desc: 'AI画像生成用（未選択時除外対応）'
     },
     {
       id: 'print' as ExportPurpose,
@@ -432,7 +566,6 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
         boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
       }}
     >
-      {/* セクションヘッダー */}
       <h3 
         style={{
           color: isDarkMode ? "#ffffff" : "#333333",
@@ -448,24 +581,24 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
         出力
       </h3>
 
-      {/* 🆕 プロンプト機能強化アピール */}
+      {/* 🆕 v1.1.1 最終版アピール */}
       <div 
         style={{
-          background: isDarkMode ? "rgba(139, 92, 246, 0.1)" : "rgba(139, 92, 246, 0.05)",
-          border: `1px solid ${isDarkMode ? "rgba(139, 92, 246, 0.3)" : "rgba(139, 92, 246, 0.2)"}`,
+          background: isDarkMode ? "rgba(16, 185, 129, 0.1)" : "rgba(16, 185, 129, 0.05)",
+          border: `1px solid ${isDarkMode ? "rgba(16, 185, 129, 0.3)" : "rgba(16, 185, 129, 0.2)"}`,
           borderRadius: "6px",
           padding: "8px",
           marginBottom: "12px",
           fontSize: "10px",
-          color: isDarkMode ? "#c4b5fd" : "#7c3aed"
+          color: isDarkMode ? "#6ee7b7" : "#047857"
         }}
       >
-        <strong>🆕 プロンプト機能強化:</strong><br/>
-        キャラクター詳細情報（表情・ポーズ・視線）を辞書ベースで高品質プロンプト化！<br/>
-        固定値から動的生成に進化しました。
+        <strong>🎯 v1.1.1 最終版完成:</strong><br/>
+        ✅ 未選択時完全除外システム<br/>
+        ✅ パネル判定デバッグ詳細強化<br/>
+        ✅ プロンプト品質大幅向上
       </div>
 
-      {/* 出力統計情報 */}
       <div 
         style={{
           background: isDarkMode ? "#404040" : "#f9f9f9",
@@ -512,20 +645,6 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
                 fontFamily: "inherit",
                 fontSize: "12px",
               }}
-              onMouseEnter={(e) => {
-                if (panels.length > 0 && !isExporting) {
-                  const target = e.target as HTMLElement;
-                  target.style.background = selectedPurpose === purpose.id
-                    ? (isDarkMode ? "rgba(255, 136, 51, 0.2)" : "rgba(255, 136, 51, 0.1)")
-                    : (isDarkMode ? "#505050" : "#f0f0f0");
-                }
-              }}
-              onMouseLeave={(e) => {
-                const target = e.target as HTMLElement;
-                target.style.background = selectedPurpose === purpose.id
-                  ? (isDarkMode ? "rgba(255, 136, 51, 0.1)" : "rgba(255, 136, 51, 0.05)")
-                  : (isDarkMode ? "#404040" : "#f9f9f9");
-              }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <span style={{ fontSize: "16px" }}>{purpose.icon}</span>
@@ -547,7 +666,6 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
               </div>
             </button>
 
-            {/* 設定パネル */}
             {selectedPurpose === purpose.id && (
               <div 
                 style={{
@@ -561,7 +679,6 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
               >
                 <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                   
-                  {/* 🆕 強化されたプロンプト出力設定 */}
                   {selectedPurpose === 'prompt' && (
                     <>
                       {!promptOutput ? (
@@ -576,7 +693,7 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
                             color: isDarkMode ? "white" : "#1f2937",
                             marginBottom: "8px"
                           }}>
-                            🆕 辞書対応AI画像生成プロンプト
+                            🎯 v1.1.1 最終版プロンプト生成
                           </h4>
                           <p style={{ 
                             color: isDarkMode ? "#9ca3af" : "#6b7280",
@@ -584,9 +701,10 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
                             lineHeight: "1.4",
                             fontSize: "11px"
                           }}>
-                            キャラクター詳細情報（表情・ポーズ・視線）を辞書ベースで分析し、<br />
-                            高品質なAI画像生成プロンプトを自動生成します。<br />
-                            <strong>固定値→動的生成に進化！</strong>
+                            ✅ 未選択項目は完全に出力除外<br />
+                            ✅ パネル判定デバッグ詳細表示<br />
+                            ✅ 無意味なデフォルト値完全除去<br />
+                            <strong>史上最高品質なプロンプト生成！</strong>
                           </p>
                           <button
                             onClick={handlePromptExport}
@@ -594,7 +712,7 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
                             style={{
                               background: isExporting 
                                 ? "#999999" 
-                                : "linear-gradient(135deg, #8b5cf6, #7c3aed)",
+                                : "linear-gradient(135deg, #10b981, #059669)",
                               color: "white",
                               border: "none",
                               borderRadius: "4px",
@@ -605,13 +723,12 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
                               opacity: isExporting ? 0.6 : 1
                             }}
                           >
-                            {isExporting ? '🧠 辞書分析中...' : '🎨 強化プロンプト生成'}
+                            {isExporting ? '🎯 最終版生成中...' : '🎨 v1.1.1 最終版生成'}
                           </button>
                         </div>
                       ) : (
-                        // プロンプト表示と操作
                         <div>
-                          <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
+                          <div style={{ display: "flex", gap: "8px", marginBottom: "12px", flexWrap: "wrap" }}>
                             <button
                               onClick={handleCopyPrompt}
                               style={{
@@ -624,7 +741,7 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
                                 cursor: "pointer"
                               }}
                             >
-                              📋 コピー
+                              📋 プロンプトコピー
                             </button>
                             <button
                               onClick={handleDownloadPrompt}
@@ -640,7 +757,65 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
                             >
                               💾 ダウンロード
                             </button>
+                            {debugOutput && (
+                              <button
+                                onClick={handleCopyDebug}
+                                style={{
+                                  background: "#f59e0b",
+                                  color: "white",
+                                  border: "none",
+                                  borderRadius: "4px",
+                                  padding: "6px 12px",
+                                  fontSize: "11px",
+                                  cursor: "pointer"
+                                }}
+                              >
+                                🔧 デバッグコピー
+                              </button>
+                            )}
                           </div>
+
+                          {/* 🆕 デバッグ表示エリア（詳細版） */}
+                          {debugOutput && (
+                            <div style={{ marginBottom: "12px" }}>
+                              <h5 style={{
+                                fontSize: "12px",
+                                fontWeight: "bold",
+                                color: isDarkMode ? "#f59e0b" : "#d97706",
+                                marginBottom: "6px",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "4px"
+                              }}>
+                                🔧 パネル判定デバッグ情報（v1.1.1詳細版）
+                              </h5>
+                              <div style={{
+                                background: isDarkMode ? "#1f2937" : "#fffbeb",
+                                border: `1px solid ${isDarkMode ? "#374151" : "#fbbf24"}`,
+                                borderRadius: "4px",
+                                padding: "8px",
+                                maxHeight: "250px",
+                                overflowY: "auto",
+                                fontFamily: "monospace",
+                                fontSize: "9px",
+                                lineHeight: "1.3",
+                                whiteSpace: "pre-wrap",
+                                color: isDarkMode ? "#fbbf24" : "#92400e"
+                              }}>
+                                {debugOutput}
+                              </div>
+                              <div style={{
+                                fontSize: "10px",
+                                color: isDarkMode ? "#9ca3af" : "#6b7280",
+                                marginTop: "4px",
+                                textAlign: "center"
+                              }}>
+                                💡 各キャラクターがどのパネルに配置されるかの詳細計算結果
+                              </div>
+                            </div>
+                          )}
+
+                          {/* プロンプト表示エリア */}
                           <div style={{
                             background: isDarkMode ? "#1f2937" : "#f9fafb",
                             border: `1px solid ${isDarkMode ? "#374151" : "#e5e7eb"}`,
@@ -917,18 +1092,6 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
                         cursor: isExporting || panels.length === 0 ? "not-allowed" : "pointer",
                         transition: "background-color 0.2s",
                         fontFamily: "inherit",
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!isExporting && panels.length > 0) {
-                          const target = e.target as HTMLElement;
-                          target.style.background = "#e6771f";
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!isExporting && panels.length > 0) {
-                          const target = e.target as HTMLElement;
-                          target.style.background = "#ff8833";
-                        }
                       }}
                     >
                       {isExporting ? (

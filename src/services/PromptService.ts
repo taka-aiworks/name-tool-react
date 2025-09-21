@@ -1,27 +1,22 @@
-// src/services/PromptService.ts - 新Character型対応版
+// src/services/PromptService.ts - 未選択時出力なし完全対応版
 import { Panel, Character, SpeechBubble, BackgroundElement, EffectElement, CharacterSettings } from '../types';
 
-// 辞書型定義はCharacterDetailPanel.tsxで定義済み（削除）
-
-// Project型を修正
 export interface Project {
   panels: Panel[];
   characters: Character[];
   speechBubbles: SpeechBubble[];
   backgrounds: BackgroundElement[];
   effects: EffectElement[];
-  // 🆕 CharacterSettings追加
   characterSettings?: Record<string, CharacterSettings>;
 }
 
-// シンプル化されたCharacterPrompt
 export interface CharacterPrompt {
   id: string;
   name: string;
   role: string;
-  basePrompt: string;        // CharacterSettings.basePrompt
-  scenePrompt: string;       // 詳細設定から生成
-  fullPrompt: string;        // basePrompt + scenePrompt
+  basePrompt: string;
+  scenePrompt: string;
+  fullPrompt: string;
 }
 
 export interface ScenePrompt {
@@ -42,6 +37,25 @@ export interface PromptOutput {
 
 class PromptService {
   /**
+   * 🆕 未選択値判定の厳密関数（null/undefined/空文字列/未選択文字列を除外）
+   */
+  private isValidValue(value: any): boolean {
+    if (!value) return false;
+    if (typeof value !== 'string') return false;
+    
+    const trimmed = value.trim();
+    if (!trimmed) return false;
+    
+    // 🔧 未選択を示すキーワードを完全除外
+    const unselectedKeywords = [
+      '未選択', '選択してください', '未設定', 'none', 'null', 'undefined',
+      'default', 'normal', 'front', 'basic', 'standard', 'regular'
+    ];
+    
+    return !unselectedKeywords.includes(trimmed.toLowerCase());
+  }
+
+  /**
    * 辞書データを取得
    */
   private getDictionary(): any {
@@ -49,14 +63,14 @@ class PromptService {
       return window.DEFAULT_SFW_DICT.SFW;
     }
     
-    // フォールバック辞書（実際の辞書に合わせて修正）
+    // フォールバック辞書
     return {
       expressions: [
+        { tag: "neutral_expression", label: "普通の表情" },
         { tag: "smiling", label: "笑顔" },
         { tag: "sad", label: "悲しい" },
         { tag: "angry", label: "怒り" },
-        { tag: "surprised", label: "驚き" },
-        { tag: "neutral_expression", label: "普通" }  // ← 修正
+        { tag: "surprised", label: "驚き" }
       ],
       pose_manga: [
         { tag: "standing", label: "立ち" },
@@ -66,7 +80,7 @@ class PromptService {
         { tag: "arms_crossed", label: "腕組み" }
       ],
       gaze: [
-        { tag: "at_viewer", label: "視線こちら" },  // ← 修正
+        { tag: "at_viewer", label: "視線こちら" },
         { tag: "away", label: "視線そらす" },
         { tag: "to_side", label: "横向き" },
         { tag: "down", label: "下を見る" }
@@ -87,29 +101,41 @@ class PromptService {
         { tag: "waving", label: "手を振る" }
       ],
       composition: [
-        { tag: "close-up", label: "顔のみ" },      // ← 実際の辞書に合わせて修正
-        { tag: "upper_body", label: "上半身" },   // ← 修正
-        { tag: "full_body", label: "全身" }       // ← 修正
+        { tag: "close-up", label: "顔のみ" },
+        { tag: "upper_body", label: "上半身" },
+        { tag: "full_body", label: "全身" }
       ]
     };
   }
 
   /**
-   * 辞書から英語タグを取得
+   * 🔧 完全改良版: 辞書から英語タグを取得（未選択時はnull返却）
    */
-  private getEnglishTag(category: string, key: string): string {
+  private getEnglishTag(category: string, key: string): string | null {
+    // 🆕 未選択値の厳密判定
+    if (!this.isValidValue(key)) {
+      return null;
+    }
+    
     const dict = this.getDictionary();
     const categoryData = dict[category] || [];
     
     // 完全一致検索
-    const found = categoryData.find((item: any) => item.tag === key || item.label === key);
-    return found ? found.tag : key;
+    const found = categoryData.find((item: any) => 
+      item.tag === key || item.label === key
+    );
+    
+    return found ? found.tag : null;
   }
 
   /**
    * 辞書から日本語ラベルを取得
    */
   private getJapaneseLabel(category: string, key: string): string {
+    if (!this.isValidValue(key)) {
+      return '';
+    }
+    
     const dict = this.getDictionary();
     const categoryData = dict[category] || [];
     
@@ -120,10 +146,7 @@ class PromptService {
   /**
    * プロジェクト全体からAI用プロンプトを生成
    */
-  // src/services/PromptService.ts の generatePrompts 関数修正
-
   public generatePrompts(project: Project): PromptOutput {
-    // デバッグログ追加
     console.log('📊 PromptService受信データ確認:', {
       panels: project.panels?.length || 0,
       characters: project.characters?.length || 0,
@@ -144,13 +167,9 @@ class PromptService {
     };
   }
 
-  /**
- * 🆕 新Character型 + CharacterSettings対応のプロンプト生成（修正版）
- */
   private extractCharacterPrompts(project: Project): CharacterPrompt[] {
     const characterMap = new Map<string, Character>();
     
-    // 重複を除去してキャラクター一覧を作成
     project.characters.forEach(char => {
       const key = char.characterId || char.id;
       if (!characterMap.has(key)) {
@@ -161,9 +180,8 @@ class PromptService {
     console.log('🎭 プロンプト生成対象キャラクター:', characterMap.size, '体');
 
     return Array.from(characterMap.values()).map(char => {
-      // 🔧 修正: char.type を使って characterSettings から取得
       const characterType = char.type || char.characterId || char.id;
-      const settingsData = project.characterSettings?.[characterType] as any; // 型安全回避
+      const settingsData = project.characterSettings?.[characterType] as any;
       
       console.log('🔍 キャラクター設定データ取得:', {
         characterType,
@@ -172,7 +190,6 @@ class PromptService {
         hasBasePrompt: !!settingsData?.appearance?.basePrompt
       });
 
-      // 🔧 修正: appearance.basePrompt から取得
       let basePrompt = '';
       if (settingsData?.appearance?.basePrompt) {
         basePrompt = settingsData.appearance.basePrompt;
@@ -210,11 +227,10 @@ class PromptService {
   }
 
   /**
- * 🆕 詳細設定からシーンプロンプト生成（完全版）
- * viewType + expression + action + facing + eyeState + mouthState + handGesture
- */
+   * 🔧 最終版: 詳細設定からシーンプロンプト生成（未選択時完全除外）
+   */
   private generateScenePrompt(character: Character): string {
-    const parts = [];
+    const validTags: string[] = [];
 
     console.log('🎭 プロンプト生成用キャラクターデータ:', {
       id: character.id,
@@ -228,97 +244,136 @@ class PromptService {
       handGesture: (character as any).handGesture
     });
 
-    // 🔧 1. 表示タイプ（構図）- 実際の辞書のcompositionカテゴリを使用
+    // 🔧 1. 表示タイプ（構図）- 有効値のみ追加
     const viewType = (character as any).viewType;
-    if (viewType) {
+    if (this.isValidValue(viewType)) {
       const viewTypeMapping: Record<string, string> = {
-        'face': 'close-up',         // 辞書のcompositionに存在
-        'upper_body': 'upper_body', // 辞書のcompositionに存在  
-        'full_body': 'full_body'    // 辞書のcompositionに存在
+        'face': 'close-up',
+        'upper_body': 'upper_body',
+        'full_body': 'full_body'
       };
       const compositionTag = viewTypeMapping[viewType];
       if (compositionTag) {
-        parts.push(compositionTag);
+        validTags.push(compositionTag);
         console.log('📐 構図タグ追加:', compositionTag);
       }
+    } else {
+      console.log('📐 構図: 未選択のためスキップ');
     }
 
-    // 🔧 2. 表情
-    if (character.expression && character.expression.trim()) {
+    // 🔧 2. 表情 - 有効値のみ追加
+    if (this.isValidValue(character.expression)) {
       const expressionTag = this.getEnglishTag('expressions', character.expression);
-      parts.push(expressionTag);
-      console.log('😊 表情タグ追加:', expressionTag);
+      if (expressionTag) {
+        validTags.push(expressionTag);
+        console.log('😊 表情タグ追加:', expressionTag);
+      } else {
+        console.log('😊 表情タグ無効:', character.expression);
+      }
+    } else {
+      console.log('😊 表情: 未選択のためスキップ');
     }
 
-    // 🔧 3. 動作・ポーズ
-    if (character.action && character.action.trim()) {
+    // 🔧 3. 動作・ポーズ - 有効値のみ追加
+    if (this.isValidValue(character.action)) {
       const actionTag = this.getEnglishTag('pose_manga', character.action);
-      parts.push(actionTag);
-      console.log('🤸 動作タグ追加:', actionTag);
+      if (actionTag) {
+        validTags.push(actionTag);
+        console.log('🤸 動作タグ追加:', actionTag);
+      } else {
+        console.log('🤸 動作タグ無効:', character.action);
+      }
+    } else {
+      console.log('🤸 動作: 未選択のためスキップ');
     }
 
-    // 🔧 4. 体の向き
-    if (character.facing && character.facing.trim()) {
+    // 🔧 4. 体の向き - 有効値のみ追加
+    if (this.isValidValue(character.facing)) {
       const facingTag = this.getEnglishTag('gaze', character.facing);
-      parts.push(facingTag);
-      console.log('🔄 向きタグ追加:', facingTag);
+      if (facingTag) {
+        validTags.push(facingTag);
+        console.log('🔄 向きタグ追加:', facingTag);
+      } else {
+        console.log('🔄 向きタグ無効:', character.facing);
+      }
+    } else {
+      console.log('🔄 向き: 未選択のためスキップ');
     }
 
-    // 🆕 5. 目の状態
+    // 🔧 5. 目の状態 - 有効値のみ追加
     const eyeState = (character as any).eyeState;
-    if (eyeState && eyeState.trim()) {
+    if (this.isValidValue(eyeState)) {
       const eyeTag = this.getEnglishTag('eye_state', eyeState);
-      parts.push(eyeTag);
-      console.log('👀 目の状態タグ追加:', eyeTag);
+      if (eyeTag) {
+        validTags.push(eyeTag);
+        console.log('👀 目の状態タグ追加:', eyeTag);
+      } else {
+        console.log('👀 目の状態タグ無効:', eyeState);
+      }
+    } else {
+      console.log('👀 目の状態: 未選択のためスキップ');
     }
 
-    // 🆕 6. 口の状態
+    // 🔧 6. 口の状態 - 有効値のみ追加
     const mouthState = (character as any).mouthState;
-    if (mouthState && mouthState.trim()) {
+    if (this.isValidValue(mouthState)) {
       const mouthTag = this.getEnglishTag('mouth_state', mouthState);
-      parts.push(mouthTag);
-      console.log('👄 口の状態タグ追加:', mouthTag);
+      if (mouthTag) {
+        validTags.push(mouthTag);
+        console.log('👄 口の状態タグ追加:', mouthTag);
+      } else {
+        console.log('👄 口の状態タグ無効:', mouthState);
+      }
+    } else {
+      console.log('👄 口の状態: 未選択のためスキップ');
     }
 
-    // 🆕 7. 手の動作
+    // 🔧 7. 手の動作 - 有効値のみ追加
     const handGesture = (character as any).handGesture;
-    if (handGesture && handGesture.trim()) {
+    if (this.isValidValue(handGesture)) {
       const handTag = this.getEnglishTag('hand_gesture', handGesture);
-      parts.push(handTag);
-      console.log('✋ 手の動作タグ追加:', handTag);
+      if (handTag) {
+        validTags.push(handTag);
+        console.log('✋ 手の動作タグ追加:', handTag);
+      } else {
+        console.log('✋ 手の動作タグ無効:', handGesture);
+      }
+    } else {
+      console.log('✋ 手の動作: 未選択のためスキップ');
     }
 
-    const result = parts.join(', ');
-    console.log('🎯 生成されたシーンプロンプト:', result);
+    const result = validTags.join(', ');
+    console.log(`🎯 生成されたシーンプロンプト (${validTags.length}個の有効タグ):`, result || '(設定なし)');
     
     return result;
   }
 
   /**
-   * フルプロンプト生成（basePrompt + scenePrompt）
+   * 🔧 改良版: フルプロンプト生成（未選択時完全除外）
    */
   private generateFullPrompt(basePrompt: string, character: Character): string {
     const scenePrompt = this.generateScenePrompt(character);
     
-    const parts = [];
+    const validParts: string[] = [];
     
-    if (basePrompt && basePrompt.trim()) {
-      parts.push(basePrompt.trim());
+    // 🆕 basePromptの有効性チェック
+    if (this.isValidValue(basePrompt)) {
+      validParts.push(basePrompt.trim());
     }
     
-    if (scenePrompt && scenePrompt.trim()) {
-      parts.push(scenePrompt.trim());
+    // 🆕 scenePromptの有効性チェック
+    if (this.isValidValue(scenePrompt)) {
+      validParts.push(scenePrompt.trim());
     }
 
-    return parts.join(', ');
+    const result = validParts.join(', ');
+    console.log(`🔗 統合プロンプト生成 (${validParts.length}部分):`, result || '(基本設定のみ)');
+    
+    return result;
   }
 
-  /**
-   * パネル別シーンプロンプト生成
-   */
   private extractScenePrompts(project: Project, allCharacters: CharacterPrompt[]): ScenePrompt[] {
     return project.panels.map(panel => {
-      // このパネルのキャラクターを取得
       const panelCharacterIds = project.characters
         .filter(char => char.panelId === panel.id)
         .map(char => char.id);
@@ -389,26 +444,26 @@ class PromptService {
 
   private generateTechnicalNotes(): string {
     return [
-      "Generated by ネーム制作ツール v2.0",
+      "Generated by ネーム制作ツール v1.1.1",
       "Character-based prompt system with detailed settings",
+      "🆕 Unselected values completely excluded",
+      "🔧 Clean prompt generation without default values",
       "Recommended: High quality anime/manga style",
       "Use negative prompts for optimal results"
     ].join('\n');
   }
 
   /**
- * 🆕 改良されたプロンプト出力（詳細設定完全対応版）
- */
+   * 🔧 最終版プロンプト出力（未選択時完全除外）
+   */
   public formatPromptOutput(promptData: PromptOutput): string {
-    let output = "=== AI画像生成用プロンプト（詳細設定完全対応版） ===\n\n";
+    let output = "=== AI画像生成用プロンプト（未選択時出力なし版） ===\n\n";
 
-    // パネル別出力
     promptData.scenes.forEach((scene, index) => {
       output += `━━━ Panel ${index + 1} ━━━\n`;
       
       const panelCharacters = scene.panelCharacters;
 
-      // 空パネル判定
       if (panelCharacters.length === 0) {
         output += `【背景のみのパネル】\n`;
         const bgPrompt = scene.backgroundPrompt || 'simple background';
@@ -417,8 +472,8 @@ class PromptService {
         return;
       }
 
-      // 🔧 正プロンプト生成（詳細設定反映確認）
-      const parts = ['masterpiece, best quality'];
+      // 🔧 正プロンプト生成（未選択時完全除外）
+      const validParts = ['masterpiece, best quality'];
       
       panelCharacters.forEach(char => {
         console.log(`🎯 Panel ${index + 1} - ${char.name} プロンプト構成:`, {
@@ -427,58 +482,60 @@ class PromptService {
           fullPrompt: char.fullPrompt
         });
         
-        if (char.fullPrompt && char.fullPrompt.trim()) {
-          parts.push(char.fullPrompt);
+        // 🆕 fullPromptの厳密チェック
+        if (this.isValidValue(char.fullPrompt)) {
+          validParts.push(char.fullPrompt);
         } else {
-          // フォールバック: basePromptとscenePromptを個別追加
-          if (char.basePrompt && char.basePrompt.trim()) {
-            parts.push(char.basePrompt);
+          // フォールバック: 個別チェック
+          if (this.isValidValue(char.basePrompt)) {
+            validParts.push(char.basePrompt);
           }
-          if (char.scenePrompt && char.scenePrompt.trim()) {
-            parts.push(char.scenePrompt);
+          if (this.isValidValue(char.scenePrompt)) {
+            validParts.push(char.scenePrompt);
           }
         }
       });
 
-      if (scene.backgroundPrompt) {
-        parts.push(scene.backgroundPrompt);
+      if (scene.backgroundPrompt && this.isValidValue(scene.backgroundPrompt)) {
+        validParts.push(scene.backgroundPrompt);
       }
       
-      if (scene.effectsPrompt) {
-        parts.push(scene.effectsPrompt);
+      if (scene.effectsPrompt && this.isValidValue(scene.effectsPrompt)) {
+        validParts.push(scene.effectsPrompt);
       }
       
-      if (scene.compositionPrompt) {
-        parts.push(scene.compositionPrompt);
+      if (scene.compositionPrompt && this.isValidValue(scene.compositionPrompt)) {
+        validParts.push(scene.compositionPrompt);
       }
 
-      parts.push('anime style');
+      validParts.push('anime style');
 
-      const positivePrompt = parts.join(', ');
+      const positivePrompt = validParts.join(', ');
       output += `【Positive Prompt】\n${positivePrompt}\n\n`;
 
-      // 🔧 日本語説明（詳細設定込み）
       const japaneseDesc = this.buildJapaneseDescription(panelCharacters, scene);
       output += `【日本語説明】\n${japaneseDesc}\n\n`;
 
-      // ネガティブプロンプト
       const negativePrompt = this.buildNegativePrompt();
       output += `【Negative Prompt】\n${negativePrompt}\n\n`;
 
-      // 🆕 詳細設定の確認情報を追加
-      output += `【詳細設定確認】\n`;
+      // 🆕 設定完成度情報
+      output += `【設定完成度】\n`;
       panelCharacters.forEach(char => {
+        const validSceneTags = char.scenePrompt ? 
+          char.scenePrompt.split(', ').filter(tag => this.isValidValue(tag)).length : 0;
+        const hasValidBase = this.isValidValue(char.basePrompt);
+        
         output += `• ${char.name}: `;
         const details = [];
-        if (char.scenePrompt) {
-          details.push(`シーン設定あり (${char.scenePrompt.split(', ').length}項目)`);
-        } else {
-          details.push('シーン設定なし');
+        if (hasValidBase) {
+          details.push('基本設定✓');
         }
-        if (char.basePrompt) {
-          details.push(`基本設定あり`);
-        } else {
-          details.push('基本設定なし');
+        if (validSceneTags > 0) {
+          details.push(`詳細設定${validSceneTags}項目✓`);
+        }
+        if (details.length === 0) {
+          details.push('基本設定のみ（詳細設定推奨）');
         }
         output += details.join(', ') + '\n';
       });
@@ -493,97 +550,52 @@ class PromptService {
       output += `───────────────────\n\n`;
     });
 
-    // 🔧 キャラクター設定詳細情報
-    output += "=== キャラクター詳細設定 ===\n\n";
+    // キャラクター設定詳細情報
+    output += "=== キャラクター詳細設定（最終版） ===\n\n";
     promptData.characters.forEach((char, index) => {
       output += `${index + 1}. ${char.name} (${char.role}):\n`;
       
-      if (char.basePrompt && char.basePrompt.trim()) {
+      if (this.isValidValue(char.basePrompt)) {
         output += `   基本設定: ${char.basePrompt}\n`;
       } else {
-        output += `   基本設定: 未設定\n`;
+        output += `   基本設定: 未設定（CharacterSettingsPanelで設定推奨）\n`;
       }
       
-      if (char.scenePrompt && char.scenePrompt.trim()) {
+      if (this.isValidValue(char.scenePrompt)) {
         output += `   詳細設定: ${char.scenePrompt}\n`;
         
-        // 詳細設定の内訳を表示
-        const sceneItems = char.scenePrompt.split(', ').filter(item => item.trim());
-        if (sceneItems.length > 0) {
-          output += `   設定項目: ${sceneItems.join(' | ')}\n`;
+        const validItems = char.scenePrompt.split(', ').filter(item => this.isValidValue(item));
+        if (validItems.length > 0) {
+          output += `   有効項目: ${validItems.join(' | ')}\n`;
         }
       } else {
-        output += `   詳細設定: 未設定\n`;
+        output += `   詳細設定: 未設定（CharacterDetailPanelで設定推奨）\n`;
       }
       
-      if (char.fullPrompt && char.fullPrompt.trim()) {
+      if (this.isValidValue(char.fullPrompt)) {
         output += `   統合プロンプト: ${char.fullPrompt}\n`;
+      } else {
+        output += `   統合プロンプト: 設定が必要です\n`;
       }
       
       output += `\n`;
     });
 
-    output += "=== 使用方法 ===\n";
-    output += "1. Positive Promptをコピーして画像生成AIに貼り付け\n";
-    output += "2. Negative Promptもコピーして貼り付け\n";
-    output += "3. 推奨設定を参考に調整\n";
-    output += "4. キャラクター詳細設定で一貫性を保持\n";
-    output += "5. 詳細設定確認でプロンプト内容を把握\n\n";
+    output += "=== v1.1.1 最終改良ガイド ===\n";
+    output += "1. ✅ 未選択項目は完全に出力除外\n";
+    output += "2. ✅ 無意味なデフォルト値(normal/front等)を自動除外\n";
+    output += "3. CharacterSettingsPanelで基本プロンプト設定\n";
+    output += "4. CharacterDetailPanelで詳細設定充実\n";
+    output += "5. 未選択項目が多い場合は設定完成を推奨\n\n";
 
     output += "=== 技術情報 ===\n";
     output += `${promptData.storyFlow}\n`;
     output += `生成日時: ${new Date().toLocaleString()}\n`;
     output += `${promptData.technicalNotes}\n`;
-    output += `詳細設定対応: v2.0 完全版\n`;
+    output += `🆕 未選択時完全除外システム: v1.1.1対応\n`;
 
     return output;
   }
-
-  // 🔧 デバッグ用の詳細ログ関数を追加
-
-  /**
-   * 🆕 デバッグ用: プロジェクト内容の詳細確認
-   */
-  public debugProjectData(project: Project): void {
-    console.log('🔍 プロジェクトデータ詳細確認開始');
-    
-    console.log('📊 基本統計:');
-    console.log(`- パネル数: ${project.panels.length}`);
-    console.log(`- キャラクター数: ${project.characters.length}`);
-    console.log(`- 吹き出し数: ${project.speechBubbles.length}`);
-    
-    console.log('\n👥 キャラクター詳細:');
-    project.characters.forEach((char, index) => {
-      console.log(`Character ${index + 1}: ${char.name || 'Unnamed'}`);
-      console.log(`  ID: ${char.id}`);
-      console.log(`  Character ID: ${char.characterId}`);
-      console.log(`  Panel ID: ${char.panelId}`);
-      console.log(`  Position: (${char.x}, ${char.y})`);
-      console.log(`  Scale: ${char.scale}`);
-      console.log(`  ViewType: ${(char as any).viewType || '未設定'}`);
-      console.log(`  Expression: ${char.expression || '未設定'}`);
-      console.log(`  Action: ${char.action || '未設定'}`);
-      console.log(`  Facing: ${char.facing || '未設定'}`);
-      console.log(`  Eye State: ${(char as any).eyeState || '未設定'}`);
-      console.log(`  Mouth State: ${(char as any).mouthState || '未設定'}`);
-      console.log(`  Hand Gesture: ${(char as any).handGesture || '未設定'}`);
-      console.log('');
-    });
-    
-    console.log('🎭 CharacterSettings:');
-    if (project.characterSettings && Object.keys(project.characterSettings).length > 0) {
-      Object.entries(project.characterSettings).forEach(([id, settings]) => {
-        console.log(`${id}: ${settings.name} (${settings.role})`);
-        console.log(`  Base Prompt: ${settings.basePrompt || '未設定'}`);
-      });
-    } else {
-      console.log('CharacterSettings が設定されていません');
-    }
-    
-    console.log('🔍 プロジェクトデータ詳細確認完了');
-  }
-
-  // 🔧 buildJapaneseDescription メソッドも詳細設定対応に修正
 
   private buildJapaneseDescription(characters: CharacterPrompt[], scene: ScenePrompt): string {
     const parts = [];
@@ -591,118 +603,79 @@ class PromptService {
     characters.forEach((char, index) => {
       const descriptions = [];
       
-      // 基本情報
       descriptions.push(`${char.name} (${char.role})`);
       
-      // 基本プロンプト表示（短縮）
-      if (char.basePrompt && char.basePrompt.trim()) {
+      if (this.isValidValue(char.basePrompt)) {
         const shortBase = char.basePrompt.length > 20 ? 
           char.basePrompt.substring(0, 20) + '...' : 
           char.basePrompt;
         descriptions.push(`基本: ${shortBase}`);
       }
       
-      // 🔧 シーンプロンプトを辞書で日本語変換（詳細版）
-      if (char.scenePrompt && char.scenePrompt.trim()) {
-        const scenePartsJapanese = char.scenePrompt.split(', ').map(part => {
-          part = part.trim();
-          
-          // 各カテゴリから日本語ラベルを取得
-          let japanese = this.getJapaneseLabel('expressions', part);
-          if (japanese === part) japanese = this.getJapaneseLabel('pose_manga', part);
-          if (japanese === part) japanese = this.getJapaneseLabel('gaze', part);
-          if (japanese === part) japanese = this.getJapaneseLabel('eye_state', part);
-          if (japanese === part) japanese = this.getJapaneseLabel('mouth_state', part);
-          if (japanese === part) japanese = this.getJapaneseLabel('hand_gesture', part);
-          if (japanese === part) japanese = this.getJapaneseLabel('composition', part);
-          
-          // 🔧 特別な変換（辞書にない場合の補完）
-          if (japanese === part) {
-            const specialTranslations: Record<string, string> = {
-              // 構図系
-              'close-up': '顔のみ',
-              'upper body': '上半身', 
-              'full body': '全身',
-              'face': '顔のみ',
-              'halfBody': '上半身',
-              'upper_body': '上半身',
-              'full_body': '全身',
-              
-              // 向き系
-              'front': '正面',
-              'left': '左向き',
-              'right': '右向き',
-              'back': '後ろ向き',
-              'to_side': '横向き',
-              'at_viewer': 'こちらを見る',
-              'away': 'そっぽ向く',
-              'down': '下を見る',
-              
-              // 表情系
-              'neutral': '普通',
-              'normal': '普通',
-              'neutral_expression': '普通の表情',
-              'smiling': '笑顔',
-              'sad': '悲しい',
-              'angry': '怒り',
-              'surprised': '驚き',
-              
-              // 動作系
-              'standing': '立ち',
-              'sitting': '座り',
-              'walking': '歩く',
-              'running': '走る',
-              'arms_crossed': '腕組み',
-              
-              // 目の状態
-              'eyes_open': '目を開ける',
-              'eyes_closed': '目を閉じる',
-              'wink_left': '左ウインク',
-              'wink_right': '右ウインク',
-              
-              // 口の状態
-              'mouth_closed': '口を閉じる',
-              'open_mouth': '口を開ける',
-              'slight_smile': '微笑み',
-              'grin': '歯を見せて笑う',
-              
-              // 手の動作
-              'peace_sign': 'ピースサイン',
-              'pointing': '指差し',
-              'waving': '手を振る',
-              'thumbs_up': 'サムズアップ',
-              
-              // その他
-              'single character': '1人',
-              'two characters': '2人',
-              'group shot': 'グループ'
-            };
-            japanese = specialTranslations[part] || part;
-          }
-          
-          return japanese;
-        }).filter(j => j.trim()).join('、');
+      // 🔧 シーンプロンプトを辞書で日本語変換（未選択時除外版）
+      if (this.isValidValue(char.scenePrompt)) {
+        const scenePartsJapanese = char.scenePrompt.split(', ')
+          .filter(part => this.isValidValue(part))
+          .map(part => {
+            part = part.trim();
+            
+            let japanese = this.getJapaneseLabel('expressions', part);
+            if (japanese === part) japanese = this.getJapaneseLabel('pose_manga', part);
+            if (japanese === part) japanese = this.getJapaneseLabel('gaze', part);
+            if (japanese === part) japanese = this.getJapaneseLabel('eye_state', part);
+            if (japanese === part) japanese = this.getJapaneseLabel('mouth_state', part);
+            if (japanese === part) japanese = this.getJapaneseLabel('hand_gesture', part);
+            if (japanese === part) japanese = this.getJapaneseLabel('composition', part);
+            
+            if (japanese === part) {
+              const specialTranslations: Record<string, string> = {
+                'close-up': '顔のみ',
+                'upper_body': '上半身',
+                'full_body': '全身',
+                'at_viewer': 'こちらを見る',
+                'away': 'そっぽ向く',
+                'to_side': '横向き',
+                'down': '下を見る',
+                'neutral_expression': '普通の表情',
+                'smiling': '笑顔',
+                'standing': '立ち',
+                'sitting': '座り',
+                'eyes_open': '目を開ける',
+                'mouth_closed': '口を閉じる',
+                'single character': '1人',
+                'two characters': '2人',
+                'group shot': 'グループ'
+              };
+              japanese = specialTranslations[part] || part;
+            }
+            
+            return japanese;
+          })
+          .filter(j => this.isValidValue(j))
+          .join('、');
         
         if (scenePartsJapanese) {
           descriptions.push(`詳細: ${scenePartsJapanese}`);
         }
       }
 
-      parts.push(`${char.name}: ${descriptions.slice(1).join(' | ')}`);
+      const charDescription = descriptions.length > 1 ? 
+        `${char.name}: ${descriptions.slice(1).join(' | ')}` : 
+        `${char.name}: 基本設定のみ`;
+      
+      parts.push(charDescription);
     });
 
-    // シーン情報
     const sceneDetails = [];
-    if (scene.backgroundPrompt) {
+    if (scene.backgroundPrompt && this.isValidValue(scene.backgroundPrompt)) {
       sceneDetails.push(`背景: ${scene.backgroundPrompt}`);
     }
 
-    if (scene.effectsPrompt) {
+    if (scene.effectsPrompt && this.isValidValue(scene.effectsPrompt)) {
       sceneDetails.push(`効果: ${scene.effectsPrompt}`);
     }
 
-    if (scene.compositionPrompt) {
-      // 構図も辞書＋手動変換で日本語化
+    if (scene.compositionPrompt && this.isValidValue(scene.compositionPrompt)) {
       let compositionJapanese = this.getJapaneseLabel('composition', scene.compositionPrompt);
       
       if (compositionJapanese === scene.compositionPrompt) {

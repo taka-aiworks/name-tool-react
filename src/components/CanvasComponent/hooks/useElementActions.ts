@@ -165,13 +165,13 @@ export const useElementActions = ({
       scale: 2.0,
       width: initialWidth,
       height: initialHeight,
-      facing: "front",
-      action: "standing",
-      expression: "normal",
+      facing: "",           // 🔧 未選択に変更
+      action: "",           // 🔧 未選択に変更
+      expression: "",       // 🔧 未選択に変更
       viewType: viewType,
-      eyeState: "front",
-      mouthState: "normal",
-      handGesture: "normal",
+      eyeState: "",         // 🔧 未選択に変更
+      mouthState: "",       // 🔧 未選択に変更
+      handGesture: "",      // 🔧 未選択に変更
       isGlobalPosition: true,
     };
 
