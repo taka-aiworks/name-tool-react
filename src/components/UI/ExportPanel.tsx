@@ -302,27 +302,33 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
 
     try {
       // 🆕 パネル配置デバッグ情報を先に生成
-      const debugInfo = generatePanelAssignmentDebug();
-      //setDebugOutput(debugInfo);
+      // const debugInfo = generatePanelAssignmentDebug();
+      // setDebugOutput(debugInfo);
 
-      // 各キャラクターを最寄りパネルに割り当て
+      // 🔧 修正: 各キャラクターを座標ベースで最寄りパネルに割り当て
       const characterAssignments = new Map<number, Character[]>();
       
+      // パネル初期化
       panels.forEach(panel => {
         characterAssignments.set(panel.id, []);
       });
       
+      // 🔧 重要: 各キャラクターを現在の座標で判定
       characters.forEach(char => {
         const { panel } = assignCharacterToNearestPanel(char, panels);
         if (panel) {
           const panelChars = characterAssignments.get(panel.id) || [];
           panelChars.push(char);
           characterAssignments.set(panel.id, panelChars);
+          
+          // 🆕 デバッグログ追加
+          console.log(`📍 キャラクター "${char.name}" を Panel ${panel.id} に配置 (座標: ${char.x}, ${char.y})`);
         }
       });
 
       setExportProgress({ step: 'processing', progress: 30, message: 'キャラクター詳細分析中...' });
 
+      // 🔧 修正: characterAssignmentsを使ってプロジェクトデータを構築
       const project = {
         panels,
         characters,
@@ -335,7 +341,8 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
 
       setExportProgress({ step: 'processing', progress: 50, message: '未選択値除外プロンプト生成中...' });
 
-      const promptData = promptService.generatePrompts(project);
+      // 🔧 修正: PromptServiceに座標ベースのcharacterAssignmentsを渡す
+      const promptData = promptService.generatePrompts(project, characterAssignments);
       
       setExportProgress({ step: 'processing', progress: 70, message: 'プロンプト整形中...' });
 

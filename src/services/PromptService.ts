@@ -146,16 +146,17 @@ class PromptService {
   /**
    * プロジェクト全体からAI用プロンプトを生成
    */
-  public generatePrompts(project: Project): PromptOutput {
+    public generatePrompts(project: Project, characterAssignments?: Map<number, Character[]>): PromptOutput {
     console.log('📊 PromptService受信データ確認:', {
       panels: project.panels?.length || 0,
       characters: project.characters?.length || 0,
       characterSettings: project.characterSettings,
-      characterSettingsKeys: Object.keys(project.characterSettings || {})
+      characterSettingsKeys: Object.keys(project.characterSettings || {}),
+      hasCharacterAssignments: !!characterAssignments
     });
 
     const characters = this.extractCharacterPrompts(project);
-    const scenes = this.extractScenePrompts(project, characters);
+    const scenes = this.extractScenePrompts(project, characters, characterAssignments);
     const storyFlow = this.generateStoryFlow(project);
     const technicalNotes = this.generateTechnicalNotes();
 
@@ -372,15 +373,31 @@ class PromptService {
     return result;
   }
 
-  private extractScenePrompts(project: Project, allCharacters: CharacterPrompt[]): ScenePrompt[] {
+  // 🔧 修正: extractScenePromptsにcharacterAssignmentsを追加
+  private extractScenePrompts(project: Project, allCharacters: CharacterPrompt[], characterAssignments?: Map<number, Character[]>): ScenePrompt[] {
     return project.panels.map(panel => {
-      const panelCharacterIds = project.characters
-        .filter(char => char.panelId === panel.id)
-        .map(char => char.id);
+      let panelCharacters: CharacterPrompt[] = [];
       
-      const panelCharacters = allCharacters.filter(char => 
-        panelCharacterIds.includes(char.id)
-      );
+      if (characterAssignments) {
+        // 🔧 座標ベースの割り当てを使用
+        const assignedCharacters = characterAssignments.get(panel.id) || [];
+        panelCharacters = allCharacters.filter(char => 
+          assignedCharacters.some(assigned => assigned.id === char.id)
+        );
+        
+        console.log(`📐 Panel ${panel.id}: 座標ベースで ${panelCharacters.length}体のキャラクターを配置`);
+      } else {
+        // 🔧 フォールバック: 従来のpanelIdベース
+        const panelCharacterIds = project.characters
+          .filter(char => char.panelId === panel.id)
+          .map(char => char.id);
+        
+        panelCharacters = allCharacters.filter(char => 
+          panelCharacterIds.includes(char.id)
+        );
+        
+        console.log(`📐 Panel ${panel.id}: panelIdベースで ${panelCharacters.length}体のキャラクターを配置`);
+      }
 
       return {
         panelId: panel.id,
