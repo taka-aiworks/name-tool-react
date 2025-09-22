@@ -58,10 +58,32 @@ const ProjectPanel: React.FC<ProjectPanelProps> = ({
   // プロジェクト保存（新規）
   const handleSaveAsNew = async () => {
     const name = prompt('プロジェクト名を入力してください:', '新規プロジェクト');
-    if (name) {
-      const projectId = await onSaveProject(name);
-      if (projectId) {
-        refreshProjects();
+    if (name && name.trim()) {
+      try {
+        console.log('🎯 名前付き保存開始:', name.trim());
+        
+        // プロジェクト保存実行
+        const projectId = await onSaveProject(name.trim());
+        
+        console.log('📊 保存結果:', projectId);
+        
+        if (projectId) {
+          // 少し待ってからリストを更新
+          setTimeout(() => {
+            console.log('🔄 プロジェクトリスト更新開始');
+            const newList = SaveService.getProjectList();
+            console.log('📋 取得したプロジェクト一覧:', newList);
+            setProjects(newList);
+          }, 100);
+          
+          alert(`プロジェクト「${name.trim()}」を保存しました`);
+        } else {
+          console.error('❌ プロジェクト保存失敗: projectIdがnull');
+          alert('プロジェクトの保存に失敗しました');
+        }
+      } catch (error) {
+        console.error('❌ プロジェクト保存エラー:', error);
+        alert('プロジェクトの保存中にエラーが発生しました');
       }
     }
   };
