@@ -32,6 +32,11 @@ export interface Character {
   eyeState?: string;
   mouthState?: string; 
   handGesture?: string;
+  // 🆕 新規追加8項目
+  poses?: string;         // 漫画向けポーズ
+  gaze?: string;         // 視線方向
+  emotionPrimary?: string; // 基本感情
+  physicalState?: string; // 体調・状態
 }
 
 // 新しく追加する設定型

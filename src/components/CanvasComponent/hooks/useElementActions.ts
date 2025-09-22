@@ -1,4 +1,4 @@
-// src/components/CanvasComponent/hooks/useElementActions.ts - 吹き出し位置重複防止版
+// src/components/CanvasComponent/hooks/useElementActions.ts - キャラクター移動時データ保持修正版
 import { useEffect } from 'react';
 import { Panel, Character, SpeechBubble } from '../../../types';
 import { CanvasState, CanvasStateActions } from './useCanvasState';
@@ -23,6 +23,8 @@ export interface ElementActionsReturn {
   addBubble: (type: string, text: string) => void;
   handleEditComplete: () => void;
   handleEditCancel: () => void;
+  // 🆕 キャラクター移動時データ保持機能を追加
+  updateCharacterPosition: (characterId: string, newX: number, newY: number, additionalUpdates?: Partial<Character>) => void;
 }
 
 /**
@@ -42,6 +44,76 @@ export const useElementActions = ({
   onBubbleAdd,
   onCharacterSelect,
 }: ElementActionsHookProps): ElementActionsReturn => {
+
+  /**
+   * 🆕 キャラクター位置更新時の詳細設定保持機能
+   */
+  const updateCharacterPosition = (
+    characterId: string, 
+    newX: number, 
+    newY: number, 
+    additionalUpdates?: Partial<Character>
+  ) => {
+    console.log('🔧 キャラクター位置更新開始:', {
+      characterId,
+      newPosition: { x: newX, y: newY },
+      additionalUpdates
+    });
+
+    const updatedCharacters = characters.map(char => {
+      if (char.id === characterId) {
+        // 🔧 詳細設定をログで確認
+        console.log('🔍 移動前のキャラクター詳細設定:', {
+          id: char.id,
+          name: char.name,
+          expression: char.expression,
+          action: char.action,
+          facing: char.facing,
+          eyeState: (char as any).eyeState,
+          mouthState: (char as any).mouthState,
+          handGesture: (char as any).handGesture,
+          emotion_primary: (char as any).emotion_primary,
+          physical_state: (char as any).physical_state
+        });
+
+        const updatedChar = {
+          ...char,  // 🔧 既存の全プロパティを保持
+          x: newX,
+          y: newY,
+          ...additionalUpdates   // 必要に応じて追加の更新を適用
+        };
+
+        // 🔧 移動後の詳細設定確認
+        console.log('✅ 移動後のキャラクター詳細設定保持確認:', {
+          id: updatedChar.id,
+          name: updatedChar.name,
+          preserved_expression: updatedChar.expression,
+          preserved_action: updatedChar.action,
+          preserved_facing: updatedChar.facing,
+          preserved_eyeState: (updatedChar as any).eyeState,
+          preserved_mouthState: (updatedChar as any).mouthState,
+          preserved_handGesture: (updatedChar as any).handGesture,
+          preserved_emotion_primary: (updatedChar as any).emotion_primary,
+          preserved_physical_state: (updatedChar as any).physical_state,
+          new_position: `(${newX}, ${newY})`
+        });
+
+        return updatedChar;
+      }
+      return char;  // 他のキャラクターは変更しない
+    });
+
+    setCharacters(updatedCharacters);
+
+    // 🔧 選択状態も更新
+    if (state.selectedCharacter && state.selectedCharacter.id === characterId) {
+      const updatedSelectedChar = updatedCharacters.find(c => c.id === characterId);
+      if (updatedSelectedChar) {
+        actions.setSelectedCharacter(updatedSelectedChar);
+        if (onCharacterSelect) onCharacterSelect(updatedSelectedChar);
+      }
+    }
+  };
 
   /**
    * 🆕 新しい吹き出しの配置位置を計算（重複回避）
@@ -276,5 +348,6 @@ export const useElementActions = ({
     addBubble,
     handleEditComplete,
     handleEditCancel,
+    updateCharacterPosition  // 🆕 新機能を公開
   };
 };
