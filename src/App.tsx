@@ -1164,31 +1164,48 @@ function App() {
         onClose={() => setShowProjectPanel(false)}
         // 🔧 8. プロジェクト読み込み時の復元処理（onLoadProjectの中を修正）
         onLoadProject={(projectId) => {
+          console.log('📂 App.tsx: プロジェクト読み込み開始 - projectId:', projectId);
+          
           const project = projectSave.loadProject(projectId);
+          console.log('📊 loadProjectの戻り値:', project ? 'データあり' : 'データなし');
+          
           if (project) {
-            setPanels(project.data.panels);
-            setCharacters(project.data.characters);
-            setSpeechBubbles(project.data.bubbles);
-            setBackgrounds(project.data.backgrounds || []);
-            setEffects(project.data.effects || []);
-            setTones(project.data.tones || []);
+            console.log('📋 プロジェクト構造確認:', {
+              hasData: !!project.data,
+              hasPanels: !!project.panels,
+              keys: Object.keys(project)
+            });
             
-            // 🆕 キャラクター名前・設定も復元
-            if (project.data.characterNames) {
-              setCharacterNames(project.data.characterNames);
+            // 🔧 修正: project.data.panels → project.panels
+            setPanels(project.panels || []);
+            setCharacters(project.characters || []);
+            setSpeechBubbles(project.bubbles || []);
+            setBackgrounds(project.backgrounds || []);
+            setEffects(project.effects || []);
+            setTones(project.tones || []);
+            
+            // キャラクター名前・設定も復元
+            if (project.characterNames) {
+              setCharacterNames(project.characterNames);
             }
-            if (project.data.characterSettings) {
-              setCharacterSettings(project.data.characterSettings);
+            if (project.characterSettings) {
+              setCharacterSettings(project.characterSettings);
             }
             
             // 設定も復元
-            setSnapSettings(prev => ({
-              ...prev,
-              enabled: project.data.settings.snapEnabled,
-              gridSize: project.data.settings.snapSize
-            }));
-            setIsDarkMode(project.data.settings.darkMode);
-            document.documentElement.setAttribute("data-theme", project.data.settings.darkMode ? "dark" : "light");
+            if (project.settings) {
+              setSnapSettings(prev => ({
+                ...prev,
+                enabled: project.settings.snapEnabled,
+                gridSize: project.settings.snapSize
+              }));
+              setIsDarkMode(project.settings.darkMode);
+              document.documentElement.setAttribute("data-theme", project.settings.darkMode ? "dark" : "light");
+            }
+            
+            console.log('✅ プロジェクト読み込み完了');
+          } else {
+            console.error('❌ プロジェクトデータが取得できませんでした');
           }
         }}
         // 🔧 9. プロジェクト新規作成時のリセット処理（onNewProjectの中を修正）

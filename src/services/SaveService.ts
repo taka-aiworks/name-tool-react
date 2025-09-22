@@ -46,11 +46,9 @@ export class SaveService {
   private static readonly CURRENT_PROJECT_KEY = 'name_tool_current_project';
   private static readonly VERSION = '1.0.0';
 
-  /**
-   * プロジェクトを保存（トーン対応版）
-   */
-  // 🔧 saveProject関数を拡張（12個のパラメータに対応）
-    static saveProject(
+  // SaveService.ts の saveProject メソッドにデバッグログ追加
+
+  static saveProject(
     name: string,
     panels: Panel[],
     characters: Character[],
@@ -63,13 +61,26 @@ export class SaveService {
     projectId?: string,
     characterNames?: Record<string, string>,
     characterSettings?: Record<string, any>,
-    // 🆕 ページデータ引数追加（オプション）
     pages?: Page[],
     currentPageIndex?: number
   ): string {
     try {
+      console.log('💾 SaveService.saveProject開始');
+      console.log('📝 引数確認:', {
+        name,
+        panelsCount: panels.length,
+        charactersCount: characters.length,
+        bubblesCount: bubbles.length,
+        backgroundsCount: backgrounds.length,
+        effectsCount: effects.length,
+        tonesCount: tones.length,
+        projectId: projectId || 'new'
+      });
+
       const id = projectId || this.generateId();
       const now = new Date().toISOString();
+      
+      console.log('🆔 プロジェクトID:', id);
       
       const projectData: ProjectData = {
         id,
@@ -96,24 +107,56 @@ export class SaveService {
         }
       };
 
-      // 既存の保存ロジック（変更なし）
+      console.log('📦 作成したプロジェクトデータ:', {
+        id: projectData.id,
+        name: projectData.name,
+        dataKeys: Object.keys(projectData.data)
+      });
+
+      // 既存の保存ロジック
       const projects = this.getAllProjects();
+      console.log('📊 既存プロジェクト数:', projects.length);
+      
       const existingIndex = projects.findIndex(p => p.id === id);
+      console.log('🔍 既存インデックス:', existingIndex);
       
       if (existingIndex >= 0) {
+        console.log('🔄 既存プロジェクトを更新');
         projects[existingIndex] = projectData;
       } else {
+        console.log('🆕 新規プロジェクトを追加');
         projects.push(projectData);
       }
 
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(projects));
-      localStorage.setItem(this.CURRENT_PROJECT_KEY, id);
+      console.log('📊 更新後プロジェクト数:', projects.length);
 
-      console.log(`プロジェクト "${name}" を保存しました (ID: ${id})${pages ? ` - ${pages.length}ページ` : ''}`);
+      const dataToSave = JSON.stringify(projects);
+      console.log('💾 保存するデータサイズ:', dataToSave.length + '文字');
+      
+      localStorage.setItem(this.STORAGE_KEY, dataToSave);
+      localStorage.setItem(this.CURRENT_PROJECT_KEY, id);
+      
+      console.log('✅ localStorage保存完了');
+
+      // 即座に確認
+      const verification = localStorage.getItem(this.STORAGE_KEY);
+      console.log('🔍 保存確認:', verification ? `${verification.length}文字で保存済み` : '保存されていません！');
+
+      console.log(`✅ プロジェクト "${name}" を保存しました (ID: ${id})${pages ? ` - ${pages.length}ページ` : ''}`);
       return id;
 
-    } catch (error) {
-      console.error('プロジェクト保存エラー:', error);
+        } catch (error) {
+      console.error('❌ プロジェクト保存エラー:', error);
+      
+      // 🔧 TypeScriptエラー対応：errorの型をチェック
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error ? error.stack : undefined;
+      
+      console.error('❌ エラー詳細:', errorMessage);
+      if (errorStack) {
+        console.error('❌ スタックトレース:', errorStack);
+      }
+      
       throw new Error('プロジェクトの保存に失敗しました');
     }
   }
@@ -197,17 +240,34 @@ export class SaveService {
     return currentId ? this.loadProject(currentId) : null;
   }
 
+  // SaveService.ts の getAllProjects メソッドにデバッグログ追加
+
   /**
-   * プロジェクト一覧を取得（トーン対応版）
+   * プロジェクト一覧を取得（トーン対応版 + デバッグ）
    */
-  // 🔧 getAllProjects関数も後方互換性を追加
   static getAllProjects(): ProjectData[] {
     try {
+      console.log('🔍 getAllProjects開始 - ストレージキー:', this.STORAGE_KEY);
+      
       const data = localStorage.getItem(this.STORAGE_KEY);
-      const projects = data ? JSON.parse(data) : [];
+      console.log('💾 ストレージから取得:', data ? `データあり(${data.length}文字)` : 'データなし');
+      
+      if (!data) {
+        console.log('📝 初回起動 - 空配列を返します');
+        return [];
+      }
+      
+      const projects = JSON.parse(data);
+      console.log('✅ JSON解析成功:', Array.isArray(projects) ? `${projects.length}個のプロジェクト` : 'プロジェクトは配列ではありません');
+      
+      if (Array.isArray(projects) && projects.length > 0) {
+        projects.forEach((project, index) => {
+          console.log(`  ${index + 1}. ${project.name || 'Unknown'} (ID: ${project.id || 'Unknown'})`);
+        });
+      }
       
       // 🔧 後方互換性：既存プロジェクトに効果線・トーン・キャラクター名前データを追加
-      return projects.map((project: ProjectData) => {
+      const processedProjects = projects.map((project: ProjectData) => {
         if (!project.data.effects) {
           project.data.effects = [];
         }
@@ -233,24 +293,44 @@ export class SaveService {
         }
         return project;
       });
+      
+      console.log('🔧 後方互換性処理完了:', processedProjects.length + '個のプロジェクト');
+      return Array.isArray(processedProjects) ? processedProjects : [];
+      
     } catch (error) {
-      console.error('プロジェクト一覧取得エラー:', error);
+      console.error('❌ プロジェクト一覧取得エラー:', error);
       return [];
     }
   }
 
+  // SaveService.ts の getProjectList メソッドのみ修正
+
   /**
-   * プロジェクトメタデータ一覧を取得
+   * プロジェクトメタデータ一覧を取得（デバッグ版）
    */
   static getProjectList(): ProjectMetadata[] {
-    return this.getAllProjects().map(project => ({
+    console.log('🔍 getProjectList呼び出し開始');
+    
+    const allProjects = this.getAllProjects();
+    console.log('📊 getAllProjectsの結果:', allProjects.length + '個のプロジェクト');
+    
+    if (allProjects.length > 0) {
+      allProjects.forEach((project, index) => {
+        console.log(`  ${index + 1}. ${project.name} (ID: ${project.id})`);
+      });
+    }
+    
+    const projectList = allProjects.map(project => ({
       id: project.id,
       name: project.name,
       createdAt: project.createdAt,
       updatedAt: project.updatedAt
     }));
+    
+    console.log('📋 変換後のプロジェクト一覧:', projectList.length + '個');
+    
+    return projectList;
   }
-
   /**
    * プロジェクトを削除
    */

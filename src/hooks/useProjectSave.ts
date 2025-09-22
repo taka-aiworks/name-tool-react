@@ -35,7 +35,7 @@ export const useProjectSave = (): UseProjectSaveReturn => {
   const [isAutoSaving, setIsAutoSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // プロジェクト保存（App.tsxの期待するシグネチャに合わせる）
+  // プロジェクト保存（SaveService使用版）
   const saveProject = useCallback(async (
     projectData: any,
     projectName: string = 'untitled'
@@ -56,35 +56,33 @@ export const useProjectSave = (): UseProjectSaveReturn => {
       if (projectData.characters) {
         console.log('キャラクター詳細設定確認:');
         projectData.characters.forEach((char: any, index: number) => {
-          console.log(`Character ${index + 1}:`, {
-            id: char.id,
-            name: char.name,
-            expression: char.expression,
-            action: char.action,
-            facing: char.facing,
-            viewType: char.viewType,
-            eyeState: char.eyeState,
-            mouthState: char.mouthState,
-            handGesture: char.handGesture
-          });
+          console.log(`Character ${index + 1}:`, char);
         });
       }
 
-      const saveData = {
-        ...projectData,
-        version: '2.0',
-        timestamp: new Date().toISOString()
-      };
-
-      const key = `manga-project-${projectName}-${Date.now()}`;
-      localStorage.setItem(key, JSON.stringify(saveData));
-      localStorage.setItem('manga-project-current', key);
+      // 🆕 SaveService.ts を使用して保存
+      const projectId = SaveService.saveProject(
+        projectName,                                    // name
+        projectData.panels || [],                       // panels
+        projectData.characters || [],                   // characters  
+        projectData.bubbles || [],                      // bubbles
+        projectData.backgrounds || [],                  // backgrounds
+        projectData.effects || [],                      // effects
+        projectData.tones || [],                        // tones
+        projectData.canvasSize || { width: 800, height: 600 }, // canvasSize
+        projectData.settings || { snapEnabled: true, snapSize: 20, darkMode: false }, // settings
+        currentProjectId || undefined,                  // projectId (update existing)
+        projectData.characterNames || {},               // characterNames
+        projectData.characterSettings || {},            // characterSettings
+        projectData.pages,                              // pages
+        projectData.currentPageIndex                    // currentPageIndex
+      );
       
-      setCurrentProjectId(key);
+      setCurrentProjectId(projectId);
       setLastSaved(new Date());
       setHasUnsavedChanges(false);
       
-      console.log('✅ プロジェクト保存完了:', key);
+      console.log('✅ プロジェクト保存完了:', projectId);
       return true;
     } catch (error) {
       console.error('❌ プロジェクト保存エラー:', error);
@@ -93,52 +91,67 @@ export const useProjectSave = (): UseProjectSaveReturn => {
     } finally {
       setIsSaving(false);
     }
-  }, []);
+  }, [currentProjectId]);
 
-  // プロジェクト読み込み（App.tsxの期待する形式に合わせる）
+  // プロジェクト読み込み（SaveService使用版 + デバッグ強化）
   const loadProject = useCallback((projectKey?: string): any | null => {
     try {
-      const key = projectKey || localStorage.getItem('manga-project-current');
-      if (!key) return null;
-
-      const savedData = localStorage.getItem(key);
-      if (!savedData) return null;
-
-      const parsedData = JSON.parse(savedData);
+      console.log('📂 プロジェクト読み込み開始 - projectKey:', projectKey);
       
-      console.log('📂 プロジェクト読み込み:', key);
-      console.log('読み込まれたデータ:', {
-        panels: parsedData.panels?.length || 0,
-        characters: parsedData.characters?.length || 0,
-        characterNames: parsedData.characterNames,
-        characterSettings: parsedData.characterSettings
-      });
-
-      // 🔧 キャラクター詳細設定の読み込み確認
-      if (parsedData.characters) {
-        console.log('キャラクター詳細設定読み込み確認:');
-        parsedData.characters.forEach((char: any, index: number) => {
-          console.log(`Character ${index + 1}:`, {
-            id: char.id,
-            name: char.name,
-            expression: char.expression,
-            action: char.action,
-            facing: char.facing,
-            viewType: char.viewType,
-            eyeState: char.eyeState,
-            mouthState: char.mouthState,
-            handGesture: char.handGesture
-          });
-        });
+      const projectId = projectKey || SaveService.getCurrentProjectId();
+      console.log('🆔 使用するプロジェクトID:', projectId);
+      
+      if (!projectId) {
+        console.log('❌ プロジェクトIDがありません');
+        return null;
       }
 
-      setCurrentProjectId(key);
-      setLastSaved(new Date(parsedData.timestamp || Date.now()));
+      const projectData = SaveService.loadProject(projectId);
+      console.log('📊 SaveServiceから取得したデータ:', projectData ? 'データあり' : 'データなし');
+      
+      if (!projectData) {
+        console.log('❌ プロジェクトデータが見つかりません');
+        return null;
+      }
+      
+      console.log('📋 プロジェクトデータ構造:', {
+        id: projectData.id,
+        name: projectData.name,
+        dataKeys: Object.keys(projectData.data),
+        panelsCount: projectData.data.panels?.length || 0,
+        charactersCount: projectData.data.characters?.length || 0
+      });
+
+      // 🔧 App.tsxが期待する形式でデータを返す（data.プロパティではなく直接プロパティ）
+      const loadedData = {
+        panels: projectData.data.panels || [],
+        characters: projectData.data.characters || [],
+        bubbles: projectData.data.bubbles || [],
+        backgrounds: projectData.data.backgrounds || [],
+        effects: projectData.data.effects || [],
+        tones: projectData.data.tones || [],
+        canvasSize: projectData.data.canvasSize || { width: 800, height: 600 },
+        settings: projectData.data.settings || { snapEnabled: true, snapSize: 20, darkMode: false },
+        characterNames: projectData.data.characterNames || {},
+        characterSettings: projectData.data.characterSettings || {},
+        pages: projectData.data.pages,
+        currentPageIndex: projectData.data.currentPageIndex
+      };
+
+      console.log('📤 App.tsxに返すデータ:', {
+        panelsCount: loadedData.panels.length,
+        charactersCount: loadedData.characters.length,
+        bubblesCount: loadedData.bubbles.length,
+        hasCharacterNames: !!loadedData.characterNames,
+        hasCharacterSettings: !!loadedData.characterSettings
+      });
+
+      setCurrentProjectId(projectId);
+      setLastSaved(new Date(projectData.updatedAt));
       setHasUnsavedChanges(false);
       setError(null);
 
-      // 🔧 App.tsxが期待する形式 { data: ... } ではなく、直接データを返す
-      return parsedData;
+      return loadedData;
     } catch (error) {
       console.error('❌ プロジェクト読み込みエラー:', error);
       setError(error instanceof Error ? error.message : '読み込みに失敗しました');
@@ -168,40 +181,36 @@ export const useProjectSave = (): UseProjectSaveReturn => {
     }
   }, [isAutoSaving]);
 
-  // プロジェクト一覧取得
+  // プロジェクト一覧取得（SaveService使用版）
   const getProjectList = useCallback((): Array<{key: string, name: string, timestamp: string}> => {
-    const projects: Array<{key: string, name: string, timestamp: string}> = [];
-    
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith('manga-project-') && !key.endsWith('-current')) {
-        try {
-          const data = JSON.parse(localStorage.getItem(key) || '{}');
-          projects.push({
-            key,
-            name: key.replace('manga-project-', '').split('-')[0] || 'untitled',
-            timestamp: data.timestamp || 'unknown'
-          });
-        } catch (error) {
-          console.warn(`⚠️ プロジェクト読み込みスキップ: ${key}`);
-        }
-      }
+    try {
+      const projects = SaveService.getProjectList();
+      return projects.map(project => ({
+        key: project.id,
+        name: project.name,
+        timestamp: project.updatedAt
+      }));
+    } catch (error) {
+      console.error('❌ プロジェクト一覧取得エラー:', error);
+      return [];
     }
-    
-    return projects.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
   }, []);
 
-  // プロジェクト削除
+  // プロジェクト削除（SaveService使用版）
   const deleteProject = useCallback((projectKey: string): boolean => {
     try {
-      localStorage.removeItem(projectKey);
-      console.log(`🗑️ プロジェクト削除: ${projectKey}`);
-      return true;
+      const result = SaveService.deleteProject(projectKey);
+      if (result && projectKey === currentProjectId) {
+        setCurrentProjectId(null);
+        setLastSaved(null);
+        setHasUnsavedChanges(false);
+      }
+      return result;
     } catch (error) {
       console.error('❌ プロジェクト削除エラー:', error);
       return false;
     }
-  }, []);
+  }, [currentProjectId]);
 
   // 新規プロジェクト
   const newProject = useCallback(() => {
@@ -212,19 +221,14 @@ export const useProjectSave = (): UseProjectSaveReturn => {
     console.log('📄 新規プロジェクト作成');
   }, []);
 
-  // 初期化
+  // 初期化（SaveService使用版）
   useEffect(() => {
-    const currentId = localStorage.getItem('manga-project-current');
+    const currentId = SaveService.getCurrentProjectId();
     if (currentId) {
-      const data = localStorage.getItem(currentId);
-      if (data) {
-        try {
-          const parsed = JSON.parse(data);
-          setCurrentProjectId(currentId);
-          setLastSaved(new Date(parsed.timestamp || Date.now()));
-        } catch (error) {
-          console.warn('初期プロジェクト読み込み失敗:', error);
-        }
+      const project = SaveService.loadProject(currentId);
+      if (project) {
+        setCurrentProjectId(currentId);
+        setLastSaved(new Date(project.updatedAt));
       }
     }
   }, []);
