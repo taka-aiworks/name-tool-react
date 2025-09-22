@@ -1,4 +1,4 @@
-// src/components/UI/ExportPanel.tsx - パネル判定デバッグ強化最終版
+// src/components/UI/ExportPanel.tsx - 修正版
 import React, { useState } from 'react';
 import { ExportService, ExportOptions, ExportProgress } from '../../services/ExportService';
 import { promptService } from '../../services/PromptService';
@@ -77,6 +77,7 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
   const isDarkMode = document.documentElement.getAttribute("data-theme") === "dark";
 
   const handlePurposeClick = (purpose: ExportPurpose) => {
+    // その他の場合は設定画面を開く
     if (selectedPurpose === purpose) {
       setSelectedPurpose(null);
       setPromptOutput('');
@@ -301,10 +302,6 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
     setExportProgress({ step: 'initialize', progress: 10, message: 'プロンプト分析中...' });
 
     try {
-      // 🆕 パネル配置デバッグ情報を先に生成
-      // const debugInfo = generatePanelAssignmentDebug();
-      // setDebugOutput(debugInfo);
-
       // 🔧 修正: 各キャラクターを座標ベースで最寄りパネルに割り当て
       const characterAssignments = new Map<number, Character[]>();
       
@@ -540,7 +537,7 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
       id: 'prompt' as ExportPurpose,
       icon: '🎨',
       title: 'プロンプト出力',
-      desc: 'AI画像生成用（未選択時除外対応）'
+      desc: 'AI画像生成用'
     },
     {
       id: 'print' as ExportPurpose,
@@ -588,24 +585,6 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
         出力
       </h3>
 
-      {/* 🆕 v1.1.1 最終版アピール */}
-      <div 
-        style={{
-          background: isDarkMode ? "rgba(16, 185, 129, 0.1)" : "rgba(16, 185, 129, 0.05)",
-          border: `1px solid ${isDarkMode ? "rgba(16, 185, 129, 0.3)" : "rgba(16, 185, 129, 0.2)"}`,
-          borderRadius: "6px",
-          padding: "8px",
-          marginBottom: "12px",
-          fontSize: "10px",
-          color: isDarkMode ? "#6ee7b7" : "#047857"
-        }}
-      >
-        <strong>🎯 v1.1.1 最終版完成:</strong><br/>
-        ✅ 未選択時完全除外システム<br/>
-        ✅ パネル判定デバッグ詳細強化<br/>
-        ✅ プロンプト品質大幅向上
-      </div>
-
       <div 
         style={{
           background: isDarkMode ? "#404040" : "#f9f9f9",
@@ -632,7 +611,19 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
         {purposes.map((purpose) => (
           <div key={purpose.id}>
             <button
-              onClick={() => handlePurposeClick(purpose.id)}
+              onClick={() => {
+                if (purpose.id === 'prompt') {
+                  if (selectedPurpose === 'prompt') {
+                    setSelectedPurpose(null); // 既に開いている場合は閉じる
+                    setPromptOutput(''); // プロンプト結果もクリア
+                  } else {
+                    setSelectedPurpose('prompt'); // まず画面を開く
+                    handlePromptExport(); // それから生成開始
+                  }
+                } else {
+                  handlePurposeClick(purpose.id);
+                }
+              }}
               disabled={panels.length === 0 || isExporting}
               style={{
                 width: "100%",
@@ -661,7 +652,11 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
                     fontSize: "12px",
                     marginBottom: "2px"
                   }}>
-                    {purpose.title}
+                    {purpose.id === 'prompt' && isExporting && (
+                      <span style={{ fontSize: "10px", marginLeft: "8px", color: "#f59e0b" }}>
+                        🎯 生成中...
+                      </span>
+                    )}
                   </div>
                   <div style={{ 
                     fontSize: "10px", 
@@ -685,164 +680,88 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
                 }}
               >
                 <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                  
-                  {selectedPurpose === 'prompt' && (
-                    <>
-                      {!promptOutput ? (
-                        <div style={{ textAlign: "center" }}>
-                          <div style={{ 
-                            fontSize: "32px", 
-                            marginBottom: "12px"
-                          }}>🎨</div>
-                          <h4 style={{ 
-                            fontSize: "14px", 
-                            fontWeight: "bold", 
-                            color: isDarkMode ? "white" : "#1f2937",
-                            marginBottom: "8px"
-                          }}>
-                            🎯 v1.1.1 最終版プロンプト生成
-                          </h4>
-                          <p style={{ 
-                            color: isDarkMode ? "#9ca3af" : "#6b7280",
-                            marginBottom: "16px",
-                            lineHeight: "1.4",
-                            fontSize: "11px"
-                          }}>
-                            ✅ 未選択項目は完全に出力除外<br />
-                            ✅ パネル判定デバッグ詳細表示<br />
-                            ✅ 無意味なデフォルト値完全除去<br />
-                            <strong>史上最高品質なプロンプト生成！</strong>
-                          </p>
-                          <button
-                            onClick={handlePromptExport}
-                            disabled={isExporting}
-                            style={{
-                              background: isExporting 
-                                ? "#999999" 
-                                : "linear-gradient(135deg, #10b981, #059669)",
-                              color: "white",
-                              border: "none",
-                              borderRadius: "4px",
-                              padding: "8px 16px",
-                              fontSize: "11px",
-                              fontWeight: "600",
-                              cursor: isExporting ? "not-allowed" : "pointer",
-                              opacity: isExporting ? 0.6 : 1
-                            }}
-                          >
-                            {isExporting ? '🎯 最終版生成中...' : '🎨 v1.1.1 最終版生成'}
-                          </button>
-                        </div>
-                      ) : (
-                        <div>
-                          <div style={{ display: "flex", gap: "8px", marginBottom: "12px", flexWrap: "wrap" }}>
-                            <button
-                              onClick={handleCopyPrompt}
-                              style={{
-                                background: "#10b981",
-                                color: "white",
-                                border: "none",
-                                borderRadius: "4px",
-                                padding: "6px 12px",
-                                fontSize: "11px",
-                                cursor: "pointer"
-                              }}
-                            >
-                              📋 プロンプトコピー
-                            </button>
-                            <button
-                              onClick={handleDownloadPrompt}
-                              style={{
-                                background: "#3b82f6",
-                                color: "white",
-                                border: "none",
-                                borderRadius: "4px",
-                                padding: "6px 12px",
-                                fontSize: "11px",
-                                cursor: "pointer"
-                              }}
-                            >
-                              💾 ダウンロード
-                            </button>
-                            {debugOutput && (
-                              <button
-                                onClick={handleCopyDebug}
-                                style={{
-                                  background: "#f59e0b",
-                                  color: "white",
-                                  border: "none",
-                                  borderRadius: "4px",
-                                  padding: "6px 12px",
-                                  fontSize: "11px",
-                                  cursor: "pointer"
-                                }}
-                              >
-                                🔧 デバッグコピー
-                              </button>
-                            )}
-                          </div>
 
-                          {/* 🆕 デバッグ表示エリア（詳細版） */}
-                          {debugOutput && (
-                            <div style={{ marginBottom: "12px" }}>
-                              <h5 style={{
-                                fontSize: "12px",
-                                fontWeight: "bold",
-                                color: isDarkMode ? "#f59e0b" : "#d97706",
-                                marginBottom: "6px",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "4px"
-                              }}>
-                                🔧 パネル判定デバッグ情報（v1.1.1詳細版）
-                              </h5>
-                              <div style={{
-                                background: isDarkMode ? "#1f2937" : "#fffbeb",
-                                border: `1px solid ${isDarkMode ? "#374151" : "#fbbf24"}`,
-                                borderRadius: "4px",
-                                padding: "8px",
-                                maxHeight: "250px",
-                                overflowY: "auto",
-                                fontFamily: "monospace",
-                                fontSize: "9px",
-                                lineHeight: "1.3",
-                                whiteSpace: "pre-wrap",
-                                color: isDarkMode ? "#fbbf24" : "#92400e"
-                              }}>
-                                {debugOutput}
-                              </div>
-                              <div style={{
-                                fontSize: "10px",
-                                color: isDarkMode ? "#9ca3af" : "#6b7280",
-                                marginTop: "4px",
-                                textAlign: "center"
-                              }}>
-                                💡 各キャラクターがどのパネルに配置されるかの詳細計算結果
-                              </div>
-                            </div>
-                          )}
-
-                          {/* プロンプト表示エリア */}
-                          <div style={{
-                            background: isDarkMode ? "#1f2937" : "#f9fafb",
-                            border: `1px solid ${isDarkMode ? "#374151" : "#e5e7eb"}`,
+                  {/* プロンプト出力設定画面 */}
+                  {selectedPurpose === 'prompt' && promptOutput && (
+                    <div>
+                      <div style={{ 
+                        display: "flex", 
+                        justifyContent: "space-between", 
+                        alignItems: "center",
+                        marginBottom: "12px" 
+                      }}>
+                        <h4 style={{
+                          fontSize: "12px",
+                          fontWeight: "bold",
+                          color: isDarkMode ? "#10b981" : "#059669",
+                          margin: 0,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "6px"
+                        }}>
+                          ✅ プロンプト生成完了
+                        </h4>
+                        <button
+                          onClick={handlePromptExport}
+                          disabled={isExporting}
+                          style={{
+                            background: isExporting ? "#999999" : "#f59e0b",
+                            color: "white",
+                            border: "none",
                             borderRadius: "4px",
-                            padding: "12px",
-                            maxHeight: "300px",
-                            overflowY: "auto",
-                            fontFamily: "monospace",
+                            padding: "6px 12px",
                             fontSize: "10px",
-                            lineHeight: "1.4",
-                            whiteSpace: "pre-wrap",
-                            color: isDarkMode ? "#e5e7eb" : "#374151"
-                          }}>
-                            {promptOutput}
-                          </div>
-                        </div>
-                      )}
-                    </>
-                  )}
+                            fontWeight: "600",
+                            cursor: isExporting ? "not-allowed" : "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "4px"
+                          }}
+                        >
+                          {isExporting ? '更新中...' : '🔄 再生成'}
+                        </button>
+                      </div>
 
+                      <div style={{ 
+                        display: "flex", 
+                        justifyContent: "center",
+                        marginBottom: "12px" 
+                      }}>
+                        <button
+                          onClick={handleCopyPrompt}
+                          style={{
+                            background: "#10b981",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "4px",
+                            padding: "8px 24px",
+                            fontSize: "11px",
+                            cursor: "pointer",
+                            fontWeight: "600"
+                          }}
+                        >
+                          📋 プロンプトコピー
+                        </button>
+                      </div>
+
+                      <div style={{
+                        background: isDarkMode ? "#1f2937" : "#f9fafb",
+                        border: `1px solid ${isDarkMode ? "#374151" : "#e5e7eb"}`,
+                        borderRadius: "4px",
+                        padding: "12px",
+                        maxHeight: "300px",
+                        overflowY: "auto",
+                        fontFamily: "monospace",
+                        fontSize: "10px",
+                        lineHeight: "1.4",
+                        whiteSpace: "pre-wrap",
+                        color: isDarkMode ? "#e5e7eb" : "#374151"
+                      }}>
+                        {promptOutput}
+                      </div>
+                    </div>
+                  )}
+                  
                   {/* 印刷用設定 */}
                   {selectedPurpose === 'print' && (
                     <>
@@ -1037,95 +956,94 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
                     </>
                   )}
 
-                  {/* プログレス（全出力共通） */}
-                  {isExporting && exportProgress && (
-                    <div 
-                      style={{
-                        background: isDarkMode ? "#404040" : "#f5f5f5",
-                        padding: "8px",
-                        borderRadius: "4px",
-                      }}
-                    >
-                      <div 
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          fontSize: "10px",
-                          marginBottom: "4px",
-                          color: isDarkMode ? "#ffffff" : "#333333",
-                        }}
-                      >
-                        <span>{exportProgress.message}</span>
-                        <span style={{ fontWeight: "bold" }}>
-                          {Math.round(exportProgress.progress)}%
-                        </span>
-                      </div>
-                      <div 
-                        style={{
-                          width: "100%",
-                          height: "4px",
-                          background: isDarkMode ? "#666666" : "#e0e0e0",
-                          borderRadius: "2px",
-                          overflow: "hidden",
-                        }}
-                      >
-                        <div
+                  {/* 出力ボタン（プロンプト以外） */}
+                  <button
+                    onClick={handleExport}
+                    disabled={isExporting || panels.length === 0}
+                    style={{
+                      width: "100%",
+                      background: isExporting || panels.length === 0 ? "#999999" : "#ff8833",
+                      color: "white",
+                      padding: "8px 12px",
+                      borderRadius: "4px",
+                      border: "none",
+                      fontSize: "11px",
+                      fontWeight: "600",
+                      cursor: isExporting || panels.length === 0 ? "not-allowed" : "pointer",
+                      transition: "background-color 0.2s",
+                      fontFamily: "inherit",
+                    }}
+                  >
+                    {isExporting ? (
+                      <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+                        <div 
                           style={{
-                            height: "100%",
-                            background: "#ff8833",
-                            borderRadius: "2px",
-                            transition: "width 0.3s",
-                            width: `${exportProgress.progress}%`,
+                            width: "12px",
+                            height: "12px",
+                            border: "2px solid white",
+                            borderTop: "2px solid transparent",
+                            borderRadius: "50%",
+                            animation: "spin 1s linear infinite",
                           }}
                         />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* 出力ボタン（プロンプト以外） */}
-                  {selectedPurpose !== 'prompt' && (
-                    <button
-                      onClick={handleExport}
-                      disabled={isExporting || panels.length === 0}
-                      style={{
-                        width: "100%",
-                        background: isExporting || panels.length === 0 ? "#999999" : "#ff8833",
-                        color: "white",
-                        padding: "8px 12px",
-                        borderRadius: "4px",
-                        border: "none",
-                        fontSize: "11px",
-                        fontWeight: "600",
-                        cursor: isExporting || panels.length === 0 ? "not-allowed" : "pointer",
-                        transition: "background-color 0.2s",
-                        fontFamily: "inherit",
-                      }}
-                    >
-                      {isExporting ? (
-                        <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
-                          <div 
-                            style={{
-                              width: "12px",
-                              height: "12px",
-                              border: "2px solid white",
-                              borderTop: "2px solid transparent",
-                              borderRadius: "50%",
-                              animation: "spin 1s linear infinite",
-                            }}
-                          />
-                          出力中...
-                        </span>
-                      ) : (
-                        '出力する'
-                      )}
-                    </button>
-                  )}
+                        出力中...
+                      </span>
+                    ) : (
+                      'ファイルダウンロード'
+                    )}
+                  </button>
                 </div>
               </div>
             )}
           </div>
         ))}
       </div>
+
+      {/* プログレス表示（生成中のみ） */}
+      {isExporting && exportProgress && (
+        <div 
+          style={{
+            marginTop: "12px",
+            background: isDarkMode ? "#404040" : "#f5f5f5",
+            padding: "12px",
+            borderRadius: "4px",
+          }}
+        >
+          <div 
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              fontSize: "11px",
+              marginBottom: "6px",
+              color: isDarkMode ? "#ffffff" : "#333333",
+            }}
+          >
+            <span>{exportProgress.message}</span>
+            <span style={{ fontWeight: "bold" }}>
+              {Math.round(exportProgress.progress)}%
+            </span>
+          </div>
+          <div 
+            style={{
+              width: "100%",
+              height: "4px",
+              background: isDarkMode ? "#666666" : "#e0e0e0",
+              borderRadius: "2px",
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                height: "100%",
+                background: "#ff8833",
+                borderRadius: "2px",
+                transition: "width 0.3s",
+                width: `${exportProgress.progress}%`,
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* アニメーション定義 */}
       <style>{`
