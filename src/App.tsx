@@ -41,6 +41,9 @@ import {
   logScaleTransform
 } from './utils/ScaleTransformUtils';
 
+// 🆕 この1行をimport部分に追加
+import { scaleTemplateToCanvas } from './utils/TemplateScaler';
+
 function App() {
   // デフォルトダークモード設定
   useEffect(() => {
@@ -426,16 +429,15 @@ function App() {
   }, [isDarkMode]);
 
     // 🔧 2. handleTemplateClick関数を修正（293行目あたりを置き換え）
-  // App.tsx - handleTemplateClick関数修正版（元に戻す）
-
-  const handleTemplateClick = useCallback((template: string) => {
+    // 🆕 修正版（用紙サイズ対応）
+    const handleTemplateClick = useCallback((template: string) => {
     setSelectedTemplate(template);
     setSelectedCharacter(null);
     setSelectedPanel(null);
     setSelectedEffect(null);
     setSelectedTone(null);
     
-    // 🔧 元の固定テンプレートに戻す
+    // シンプルに戻す
     const newPanels = [...templates[template].panels];
     setPanels(newPanels);
     
@@ -458,6 +460,8 @@ function App() {
       setTones(newTones);
     }
   });
+
+
 // 【置き換え対象】App.tsx内の既存のhandleCanvasSettingsChange関数を以下に置き換えてください：
 
   const handleCanvasSettingsChange = useCallback((newSettings: CanvasSettings) => {

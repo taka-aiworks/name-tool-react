@@ -1,187 +1,187 @@
-// src/components/CanvasArea/templates.ts - 即座修正版
+// src/components/CanvasArea/templates.ts - A4サイズ対応修正版
 import { Templates } from "../../types";
 
-// 🎯 実用性重視のパネルテンプレート（固定値版に戻す）
+// 🎯 A4サイズ（2480×3508px）用に座標を4倍スケール修正
 export const templates: Templates = {
   // === 1コマテンプレート ===
   "single_impact": {
     panels: [
-      { id: 1, x: 20, y: 20, width: 560, height: 710 },
+      { id: 1, x: 80, y: 80, width: 2240, height: 2840 },
     ],
   },
 
   // === 2コマテンプレート ===
   "split_horizontal": {
     panels: [
-      { id: 1, x: 20, y: 20, width: 275, height: 710 },
-      { id: 2, x: 305, y: 20, width: 275, height: 710 },
+      { id: 1, x: 80, y: 80, width: 1100, height: 2840 },
+      { id: 2, x: 1220, y: 80, width: 1100, height: 2840 },
     ],
   },
   "split_vertical": {
     panels: [
-      { id: 1, x: 20, y: 20, width: 560, height: 350 },
-      { id: 2, x: 20, y: 380, width: 560, height: 350 },
+      { id: 1, x: 80, y: 80, width: 2240, height: 1400 },
+      { id: 2, x: 80, y: 1520, width: 2240, height: 1400 },
     ],
   },
   "dialogue_2": {
     panels: [
-      { id: 1, x: 20, y: 20, width: 560, height: 500 },
-      { id: 2, x: 20, y: 530, width: 560, height: 200 },
+      { id: 1, x: 80, y: 80, width: 2240, height: 2000 },
+      { id: 2, x: 80, y: 2120, width: 2240, height: 800 },
     ],
   },
   "main_sub": {
     panels: [
-      { id: 1, x: 20, y: 20, width: 390, height: 710 },
-      { id: 2, x: 420, y: 20, width: 160, height: 710 },
+      { id: 1, x: 80, y: 80, width: 1560, height: 2840 },
+      { id: 2, x: 1680, y: 80, width: 640, height: 2840 },
     ],
   },
   "custom": {
     panels: [
-      { id: 1, x: 20, y: 20, width: 560, height: 350 },
-      { id: 2, x: 20, y: 380, width: 560, height: 350 },
+      { id: 1, x: 80, y: 80, width: 2240, height: 1400 },
+      { id: 2, x: 80, y: 1520, width: 2240, height: 1400 },
     ],
   },
 
   // === 3コマテンプレート ===
   "three_vertical": {
     panels: [
-      { id: 1, x: 20, y: 20, width: 560, height: 230 },
-      { id: 2, x: 20, y: 260, width: 560, height: 230 },
-      { id: 3, x: 20, y: 500, width: 560, height: 230 },
+      { id: 1, x: 80, y: 80, width: 2240, height: 920 },
+      { id: 2, x: 80, y: 1040, width: 2240, height: 920 },
+      { id: 3, x: 80, y: 2000, width: 2240, height: 920 },
     ],
   },
   "t_shape": {
     panels: [
-      { id: 1, x: 20, y: 20, width: 560, height: 240 },
-      { id: 2, x: 20, y: 270, width: 275, height: 460 },
-      { id: 3, x: 305, y: 270, width: 275, height: 460 },
+      { id: 1, x: 80, y: 80, width: 2240, height: 960 },
+      { id: 2, x: 80, y: 1080, width: 1100, height: 1840 },
+      { id: 3, x: 1220, y: 1080, width: 1100, height: 1840 },
     ],
   },
   "reverse_t": {
     panels: [
-      { id: 1, x: 20, y: 20, width: 275, height: 460 },
-      { id: 2, x: 305, y: 20, width: 275, height: 460 },
-      { id: 3, x: 20, y: 490, width: 560, height: 240 },
+      { id: 1, x: 80, y: 80, width: 1100, height: 1840 },
+      { id: 2, x: 1220, y: 80, width: 1100, height: 1840 },
+      { id: 3, x: 80, y: 1960, width: 2240, height: 960 },
     ],
   },
 
   // === 4コマテンプレート ===
   "4koma": {
     panels: [
-      { id: 1, x: 20, y: 20, width: 560, height: 170 },
-      { id: 2, x: 20, y: 200, width: 560, height: 170 },
-      { id: 3, x: 20, y: 380, width: 560, height: 170 },
-      { id: 4, x: 20, y: 560, width: 560, height: 170 },
+      { id: 1, x: 80, y: 80, width: 2240, height: 680 },
+      { id: 2, x: 80, y: 800, width: 2240, height: 680 },
+      { id: 3, x: 80, y: 1520, width: 2240, height: 680 },
+      { id: 4, x: 80, y: 2240, width: 2240, height: 680 },
     ],
   },
   "grid_2x2": {
     panels: [
-      { id: 1, x: 20, y: 20, width: 275, height: 350 },
-      { id: 2, x: 305, y: 20, width: 275, height: 350 },
-      { id: 3, x: 20, y: 380, width: 275, height: 350 },
-      { id: 4, x: 305, y: 380, width: 275, height: 350 },
+      { id: 1, x: 80, y: 80, width: 1100, height: 1400 },
+      { id: 2, x: 1220, y: 80, width: 1100, height: 1400 },
+      { id: 3, x: 80, y: 1520, width: 1100, height: 1400 },
+      { id: 4, x: 1220, y: 1520, width: 1100, height: 1400 },
     ],
   },
   "main_triple": {
     panels: [
-      { id: 1, x: 20, y: 20, width: 560, height: 350 },
-      { id: 2, x: 20, y: 380, width: 180, height: 350 },
-      { id: 3, x: 210, y: 380, width: 180, height: 350 },
-      { id: 4, x: 400, y: 380, width: 180, height: 350 },
+      { id: 1, x: 80, y: 80, width: 2240, height: 1400 },
+      { id: 2, x: 80, y: 1520, width: 720, height: 1400 },
+      { id: 3, x: 840, y: 1520, width: 720, height: 1400 },
+      { id: 4, x: 1600, y: 1520, width: 720, height: 1400 },
     ],
   },
   "triple_main": {
     panels: [
-      { id: 1, x: 20, y: 20, width: 180, height: 350 },
-      { id: 2, x: 210, y: 20, width: 180, height: 350 },
-      { id: 3, x: 400, y: 20, width: 180, height: 350 },
-      { id: 4, x: 20, y: 380, width: 560, height: 350 },
+      { id: 1, x: 80, y: 80, width: 720, height: 1400 },
+      { id: 2, x: 840, y: 80, width: 720, height: 1400 },
+      { id: 3, x: 1600, y: 80, width: 720, height: 1400 },
+      { id: 4, x: 80, y: 1520, width: 2240, height: 1400 },
     ],
   },
   "dialogue": {
     panels: [
-      { id: 1, x: 20, y: 20, width: 560, height: 200 },
-      { id: 2, x: 20, y: 230, width: 275, height: 200 },
-      { id: 3, x: 305, y: 230, width: 275, height: 200 },
-      { id: 4, x: 20, y: 440, width: 560, height: 290 },
+      { id: 1, x: 80, y: 80, width: 2240, height: 800 },
+      { id: 2, x: 80, y: 920, width: 1100, height: 800 },
+      { id: 3, x: 1220, y: 920, width: 1100, height: 800 },
+      { id: 4, x: 80, y: 1760, width: 2240, height: 1160 },
     ],
   },
   "action": {
     panels: [
-      { id: 1, x: 20, y: 20, width: 200, height: 300 },
-      { id: 2, x: 230, y: 20, width: 350, height: 145 },
-      { id: 3, x: 230, y: 175, width: 350, height: 145 },
-      { id: 4, x: 20, y: 330, width: 560, height: 400 },
+      { id: 1, x: 80, y: 80, width: 800, height: 1200 },
+      { id: 2, x: 920, y: 80, width: 1400, height: 580 },
+      { id: 3, x: 920, y: 700, width: 1400, height: 580 },
+      { id: 4, x: 80, y: 1320, width: 2240, height: 1600 },
     ],
   },
   "emotional": {
     panels: [
-      { id: 1, x: 20, y: 20, width: 360, height: 300 },
-      { id: 2, x: 390, y: 20, width: 190, height: 145 },
-      { id: 3, x: 390, y: 175, width: 190, height: 145 },
-      { id: 4, x: 20, y: 330, width: 560, height: 400 },
+      { id: 1, x: 80, y: 80, width: 1440, height: 1200 },
+      { id: 2, x: 1560, y: 80, width: 760, height: 580 },
+      { id: 3, x: 1560, y: 700, width: 760, height: 580 },
+      { id: 4, x: 80, y: 1320, width: 2240, height: 1600 },
     ],
   },
 
   // === 5コマテンプレート ===
   "gag": {
     panels: [
-      { id: 1, x: 20, y: 20, width: 560, height: 150 },
-      { id: 2, x: 20, y: 180, width: 180, height: 200 },
-      { id: 3, x: 210, y: 180, width: 180, height: 200 },
-      { id: 4, x: 400, y: 180, width: 180, height: 200 },
-      { id: 5, x: 20, y: 390, width: 560, height: 340 },
+      { id: 1, x: 80, y: 80, width: 2240, height: 600 },
+      { id: 2, x: 80, y: 720, width: 720, height: 800 },
+      { id: 3, x: 840, y: 720, width: 720, height: 800 },
+      { id: 4, x: 1600, y: 720, width: 720, height: 800 },
+      { id: 5, x: 80, y: 1560, width: 2240, height: 1360 },
     ],
   },
   "spread": {
     panels: [
-      { id: 1, x: 20, y: 20, width: 560, height: 300 },
-      { id: 2, x: 20, y: 330, width: 180, height: 180 },
-      { id: 3, x: 210, y: 330, width: 180, height: 180 },
-      { id: 4, x: 400, y: 330, width: 180, height: 180 },
-      { id: 5, x: 20, y: 520, width: 560, height: 210 },
+      { id: 1, x: 80, y: 80, width: 2240, height: 1200 },
+      { id: 2, x: 80, y: 1320, width: 720, height: 720 },
+      { id: 3, x: 840, y: 1320, width: 720, height: 720 },
+      { id: 4, x: 1600, y: 1320, width: 720, height: 720 },
+      { id: 5, x: 80, y: 2080, width: 2240, height: 840 },
     ],
   },
   "web_standard": {
     panels: [
-      { id: 1, x: 20, y: 20, width: 560, height: 140 },
-      { id: 2, x: 20, y: 170, width: 560, height: 140 },
-      { id: 3, x: 20, y: 320, width: 560, height: 140 },
-      { id: 4, x: 20, y: 470, width: 560, height: 140 },
-      { id: 5, x: 20, y: 620, width: 560, height: 110 },
+      { id: 1, x: 80, y: 80, width: 2240, height: 560 },
+      { id: 2, x: 80, y: 680, width: 2240, height: 560 },
+      { id: 3, x: 80, y: 1280, width: 2240, height: 560 },
+      { id: 4, x: 80, y: 1880, width: 2240, height: 560 },
+      { id: 5, x: 80, y: 2480, width: 2240, height: 440 },
     ],
   },
 
   // === 6コマ以上テンプレート ===
   "vertical": {
     panels: [
-      { id: 1, x: 20, y: 20, width: 560, height: 120 },
-      { id: 2, x: 20, y: 150, width: 560, height: 120 },
-      { id: 3, x: 20, y: 280, width: 560, height: 120 },
-      { id: 4, x: 20, y: 410, width: 560, height: 120 },
-      { id: 5, x: 20, y: 540, width: 560, height: 120 },
-      { id: 6, x: 20, y: 670, width: 560, height: 120 },
+      { id: 1, x: 80, y: 80, width: 2240, height: 480 },
+      { id: 2, x: 80, y: 600, width: 2240, height: 480 },
+      { id: 3, x: 80, y: 1120, width: 2240, height: 480 },
+      { id: 4, x: 80, y: 1640, width: 2240, height: 480 },
+      { id: 5, x: 80, y: 2160, width: 2240, height: 480 },
+      { id: 6, x: 80, y: 2680, width: 2240, height: 480 },
     ],
   },
   "oneshot": {
     panels: [
-      { id: 1, x: 20, y: 20, width: 560, height: 100 },
-      { id: 2, x: 20, y: 130, width: 275, height: 180 },
-      { id: 3, x: 305, y: 130, width: 275, height: 180 },
-      { id: 4, x: 20, y: 320, width: 560, height: 200 },
-      { id: 5, x: 20, y: 530, width: 275, height: 160 },
-      { id: 6, x: 305, y: 530, width: 275, height: 160 },
+      { id: 1, x: 80, y: 80, width: 2240, height: 400 },
+      { id: 2, x: 80, y: 520, width: 1100, height: 720 },
+      { id: 3, x: 1220, y: 520, width: 1100, height: 720 },
+      { id: 4, x: 80, y: 1280, width: 2240, height: 800 },
+      { id: 5, x: 80, y: 2120, width: 1100, height: 640 },
+      { id: 6, x: 1220, y: 2120, width: 1100, height: 640 },
     ],
   },
   "manga_page": {
     panels: [
-      { id: 1, x: 20, y: 20, width: 560, height: 120 },
-      { id: 2, x: 20, y: 150, width: 275, height: 160 },
-      { id: 3, x: 305, y: 150, width: 275, height: 160 },
-      { id: 4, x: 20, y: 320, width: 180, height: 200 },
-      { id: 5, x: 210, y: 320, width: 180, height: 200 },
-      { id: 6, x: 400, y: 320, width: 180, height: 200 },
-      { id: 7, x: 20, y: 530, width: 560, height: 200 },
+      { id: 1, x: 80, y: 80, width: 2240, height: 480 },
+      { id: 2, x: 80, y: 600, width: 1100, height: 640 },
+      { id: 3, x: 1220, y: 600, width: 1100, height: 640 },
+      { id: 4, x: 80, y: 1280, width: 720, height: 800 },
+      { id: 5, x: 840, y: 1280, width: 720, height: 800 },
+      { id: 6, x: 1600, y: 1280, width: 720, height: 800 },
+      { id: 7, x: 80, y: 2120, width: 2240, height: 800 },
     ],
   },
 };
