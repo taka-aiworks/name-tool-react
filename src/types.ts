@@ -675,3 +675,111 @@ export interface BatchPromptOptions {
   customPrefix?: string;
   customSuffix?: string;
 }
+
+// ==========================================
+// 用紙サイズシステム用型定義（v1.1.3 新規追加）
+// ==========================================
+
+// 用紙サイズ定義
+export interface PaperSize {
+  id: string;
+  name: string;
+  displayName: string;
+  width: number;        // mm単位
+  height: number;       // mm単位
+  pixelWidth: number;   // 300DPI基準
+  pixelHeight: number;  // 300DPI基準
+  aspectRatio: number;  // 縦横比
+  category: 'standard' | 'manga' | 'web' | 'custom';
+  description: string;
+  isPortrait: boolean;
+}
+
+// Canvas設定
+export interface CanvasSettings {
+  paperSize: PaperSize;
+  dpi: number;
+  showMargins: boolean;
+  marginSize: number;
+  gridVisible: boolean;
+  gridSize: number;
+}
+
+// 標準用紙サイズ定義
+export const PAPER_SIZES: Record<string, PaperSize> = {
+  A4_PORTRAIT: {
+    id: 'a4_portrait',
+    name: 'A4縦',
+    displayName: 'A4 縦（210×297mm）',
+    width: 210,
+    height: 297,
+    pixelWidth: 2480,
+    pixelHeight: 3508,
+    aspectRatio: 297/210,
+    category: 'standard',
+    description: '最も一般的な印刷サイズ',
+    isPortrait: true
+  },
+  B5_PORTRAIT: {
+    id: 'b5_portrait',
+    name: 'B5縦',
+    displayName: 'B5 縦（182×257mm）',
+    width: 182,
+    height: 257,
+    pixelWidth: 2150,
+    pixelHeight: 3031,
+    aspectRatio: 257/182,
+    category: 'standard',
+    description: '同人誌標準サイズ',
+    isPortrait: true
+  },
+  A4_LANDSCAPE: {
+    id: 'a4_landscape',
+    name: 'A4横',
+    displayName: 'A4 横（297×210mm）',
+    width: 297,
+    height: 210,
+    pixelWidth: 3508,
+    pixelHeight: 2480,
+    aspectRatio: 210/297,
+    category: 'standard',
+    description: '横長レイアウト用',
+    isPortrait: false
+  },
+  TWITTER_CARD: {
+    id: 'twitter_card',
+    name: 'Twitter',
+    displayName: 'Twitter（1200×675px）',
+    width: 101.6,
+    height: 57.15,
+    pixelWidth: 1200,
+    pixelHeight: 675,
+    aspectRatio: 675/1200,
+    category: 'web',
+    description: 'Twitter投稿最適化',
+    isPortrait: false
+  },
+  CUSTOM: {
+    id: 'custom',
+    name: 'カスタム',
+    displayName: 'カスタムサイズ',
+    width: 210,
+    height: 297,
+    pixelWidth: 2480,
+    pixelHeight: 3508,
+    aspectRatio: 297/210,
+    category: 'custom',
+    description: '自由設定',
+    isPortrait: true
+  }
+};
+
+// デフォルト設定
+export const DEFAULT_CANVAS_SETTINGS: CanvasSettings = {
+  paperSize: PAPER_SIZES.A4_PORTRAIT,
+  dpi: 300,
+  showMargins: false,
+  marginSize: 10,
+  gridVisible: false,
+  gridSize: 5
+};

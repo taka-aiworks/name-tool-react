@@ -2,7 +2,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import CanvasComponent from "./components/CanvasComponent";
 import CharacterDetailPanel from "./components/UI/CharacterDetailPanel";
-import { Panel, Character, SpeechBubble, SnapSettings, BackgroundElement, EffectElement, ToneElement, BackgroundTemplate } from "./types";
+// 変更後（用紙サイズ型を追加）
+import { Panel, Character, SpeechBubble, SnapSettings, BackgroundElement, EffectElement, ToneElement, BackgroundTemplate, CanvasSettings, DEFAULT_CANVAS_SETTINGS } from "./types";
 import { templates } from "./components/CanvasArea/templates";
 //import { sceneTemplates, applySceneTemplate } from "./components/CanvasArea/sceneTemplates";
 import { ExportPanel } from './components/UI/ExportPanel';
@@ -25,6 +26,8 @@ import { usePageManager } from './hooks/usePageManager';
 import { SceneTemplatePanel } from './components/UI/SceneTemplatePanel';
 // 既存のimportの下に追加
 import PanelTemplateSelector from './components/UI/PanelTemplateSelector';
+// 1. import文に1行追加（既存のimport群の近くに追加）
+import { PaperSizeSelectPanel } from './components/UI/PaperSizeSelectPanel';
 
 
 function App() {
@@ -63,6 +66,10 @@ function App() {
 
   // 既存のuseStateの下に追加
   const [showPanelSelector, setShowPanelSelector] = useState<boolean>(false);
+  // 2. App関数内の状態管理部分に2行追加（既存のuseState群の近くに追加）
+  const [canvasSettings, setCanvasSettings] = useState<CanvasSettings>(DEFAULT_CANVAS_SETTINGS);
+  const [isPaperSizePanelVisible, setIsPaperSizePanelVisible] = useState(false);
+
 
 
   // スナップ設定の状態管理
@@ -424,6 +431,36 @@ function App() {
     setEffects([]);
     setTones([]); // 🆕 トーンもクリア
   }, []);
+
+  // 用紙サイズ変更時の処理
+const handleCanvasSettingsChange = useCallback((newSettings: CanvasSettings) => {
+  const oldSize = canvasSettings.paperSize;
+  const newSize = newSettings.paperSize;
+  
+  // キャンバスサイズを実際に変更
+  if (canvasRef.current && oldSize.id !== newSize.id) {
+    const canvas = canvasRef.current;
+    
+    // 物理的なキャンバスサイズを変更
+    canvas.width = newSize.pixelWidth;
+    canvas.height = newSize.pixelHeight;
+    
+    // 表示サイズを調整（画面に収まるように）
+    const containerWidth = 800; 
+    const containerHeight = 600; 
+    
+    const scaleX = containerWidth / newSize.pixelWidth;
+    const scaleY = containerHeight / newSize.pixelHeight;
+    const scale = Math.min(scaleX, scaleY, 1); // 最大100%
+    
+    canvas.style.width = `${newSize.pixelWidth * scale}px`;
+    canvas.style.height = `${newSize.pixelHeight * scale}px`;
+    
+    console.log(`📐 キャンバスサイズ変更: ${newSize.displayName} (${newSize.pixelWidth}×${newSize.pixelHeight}px)`);
+  }
+  
+  setCanvasSettings(newSettings);
+}, [canvasSettings, canvasRef]);
 
   // シーンテンプレート適用
   /*const handleSceneClick = useCallback((sceneType: string) => {
@@ -1081,6 +1118,15 @@ function App() {
               ))}
             </div>
           </div>
+          {/* 用紙サイズ設定パネル */}
+          <div className="section">
+            <PaperSizeSelectPanel
+              currentSettings={canvasSettings}
+              onSettingsChange={handleCanvasSettingsChange}  // ← この関数に変更
+              isVisible={isPaperSizePanelVisible}
+              onToggle={() => setIsPaperSizePanelVisible(!isPaperSizePanelVisible)}
+            />
+          </div>
 
           {/* 出力 */}
           <div className="section">
@@ -1251,7 +1297,8 @@ function App() {
             canvasSize,
             settings,
             characterNames,
-            characterSettings
+            characterSettings,
+            canvasSettings  // ← この1行を追加
           };
           
           const success = await projectSave.saveProject(projectData, name);

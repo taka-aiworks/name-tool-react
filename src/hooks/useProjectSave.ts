@@ -1,7 +1,7 @@
 // src/hooks/useProjectSave.ts - App.tsx互換性保持版
 import { useEffect, useRef, useCallback, useState } from 'react';
 import SaveService from '../services/SaveService';
-import { Panel, Character, SpeechBubble, BackgroundElement, EffectElement, ToneElement } from '../types';
+import { Panel, Character, SpeechBubble, BackgroundElement, EffectElement, ToneElement, DEFAULT_CANVAS_SETTINGS } from '../types';
 
 // 🔧 App.tsxの期待する戻り値型に合わせる
 interface UseProjectSaveReturn {
@@ -135,7 +135,8 @@ export const useProjectSave = (): UseProjectSaveReturn => {
         characterNames: projectData.data.characterNames || {},
         characterSettings: projectData.data.characterSettings || {},
         pages: projectData.data.pages,
-        currentPageIndex: projectData.data.currentPageIndex
+        currentPageIndex: projectData.data.currentPageIndex,
+        canvasSettings: projectData.data.canvasSettings || DEFAULT_CANVAS_SETTINGS  // この1行を追加
       };
 
       console.log('📤 App.tsxに返すデータ:', {

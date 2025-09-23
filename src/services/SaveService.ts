@@ -1,5 +1,5 @@
 // ===== 変更1: import追加 =====
-import { Panel, Character, SpeechBubble, BackgroundElement, EffectElement, ToneElement, Page } from '../types';
+import { Panel, Character, SpeechBubble, BackgroundElement, EffectElement, ToneElement, Page, CanvasSettings } from '../types';
 
 
 // 🔧 ProjectData interface を拡張
@@ -30,6 +30,7 @@ export interface ProjectData {
     };
     characterNames?: Record<string, string>;
     characterSettings?: Record<string, any>;
+    canvasSettings?: CanvasSettings;  // ← この行を追加
   };
 }
 
@@ -47,7 +48,6 @@ export class SaveService {
   private static readonly VERSION = '1.0.0';
 
   // SaveService.ts の saveProject メソッドにデバッグログ追加
-
   static saveProject(
     name: string,
     panels: Panel[],
@@ -62,7 +62,8 @@ export class SaveService {
     characterNames?: Record<string, string>,
     characterSettings?: Record<string, any>,
     pages?: Page[],
-    currentPageIndex?: number
+    currentPageIndex?: number,
+    canvasSettings?: CanvasSettings  // ← この行を追加
   ): string {
     try {
       console.log('💾 SaveService.saveProject開始');
@@ -103,7 +104,8 @@ export class SaveService {
           canvasSize,
           settings,
           characterNames,
-          characterSettings
+          characterSettings,
+          canvasSettings  // ← この行を追加
         }
       };
 
