@@ -1,7 +1,7 @@
-// src/components/CanvasArea/templates.ts - シンプル実用版
+// src/components/CanvasArea/templates.ts - 即座修正版
 import { Templates } from "../../types";
 
-// 🎯 実用性重視のパネルテンプレート（間隔10px、外周20px統一）
+// 🎯 実用性重視のパネルテンプレート（固定値版に戻す）
 export const templates: Templates = {
   // === 1コマテンプレート ===
   "single_impact": {
@@ -185,6 +185,8 @@ export const templates: Templates = {
     ],
   },
 };
+
+// templates.tsファイルの最後に追加
 
 // テンプレート説明（UI表示用）
 export const templateDescriptions: Record<string, string> = {
