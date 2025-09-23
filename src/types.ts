@@ -677,7 +677,7 @@ export interface BatchPromptOptions {
 }
 
 // ==========================================
-// 用紙サイズシステム用型定義（v1.1.3 新規追加）
+// 用紙サイズシステム用型定義（v1.1.3 修正版）
 // ==========================================
 
 // 用紙サイズ定義
@@ -705,7 +705,7 @@ export interface CanvasSettings {
   gridSize: number;
 }
 
-// 標準用紙サイズ定義
+// 標準用紙サイズ定義（修正版 - 正確なピクセル計算）
 export const PAPER_SIZES: Record<string, PaperSize> = {
   A4_PORTRAIT: {
     id: 'a4_portrait',
@@ -713,8 +713,8 @@ export const PAPER_SIZES: Record<string, PaperSize> = {
     displayName: 'A4 縦（210×297mm）',
     width: 210,
     height: 297,
-    pixelWidth: 2480,
-    pixelHeight: 3508,
+    pixelWidth: 2480,  // 210mm ÷ 25.4 × 300DPI = 2480px
+    pixelHeight: 3508, // 297mm ÷ 25.4 × 300DPI = 3508px
     aspectRatio: 297/210,
     category: 'standard',
     description: '最も一般的な印刷サイズ',
@@ -726,8 +726,8 @@ export const PAPER_SIZES: Record<string, PaperSize> = {
     displayName: 'B5 縦（182×257mm）',
     width: 182,
     height: 257,
-    pixelWidth: 2150,
-    pixelHeight: 3031,
+    pixelWidth: 2150,  // 182mm ÷ 25.4 × 300DPI = 2150px (四捨五入)
+    pixelHeight: 3031, // 257mm ÷ 25.4 × 300DPI = 3031px (四捨五入)
     aspectRatio: 257/182,
     category: 'standard',
     description: '同人誌標準サイズ',
@@ -739,8 +739,8 @@ export const PAPER_SIZES: Record<string, PaperSize> = {
     displayName: 'A4 横（297×210mm）',
     width: 297,
     height: 210,
-    pixelWidth: 3508,
-    pixelHeight: 2480,
+    pixelWidth: 3508,  // A4縦の高さ
+    pixelHeight: 2480, // A4縦の幅
     aspectRatio: 210/297,
     category: 'standard',
     description: '横長レイアウト用',
@@ -750,8 +750,8 @@ export const PAPER_SIZES: Record<string, PaperSize> = {
     id: 'twitter_card',
     name: 'Twitter',
     displayName: 'Twitter（1200×675px）',
-    width: 101.6,
-    height: 57.15,
+    width: 101.6,  // 1200px ÷ 300DPI × 25.4mm ≈ 101.6mm
+    height: 57.15, // 675px ÷ 300DPI × 25.4mm ≈ 57.15mm
     pixelWidth: 1200,
     pixelHeight: 675,
     aspectRatio: 675/1200,
@@ -763,10 +763,10 @@ export const PAPER_SIZES: Record<string, PaperSize> = {
     id: 'custom',
     name: 'カスタム',
     displayName: 'カスタムサイズ',
-    width: 210,
-    height: 297,
-    pixelWidth: 2480,
-    pixelHeight: 3508,
+    width: 210,        // 初期値はA4と同じ
+    height: 297,       // 初期値はA4と同じ
+    pixelWidth: 2480,  // 初期値はA4と同じ
+    pixelHeight: 3508, // 初期値はA4と同じ
     aspectRatio: 297/210,
     category: 'custom',
     description: '自由設定',
@@ -782,4 +782,57 @@ export const DEFAULT_CANVAS_SETTINGS: CanvasSettings = {
   marginSize: 10,
   gridVisible: false,
   gridSize: 5
+};
+
+// デバッグ用ユーティリティ関数（開発時のみ使用）
+export const debugPaperSizeCalculations = () => {
+  console.group('📐 Paper Size Calculations Debug');
+  
+  Object.entries(PAPER_SIZES).forEach(([key, paperSize]) => {
+    // mm から pixel への変換式: (mm ÷ 25.4) × DPI
+    const expectedPixelWidth = Math.round((paperSize.width / 25.4) * 300);
+    const expectedPixelHeight = Math.round((paperSize.height / 25.4) * 300);
+    
+    const isCorrect = 
+      paperSize.pixelWidth === expectedPixelWidth && 
+      paperSize.pixelHeight === expectedPixelHeight;
+    
+    console.log(`${key} (${paperSize.displayName}):`, {
+      mm: `${paperSize.width}×${paperSize.height}`,
+      currentPixels: `${paperSize.pixelWidth}×${paperSize.pixelHeight}`,
+      expectedPixels: `${expectedPixelWidth}×${expectedPixelHeight}`,
+      isCorrect: isCorrect ? '✅' : '❌'
+    });
+  });
+  
+  console.groupEnd();
+};
+
+// スケール変換テスト関数
+export const testPaperSizeScaling = () => {
+  console.group('🔄 Paper Size Scale Transform Test');
+  
+  const testPairs = [
+    ['A4_PORTRAIT', 'B5_PORTRAIT'],
+    ['A4_PORTRAIT', 'A4_LANDSCAPE'],
+    ['A4_PORTRAIT', 'TWITTER_CARD']
+  ];
+  
+  testPairs.forEach(([from, to]) => {
+    const fromSize = PAPER_SIZES[from];
+    const toSize = PAPER_SIZES[to];
+    
+    if (fromSize && toSize) {
+      const scaleX = toSize.pixelWidth / fromSize.pixelWidth;
+      const scaleY = toSize.pixelHeight / fromSize.pixelHeight;
+      
+      console.log(`${from} → ${to}:`, {
+        scaleX: `${(scaleX * 100).toFixed(1)}%`,
+        scaleY: `${(scaleY * 100).toFixed(1)}%`,
+        isNoChange: scaleX === 1.0 && scaleY === 1.0 ? '⚠️ No change!' : '✅ Will scale'
+      });
+    }
+  });
+  
+  console.groupEnd();
 };

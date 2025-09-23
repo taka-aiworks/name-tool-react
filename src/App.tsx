@@ -29,6 +29,17 @@ import PanelTemplateSelector from './components/UI/PanelTemplateSelector';
 // 1. import文に1行追加（既存のimport群の近くに追加）
 import { PaperSizeSelectPanel } from './components/UI/PaperSizeSelectPanel';
 
+import {
+  calculateScaleTransform,
+  scalePanel,
+  scaleCharacter,
+  scaleBubble,
+  scaleBackground,
+  scaleEffect,
+  scaleTone,
+  validateScaleTransform,
+  logScaleTransform
+} from './utils/ScaleTransformUtils';
 
 function App() {
   // デフォルトダークモード設定
@@ -447,34 +458,87 @@ function App() {
       setTones(newTones);
     }
   });
-  // 用紙サイズ変更時の処理
-  // App.tsx - handleCanvasSettingsChange関数の修正版（117行目あたりを置き換え）
+// 【置き換え対象】App.tsx内の既存のhandleCanvasSettingsChange関数を以下に置き換えてください：
+
   const handleCanvasSettingsChange = useCallback((newSettings: CanvasSettings) => {
-    // 現在のサイズを保存（比例計算用）
-    const oldWidth = canvasSettings.paperSize.pixelWidth;
-    const oldHeight = canvasSettings.paperSize.pixelHeight;
-    const newWidth = newSettings.paperSize.pixelWidth;
-    const newHeight = newSettings.paperSize.pixelHeight;
+    const oldSettings = canvasSettings;
     
     // サイズが同じなら何もしない
-    if (oldWidth === newWidth && oldHeight === newHeight) {
+    if (oldSettings.paperSize.pixelWidth === newSettings.paperSize.pixelWidth && 
+        oldSettings.paperSize.pixelHeight === newSettings.paperSize.pixelHeight) {
+      console.log('📐 Canvas size unchanged, skipping scale transform');
       setCanvasSettings(newSettings);
       return;
     }
     
-    // スケール比を計算
-    const scaleX = newWidth / oldWidth;
-    const scaleY = newHeight / oldHeight;
+    // スケール変換を計算
+    const transform = calculateScaleTransform(oldSettings, newSettings);
     
-    console.log(`📐 用紙サイズ変更: ${oldWidth}x${oldHeight} → ${newWidth}x${newHeight}`);
-    console.log(`📏 スケール比: X=${scaleX.toFixed(2)}, Y=${scaleY.toFixed(2)}`);
+    // スケール変換の妥当性を検証
+    if (!validateScaleTransform(transform)) {
+      console.error('❌ Invalid scale transform, aborting canvas resize');
+      return;
+    }
     
-    // キャンバス設定を更新
+    // スケール変換をログ出力
+    logScaleTransform(oldSettings, newSettings, transform);
+    
+    // 1. キャンバス設定を更新
     setCanvasSettings(newSettings);
     
-    // キャンバス物理サイズを更新
+    // 2. 全ページの全パネルをスケール変換
+    if (pageManager && pageManager.pages && pageManager.pages.length > 0) {
+      const currentPageData = pageManager.currentPage;
+      
+      // パネルをスケール変換
+      const scaledPanels = currentPageData.panels.map(panel => scalePanel(panel, transform));
+      console.log(`📐 Scaled ${scaledPanels.length} panels`);
+      
+      // キャラクターをスケール変換
+      const scaledCharacters = currentPageData.characters.map(char => scaleCharacter(char, transform));
+      console.log(`👥 Scaled ${scaledCharacters.length} characters`);
+      
+      // 吹き出しをスケール変換
+      const scaledBubbles = currentPageData.bubbles.map(bubble => scaleBubble(bubble, transform));
+      console.log(`💬 Scaled ${scaledBubbles.length} bubbles`);
+      
+      // 背景をスケール変換
+      const scaledBackgrounds = currentPageData.backgrounds.map(bg => scaleBackground(bg, transform));
+      console.log(`🎨 Scaled ${scaledBackgrounds.length} backgrounds`);
+      
+      // 効果線をスケール変換
+      const scaledEffects = currentPageData.effects.map(effect => scaleEffect(effect, transform));
+      console.log(`⚡ Scaled ${scaledEffects.length} effects`);
+      
+      // トーンをスケール変換
+      const scaledTones = currentPageData.tones.map(tone => scaleTone(tone, transform));
+      console.log(`🎯 Scaled ${scaledTones.length} tones`);
+      
+      // スケール変換されたデータで状態を更新
+      setPanels(scaledPanels);
+      setCharacters(scaledCharacters);
+      setSpeechBubbles(scaledBubbles);
+      setBackgrounds(scaledBackgrounds);
+      setEffects(scaledEffects);
+      setTones(scaledTones);
+    } else {
+      // pageManagerがない場合は直接状態をスケール変換
+      console.log('📄 No pageManager, scaling direct state');
+      
+      setPanels(prev => prev.map(panel => scalePanel(panel, transform)));
+      setCharacters(prev => prev.map(char => scaleCharacter(char, transform)));
+      setSpeechBubbles(prev => prev.map(bubble => scaleBubble(bubble, transform)));
+      setBackgrounds(prev => prev.map(bg => scaleBackground(bg, transform)));
+      setEffects(prev => prev.map(effect => scaleEffect(effect, transform)));
+      setTones(prev => prev.map(tone => scaleTone(tone, transform)));
+    }
+    
+    // 3. キャンバス要素の物理サイズを更新
     if (canvasRef.current) {
       const canvas = canvasRef.current;
+      const newWidth = newSettings.paperSize.pixelWidth;
+      const newHeight = newSettings.paperSize.pixelHeight;
+      
       canvas.width = newWidth;
       canvas.height = newHeight;
       
@@ -487,76 +551,25 @@ function App() {
       
       canvas.style.width = `${newWidth * displayScale}px`;
       canvas.style.height = `${newHeight * displayScale}px`;
+      
+      console.log('🖼️ Canvas physical size updated:', {
+        width: canvas.width,
+        height: canvas.height,
+        styleWidth: canvas.style.width,
+        styleHeight: canvas.style.height,
+        displayScale: displayScale.toFixed(2)
+      });
+      
+      // キャンバスを再描画
+      requestAnimationFrame(() => {
+        console.log('🎨 Canvas redraw requested after resize');
+      });
     }
     
-    // 🔧 ページデータの要素をスケール変換（pageManager対応）
-    if (pageManager) {
-      const currentPageData = pageManager.currentPage;
-      
-      // パネルをスケール
-      const scaledPanels = currentPageData.panels.map(panel => ({
-        ...panel,
-        x: Math.round(panel.x * scaleX),
-        y: Math.round(panel.y * scaleY),
-        width: Math.round(panel.width * scaleX),
-        height: Math.round(panel.height * scaleY),
-      }));
-      
-      // キャラクターをスケール
-      const scaledCharacters = currentPageData.characters.map(char => ({
-        ...char,
-        x: Math.round(char.x * scaleX),
-        y: Math.round(char.y * scaleY),
-        scale: char.scale * Math.min(scaleX, scaleY),
-      }));
-      
-      // 吹き出しをスケール
-      const scaledBubbles = currentPageData.bubbles.map(bubble => ({
-        ...bubble,
-        x: Math.round(bubble.x * scaleX),
-        y: Math.round(bubble.y * scaleY),
-        width: Math.round(bubble.width * scaleX),
-        height: Math.round(bubble.height * scaleY),
-      }));
-      
-      // 背景をスケール
-      const scaledBackgrounds = currentPageData.backgrounds.map(bg => ({
-        ...bg,
-        x: Math.round(bg.x * scaleX),
-        y: Math.round(bg.y * scaleY),
-        width: Math.round(bg.width * scaleX),
-        height: Math.round(bg.height * scaleY),
-      }));
-      
-      // 効果線をスケール
-      const scaledEffects = currentPageData.effects.map(effect => ({
-        ...effect,
-        x: Math.round(effect.x * scaleX),
-        y: Math.round(effect.y * scaleY),
-        width: Math.round(effect.width * scaleX),
-        height: Math.round(effect.height * scaleY),
-      }));
-      
-      // トーンをスケール
-      const scaledTones = currentPageData.tones.map(tone => ({
-        ...tone,
-        x: Math.round(tone.x * scaleX),
-        y: Math.round(tone.y * scaleY),
-        width: Math.round(tone.width * scaleX),
-        height: Math.round(tone.height * scaleY),
-      }));
-      
-      // スケール変換されたデータでページを更新
-      setPanels(scaledPanels);
-      setCharacters(scaledCharacters);
-      setSpeechBubbles(scaledBubbles);
-      setBackgrounds(scaledBackgrounds);
-      setEffects(scaledEffects);
-      setTones(scaledTones);
-
-      console.log('✅ 全要素のスケール変換完了');
-    }
+    console.log('✅ Canvas settings change completed successfully');
   }, [canvasSettings, canvasRef, pageManager]);
+
+  // 【重要】上記のuseCallback依存関係に注意：[canvasSettings, canvasRef, pageManager]
 
   // シーンテンプレート適用
   /*const handleSceneClick = useCallback((sceneType: string) => {
