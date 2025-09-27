@@ -45,14 +45,46 @@ import {
 import { scaleTemplateToCanvas } from './utils/TemplateScaler';
 
 function App() {
+  // 基本状態管理
+  const [selectedTemplate, setSelectedTemplate] = useState<string>("reverse_t");
+
   // デフォルトダークモード設定
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", "dark");
   }, []);
 
-  // 基本状態管理
-  const [selectedTemplate, setSelectedTemplate] = useState<string>("4koma");
-  const [panels, setPanels] = useState<Panel[]>([]);
+  // 初期テンプレート適用（強制実行）
+  useEffect(() => {
+    console.log('🎯 Applying initial template:', selectedTemplate);
+    console.log('📋 Available templates:', Object.keys(templates));
+    
+    if (selectedTemplate && templates[selectedTemplate]) {
+      const newPanels = [...templates[selectedTemplate].panels];
+      console.log('📐 Template panels:', templates[selectedTemplate].panels);
+      console.log('📐 New panels to set:', newPanels);
+      
+      setPanels(newPanels);
+      console.log('✅ Initial panels set successfully');
+    } else {
+      console.error('❌ Template not found:', selectedTemplate);
+    }
+  }, [selectedTemplate]);
+
+  // アプリケーション起動時の強制テンプレート適用
+  useEffect(() => {
+    console.log('🚀 App initialization - forcing template application');
+    const reverseTPanels = templates.reverse_t.panels;
+    console.log('📐 Force applying reverse_t template:', reverseTPanels);
+    console.log('📏 Panel details:', reverseTPanels.map(panel => ({
+      id: panel.id,
+      x: panel.x,
+      y: panel.y,
+      width: panel.width,
+      height: panel.height
+    })));
+    setPanels([...reverseTPanels]);
+  }, []); // 空の依存配列で初回のみ実行
+  const [panels, setPanels] = useState<Panel[]>(templates.reverse_t.panels);
   const [characters, setCharacters] = useState<Character[]>([]);
   const [speechBubbles, setSpeechBubbles] = useState<SpeechBubble[]>([]);
   const [backgrounds, setBackgrounds] = useState<BackgroundElement[]>([]);
@@ -467,6 +499,17 @@ function App() {
   const handleCanvasSettingsChange = useCallback((newSettings: CanvasSettings) => {
     const oldSettings = canvasSettings;
     
+    console.log('🔄 Canvas settings change initiated:', {
+      from: {
+        size: oldSettings.paperSize.displayName,
+        pixels: `${oldSettings.paperSize.pixelWidth}×${oldSettings.paperSize.pixelHeight}`
+      },
+      to: {
+        size: newSettings.paperSize.displayName,
+        pixels: `${newSettings.paperSize.pixelWidth}×${newSettings.paperSize.pixelHeight}`
+      }
+    });
+    
     // サイズが同じなら何もしない
     if (oldSettings.paperSize.pixelWidth === newSettings.paperSize.pixelWidth && 
         oldSettings.paperSize.pixelHeight === newSettings.paperSize.pixelHeight) {
@@ -494,9 +537,18 @@ function App() {
     if (pageManager && pageManager.pages && pageManager.pages.length > 0) {
       const currentPageData = pageManager.currentPage;
       
+      console.log('📄 Using pageManager for scaling:', {
+        totalPages: pageManager.pages.length,
+        currentPagePanels: currentPageData.panels.length,
+        currentPageCharacters: currentPageData.characters.length
+      });
+      
       // パネルをスケール変換
       const scaledPanels = currentPageData.panels.map(panel => scalePanel(panel, transform));
-      console.log(`📐 Scaled ${scaledPanels.length} panels`);
+      console.log(`📐 Scaled ${scaledPanels.length} panels with transform:`, {
+        scaleX: transform.scaleX.toFixed(3),
+        scaleY: transform.scaleY.toFixed(3)
+      });
       
       // キャラクターをスケール変換
       const scaledCharacters = currentPageData.characters.map(char => scaleCharacter(char, transform));
@@ -529,7 +581,16 @@ function App() {
       // pageManagerがない場合は直接状態をスケール変換
       console.log('📄 No pageManager, scaling direct state');
       
-      setPanels(prev => prev.map(panel => scalePanel(panel, transform)));
+      console.log('📐 Scaling panels directly:', {
+        currentPanels: panels.length,
+        transform: { scaleX: transform.scaleX.toFixed(3), scaleY: transform.scaleY.toFixed(3) }
+      });
+      
+      setPanels(prev => {
+        const scaled = prev.map(panel => scalePanel(panel, transform));
+        console.log(`📐 Scaled ${scaled.length} panels from direct state`);
+        return scaled;
+      });
       setCharacters(prev => prev.map(char => scaleCharacter(char, transform)));
       setSpeechBubbles(prev => prev.map(bubble => scaleBubble(bubble, transform)));
       setBackgrounds(prev => prev.map(bg => scaleBackground(bg, transform)));
@@ -567,13 +628,76 @@ function App() {
       // キャンバスを再描画
       requestAnimationFrame(() => {
         console.log('🎨 Canvas redraw requested after resize');
+        // 強制的に再描画をトリガー
+        if (canvasRef.current) {
+          const canvas = canvasRef.current;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            // キャンバスをクリアして再描画を強制
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            console.log('🔄 Canvas cleared and ready for redraw');
+          }
+        }
       });
     }
     
     console.log('✅ Canvas settings change completed successfully');
+    console.log('📊 Final scaling summary:', {
+      newCanvasSize: {
+        width: newSettings.paperSize.pixelWidth,
+        height: newSettings.paperSize.pixelHeight,
+        displayName: newSettings.paperSize.displayName
+      },
+      transformApplied: {
+        scaleX: transform.scaleX.toFixed(3),
+        scaleY: transform.scaleY.toFixed(3)
+      },
+      elementsScaled: {
+        panels: panels.length,
+        characters: characters.length,
+        speechBubbles: speechBubbles.length
+      }
+    });
   }, [canvasSettings, canvasRef, pageManager]);
 
   // 【重要】上記のuseCallback依存関係に注意：[canvasSettings, canvasRef, pageManager]
+
+  // キャンバスの表示スケールを取得する関数
+  const getCanvasDisplayScale = useCallback(() => {
+    if (!canvasRef.current) return 1;
+    
+    const canvas = canvasRef.current;
+    const actualWidth = canvas.width;
+    const displayWidth = canvas.offsetWidth;
+    
+    if (actualWidth === 0 || displayWidth === 0) return 1;
+    
+    const scale = displayWidth / actualWidth;
+    console.log('📏 Canvas display scale calculated:', {
+      actualWidth,
+      displayWidth,
+      scale: scale.toFixed(3)
+    });
+    
+    return scale;
+  }, [canvasRef]);
+
+  // マウス座標をキャンバス座標に変換する関数
+  const convertMouseToCanvasCoordinates = useCallback((mouseX: number, mouseY: number) => {
+    const displayScale = getCanvasDisplayScale();
+    const canvasX = mouseX / displayScale;
+    const canvasY = mouseY / displayScale;
+    
+    console.log('🖱️ Mouse to canvas coordinate conversion:', {
+      mouseX,
+      mouseY,
+      displayScale: displayScale.toFixed(3),
+      canvasX: Math.round(canvasX),
+      canvasY: Math.round(canvasY)
+    });
+    
+    return { x: Math.round(canvasX), y: Math.round(canvasY) };
+  }, [getCanvasDisplayScale]);
 
   // シーンテンプレート適用
   /*const handleSceneClick = useCallback((sceneType: string) => {

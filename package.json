@@ -43,5 +43,13 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "@types/body-parser": "^1.19.6",
+    "@types/bonjour": "^3.5.13",
+    "@types/connect": "^3.4.38",
+    "@types/connect-history-api-fallback": "^1.5.4",
+    "@types/prettier": "^2.7.3",
+    "@types/stack-utils": "^2.0.3"
   }
 }
