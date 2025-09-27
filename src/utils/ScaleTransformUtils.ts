@@ -37,10 +37,28 @@ export const scalePanel = (panel: Panel, { scaleX, scaleY }: ScaleTransform): Pa
     height: Math.round(panel.height * scaleY)
   };
   
-  console.log('Panel scale:', {
-    original: { x: panel.x, y: panel.y, width: panel.width, height: panel.height },
-    scaled: { x: scaledPanel.x, y: scaledPanel.y, width: scaledPanel.width, height: scaledPanel.height },
-    scale: { scaleX: scaleX.toFixed(2), scaleY: scaleY.toFixed(2) }
+  console.log('📐 Panel scale transformation:', {
+    panelId: panel.id,
+    original: { 
+      x: panel.x, 
+      y: panel.y, 
+      width: panel.width, 
+      height: panel.height 
+    },
+    scaled: { 
+      x: scaledPanel.x, 
+      y: scaledPanel.y, 
+      width: scaledPanel.width, 
+      height: scaledPanel.height 
+    },
+    scaleFactors: { 
+      scaleX: scaleX.toFixed(3), 
+      scaleY: scaleY.toFixed(3) 
+    },
+    sizeChange: {
+      widthChange: `${((scaledPanel.width / panel.width - 1) * 100).toFixed(1)}%`,
+      heightChange: `${((scaledPanel.height / panel.height - 1) * 100).toFixed(1)}%`
+    }
   });
   
   return scaledPanel;

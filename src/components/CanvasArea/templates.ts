@@ -59,9 +59,9 @@ export const templates: Templates = {
   },
   "reverse_t": {
     panels: [
-      { id: 1, x: 80, y: 80, width: 1100, height: 1840 },
-      { id: 2, x: 1220, y: 80, width: 1100, height: 1840 },
-      { id: 3, x: 80, y: 1960, width: 2240, height: 960 },
+      { id: 1, x: 20, y: 20, width: 360, height: 540 },
+      { id: 2, x: 400, y: 20, width: 360, height: 540 },
+      { id: 3, x: 20, y: 580, width: 740, height: 530 },
     ],
   },
 
@@ -203,7 +203,7 @@ export const templateDescriptions: Record<string, string> = {
   // 3コマ
   "three_vertical": "縦3分割 - 時系列・手順・起承転",
   "t_shape": "T字型 - 導入+展開詳細",
-  "reverse_t": "逆T字型 - 前振り+クライマックス",
+  "reverse_t": "逆T字型 - 前振り+クライマックス（スタンダード）",
   
   // 4コマ
   "4koma": "4コマ漫画 - 起承転結の縦4分割",

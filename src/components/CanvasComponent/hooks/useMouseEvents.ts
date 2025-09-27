@@ -266,13 +266,38 @@ export const useMouseEvents = ({
   onPanelSplit,
 }: MouseEventHookProps): MouseEventHandlers => {
 
+  // 座標変換ヘルパー関数
+  const convertMouseToCanvasCoordinates = (mouseX: number, mouseY: number) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: mouseX, y: mouseY };
+    
+    const actualWidth = canvas.width;
+    const displayWidth = canvas.offsetWidth;
+    const displayScale = actualWidth > 0 && displayWidth > 0 ? displayWidth / actualWidth : 1;
+    
+    return {
+      x: Math.round(mouseX / displayScale),
+      y: Math.round(mouseY / displayScale)
+    };
+  };
+
   // 🔧 修正版 handleCanvasClick - 効果線+トーン追加（優先順位調整）
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    // 座標変換を適用
+    const { x, y } = convertMouseToCanvasCoordinates(mouseX, mouseY);
+
+    console.log('🖱️ Mouse click coordinate conversion:', {
+      mouseX,
+      mouseY,
+      canvasX: x,
+      canvasY: y
+    });
 
     setContextMenu({ ...contextMenu, visible: false });
 
@@ -395,11 +420,19 @@ export const useMouseEvents = ({
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
 
-    console.log("🖱️ マウスダウン開始:", { mouseX, mouseY });
+    // 座標変換を適用
+    const { x, y } = convertMouseToCanvasCoordinates(mouseX, mouseY);
+
+    console.log("🖱️ マウスダウン開始:", { 
+      mouseX, 
+      mouseY, 
+      canvasX: x,
+      canvasY: y
+    });
 
     // 優先順位1: パネル編集モードのハンドル判定（最優先）
     if (isPanelEditMode && state.selectedPanel) {
-      const panelHandle = PanelManager.getPanelHandleAt(mouseX, mouseY, state.selectedPanel);
+      const panelHandle = PanelManager.getPanelHandleAt(x, y, state.selectedPanel);
       
       if (panelHandle) {
         console.log("🔧 パネル編集ハンドル:", panelHandle.type);
@@ -411,7 +444,7 @@ export const useMouseEvents = ({
         } else if (panelHandle.type === "resize") {
           actions.setIsPanelResizing(true);
           actions.setResizeDirection(panelHandle.direction || "");
-          actions.setDragOffset({ x: mouseX, y: mouseY });
+          actions.setDragOffset({ x, y });
           e.preventDefault();
           return;
         } else if (panelHandle.type === "move") {
@@ -488,7 +521,7 @@ export const useMouseEvents = ({
       
       // 回転ハンドル判定
       const rotationClicked = CharacterBounds.isRotationHandleClicked(
-        mouseX, mouseY, clickedCharacter, panel
+        x, y, clickedCharacter, panel
       );
       
       if (rotationClicked) {
@@ -496,7 +529,7 @@ export const useMouseEvents = ({
         actions.setIsCharacterRotating(true);
         
         const { centerX, centerY } = CharacterUtils.calculateCenterCoordinates(clickedCharacter, panel);
-        const startAngle = CharacterUtils.calculateAngle(centerX, centerY, mouseX, mouseY);
+        const startAngle = CharacterUtils.calculateAngle(centerX, centerY, x, y);
         
         actions.setRotationStartAngle(startAngle);
         actions.setOriginalRotation(clickedCharacter.rotation || 0);
@@ -507,7 +540,7 @@ export const useMouseEvents = ({
       
       // リサイズハンドル判定
       const resizeResult = CharacterRenderer.isCharacterResizeHandleClicked(
-        mouseX, mouseY, clickedCharacter, panel
+        x, y, clickedCharacter, panel
       );
       
       if (resizeResult.isClicked) {
@@ -544,7 +577,7 @@ export const useMouseEvents = ({
     }
 
     // 優先順位3: 吹き出し操作判定
-    const clickedBubble = BubbleRenderer.findBubbleAt(mouseX, mouseY, speechBubbles, panels);
+    const clickedBubble = BubbleRenderer.findBubbleAt(x, y, speechBubbles, panels);
     if (clickedBubble) {
       console.log("🎯 吹き出しクリック:", clickedBubble.text);
       
@@ -561,7 +594,7 @@ export const useMouseEvents = ({
         return;
       }
       
-      const resizeResult = BubbleRenderer.isBubbleResizeHandleClicked(mouseX, mouseY, clickedBubble, panel);
+      const resizeResult = BubbleRenderer.isBubbleResizeHandleClicked(x, y, clickedBubble, panel);
       
       if (resizeResult.isClicked) {
         console.log("✅ 吹き出しリサイズ開始:", resizeResult.direction);
@@ -589,7 +622,7 @@ export const useMouseEvents = ({
 
     // 🆕 優先順位4: 効果線操作判定
     if (effects.length > 0 && setSelectedEffect) {
-      const clickedEffect = findEffectAt(mouseX, mouseY, effects, panels);
+      const clickedEffect = findEffectAt(x, y, effects, panels);
       if (clickedEffect) {
         console.log("⚡ 効果線クリック:", clickedEffect.type);
         
@@ -615,13 +648,13 @@ export const useMouseEvents = ({
         }
         
         // 効果線リサイズハンドル判定
-        const resizeResult = isEffectResizeHandleClicked(mouseX, mouseY, clickedEffect, panel);
+        const resizeResult = isEffectResizeHandleClicked(x, y, clickedEffect, panel);
         
         if (resizeResult.isClicked) {
           console.log("⚡ 効果線リサイズ開始:", resizeResult.direction);
           actions.setIsCharacterResizing(true); // 既存のリサイズフラグを使用
           actions.setResizeDirection(resizeResult.direction);
-          actions.setDragOffset({ x: mouseX, y: mouseY });
+          actions.setDragOffset({ x, y });
           actions.setInitialCharacterBounds({
             x: clickedEffect.x,
             y: clickedEffect.y,
@@ -645,7 +678,7 @@ export const useMouseEvents = ({
 
     // 🔧 優先順位5: トーン操作判定（パネル内統合版）
 if (tones.length > 0 && setSelectedTone) {
-  const clickedTone = findToneAt(mouseX, mouseY, tones, panels);
+  const clickedTone = findToneAt(x, y, tones, panels);
   if (clickedTone) {
     console.log("🎨 トーンクリック:", clickedTone.type, "パネル:", clickedTone.panelId);
     
@@ -671,7 +704,7 @@ if (tones.length > 0 && setSelectedTone) {
     }
     
     // 🔧 トーンリサイズハンドル判定（パネル境界対応）
-    const resizeResult = isToneResizeHandleClicked(mouseX, mouseY, clickedTone, panel);
+    const resizeResult = isToneResizeHandleClicked(x, y, clickedTone, panel);
     
     if (resizeResult.isClicked) {
       console.log("🎨 トーンリサイズ開始:", resizeResult.direction);
@@ -705,7 +738,7 @@ if (tones.length > 0 && setSelectedTone) {
 }
 
     // 優先順位6: 通常パネル処理（背景より優先）
-    const clickedPanel = PanelManager.findPanelAt(mouseX, mouseY, panels);
+    const clickedPanel = PanelManager.findPanelAt(x, y, panels);
     if (clickedPanel) {
       console.log("🎯 パネルクリック:", clickedPanel.id);
       actions.setSelectedPanel(clickedPanel);
@@ -721,7 +754,7 @@ if (tones.length > 0 && setSelectedTone) {
 
     // 優先順位7: 背景クリック判定（最後）
     if (backgrounds.length > 0 && setSelectedBackground) {
-      const clickedBackground = findBackgroundAt(mouseX, mouseY, backgrounds, panels);
+      const clickedBackground = findBackgroundAt(x, y, backgrounds, panels);
       if (clickedBackground) {
         console.log("🎨 背景クリック:", clickedBackground.type);
         setSelectedBackground(clickedBackground);
@@ -756,6 +789,9 @@ if (tones.length > 0 && setSelectedTone) {
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
 
+    // 座標変換を適用
+    const { x, y } = convertMouseToCanvasCoordinates(mouseX, mouseY);
+
     // 何も操作していない場合は早期リターン
     if (!state.isDragging && !state.isPanelResizing && !state.isPanelMoving && 
         !state.isCharacterResizing && !state.isBubbleResizing && !state.isCharacterRotating) {
@@ -766,7 +802,8 @@ if (tones.length > 0 && setSelectedTone) {
     if (state.isCharacterRotating && state.selectedCharacter) {
       console.log("🔄 回転処理実行中（ハンドルのみ）:", {
         character: state.selectedCharacter.name,
-        mousePos: { mouseX, mouseY }
+        mousePos: { mouseX, mouseY },
+        canvasPos: { x, y }
       });
       
       const panel = panels.find(p => p.id === state.selectedCharacter!.panelId);
@@ -774,7 +811,7 @@ if (tones.length > 0 && setSelectedTone) {
         const { centerX, centerY } = CharacterUtils.calculateCenterCoordinates(
           state.selectedCharacter, panel
         );
-        const currentAngle = CharacterUtils.calculateAngle(centerX, centerY, mouseX, mouseY);
+        const currentAngle = CharacterUtils.calculateAngle(centerX, centerY, x, y);
         
         const angleDiff = CharacterUtils.calculateAngleDifference(
           state.rotationStartAngle, currentAngle
@@ -1062,8 +1099,8 @@ if (selectedTone && state.isCharacterResizing && state.initialCharacterBounds &&
 
     // パネルリサイズ
     if (state.selectedPanel && state.isPanelResizing) {
-      const deltaX = mouseX - state.dragOffset.x;
-      const deltaY = mouseY - state.dragOffset.y;
+      const deltaX = x - state.dragOffset.x;
+      const deltaY = y - state.dragOffset.y;
       
       const updatedPanel = PanelManager.resizePanel(
         state.selectedPanel,
@@ -1074,14 +1111,14 @@ if (selectedTone && state.isCharacterResizing && state.initialCharacterBounds &&
       
       setPanels(panels.map(p => p.id === state.selectedPanel!.id ? updatedPanel : p));
       actions.setSelectedPanel(updatedPanel);
-      actions.setDragOffset({ x: mouseX, y: mouseY });
+      actions.setDragOffset({ x, y });
       return;
     }
 
     // パネル移動
     if (state.selectedPanel && state.isPanelMoving) {
-      const deltaX = mouseX - state.dragOffset.x - state.selectedPanel.x;
-      const deltaY = mouseY - state.dragOffset.y - state.selectedPanel.y;
+      const deltaX = x - state.dragOffset.x - state.selectedPanel.x;
+      const deltaY = y - state.dragOffset.y - state.selectedPanel.y;
       
       const moveResult = PanelManager.movePanel(
         state.selectedPanel,

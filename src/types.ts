@@ -713,8 +713,8 @@ export const PAPER_SIZES: Record<string, PaperSize> = {
     displayName: 'A4 縦（210×297mm）',
     width: 210,
     height: 297,
-    pixelWidth: 2480,  // 210mm ÷ 25.4 × 300DPI = 2480px
-    pixelHeight: 3508, // 297mm ÷ 25.4 × 300DPI = 3508px
+    pixelWidth: 800,   // より適切なサイズに調整
+    pixelHeight: 1131, // アスペクト比を維持
     aspectRatio: 297/210,
     category: 'standard',
     description: '最も一般的な印刷サイズ',
@@ -726,8 +726,8 @@ export const PAPER_SIZES: Record<string, PaperSize> = {
     displayName: 'B5 縦（182×257mm）',
     width: 182,
     height: 257,
-    pixelWidth: 2150,  // 182mm ÷ 25.4 × 300DPI = 2150px (四捨五入)
-    pixelHeight: 3031, // 257mm ÷ 25.4 × 300DPI = 3031px (四捨五入)
+    pixelWidth: 700,   // より適切なサイズに調整
+    pixelHeight: 990,  // アスペクト比を維持
     aspectRatio: 257/182,
     category: 'standard',
     description: '同人誌標準サイズ',
@@ -739,8 +739,8 @@ export const PAPER_SIZES: Record<string, PaperSize> = {
     displayName: 'A4 横（297×210mm）',
     width: 297,
     height: 210,
-    pixelWidth: 3508,  // A4縦の高さ
-    pixelHeight: 2480, // A4縦の幅
+    pixelWidth: 1131,  // A4縦の高さ
+    pixelHeight: 800,  // A4縦の幅
     aspectRatio: 210/297,
     category: 'standard',
     description: '横長レイアウト用',
@@ -765,8 +765,8 @@ export const PAPER_SIZES: Record<string, PaperSize> = {
     displayName: 'カスタムサイズ',
     width: 210,        // 初期値はA4と同じ
     height: 297,       // 初期値はA4と同じ
-    pixelWidth: 2480,  // 初期値はA4と同じ
-    pixelHeight: 3508, // 初期値はA4と同じ
+    pixelWidth: 800,   // 初期値はA4と同じ
+    pixelHeight: 1131, // 初期値はA4と同じ
     aspectRatio: 297/210,
     category: 'custom',
     description: '自由設定',
