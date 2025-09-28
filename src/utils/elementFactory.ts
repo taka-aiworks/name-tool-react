@@ -67,7 +67,7 @@ export const characterPresets = {
       action: "standing", 
       facing: "at_viewer",
       viewType: "upper_body",
-      scale: 2.2,
+      scale: 2.0, // 手動追加と同じサイズに調整
       name: "主人公",
       ...overrides
     }),
@@ -78,7 +78,7 @@ export const characterPresets = {
       action: "sitting",
       facing: "down", 
       viewType: "upper_body",
-      scale: 2.0,
+      scale: 2.0, // 手動追加と同じサイズに調整
       y: 0.65, // 少し下に配置
       name: "主人公",
       ...overrides
@@ -90,7 +90,7 @@ export const characterPresets = {
       action: "arms_crossed",
       facing: "at_viewer",
       viewType: "upper_body", 
-      scale: 2.3,
+      scale: 2.0, // 手動追加と同じサイズに調整
       name: "主人公",
       ...overrides
     }),
@@ -101,7 +101,7 @@ export const characterPresets = {
       action: "standing",
       facing: "at_viewer",
       viewType: "face",
-      scale: 2.8,
+      scale: 2.0, // 手動追加と同じサイズに調整
       name: "主人公",
       ...overrides
     }),
@@ -112,7 +112,7 @@ export const characterPresets = {
       action: "standing", 
       facing: "away",
       viewType: "upper_body",
-      scale: 2.1,
+      scale: 2.0, // 手動追加と同じサイズに調整
       name: "主人公",
       ...overrides
     }),
@@ -123,7 +123,7 @@ export const characterPresets = {
       action: "arms_crossed",
       facing: "at_viewer",
       viewType: "upper_body",
-      scale: 2.4,
+      scale: 2.0, // 手動追加と同じサイズに調整
       name: "主人公",
       ...overrides
     }),
@@ -134,7 +134,7 @@ export const characterPresets = {
       action: "standing",
       facing: "away",
       viewType: "upper_body", 
-      scale: 2.0,
+      scale: 2.0, // 手動追加と同じサイズに調整
       name: "主人公",
       ...overrides
     }),
@@ -148,7 +148,7 @@ export const characterPresets = {
       action: "running",
       facing: "to_side",
       viewType: "full_body",
-      scale: 2.0,
+      scale: 2.0, // 手動追加と同じサイズに調整
       x: 0.4, // 少し左に配置
       y: 0.7,
       name: "主人公",
@@ -161,7 +161,7 @@ export const characterPresets = {
       action: "pointing",
       facing: "to_side",
       viewType: "upper_body",
-      scale: 2.2,
+      scale: 2.0, // 手動追加と同じサイズに調整
       name: "主人公",
       ...overrides
     }),
@@ -172,7 +172,7 @@ export const characterPresets = {
       action: "walking",
       facing: "to_side", 
       viewType: "full_body",
-      scale: 1.9,
+      scale: 2.0, // 手動追加と同じサイズに調整
       x: 0.4,
       y: 0.7,
       name: "主人公",
@@ -188,7 +188,7 @@ export const characterPresets = {
       action: "sitting",
       facing: "down",
       viewType: "upper_body",
-      scale: 2.0,
+      scale: 2.0, // 手動追加と同じサイズに調整
       y: 0.65,
       name: "主人公",
       ...overrides
@@ -200,7 +200,7 @@ export const characterPresets = {
       action: "standing",
       facing: "to_side",
       viewType: "upper_body",
-      scale: 2.1,
+      scale: 2.0, // 手動追加と同じサイズに調整
       name: "主人公",
       ...overrides
     }),
@@ -214,7 +214,7 @@ export const characterPresets = {
       action: "standing",
       facing: "to_side",
       viewType: "upper_body",
-      scale: 1.8,
+      scale: 2.0, // 手動追加と同じサイズに調整
       x: 0.3,
       y: 0.6,
       name: "主人公",
@@ -227,7 +227,7 @@ export const characterPresets = {
       action: "standing",
       facing: "to_side",
       viewType: "upper_body",
-      scale: 1.8,
+      scale: 2.0, // 手動追加と同じサイズに調整
       x: 0.7,
       y: 0.6,
       name: "相手",

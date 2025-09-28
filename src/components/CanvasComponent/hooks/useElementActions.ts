@@ -235,8 +235,8 @@ export const useElementActions = ({
       x: targetPanel.x + targetPanel.width * 0.5,
       y: targetPanel.y + targetPanel.height * 0.7,
       scale: 2.0,
-      width: initialWidth,
-      height: initialHeight,
+      // width: initialWidth,    // 🔧 削除：基本サイズを使用
+      // height: initialHeight,  // 🔧 削除：基本サイズを使用
       facing: "",           // 🔧 未選択に変更
       action: "",           // 🔧 未選択に変更
       expression: "",       // 🔧 未選択に変更
@@ -250,7 +250,7 @@ export const useElementActions = ({
     setCharacters([...characters, newCharacter]);
     actions.setSelectedCharacter(newCharacter);
     if (onCharacterSelect) onCharacterSelect(newCharacter);
-    console.log("✅ キャラクター追加:", newCharacter.name, `(${initialWidth}x${initialHeight}px)`);
+    console.log("✅ キャラクター追加:", newCharacter.name, `(基本サイズ使用)`);
   };
 
   /**

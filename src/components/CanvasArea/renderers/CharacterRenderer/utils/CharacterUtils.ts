@@ -13,7 +13,7 @@ export class CharacterUtils {
     }
     
     // 従来のscale計算をフォールバック
-    const baseWidth = 400; // 200 → 400 に極端に拡大
+    const baseWidth = 100; // 400 → 100 に適切なサイズに調整
     let typeMultiplier = 1.0;
     
     switch (character.viewType) {
@@ -34,7 +34,7 @@ export class CharacterUtils {
     }
     
     // 従来のscale計算をフォールバック
-    const baseHeight = 320; // 160 → 320 に極端に拡大
+    const baseHeight = 80; // 320 → 80 に適切なサイズに調整
     let typeMultiplier = 1.0;
     
     switch (character.viewType) {
@@ -96,8 +96,8 @@ export class CharacterUtils {
       charY = character.y - charHeight / 2;
       console.log(`🌍 グローバル位置キャラクター [${character.name}]:`, { charWidth, charHeight, scale: character.scale });
     } else {
-      charWidth = 400 * character.scale; // 200 → 400 に極端に拡大
-      charHeight = 320 * character.scale; // 160 → 320 に極端に拡大
+      charWidth = 100 * character.scale; // 400 → 100 に適切なサイズに調整
+      charHeight = 80 * character.scale; // 320 → 80 に適切なサイズに調整
       charX = panel.x + panel.width * character.x - charWidth / 2;
       charY = panel.y + panel.height * character.y - charHeight / 2;
       console.log(`📐 パネル内キャラクター [${character.name}]:`, { charWidth, charHeight, scale: character.scale, x: character.x, y: character.y });
