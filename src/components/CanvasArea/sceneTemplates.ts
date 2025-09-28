@@ -12,6 +12,7 @@ import {
   tonePresets,
   type UnifiedSceneConfig
 } from "../../utils/elementFactory";
+import { backgroundTemplates } from "./backgroundTemplates";
 
 export interface EnhancedSceneTemplate {
   name: string;
@@ -19,7 +20,8 @@ export interface EnhancedSceneTemplate {
   category: 'basic' | 'emotion' | 'action' | 'daily' | 'special';
   characters: Omit<Character, "id" | "panelId">[];
   speechBubbles: Omit<SpeechBubble, "id" | "panelId">[];
-  backgrounds?: Omit<BackgroundElement, "id" | "panelId">[];
+  background?: Omit<BackgroundElement, "id" | "panelId">; // 単数形（統合テンプレート用）
+  backgrounds?: Omit<BackgroundElement, "id" | "panelId">[]; // 複数形（従来用）
   effects?: Omit<EffectElement, "id" | "panelId">[];
   tones?: Omit<ToneElement, "id" | "panelId">[];
 }
@@ -62,7 +64,7 @@ export const createEmotionScenes = (): Record<string, EnhancedSceneTemplate> => 
       {
         characters: [{ preset: 'happy' }],
         bubbles: [{ preset: 'normal', text: 'やったー！' }],
-        // 🔧 背景削除: ユーザーが手動選択
+        background: { preset: 'excitement' },
         effects: [{ preset: 'flash' }]
       }
     ),
@@ -75,8 +77,7 @@ export const createEmotionScenes = (): Record<string, EnhancedSceneTemplate> => 
       {
         characters: [{ preset: 'sad' }],
         bubbles: [{ preset: 'thought', text: 'つらい...' }],
-        // 🔧 背景削除: ユーザーが手動選択
-        tones: [{ preset: 'shadow' }]
+        background: { preset: 'cloudy' }
       }
     ),
 
@@ -88,7 +89,7 @@ export const createEmotionScenes = (): Record<string, EnhancedSceneTemplate> => 
       {
         characters: [{ preset: 'angry' }],
         bubbles: [{ preset: 'shout', text: 'もう！' }],
-        // 🔧 背景削除: ユーザーが手動選択
+        background: { preset: 'tension' },
         effects: [{ preset: 'explosion' }]
       }
     ),
@@ -124,11 +125,7 @@ export const createEmotionScenes = (): Record<string, EnhancedSceneTemplate> => 
           text: '大丈夫かな...',
           overrides: { width: 85, height: 65 }
         }],
-        // 🔧 背景削除: ユーザーが手動選択
-        tones: [{ 
-          preset: 'texture',
-          overrides: { pattern: 'lines_diagonal', density: 0.2, opacity: 0.3 }
-        }]
+        background: { preset: 'anxiety' }
       }
     )
   };
@@ -151,6 +148,7 @@ export const createActionScenes = (): Record<string, EnhancedSceneTemplate> => {
           text: '急がなきゃ！',
           overrides: { x: 0.1, y: 0.1, width: 85, height: 60 }
         }],
+        background: { preset: 'city' },
         effects: [{ preset: 'speed_horizontal' }]
       }
     ),
@@ -170,7 +168,7 @@ export const createActionScenes = (): Record<string, EnhancedSceneTemplate> => {
           text: 'あそこだ！',
           overrides: { x: 0.1, y: 0.15, width: 75, height: 55 }
         }],
-        // 🔧 背景削除: ユーザーが手動選択
+        background: { preset: 'excitement' },
         effects: [{ preset: 'focus' }]
       }
     ),
@@ -190,6 +188,7 @@ export const createActionScenes = (): Record<string, EnhancedSceneTemplate> => {
           text: 'うわー！',
           overrides: { x: 0.15, y: 0.1, width: 80, height: 65 }
         }],
+        background: { preset: 'explosion' },
         effects: [{ preset: 'explosion' }]
       }
     ),
@@ -208,7 +207,7 @@ export const createActionScenes = (): Record<string, EnhancedSceneTemplate> => {
           { preset: 'left', text: 'こんにちは' },
           { preset: 'right', text: 'こんにちは！' }
         ],
-        background: { preset: 'calm' }
+        background: { preset: 'neutral' }
       }
     )
   };
@@ -231,11 +230,7 @@ export const createDailyScenes = (): Record<string, EnhancedSceneTemplate> => {
           text: '美味しい♪',
           overrides: { x: 0.15, y: 0.15 }
         }],
-        // 🔧 背景削除: ユーザーが手動選択
-        tones: [{ 
-          preset: 'highlight',
-          overrides: { pattern: 'dots_120', density: 0.15, opacity: 0.2 }
-        }]
+        background: { preset: 'home' }
       }
     ),
 
@@ -250,8 +245,8 @@ export const createDailyScenes = (): Record<string, EnhancedSceneTemplate> => {
           preset: 'normal', 
           text: 'もしもし',
           overrides: { x: 0.65, y: 0.2, width: 70, height: 50 }
-        }]
-        // 🔧 背景削除: ユーザーが手動選択
+        }],
+        background: { preset: 'neutral' }
       }
     ),
 
@@ -266,8 +261,8 @@ export const createDailyScenes = (): Record<string, EnhancedSceneTemplate> => {
           preset: 'thought', 
           text: 'さて...',
           overrides: { width: 60, height: 45 }
-        }]
-        // 🔧 背景削除: ユーザーが手動選択
+        }],
+        background: { preset: 'city' }
       }
     ),
 
@@ -279,8 +274,7 @@ export const createDailyScenes = (): Record<string, EnhancedSceneTemplate> => {
       {
         characters: [{ preset: 'thoughtful' }],
         bubbles: [{ preset: 'thought', text: 'うーん...' }],
-        // 🔧 背景削除: ユーザーが手動選択
-        tones: [{ preset: 'texture' }]
+        background: { preset: 'neutral' }
       }
     )
   };
@@ -303,7 +297,7 @@ export const createSpecialScenes = (): Record<string, EnhancedSceneTemplate> => 
           text: 'よし！',
           overrides: { width: 60, height: 50 }
         }],
-        // 🔧 背景削除: ユーザーが手動選択
+        background: { preset: 'determination' },
         effects: [{ preset: 'focus' }]
       }
     ),
@@ -327,7 +321,7 @@ export const createSpecialScenes = (): Record<string, EnhancedSceneTemplate> => 
           text: 'そうか！',
           overrides: { x: 0.15, y: 0.1, width: 70, height: 55 }
         }],
-        // 🔧 背景削除: ユーザーが手動選択
+        background: { preset: 'flash' },
         effects: [{ preset: 'flash' }]
       }
     ),
@@ -347,11 +341,7 @@ export const createSpecialScenes = (): Record<string, EnhancedSceneTemplate> => 
           text: '眠い...',
           overrides: { width: 65, height: 50 }
         }],
-        // 🔧 背景削除: ユーザーが手動選択
-        tones: [{ 
-          preset: 'mood',
-          overrides: { pattern: 'dots_60', density: 0.2, opacity: 0.3 }
-        }]
+        background: { preset: 'night' }
       }
     ),
 
@@ -369,8 +359,8 @@ export const createSpecialScenes = (): Record<string, EnhancedSceneTemplate> => 
           preset: 'shout', 
           text: '頑張る！',
           overrides: { x: 0.15, y: 0.1, width: 80, height: 60 }
-        }]
-        // 🔧 背景削除: ユーザーが手動選択
+        }],
+        background: { preset: 'tension' }
       }
     )
   };
@@ -410,6 +400,18 @@ export const getTemplatesByCategory = (category: EnhancedSceneTemplate['category
   return filtered;
 };
 
+// 背景テンプレート名を取得する関数（背景テンプレートの実際の名前を使用）
+const getBackgroundTemplateName = (preset: string): string => {
+  // 背景テンプレートから実際の名前を取得
+  const backgroundTemplate = backgroundTemplates.find(template => template.id === preset);
+  if (backgroundTemplate) {
+    return backgroundTemplate.name;
+  }
+  
+  // フォールバック: プリセット名をそのまま使用
+  return preset;
+};
+
 // 🔧 統一ファクトリー版シーンテンプレート適用関数（座標変換修正版）
 export const applyEnhancedSceneTemplate = (
   templateKey: string,
@@ -419,7 +421,8 @@ export const applyEnhancedSceneTemplate = (
   existingBackgrounds: any[],
   existingEffects: any[],
   existingTones: any[],
-  selectedPanel?: any
+  selectedPanel?: any,
+  selectedCharacter?: any
 ): {
   characters: any[];
   speechBubbles: any[];
@@ -441,6 +444,8 @@ export const applyEnhancedSceneTemplate = (
 
   const targetPanel = selectedPanel || panels[0];
   console.log(`🎭 統一ファクトリー版テンプレート適用: ${template.name} → パネル${targetPanel.id}`);
+  console.log(`🎨 テンプレート背景情報:`, template.background);
+  console.log(`🎨 テンプレート背景s情報:`, template.backgrounds);
 
   // 既存のパネル内要素をクリア
   const filteredCharacters = existingCharacters.filter(char => char.panelId !== targetPanel.id);
@@ -457,17 +462,56 @@ export const applyEnhancedSceneTemplate = (
     const absoluteX = targetPanel.x + (char.x * targetPanel.width);
     const absoluteY = targetPanel.y + (char.y * targetPanel.height);
     
-    console.log(`👤 キャラクター座標変換: ${char.name || 'キャラクター'}`);
-    console.log(`   相対座標: (${char.x}, ${char.y}) → 絶対座標: (${absoluteX.toFixed(1)}, ${absoluteY.toFixed(1)})`);
+    // 🔧 選択されたキャラクターの情報を使用
+    const characterName = selectedCharacter ? selectedCharacter.name : (char.name || 'キャラクター');
+    const characterId = selectedCharacter ? selectedCharacter.characterId : char.characterId;
     
-    return {
-      ...char,
+    console.log(`👤 キャラクター座標変換: ${characterName}`);
+    console.log(`   相対座標: (${char.x}, ${char.y}) → 絶対座標: (${absoluteX.toFixed(1)}, ${absoluteY.toFixed(1)})`);
+    console.log(`   選択されたキャラクター: ${selectedCharacter ? selectedCharacter.name : 'なし'}`);
+    
+    // 🔍 キャラクター設定値の詳細確認
+    console.log(`🔍 キャラクター設定値確認:`, {
+      name: characterName,
+      characterId: characterId,
+      expression: char.expression,
+      action: char.action,
+      facing: char.facing,
+      eyeState: char.eyeState,
+      mouthState: char.mouthState,
+      handGesture: char.handGesture,
+      allProperties: Object.keys(char)
+    });
+    
+    // 🔍 選択されたキャラクターの詳細確認
+    console.log(`🔍 選択されたキャラクター詳細:`, {
+      selectedCharacterName: selectedCharacter ? selectedCharacter.name : 'null',
+      selectedCharacterId: selectedCharacter ? selectedCharacter.characterId : 'null',
+      selectedCharacterExpression: selectedCharacter ? selectedCharacter.expression : 'null',
+      selectedCharacterAction: selectedCharacter ? selectedCharacter.action : 'null'
+    });
+    
+    // 🔧 選択されたキャラクターの基本情報を保持しつつ、テンプレートの詳細設定を適用
+    const finalCharacter = {
+      ...char, // テンプレートの詳細設定（表情、動作など）
       id: uniqueId,
+      name: characterName, // 選択されたキャラクターの名前
+      characterId: characterId, // 選択されたキャラクターのID
+      type: selectedCharacter ? selectedCharacter.type : char.type, // 🔧 選択されたキャラクターのtypeを使用
       panelId: targetPanel.id,
       x: absoluteX,
       y: absoluteY,
       isGlobalPosition: true, // 絶対座標に変換済み
+      // 🔧 選択されたキャラクターの基本設定を保持
+      ...(selectedCharacter && {
+        viewType: selectedCharacter.viewType,
+        scale: selectedCharacter.scale,
+        // テンプレートの詳細設定で上書きされる項目は除外
+      })
     };
+    
+    
+    return finalCharacter;
   });
 
   // 🔧 吹き出し生成（相対座標→絶対座標変換）
@@ -492,19 +536,27 @@ export const applyEnhancedSceneTemplate = (
   });
 
   // 🔧 背景生成（相対座標のまま）
-  const newBackgrounds = (template.backgrounds || []).map((bg, index) => {
+  // 統合テンプレートでは background（単数形）を使用
+  const backgroundData = template.background || template.backgrounds?.[0];
+  const newBackgrounds = backgroundData ? [backgroundData].map((bg, index) => {
     const uniqueId = `bg_${Date.now()}_${Math.random().toString(36).substr(2, 5)}_${index}`;
     
-    console.log(`🎨 背景生成: ${bg.type}`);
-    console.log(`   相対座標: (${bg.x}, ${bg.y}, ${bg.width}, ${bg.height})`);
+    console.log(`🎨 背景生成: ${bg.type || 'preset'}`);
+    console.log(`   プリセット: ${bg.preset || 'なし'}`);
+    console.log(`   相対座標: (${bg.x || 0}, ${bg.y || 0}, ${bg.width || 1}, ${bg.height || 1})`);
+    
+    // 背景テンプレート名を設定（ユーザーフレンドリーな表示用）
+    const templateName = bg.preset ? getBackgroundTemplateName(bg.preset) : null;
     
     return {
       ...bg,
       id: uniqueId,
       panelId: targetPanel.id,
+      name: templateName, // 手動背景と同じようにnameプロパティを設定
+      templateName: templateName, // 背景テンプレート名を追加
       // 背景は相対座標のまま（パネル全体）
     };
-  });
+  }) : [];
 
   // 🔧 効果線生成（相対座標のまま）
   const newEffects = (template.effects || []).map((effect, index) => {
@@ -543,6 +595,12 @@ export const applyEnhancedSceneTemplate = (
   console.log(`   背景: ${newBackgrounds.length}個（相対座標）`);
   console.log(`   効果線: ${newEffects.length}個（相対座標）`);
   console.log(`   トーン: ${newTones.length}個（相対座標）`);
+  
+  if (newBackgrounds.length > 0) {
+    console.log(`🎨 生成された背景詳細:`, newBackgrounds[0]);
+  } else {
+    console.log(`⚠️ 背景が生成されていません`);
+  }
 
   return {
     characters: [...filteredCharacters, ...newCharacters],

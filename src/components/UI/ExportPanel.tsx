@@ -312,7 +312,18 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
       
       // 🔧 重要: 各キャラクターを現在の座標で判定
       characters.forEach(char => {
-        const { panel } = assignCharacterToNearestPanel(char, panels);
+        console.log(`🔍 キャラクター配置判定開始:`, {
+          id: char.id,
+          name: char.name,
+          x: char.x,
+          y: char.y,
+          panelId: char.panelId,
+          isGlobalPosition: char.isGlobalPosition
+        });
+        
+        const { panel, debug } = assignCharacterToNearestPanel(char, panels);
+        console.log(`🔍 配置判定結果:`, debug);
+        
         if (panel) {
           const panelChars = characterAssignments.get(panel.id) || [];
           panelChars.push(char);
@@ -320,6 +331,8 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
           
           // 🆕 デバッグログ追加
           console.log(`📍 キャラクター "${char.name}" を Panel ${panel.id} に配置 (座標: ${char.x}, ${char.y})`);
+        } else {
+          console.log(`❌ キャラクター "${char.name}" の配置に失敗`);
         }
       });
 

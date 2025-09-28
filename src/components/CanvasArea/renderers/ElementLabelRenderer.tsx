@@ -20,29 +20,84 @@ const ElementLabelRenderer: React.FC<ElementLabelRendererProps> = ({
   // パネル情報取得ヘルパー
   const getPanel = (panelId: number) => panels.find(p => p.id === panelId);
 
-  // 背景タイプの日本語名取得（types.tsに基づく）
+  // 背景タイプの日本語名取得（ユーザーフレンドリー版）
   const getBackgroundLabel = (bg: BackgroundElement): string => {
+    console.log(`🎨 背景ラベル取得:`, {
+      name: bg.name,
+      templateName: bg.templateName,
+      preset: bg.preset,
+      type: bg.type
+    });
+    
+    // 手動背景と同じようにnameプロパティを最優先
+    if (bg.name) {
+      console.log(`✅ name使用: ${bg.name}`);
+      return bg.name;
+    }
+    
+    // 統合テンプレートから生成された背景の場合、背景テンプレート名を表示
+    if (bg.templateName) {
+      console.log(`✅ templateName使用: ${bg.templateName}`);
+      return bg.templateName;
+    }
+    
+    // 背景プリセット名がある場合はそれを使用
+    if (bg.preset) {
+      console.log(`✅ preset使用: ${bg.preset}`);
+      const presetNames: { [key: string]: string } = {
+        'excitement': '興奮',
+        'cloudy': '曇り',
+        'tension': '緊張',
+        'city': '街',
+        'explosion': '爆発',
+        'flash': 'フラッシュ',
+        'night': '夜',
+        'home': '家',
+        'school': '学校',
+        'office': 'オフィス',
+        'hospital': '病院',
+        'park': '公園',
+        'beach': '海',
+        'mountain': '山',
+        'morning': '朝',
+        'afternoon': '午後',
+        'evening': '夕方',
+        'rainy': '雨',
+        'snowy': '雪',
+        'anxiety': '不安',
+        'romantic': 'ロマンチック',
+        'nostalgic': 'ノスタルジック',
+        'memory': '回想',
+        'dream': '夢',
+        'train': '電車',
+        'car': '車',
+        'bus': 'バス',
+        'neutral': 'ニュートラル',
+        'calm': '穏やか',
+        'happy': '喜び',
+        'sad': '悲しみ',
+        'angry': '怒り',
+        'speed': 'スピード',
+        'impact': '衝撃',
+        'determination': '決意',
+        'idea': 'ひらめき',
+        'tired': '疲れ',
+        'effort': '努力'
+      };
+      return presetNames[bg.preset] || bg.preset;
+    }
+    
+    // フォールバック: 技術的な表示
+    console.log(`⚠️ フォールバック使用: type=${bg.type}`);
     switch (bg.type) {
       case 'solid':
-        return `単色背景 (${bg.solidColor || '#000'})`;
+        return `単色背景`;
       case 'gradient':
-        const gradientType = bg.gradientType === 'radial' ? '放射状' : '線形';
-        const direction = bg.gradientDirection === 0 ? '水平' : 
-                         bg.gradientDirection === 90 ? '垂直' : 
-                         bg.gradientDirection === 45 ? '斜め' : `${bg.gradientDirection}°`;
-        return `${gradientType}グラデーション (${direction})`;
+        return `グラデーション背景`;
       case 'pattern':
-        const patternNames = {
-          'dots': 'ドット',
-          'lines': '線',
-          'grid': 'グリッド',
-          'diagonal': '斜線',
-          'crosshatch': 'クロスハッチ'
-        };
-        const patternName = patternNames[bg.patternType as keyof typeof patternNames] || bg.patternType;
-        return `${patternName}パターン`;
+        return `パターン背景`;
       case 'image':
-        return `画像背景 (${bg.imageMode || 'fit'})`;
+        return `画像背景`;
       default:
         return '背景';
     }

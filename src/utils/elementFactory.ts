@@ -69,6 +69,10 @@ export const characterPresets = {
       viewType: "upper_body",
       scale: 2.0, // 手動追加と同じサイズに調整
       name: "主人公",
+      // 拡張機能設定
+      eyeState: "sparkling_eyes",
+      mouthState: "slight_smile",
+      handGesture: "waving",
       ...overrides
     }),
     
@@ -81,6 +85,10 @@ export const characterPresets = {
       scale: 2.0, // 手動追加と同じサイズに調整
       y: 0.65, // 少し下に配置
       name: "主人公",
+      // 拡張機能設定
+      eyeState: "eyes_closed",
+      mouthState: "frown",
+      handGesture: "covering_mouth",
       ...overrides
     }),
     
@@ -92,6 +100,10 @@ export const characterPresets = {
       viewType: "upper_body", 
       scale: 2.0, // 手動追加と同じサイズに調整
       name: "主人公",
+      // 拡張機能設定
+      eyeState: "half_closed_eyes",
+      mouthState: "frown",
+      handGesture: "clenched_fist",
       ...overrides
     }),
     
@@ -103,6 +115,10 @@ export const characterPresets = {
       viewType: "face",
       scale: 2.0, // 手動追加と同じサイズに調整
       name: "主人公",
+      // 拡張機能設定
+      eyeState: "wide_eyes",
+      mouthState: "open_mouth",
+      handGesture: "covering_mouth",
       ...overrides
     }),
     
@@ -114,6 +130,10 @@ export const characterPresets = {
       viewType: "upper_body",
       scale: 2.0, // 手動追加と同じサイズに調整
       name: "主人公",
+      // 拡張機能設定
+      eyeState: "half_closed_eyes",
+      mouthState: "frown",
+      handGesture: "hands_clasped",
       ...overrides
     }),
     
@@ -125,6 +145,10 @@ export const characterPresets = {
       viewType: "upper_body",
       scale: 2.0, // 手動追加と同じサイズに調整
       name: "主人公",
+      // 拡張機能設定
+      eyeState: "eyes_open",
+      mouthState: "mouth_closed",
+      handGesture: "thumbs_up",
       ...overrides
     }),
     
@@ -136,6 +160,10 @@ export const characterPresets = {
       viewType: "upper_body", 
       scale: 2.0, // 手動追加と同じサイズに調整
       name: "主人公",
+      // 拡張機能設定
+      eyeState: "half_closed_eyes",
+      mouthState: "mouth_closed",
+      handGesture: "open_palm",
       ...overrides
     }),
     
@@ -525,6 +553,237 @@ export const backgroundPresets = {
     gradientColors: ['#FFE4B5', '#FFD700'],
     gradientDirection: 180,
     opacity: 0.3
+  }),
+  
+  // ==========================================
+  // 🏠 場所・環境系背景（漫画ネーム用）
+  // ==========================================
+  
+  // 室内系
+  home: () => createBackground({
+    type: 'gradient',
+    gradientType: 'linear',
+    gradientColors: ['#FFF8DC', '#F5F5DC'],
+    gradientDirection: 135,
+    opacity: 0.4
+  }),
+  
+  school: () => createBackground({
+    type: 'solid',
+    solidColor: '#F0F8FF',
+    opacity: 0.3
+  }),
+  
+  office: () => createBackground({
+    type: 'gradient',
+    gradientType: 'linear',
+    gradientColors: ['#F8F8FF', '#E6E6FA'],
+    gradientDirection: 90,
+    opacity: 0.4
+  }),
+  
+  hospital: () => createBackground({
+    type: 'solid',
+    solidColor: '#F0FFFF',
+    opacity: 0.5
+  }),
+  
+  // 屋外系
+  park: () => createBackground({
+    type: 'gradient',
+    gradientType: 'radial',
+    gradientColors: ['#90EE90', '#98FB98'],
+    opacity: 0.3
+  }),
+  
+  city: () => createBackground({
+    type: 'gradient',
+    gradientType: 'linear',
+    gradientColors: ['#D3D3D3', '#A9A9A9'],
+    gradientDirection: 45,
+    opacity: 0.4
+  }),
+  
+  beach: () => createBackground({
+    type: 'gradient',
+    gradientType: 'linear',
+    gradientColors: ['#87CEEB', '#B0E0E6'],
+    gradientDirection: 180,
+    opacity: 0.3
+  }),
+  
+  mountain: () => createBackground({
+    type: 'gradient',
+    gradientType: 'linear',
+    gradientColors: ['#D2B48C', '#DEB887'],
+    gradientDirection: 90,
+    opacity: 0.4
+  }),
+  
+  // ==========================================
+  // ⏰ 時間帯・天候系背景（漫画ネーム用）
+  // ==========================================
+  
+  morning: () => createBackground({
+    type: 'gradient',
+    gradientType: 'linear',
+    gradientColors: ['#FFE4B5', '#FFF8DC'],
+    gradientDirection: 45,
+    opacity: 0.4
+  }),
+  
+  afternoon: () => createBackground({
+    type: 'gradient',
+    gradientType: 'radial',
+    gradientColors: ['#FFD700', '#FFA500'],
+    opacity: 0.3
+  }),
+  
+  evening: () => createBackground({
+    type: 'gradient',
+    gradientType: 'linear',
+    gradientColors: ['#FF6347', '#FF4500'],
+    gradientDirection: 180,
+    opacity: 0.4
+  }),
+  
+  night: () => createBackground({
+    type: 'gradient',
+    gradientType: 'linear',
+    gradientColors: ['#191970', '#000080'],
+    gradientDirection: 90,
+    opacity: 0.6
+  }),
+  
+  rainy: () => createBackground({
+    type: 'gradient',
+    gradientType: 'linear',
+    gradientColors: ['#B0C4DE', '#87CEEB'],
+    gradientDirection: 135,
+    opacity: 0.5
+  }),
+  
+  cloudy: () => createBackground({
+    type: 'solid',
+    solidColor: '#D3D3D3',
+    opacity: 0.4
+  }),
+  
+  snowy: () => createBackground({
+    type: 'gradient',
+    gradientType: 'linear',
+    gradientColors: ['#F0F8FF', '#E6E6FA'],
+    gradientDirection: 45,
+    opacity: 0.5
+  }),
+  
+  // ==========================================
+  // 💫 感情・ムード系背景（漫画ネーム用）
+  // ==========================================
+  
+  tension: () => createBackground({
+    type: 'gradient',
+    gradientType: 'linear',
+    gradientColors: ['#FFB6C1', '#FF69B4'],
+    gradientDirection: 45,
+    opacity: 0.4
+  }),
+  
+  anxiety: () => createBackground({
+    type: 'gradient',
+    gradientType: 'radial',
+    gradientColors: ['#DDA0DD', '#DA70D6'],
+    opacity: 0.5
+  }),
+  
+  excitement: () => createBackground({
+    type: 'gradient',
+    gradientType: 'linear',
+    gradientColors: ['#FFD700', '#FFA500'],
+    gradientDirection: 90,
+    opacity: 0.4
+  }),
+  
+  romantic: () => createBackground({
+    type: 'gradient',
+    gradientType: 'radial',
+    gradientColors: ['#FFB6C1', '#FFC0CB'],
+    opacity: 0.3
+  }),
+  
+  nostalgic: () => createBackground({
+    type: 'gradient',
+    gradientType: 'linear',
+    gradientColors: ['#F5DEB3', '#DEB887'],
+    gradientDirection: 135,
+    opacity: 0.4
+  }),
+  
+  // ==========================================
+  // ✨ 特殊効果系背景（漫画ネーム用）
+  // ==========================================
+  
+  flash: () => createBackground({
+    type: 'gradient',
+    gradientType: 'radial',
+    gradientColors: ['#FFFFFF', '#FFFF00'],
+    opacity: 0.7
+  }),
+  
+  explosion: () => createBackground({
+    type: 'gradient',
+    gradientType: 'radial',
+    gradientColors: ['#FF4500', '#FF6347'],
+    opacity: 0.6
+  }),
+  
+  magic: () => createBackground({
+    type: 'gradient',
+    gradientType: 'linear',
+    gradientColors: ['#9370DB', '#8A2BE2'],
+    gradientDirection: 45,
+    opacity: 0.5
+  }),
+  
+  memory: () => createBackground({
+    type: 'gradient',
+    gradientType: 'linear',
+    gradientColors: ['#D3D3D3', '#A9A9A9'],
+    gradientDirection: 90,
+    opacity: 0.6
+  }),
+  
+  dream: () => createBackground({
+    type: 'gradient',
+    gradientType: 'radial',
+    gradientColors: ['#E6E6FA', '#DDA0DD'],
+    opacity: 0.5
+  }),
+  
+  // ==========================================
+  // 🚗 交通機関系背景（漫画ネーム用）
+  // ==========================================
+  
+  train: () => createBackground({
+    type: 'gradient',
+    gradientType: 'linear',
+    gradientColors: ['#F5F5F5', '#DCDCDC'],
+    gradientDirection: 0,
+    opacity: 0.4
+  }),
+  
+  car: () => createBackground({
+    type: 'gradient',
+    gradientType: 'linear',
+    gradientColors: ['#E0E0E0', '#C0C0C0'],
+    gradientDirection: 90,
+    opacity: 0.3
+  }),
+  
+  bus: () => createBackground({
+    type: 'solid',
+    solidColor: '#F8F8FF',
+    opacity: 0.4
   })
 };
 
@@ -761,7 +1020,7 @@ export const createUnifiedScene = (config: UnifiedSceneConfig) => {
   );
   
   const backgrounds = config.background ? 
-    [backgroundPresets[config.background.preset]()] : [];
+    [{ ...backgroundPresets[config.background.preset](), preset: config.background.preset }] : [];
   
   const effects = (config.effects ?? []).map(effect =>
     effectPresets[effect.preset](effect.overrides)

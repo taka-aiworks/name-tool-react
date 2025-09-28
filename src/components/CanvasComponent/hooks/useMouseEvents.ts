@@ -1315,6 +1315,15 @@ if (selectedTone && state.isCharacterResizing && state.initialCharacterBounds &&
     // 座標変換を適用
     const { x, y } = convertMouseToCanvasCoordinates(mouseX, mouseY);
     
+    // 💬 吹き出しダブルクリック処理（最優先）
+    const clickedBubble = BubbleRenderer.findBubbleAt(x, y, speechBubbles, panels);
+    if (clickedBubble) {
+      actions.setEditingBubble(clickedBubble);
+      actions.setEditText(clickedBubble.text);
+      // コンソールログは無効化
+      return;
+    }
+
     // 🆕 効果線ダブルクリック処理
     if (effects.length > 0) {
       const clickedEffect = findEffectAt(x, y, effects, panels);
@@ -1343,13 +1352,6 @@ if (selectedTone && state.isCharacterResizing && state.initialCharacterBounds &&
         // コンソールログは無効化
         return;
       }
-    }
-    
-    const clickedBubble = BubbleRenderer.findBubbleAt(x, y, speechBubbles, panels);
-    if (clickedBubble) {
-      actions.setEditingBubble(clickedBubble);
-      actions.setEditText(clickedBubble.text);
-      // コンソールログは無効化
     }
   };
 

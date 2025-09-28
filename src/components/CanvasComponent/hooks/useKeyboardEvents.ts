@@ -54,18 +54,18 @@ export const useKeyboardEvents = ({
       console.log("📌 クリップボードからペースト");
     }
     
-    // 削除操作 (Delete / Backspace)
-    if (e.key === 'Delete' || e.key === 'Backspace') {
+    // 削除操作 (Delete / Backspace) - 吹き出し編集中は完全無効化
+    if ((e.key === 'Delete' || e.key === 'Backspace') && !state.editingBubble) {
       e.preventDefault();
       if (state.selectedPanel) {
         contextMenuActions.onDeletePanel(state.selectedPanel);
-        console.log("🗑️ 選択中のパネルを削除");
+        // コンソールログは無効化
       } else if (state.selectedCharacter) {
         contextMenuActions.onDeleteElement('character', state.selectedCharacter);
-        console.log("🗑️ 選択中のキャラクターを削除");
+        // コンソールログは無効化
       } else if (state.selectedBubble) {
         contextMenuActions.onDeleteElement('bubble', state.selectedBubble);
-        console.log("🗑️ 選択中の吹き出しを削除");
+        // コンソールログは無効化
       }
     }
 
@@ -129,6 +129,7 @@ export const useKeyboardEvents = ({
     state.selectedPanel, 
     state.selectedCharacter, 
     state.selectedBubble, 
+    state.editingBubble, // 🆕 吹き出し編集状態を監視
     clipboard,
     // その他の依存関係は関数内で参照されているため含める
   ]);

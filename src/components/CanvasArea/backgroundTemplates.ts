@@ -542,6 +542,431 @@ export const backgroundTemplates: BackgroundTemplate[] = [
         patternSpacing: 25
       }
     ]
+  },
+  
+  // ==========================================
+  // 🏠 場所・環境系背景（漫画ネーム用）
+  // ==========================================
+  {
+    id: 'home',
+    name: '家',
+    category: 'indoor',
+    elements: [
+      {
+        type: 'gradient',
+        x: 0, y: 0, width: 1, height: 1,
+        rotation: 0, zIndex: 0, opacity: 0.4,
+        gradientType: 'linear',
+        gradientColors: ['#FFF8DC', '#F5F5DC'],
+        gradientDirection: 135
+      }
+    ]
+  },
+  {
+    id: 'school',
+    name: '学校',
+    category: 'school',
+    elements: [
+      {
+        type: 'solid',
+        x: 0, y: 0, width: 1, height: 1,
+        rotation: 0, zIndex: 0, opacity: 0.3,
+        solidColor: '#F0F8FF'
+      }
+    ]
+  },
+  {
+    id: 'office',
+    name: 'オフィス',
+    category: 'indoor',
+    elements: [
+      {
+        type: 'gradient',
+        x: 0, y: 0, width: 1, height: 1,
+        rotation: 0, zIndex: 0, opacity: 0.4,
+        gradientType: 'linear',
+        gradientColors: ['#F8F8FF', '#E6E6FA'],
+        gradientDirection: 90
+      }
+    ]
+  },
+  {
+    id: 'hospital',
+    name: '病院',
+    category: 'indoor',
+    elements: [
+      {
+        type: 'solid',
+        x: 0, y: 0, width: 1, height: 1,
+        rotation: 0, zIndex: 0, opacity: 0.5,
+        solidColor: '#F0FFFF'
+      }
+    ]
+  },
+  {
+    id: 'park',
+    name: '公園',
+    category: 'nature',
+    elements: [
+      {
+        type: 'gradient',
+        x: 0, y: 0, width: 1, height: 1,
+        rotation: 0, zIndex: 0, opacity: 0.3,
+        gradientType: 'radial',
+        gradientColors: ['#90EE90', '#98FB98']
+      }
+    ]
+  },
+  {
+    id: 'city',
+    name: '街',
+    category: 'city',
+    elements: [
+      {
+        type: 'gradient',
+        x: 0, y: 0, width: 1, height: 1,
+        rotation: 0, zIndex: 0, opacity: 0.4,
+        gradientType: 'linear',
+        gradientColors: ['#D3D3D3', '#A9A9A9'],
+        gradientDirection: 45
+      }
+    ]
+  },
+  {
+    id: 'beach',
+    name: '海',
+    category: 'nature',
+    elements: [
+      {
+        type: 'gradient',
+        x: 0, y: 0, width: 1, height: 1,
+        rotation: 0, zIndex: 0, opacity: 0.3,
+        gradientType: 'linear',
+        gradientColors: ['#87CEEB', '#B0E0E6'],
+        gradientDirection: 180
+      }
+    ]
+  },
+  {
+    id: 'mountain',
+    name: '山',
+    category: 'nature',
+    elements: [
+      {
+        type: 'gradient',
+        x: 0, y: 0, width: 1, height: 1,
+        rotation: 0, zIndex: 0, opacity: 0.4,
+        gradientType: 'linear',
+        gradientColors: ['#D2B48C', '#DEB887'],
+        gradientDirection: 90
+      }
+    ]
+  },
+  
+  // ==========================================
+  // ⏰ 時間帯・天候系背景（漫画ネーム用）
+  // ==========================================
+  {
+    id: 'morning',
+    name: '朝',
+    category: 'emotion',
+    elements: [
+      {
+        type: 'gradient',
+        x: 0, y: 0, width: 1, height: 1,
+        rotation: 0, zIndex: 0, opacity: 0.4,
+        gradientType: 'linear',
+        gradientColors: ['#FFE4B5', '#FFF8DC'],
+        gradientDirection: 45
+      }
+    ]
+  },
+  {
+    id: 'afternoon',
+    name: '午後',
+    category: 'emotion',
+    elements: [
+      {
+        type: 'gradient',
+        x: 0, y: 0, width: 1, height: 1,
+        rotation: 0, zIndex: 0, opacity: 0.3,
+        gradientType: 'radial',
+        gradientColors: ['#FFD700', '#FFA500']
+      }
+    ]
+  },
+  {
+    id: 'evening',
+    name: '夕方',
+    category: 'emotion',
+    elements: [
+      {
+        type: 'gradient',
+        x: 0, y: 0, width: 1, height: 1,
+        rotation: 0, zIndex: 0, opacity: 0.4,
+        gradientType: 'linear',
+        gradientColors: ['#FF6347', '#FF4500'],
+        gradientDirection: 180
+      }
+    ]
+  },
+  {
+    id: 'night',
+    name: '夜',
+    category: 'emotion',
+    elements: [
+      {
+        type: 'gradient',
+        x: 0, y: 0, width: 1, height: 1,
+        rotation: 0, zIndex: 0, opacity: 0.6,
+        gradientType: 'linear',
+        gradientColors: ['#191970', '#000080'],
+        gradientDirection: 90
+      }
+    ]
+  },
+  {
+    id: 'rainy',
+    name: '雨',
+    category: 'emotion',
+    elements: [
+      {
+        type: 'gradient',
+        x: 0, y: 0, width: 1, height: 1,
+        rotation: 0, zIndex: 0, opacity: 0.5,
+        gradientType: 'linear',
+        gradientColors: ['#B0C4DE', '#87CEEB'],
+        gradientDirection: 135
+      }
+    ]
+  },
+  {
+    id: 'cloudy',
+    name: '曇り',
+    category: 'emotion',
+    elements: [
+      {
+        type: 'solid',
+        x: 0, y: 0, width: 1, height: 1,
+        rotation: 0, zIndex: 0, opacity: 0.4,
+        solidColor: '#D3D3D3'
+      }
+    ]
+  },
+  {
+    id: 'snowy',
+    name: '雪',
+    category: 'emotion',
+    elements: [
+      {
+        type: 'gradient',
+        x: 0, y: 0, width: 1, height: 1,
+        rotation: 0, zIndex: 0, opacity: 0.5,
+        gradientType: 'linear',
+        gradientColors: ['#F0F8FF', '#E6E6FA'],
+        gradientDirection: 45
+      }
+    ]
+  },
+  
+  // ==========================================
+  // 💫 感情・ムード系背景（漫画ネーム用）
+  // ==========================================
+  {
+    id: 'tension',
+    name: '緊張感',
+    category: 'emotion',
+    elements: [
+      {
+        type: 'gradient',
+        x: 0, y: 0, width: 1, height: 1,
+        rotation: 0, zIndex: 0, opacity: 0.4,
+        gradientType: 'linear',
+        gradientColors: ['#FFB6C1', '#FF69B4'],
+        gradientDirection: 45
+      }
+    ]
+  },
+  {
+    id: 'anxiety',
+    name: '不安',
+    category: 'emotion',
+    elements: [
+      {
+        type: 'gradient',
+        x: 0, y: 0, width: 1, height: 1,
+        rotation: 0, zIndex: 0, opacity: 0.5,
+        gradientType: 'radial',
+        gradientColors: ['#DDA0DD', '#DA70D6']
+      }
+    ]
+  },
+  {
+    id: 'excitement',
+    name: '興奮',
+    category: 'emotion',
+    elements: [
+      {
+        type: 'gradient',
+        x: 0, y: 0, width: 1, height: 1,
+        rotation: 0, zIndex: 0, opacity: 0.4,
+        gradientType: 'linear',
+        gradientColors: ['#FFD700', '#FFA500'],
+        gradientDirection: 90
+      }
+    ]
+  },
+  {
+    id: 'romantic',
+    name: 'ロマンチック',
+    category: 'emotion',
+    elements: [
+      {
+        type: 'gradient',
+        x: 0, y: 0, width: 1, height: 1,
+        rotation: 0, zIndex: 0, opacity: 0.3,
+        gradientType: 'radial',
+        gradientColors: ['#FFB6C1', '#FFC0CB']
+      }
+    ]
+  },
+  {
+    id: 'nostalgic',
+    name: 'ノスタルジック',
+    category: 'emotion',
+    elements: [
+      {
+        type: 'gradient',
+        x: 0, y: 0, width: 1, height: 1,
+        rotation: 0, zIndex: 0, opacity: 0.4,
+        gradientType: 'linear',
+        gradientColors: ['#F5DEB3', '#DEB887'],
+        gradientDirection: 135
+      }
+    ]
+  },
+  
+  // ==========================================
+  // ✨ 特殊効果系背景（漫画ネーム用）
+  // ==========================================
+  {
+    id: 'flash',
+    name: 'フラッシュ',
+    category: 'abstract',
+    elements: [
+      {
+        type: 'gradient',
+        x: 0, y: 0, width: 1, height: 1,
+        rotation: 0, zIndex: 0, opacity: 0.7,
+        gradientType: 'radial',
+        gradientColors: ['#FFFFFF', '#FFFF00']
+      }
+    ]
+  },
+  {
+    id: 'explosion',
+    name: '爆発',
+    category: 'abstract',
+    elements: [
+      {
+        type: 'gradient',
+        x: 0, y: 0, width: 1, height: 1,
+        rotation: 0, zIndex: 0, opacity: 0.6,
+        gradientType: 'radial',
+        gradientColors: ['#FF4500', '#FF6347']
+      }
+    ]
+  },
+  {
+    id: 'magic',
+    name: '魔法',
+    category: 'abstract',
+    elements: [
+      {
+        type: 'gradient',
+        x: 0, y: 0, width: 1, height: 1,
+        rotation: 0, zIndex: 0, opacity: 0.5,
+        gradientType: 'linear',
+        gradientColors: ['#9370DB', '#8A2BE2'],
+        gradientDirection: 45
+      }
+    ]
+  },
+  {
+    id: 'memory',
+    name: '回想',
+    category: 'emotion',
+    elements: [
+      {
+        type: 'gradient',
+        x: 0, y: 0, width: 1, height: 1,
+        rotation: 0, zIndex: 0, opacity: 0.6,
+        gradientType: 'linear',
+        gradientColors: ['#D3D3D3', '#A9A9A9'],
+        gradientDirection: 90
+      }
+    ]
+  },
+  {
+    id: 'dream',
+    name: '夢',
+    category: 'emotion',
+    elements: [
+      {
+        type: 'gradient',
+        x: 0, y: 0, width: 1, height: 1,
+        rotation: 0, zIndex: 0, opacity: 0.5,
+        gradientType: 'radial',
+        gradientColors: ['#E6E6FA', '#DDA0DD']
+      }
+    ]
+  },
+  
+  // ==========================================
+  // 🚗 交通機関系背景（漫画ネーム用）
+  // ==========================================
+  {
+    id: 'train',
+    name: '電車',
+    category: 'city',
+    elements: [
+      {
+        type: 'gradient',
+        x: 0, y: 0, width: 1, height: 1,
+        rotation: 0, zIndex: 0, opacity: 0.4,
+        gradientType: 'linear',
+        gradientColors: ['#F5F5F5', '#DCDCDC'],
+        gradientDirection: 0
+      }
+    ]
+  },
+  {
+    id: 'car',
+    name: '車',
+    category: 'city',
+    elements: [
+      {
+        type: 'gradient',
+        x: 0, y: 0, width: 1, height: 1,
+        rotation: 0, zIndex: 0, opacity: 0.3,
+        gradientType: 'linear',
+        gradientColors: ['#E0E0E0', '#C0C0C0'],
+        gradientDirection: 90
+      }
+    ]
+  },
+  {
+    id: 'bus',
+    name: 'バス',
+    category: 'city',
+    elements: [
+      {
+        type: 'solid',
+        x: 0, y: 0, width: 1, height: 1,
+        rotation: 0, zIndex: 0, opacity: 0.4,
+        solidColor: '#F8F8FF'
+      }
+    ]
   }
 ];
 

@@ -297,6 +297,12 @@ export interface BackgroundElement {
   imageMode?: 'fit' | 'fill' | 'stretch' | 'tile';
   imageBrightness?: number;
   imageContrast?: number;
+  
+  // 背景プリセット名（統合テンプレート用）
+  preset?: string;
+  
+  // 背景テンプレート名（ユーザーフレンドリーな表示用）
+  templateName?: string;
 }
 
 // 背景テンプレート定義

@@ -227,6 +227,26 @@ class PromptService {
       hasCharacterAssignments: !!characterAssignments
     });
 
+    // 🔍 統合テンプレートで生成されたキャラクターの設定値を詳細確認
+    project.characters.forEach((char, index) => {
+      console.log(`🔍 キャラクター${index + 1}詳細設定:`, {
+        id: char.id,
+        name: char.name,
+        panelId: char.panelId,
+        expression: char.expression,
+        action: char.action,
+        facing: char.facing,
+        eyeState: (char as any).eyeState,
+        mouthState: (char as any).mouthState,
+        handGesture: (char as any).handGesture,
+        emotion_primary: (char as any).emotion_primary,
+        physical_state: (char as any).physical_state,
+        // 🔍 追加デバッグ情報
+        allProperties: Object.keys(char),
+        rawCharacter: char
+      });
+    });
+
     const characters = this.extractCharacterPrompts(project);
     const scenes = this.extractScenePrompts(project, characters, characterAssignments);
     const storyFlow = this.generateStoryFlow(project);
@@ -246,18 +266,27 @@ class PromptService {
   }
 
   private extractCharacterPrompts(project: Project): CharacterPrompt[] {
-    const characterMap = new Map<string, Character>();
+    // 🔧 修正: 統合テンプレートで生成されたキャラクターも個別に処理
+    console.log('🎭 プロンプト生成対象キャラクター (8カテゴリ対応):', project.characters.length, '体');
+    console.log('🔍 extractCharacterPrompts関数開始:', {
+      charactersCount: project.characters.length,
+      characters: project.characters.map(c => ({ id: c.id, name: c.name, panelId: c.panelId }))
+    });
     
-    project.characters.forEach(char => {
-      const key = char.characterId || char.id;
-      if (!characterMap.has(key)) {
-        characterMap.set(key, char);
-      }
+    // 🔍 キャラクター詳細確認
+    project.characters.forEach((char, index) => {
+      console.log(`🔍 キャラクター${index + 1}処理開始:`, {
+        id: char.id,
+        characterId: char.characterId,
+        name: char.name,
+        panelId: char.panelId,
+        expression: char.expression,
+        action: char.action,
+        facing: char.facing
+      });
     });
 
-    console.log('🎭 プロンプト生成対象キャラクター (8カテゴリ対応):', characterMap.size, '体');
-
-    return Array.from(characterMap.values()).map(char => {
+    return project.characters.map(char => {
       const characterType = char.type || char.characterId || char.id;
       const settingsData = project.characterSettings?.[characterType] as any;
       

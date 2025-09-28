@@ -187,6 +187,7 @@ export class CharacterRenderer {
     // 🔧 動的名前取得
     const displayName = getCharacterDisplayName ? getCharacterDisplayName(character) : character.name;
     
+    
     // フォント設定（太字で視認性向上）
     ctx.font = `bold ${fontSize}px 'Hiragino Sans', 'Yu Gothic', 'Meiryo', sans-serif`;
     ctx.textAlign = 'center';

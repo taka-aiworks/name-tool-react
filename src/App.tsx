@@ -1032,6 +1032,9 @@ function App() {
               tones={tones}
               setTones={setTones}
               isDarkMode={isDarkMode}
+              onCreateCharacter={() => setShowCharacterPanel(true)}
+              selectedCharacter={selectedCharacter}
+              setSelectedCharacter={setSelectedCharacter}
             />
           </div>
         </div>

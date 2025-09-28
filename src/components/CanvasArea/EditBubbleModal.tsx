@@ -20,6 +20,9 @@ const EditBubbleModal: React.FC<EditBubbleModalProps> = ({
   if (!editingBubble) return null;
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    // 編集モーダル内でのキーイベントをグローバルに伝播させない
+    e.stopPropagation();
+    
     if (e.key === "Enter" && e.ctrlKey) {
       // Ctrl+Enterで完了
       e.preventDefault();
@@ -28,6 +31,7 @@ const EditBubbleModal: React.FC<EditBubbleModalProps> = ({
       e.preventDefault();
       onCancel();
     }
+    // バックスペースキーは通常のテキスト編集として処理（何もしない）
   };
 
   return (
@@ -45,6 +49,8 @@ const EditBubbleModal: React.FC<EditBubbleModalProps> = ({
         zIndex: 1000,
         minWidth: "300px",
       }}
+      onClick={(e) => e.stopPropagation()}
+      onKeyDown={(e) => e.stopPropagation()}
     >
       <div style={{ marginBottom: "15px", fontWeight: "bold", fontSize: "16px" }}>
         💬 セリフ編集

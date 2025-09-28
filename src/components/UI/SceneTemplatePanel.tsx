@@ -17,6 +17,9 @@ interface SceneTemplatePanelProps {
   tones: ToneElement[];
   setTones: (tones: ToneElement[]) => void;
   isDarkMode?: boolean;
+  onCreateCharacter?: () => void;
+  selectedCharacter: Character | null;
+  setSelectedCharacter: (character: Character | null) => void;
 }
 
 export const SceneTemplatePanel: React.FC<SceneTemplatePanelProps> = ({
@@ -33,6 +36,9 @@ export const SceneTemplatePanel: React.FC<SceneTemplatePanelProps> = ({
   tones,
   setTones,
   isDarkMode = true,
+  onCreateCharacter,
+  selectedCharacter,
+  setSelectedCharacter,
 }) => {
   // 修正後
   const [selectedCategory, setSelectedCategory] = useState<'emotion' | 'action' | 'basic'>('emotion');
@@ -42,12 +48,29 @@ export const SceneTemplatePanel: React.FC<SceneTemplatePanelProps> = ({
 
   // カテゴリ別テンプレート取得
   const currentTemplates = getTemplatesByCategory(selectedCategory);
+  
+  // デバッグ: キャラクター情報を確認
+  console.log('🔍 SceneTemplatePanel - キャラクター情報:', {
+    charactersCount: characters.length,
+    characters: characters.map(char => ({ id: char.id, name: char.name, characterId: char.characterId }))
+  });
 
-  // 統合シーンテンプレート適用
-  // handleApplyTemplate関数の修正版
-  const handleApplyTemplate = useCallback((templateKey: string) => {
+  // キャラクター情報を直接受け取るテンプレート適用関数
+  const handleApplyTemplateWithCharacter = useCallback((templateKey: string, character: any) => {
+    console.log('🔍 handleApplyTemplateWithCharacter called:', {
+      templateKey,
+      character: character ? character.name : 'null',
+      selectedPanel: selectedPanel ? selectedPanel.id : 'null'
+    });
+
     if (!panels || panels.length === 0) {
       alert('❌ パネルテンプレートを先に選択してください');
+      return;
+    }
+
+    if (!character) {
+      console.log('❌ character is null:', character);
+      alert('❌ キャラクターを先に選択してください');
       return;
     }
 
@@ -96,8 +119,135 @@ export const SceneTemplatePanel: React.FC<SceneTemplatePanelProps> = ({
 
     console.log(`🎭 テンプレート適用: ${template.name} → パネル${targetPanel.id}`);
     console.log(`📊 選択状態: selectedPanel=${selectedPanel?.id || 'null'}, targetPanel=${targetPanel.id}`);
+    console.log(`👤 選択されたキャラクター: ${character.name} (ID: ${character.id})`);
 
-    // 統合テンプレート適用
+    // 🔧 既存のパネル内要素をクリア（統合テンプレート適用前に）
+    if (!targetPanel) {
+      console.error('❌ targetPanel is null');
+      return;
+    }
+    
+    // TypeScriptの型ガード: targetPanelが確実にnullでないことを保証
+    const panelId = targetPanel.id;
+    
+    const filteredCharacters = characters.filter(char => char.panelId !== panelId);
+    const filteredBubbles = speechBubbles.filter(bubble => bubble.panelId !== panelId);
+    const filteredBackgrounds = backgrounds.filter(bg => bg.panelId !== panelId);
+    const filteredEffects = effects.filter(effect => effect.panelId !== panelId);
+    const filteredTones = tones.filter(tone => tone.panelId !== panelId);
+    
+    console.log(`🧹 パネル${panelId}の既存要素をクリア:`, {
+      characters: characters.length - filteredCharacters.length,
+      bubbles: speechBubbles.length - filteredBubbles.length,
+      backgrounds: backgrounds.length - filteredBackgrounds.length,
+      effects: effects.length - filteredEffects.length,
+      tones: tones.length - filteredTones.length
+    });
+
+
+    // 統合テンプレート適用（選択されたキャラクター情報を渡す）
+    const result = applyEnhancedSceneTemplate(
+      templateKey,
+      panels,
+      filteredCharacters,  // 🔧 クリア済みのキャラクター配列を使用
+      filteredBubbles,    // 🔧 クリア済みの吹き出し配列を使用
+      filteredBackgrounds, // 🔧 クリア済みの背景配列を使用
+      filteredEffects,    // 🔧 クリア済みの効果配列を使用
+      filteredTones,      // 🔧 クリア済みのトーン配列を使用
+      targetPanel,  // 🔧 確実に取得したパネルを使用
+      character  // 🔧 選択されたキャラクター情報を渡す
+    );
+
+
+    // 状態更新
+    setCharacters(result.characters);
+    setSpeechBubbles(result.speechBubbles);
+    setBackgrounds(result.backgrounds);
+    setEffects(result.effects);
+    setTones(result.tones);
+
+    setSelectedTemplate(templateKey);
+    
+    // 成功メッセージ
+    console.log(`🎭 「${template.name}」をパネル${targetPanel.id}に適用しました`);
+    
+    // トースト通知（実装されている場合）
+    if (typeof window !== 'undefined' && (window as any).showToast) {
+      (window as any).showToast(`🎭 「${template.name}」をパネル${targetPanel.id}に適用`, 'success');
+    }
+    
+    // 適用後に対象パネルを選択状態にする
+    // この部分は親コンポーネントのonPanelSelectがあれば使用
+  }, [panels, characters, speechBubbles, backgrounds, effects, tones, selectedPanel, setCharacters, setSpeechBubbles, setBackgrounds, setEffects, setTones, setSelectedTemplate]);
+
+  // 統合シーンテンプレート適用
+  // handleApplyTemplate関数の修正版
+  const handleApplyTemplate = useCallback((templateKey: string) => {
+    console.log('🔍 handleApplyTemplate called:', {
+      templateKey,
+      selectedCharacter: selectedCharacter ? selectedCharacter.name : 'null',
+      selectedPanel: selectedPanel ? selectedPanel.id : 'null'
+    });
+
+    if (!panels || panels.length === 0) {
+      alert('❌ パネルテンプレートを先に選択してください');
+      return;
+    }
+
+    if (!selectedCharacter) {
+      console.log('❌ selectedCharacter is null:', selectedCharacter);
+      alert('❌ キャラクターを先に選択してください');
+      return;
+    }
+
+    const template = getAllSceneTemplates()[templateKey];
+    if (!template) {
+      alert('❌ テンプレートが見つかりません');
+      return;
+    }
+
+    // 🔧 選択されたパネルを強制的に確認・取得
+    let targetPanel = selectedPanel;
+    
+    // selectedPanelがnullの場合の対策
+    if (!targetPanel) {
+      // 最後にクリックされたパネルを探す（パネルの選択状態を確認）
+      const lastSelectedPanel = panels.find(panel => {
+        // パネルが何らかの形で選択状態を保持している場合
+        return (panel as any).isSelected || (panel as any).selected;
+      });
+      
+      if (lastSelectedPanel) {
+        targetPanel = lastSelectedPanel;
+        console.log(`🔧 選択状態から対象パネルを復元: パネル${targetPanel.id}`);
+      } else {
+        // それでもない場合は確認ダイアログ
+        const panelId = prompt(
+          `どのパネルに配置しますか？\n利用可能なパネル: ${panels.map(p => p.id).join(', ')}`,
+          panels[0].id.toString()
+        );
+        
+        if (panelId) {
+          const specifiedPanel = panels.find(p => p.id.toString() === panelId);
+          if (specifiedPanel) {
+            targetPanel = specifiedPanel;
+            console.log(`🔧 ユーザー指定でパネル${targetPanel.id}に配置`);
+          }
+        }
+        
+        // それでもない場合は最初のパネル
+        if (!targetPanel) {
+          targetPanel = panels[0];
+          console.log(`⚠️ 最初のパネル${targetPanel.id}にフォールバック`);
+        }
+      }
+    }
+
+    console.log(`🎭 テンプレート適用: ${template.name} → パネル${targetPanel.id}`);
+    console.log(`📊 選択状態: selectedPanel=${selectedPanel?.id || 'null'}, targetPanel=${targetPanel.id}`);
+    console.log(`👤 選択されたキャラクター: ${selectedCharacter.name} (ID: ${selectedCharacter.id})`);
+
+    // 統合テンプレート適用（選択されたキャラクター情報を渡す）
     const result = applyEnhancedSceneTemplate(
       templateKey,
       panels,
@@ -106,7 +256,8 @@ export const SceneTemplatePanel: React.FC<SceneTemplatePanelProps> = ({
       backgrounds,
       effects,
       tones,
-      targetPanel  // 🔧 確実に取得したパネルを使用
+      targetPanel,  // 🔧 確実に取得したパネルを使用
+      selectedCharacter  // 🔧 選択されたキャラクター情報を渡す
     );
 
     // 状態更新
@@ -158,6 +309,195 @@ export const SceneTemplatePanel: React.FC<SceneTemplatePanelProps> = ({
           lineHeight: '1.4'
         }}>
           キャラ + 背景 + 効果線 + トーンを一括配置
+        </div>
+      </div>
+
+      {/* キャラクター選択 */}
+      <div className="character-selection" style={{
+        marginBottom: '12px',
+        padding: '8px',
+        background: isDarkMode ? '#2a2a2a' : '#f5f5f5',
+        borderRadius: '8px',
+        border: `1px solid ${isDarkMode ? '#444' : '#ddd'}`
+      }}>
+        <div style={{
+          fontSize: '12px',
+          fontWeight: 'bold',
+          marginBottom: '8px',
+          color: isDarkMode ? '#fff' : '#333'
+        }}>
+          👤 キャラクター選択
+        </div>
+        
+        <div style={{
+          display: 'flex',
+          gap: '4px',
+          flexWrap: 'wrap'
+        }}>
+          <button
+            onClick={() => {
+              if (!selectedPanel) {
+                alert('パネルを選択してください');
+                return;
+              }
+              // 主人公キャラクターを作成
+              const protagonistChar = {
+                id: `char_${Date.now()}_protagonist`,
+                characterId: 'protagonist',
+                name: '主人公',
+                x: 0,
+                y: 0,
+                panelId: 0,
+                isGlobalPosition: true,
+                scale: 2.0,
+                type: 'character_1',  // 🔧 修正: character → character_1
+                expression: 'neutral',
+                action: 'standing',
+                facing: 'at_viewer',
+                eyeState: 'normal',
+                mouthState: 'closed',
+                handGesture: 'none',
+                viewType: 'upper_body' as const
+              };
+              setSelectedCharacter(protagonistChar);
+              console.log('👤 主人公選択:', protagonistChar);
+            }}
+            style={{
+              padding: '4px 8px',
+              fontSize: '10px',
+              borderRadius: '4px',
+              border: 'none',
+              cursor: 'pointer',
+              background: selectedCharacter?.characterId === 'protagonist' ? (isDarkMode ? '#4ecdc4' : '#45b7d1') : (isDarkMode ? '#333' : '#f0f0f0'),
+              color: selectedCharacter?.characterId === 'protagonist' ? '#fff' : (isDarkMode ? '#fff' : '#333'),
+              transition: 'all 0.2s ease'
+            }}
+          >
+            👤 主人公
+          </button>
+          <button
+            onClick={() => {
+              if (!selectedPanel) {
+                alert('パネルを選択してください');
+                return;
+              }
+              // ヒロインキャラクターを作成または選択
+              const heroineChar = characters.find(char => char.characterId === 'heroine') || {
+                id: `char_${Date.now()}_heroine`,
+                characterId: 'heroine',
+                name: 'ヒロイン',
+                x: 0,
+                y: 0,
+                panelId: 0,
+                isGlobalPosition: true,
+                scale: 2.0,
+                type: 'character_2',  // 🔧 修正: character → character_2
+                expression: 'neutral',
+                action: 'standing',
+                facing: 'at_viewer',
+                eyeState: 'normal',
+                mouthState: 'closed',
+                handGesture: 'none',
+                viewType: 'upper_body' as const
+              };
+              setSelectedCharacter(heroineChar);
+              console.log('👩 ヒロイン選択:', heroineChar);
+            }}
+            style={{
+              padding: '4px 8px',
+              fontSize: '10px',
+              borderRadius: '4px',
+              border: 'none',
+              cursor: 'pointer',
+              background: selectedCharacter?.characterId === 'heroine' ? (isDarkMode ? '#4ecdc4' : '#45b7d1') : (isDarkMode ? '#333' : '#f0f0f0'),
+              color: selectedCharacter?.characterId === 'heroine' ? '#fff' : (isDarkMode ? '#fff' : '#333'),
+              transition: 'all 0.2s ease'
+            }}
+          >
+            👩 ヒロイン
+          </button>
+          <button
+            onClick={() => {
+              if (!selectedPanel) {
+                alert('パネルを選択してください');
+                return;
+              }
+              // ライバルキャラクターを作成または選択
+              const rivalChar = characters.find(char => char.characterId === 'rival') || {
+                id: `char_${Date.now()}_rival`,
+                characterId: 'rival',
+                name: 'ライバル',
+                x: 0,
+                y: 0,
+                panelId: 0,
+                isGlobalPosition: true,
+                scale: 2.0,
+                type: 'character_3',  // 🔧 修正: character → character_3
+                expression: 'neutral',
+                action: 'standing',
+                facing: 'at_viewer',
+                eyeState: 'normal',
+                mouthState: 'closed',
+                handGesture: 'none',
+                viewType: 'upper_body' as const
+              };
+              setSelectedCharacter(rivalChar);
+              console.log('👨 ライバル選択:', rivalChar);
+            }}
+            style={{
+              padding: '4px 8px',
+              fontSize: '10px',
+              borderRadius: '4px',
+              border: 'none',
+              cursor: 'pointer',
+              background: selectedCharacter?.characterId === 'rival' ? (isDarkMode ? '#4ecdc4' : '#45b7d1') : (isDarkMode ? '#333' : '#f0f0f0'),
+              color: selectedCharacter?.characterId === 'rival' ? '#fff' : (isDarkMode ? '#fff' : '#333'),
+              transition: 'all 0.2s ease'
+            }}
+          >
+            👨 ライバル
+          </button>
+          <button
+            onClick={() => {
+              if (!selectedPanel) {
+                alert('パネルを選択してください');
+                return;
+              }
+              // 友人キャラクターを作成または選択
+              const friendChar = characters.find(char => char.characterId === 'friend') || {
+                id: `char_${Date.now()}_friend`,
+                characterId: 'friend',
+                name: '友人',
+                x: 0,
+                y: 0,
+                panelId: 0,
+                isGlobalPosition: true,
+                scale: 2.0,
+                type: 'character_4',  // 🔧 修正: character_3 → character_4
+                expression: 'neutral',
+                action: 'standing',
+                facing: 'at_viewer',
+                eyeState: 'normal',
+                mouthState: 'closed',
+                handGesture: 'none',
+                viewType: 'upper_body' as const
+              };
+              setSelectedCharacter(friendChar);
+              console.log('👫 友人選択:', friendChar);
+            }}
+            style={{
+              padding: '4px 8px',
+              fontSize: '10px',
+              borderRadius: '4px',
+              border: 'none',
+              cursor: 'pointer',
+              background: selectedCharacter?.characterId === 'friend' ? (isDarkMode ? '#4ecdc4' : '#45b7d1') : (isDarkMode ? '#333' : '#f0f0f0'),
+              color: selectedCharacter?.characterId === 'friend' ? '#fff' : (isDarkMode ? '#fff' : '#333'),
+              transition: 'all 0.2s ease'
+            }}
+          >
+            👫 友人
+          </button>
         </div>
       </div>
 
@@ -237,7 +577,13 @@ export const SceneTemplatePanel: React.FC<SceneTemplatePanelProps> = ({
               transition: 'all 0.2s ease',
               position: 'relative'
             }}
-            onClick={() => handleApplyTemplate(key)}
+            onClick={() => {
+              if (!selectedCharacter) {
+                alert('キャラクターを先に選択してください');
+                return;
+              }
+              handleApplyTemplateWithCharacter(key, selectedCharacter);
+            }}
             // プレビューを一時的に無効化してチカチカを防ぐ
             // onMouseEnter={() => handlePreview(key)}
             // onMouseLeave={() => setShowPreview(false)}
