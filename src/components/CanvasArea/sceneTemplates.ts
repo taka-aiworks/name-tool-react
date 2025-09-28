@@ -17,7 +17,7 @@ import { backgroundTemplates } from "./backgroundTemplates";
 export interface EnhancedSceneTemplate {
   name: string;
   description: string;
-  category: 'basic' | 'emotion' | 'action' | 'daily' | 'special';
+  category: 'emotion' | 'action' | 'daily' | 'special';
   characters: Omit<Character, "id" | "panelId">[];
   speechBubbles: Omit<SpeechBubble, "id" | "panelId">[];
   background?: Omit<BackgroundElement, "id" | "panelId">; // 単数形（統合テンプレート用）
@@ -126,6 +126,182 @@ export const createEmotionScenes = (): Record<string, EnhancedSceneTemplate> => 
           overrides: { width: 85, height: 65 }
         }],
         background: { preset: 'anxiety' }
+      }
+    ),
+
+    // 😍 恋愛・愛情シーン
+    love_basic: createFactoryScene(
+      "😍 恋愛・愛情",
+      "キャラクターの恋愛感情表現",
+      'emotion',
+      {
+        characters: [{ 
+          preset: 'happy',
+          overrides: { expression: 'love_expression', eyeState: 'heart_eyes' }
+        }],
+        bubbles: [{ 
+          preset: 'thought', 
+          text: '好き...',
+          overrides: { width: 80, height: 60 }
+        }],
+        background: { preset: 'happy' },
+        effects: [{ preset: 'flash' }]
+      }
+    ),
+
+    // 😤 悔しさ・不満シーン
+    frustrated_basic: createFactoryScene(
+      "😤 悔しさ・不満",
+      "キャラクターの悔しい感情表現",
+      'emotion',
+      {
+        characters: [{ 
+          preset: 'angry',
+          overrides: { expression: 'frustrated', action: 'arms_crossed' }
+        }],
+        bubbles: [{ 
+          preset: 'shout', 
+          text: 'くそー！',
+          overrides: { width: 90, height: 70 }
+        }],
+        background: { preset: 'angry' }
+      }
+    ),
+
+    // 😅 照れ・恥ずかしさシーン
+    embarrassed_basic: createFactoryScene(
+      "😅 照れ・恥ずかしさ",
+      "キャラクターの照れている表現",
+      'emotion',
+      {
+        characters: [{ 
+          preset: 'happy',
+          overrides: { expression: 'embarrassed_face', facing: 'away' }
+        }],
+        bubbles: [{ 
+          preset: 'thought', 
+          text: '恥ずかしい...',
+          overrides: { width: 85, height: 65 }
+        }],
+        background: { preset: 'happy' }
+      }
+    ),
+
+    // 😭 号泣・大泣きシーン
+    crying_basic: createFactoryScene(
+      "😭 号泣・大泣き",
+      "キャラクターの激しい悲しみ表現",
+      'emotion',
+      {
+        characters: [{ 
+          preset: 'sad',
+          overrides: { expression: 'crying', eyeState: 'teary_eyes' }
+        }],
+        bubbles: [{ 
+          preset: 'shout', 
+          text: 'うわーん！',
+          overrides: { width: 100, height: 80 }
+        }],
+        background: { preset: 'sad' },
+        effects: [{ preset: 'flash' }]
+      }
+    ),
+
+    // 🤩 興奮・テンションシーン
+    excited_basic: createFactoryScene(
+      "🤩 興奮・テンション",
+      "キャラクターの興奮状態表現",
+      'emotion',
+      {
+        characters: [{ 
+          preset: 'happy',
+          overrides: { expression: 'excited', action: 'jumping' }
+        }],
+        bubbles: [{ 
+          preset: 'shout', 
+          text: 'やったー！',
+          overrides: { width: 95, height: 75 }
+        }],
+        background: { preset: 'happy' },
+        effects: [{ preset: 'flash' }]
+      }
+    ),
+
+    // 😵 困惑・混乱シーン
+    confused_basic: createFactoryScene(
+      "😵 困惑・混乱",
+      "キャラクターの困惑している表現",
+      'emotion',
+      {
+        characters: [{ 
+          preset: 'surprised',
+          overrides: { expression: 'confused', facing: 'to_side' }
+        }],
+        bubbles: [{ 
+          preset: 'thought', 
+          text: 'え？何？',
+          overrides: { width: 80, height: 60 }
+        }],
+        background: { preset: 'neutral' },
+        effects: [{ preset: 'focus' }]
+      }
+    ),
+
+    // 😌 安堵・ほっとシーン
+    relieved_basic: createFactoryScene(
+      "😌 安堵・ほっと",
+      "キャラクターの安堵している表現",
+      'emotion',
+      {
+        characters: [{ 
+          preset: 'happy',
+          overrides: { expression: 'relieved', action: 'sitting' }
+        }],
+        bubbles: [{ 
+          preset: 'normal', 
+          text: 'よかった...',
+          overrides: { width: 85, height: 65 }
+        }],
+        background: { preset: 'happy' }
+      }
+    ),
+
+    // 😨 恐怖・怯えシーン
+    scared_basic: createFactoryScene(
+      "😨 恐怖・怯え",
+      "キャラクターの怖がっている表現",
+      'emotion',
+      {
+        characters: [{ 
+          preset: 'surprised',
+          overrides: { expression: 'scared', action: 'cowering' }
+        }],
+        bubbles: [{ 
+          preset: 'shout', 
+          text: 'きゃー！',
+          overrides: { width: 90, height: 70 }
+        }],
+        background: { preset: 'angry' },
+        effects: [{ preset: 'explosion' }]
+      }
+    ),
+
+    // 😏 ニヤリ・自信シーン
+    confident_basic: createFactoryScene(
+      "😏 ニヤリ・自信",
+      "キャラクターの自信に満ちた表現",
+      'emotion',
+      {
+        characters: [{ 
+          preset: 'happy',
+          overrides: { expression: 'confident', action: 'hands_on_hips' }
+        }],
+        bubbles: [{ 
+          preset: 'normal', 
+          text: '当然だ',
+          overrides: { width: 80, height: 60 }
+        }],
+        background: { preset: 'happy' }
       }
     )
   };

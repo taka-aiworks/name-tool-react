@@ -41,7 +41,7 @@ export const SceneTemplatePanel: React.FC<SceneTemplatePanelProps> = ({
   setSelectedCharacter,
 }) => {
   // 修正後
-  const [selectedCategory, setSelectedCategory] = useState<'emotion' | 'action' | 'basic'>('emotion');
+  const [selectedCategory, setSelectedCategory] = useState<'emotion' | 'action' | 'daily' | 'special'>('emotion');
   const [selectedTemplate, setSelectedTemplate] = useState<string>('');
   // プレビュー機能を一時的に無効化
   // const [showPreview, setShowPreview] = useState<boolean>(false);
@@ -293,7 +293,8 @@ export const SceneTemplatePanel: React.FC<SceneTemplatePanelProps> = ({
   const categoryInfo = {
     emotion: { icon: '😢', name: '感情', description: '感情表現', color: '#ff6b6b' },
     action: { icon: '💨', name: 'アクション', description: '動きのあるシーン', color: '#4ecdc4' },
-    basic: { icon: '💬', name: '基本', description: '基本的なシーン', color: '#45b7d1' } // ← daily → basic
+    daily: { icon: '💬', name: '日常', description: '日常的なシーン', color: '#45b7d1' },
+    special: { icon: '✨', name: '特別', description: '特別なシーン', color: '#9b59b6' }
   };
 
   const currentCategory = categoryInfo[selectedCategory];
@@ -514,7 +515,7 @@ export const SceneTemplatePanel: React.FC<SceneTemplatePanelProps> = ({
           <button
             key={key}
             className={`category-tab ${selectedCategory === key ? 'active' : ''}`}
-            onClick={() => setSelectedCategory(key as 'emotion' | 'action' | 'basic')}
+            onClick={() => setSelectedCategory(key as 'emotion' | 'action' | 'daily' | 'special')}
             style={{
               flex: 1,
               padding: '8px 4px',
