@@ -45,41 +45,41 @@ export const templates: Templates = {
   // === 3コマテンプレート ===
   "three_vertical": {
     panels: [
-      { id: 1, x: 20, y: 20, width: 760, height: 180 },
-      { id: 2, x: 20, y: 210, width: 760, height: 180 },
-      { id: 3, x: 20, y: 400, width: 760, height: 180 },
+      { id: 1, x: 20, y: 20, width: 760, height: 150 },
+      { id: 2, x: 20, y: 190, width: 760, height: 150 },
+      { id: 3, x: 20, y: 360, width: 760, height: 150 },
     ],
   },
   "t_shape": {
     panels: [
-      { id: 1, x: 20, y: 20, width: 760, height: 180 },
-      { id: 2, x: 20, y: 210, width: 370, height: 370 },
-      { id: 3, x: 410, y: 210, width: 370, height: 370 },
+      { id: 1, x: 20, y: 20, width: 760, height: 150 },
+      { id: 2, x: 20, y: 190, width: 370, height: 300 },
+      { id: 3, x: 410, y: 190, width: 370, height: 300 },
     ],
   },
   "reverse_t": {
     panels: [
-      { id: 1, x: 20, y: 20, width: 370, height: 370 },
-      { id: 2, x: 410, y: 20, width: 370, height: 370 },
-      { id: 3, x: 20, y: 410, width: 760, height: 170 },
+      { id: 1, x: 20, y: 20, width: 370, height: 300 },
+      { id: 2, x: 410, y: 20, width: 370, height: 300 },
+      { id: 3, x: 20, y: 340, width: 760, height: 150 },
     ],
   },
 
   // === 4コマテンプレート ===
   "4koma": {
     panels: [
-      { id: 1, x: 20, y: 20, width: 760, height: 135 },
-      { id: 2, x: 20, y: 165, width: 760, height: 135 },
-      { id: 3, x: 20, y: 310, width: 760, height: 135 },
-      { id: 4, x: 20, y: 455, width: 760, height: 125 },
+      { id: 1, x: 20, y: 20, width: 760, height: 120 },
+      { id: 2, x: 20, y: 150, width: 760, height: 120 },
+      { id: 3, x: 20, y: 280, width: 760, height: 120 },
+      { id: 4, x: 20, y: 410, width: 760, height: 120 },
     ],
   },
   "grid_2x2": {
     panels: [
-      { id: 1, x: 20, y: 20, width: 370, height: 270 },
-      { id: 2, x: 410, y: 20, width: 370, height: 270 },
-      { id: 3, x: 20, y: 310, width: 370, height: 270 },
-      { id: 4, x: 410, y: 310, width: 370, height: 270 },
+      { id: 1, x: 20, y: 20, width: 370, height: 250 },
+      { id: 2, x: 410, y: 20, width: 370, height: 250 },
+      { id: 3, x: 20, y: 290, width: 370, height: 250 },
+      { id: 4, x: 410, y: 290, width: 370, height: 250 },
     ],
   },
   "main_triple": {

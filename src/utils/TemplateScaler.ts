@@ -6,8 +6,8 @@ import { templates } from '../components/CanvasArea/templates';
  * ベーステンプレートのサイズ（固定テンプレートが想定しているサイズ）
  */
 const BASE_CANVAS_SIZE = {
-  width: 600,
-  height: 800
+  width: 800,
+  height: 600
 };
 
 /**

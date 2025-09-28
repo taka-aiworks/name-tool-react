@@ -88,13 +88,54 @@ function App() {
   // 🔧 最適化4: 初回テンプレート適用の最適化（重複削除・シンプル化）
   useEffect(() => {
     console.log('🚀 Initial template application');
-    if (selectedTemplate && templates[selectedTemplate]) {
-      const newPanels = [...templates[selectedTemplate].panels];
-      console.log('📐 Template panels count:', newPanels.length);
-      setPanels(newPanels);
-      console.log('✅ Initial template applied successfully');
+    if (selectedTemplate) {
+      // 比率ベースのテンプレートを適用
+      const { applyRatioTemplate } = require('./utils/RatioTemplateScaler');
+      const scaledPanels = applyRatioTemplate(selectedTemplate, canvasSettings);
+      console.log('📐 Template panels count:', scaledPanels.length);
+      console.log('📐 Scaled panels:', scaledPanels);
+      setPanels(scaledPanels);
+      
+      // キャンバスを再描画
+      if (canvasRef.current) {
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          console.log('🔄 Canvas cleared for initial template');
+        }
+      }
+      
+      console.log('✅ Initial template applied successfully with ratio scaling');
     }
-  }, []); // 空の依存配列で初回のみ実行
+  }, [selectedTemplate, canvasSettings]); // テンプレートとキャンバス設定の両方に依存
+
+  // 🔧 初期キャンバスサイズ設定
+  useEffect(() => {
+    if (canvasRef.current) {
+      const canvas = canvasRef.current;
+      const { pixelWidth, pixelHeight } = canvasSettings.paperSize;
+      
+      canvas.width = pixelWidth;
+      canvas.height = pixelHeight;
+      
+      // 表示スケーリングを適用（テンプレート配置を最適化）
+      const containerWidth = 1000; // 適切なサイズに調整
+      const containerHeight = 700; // 高さを調整
+      const displayScaleX = containerWidth / pixelWidth;
+      const displayScaleY = containerHeight / pixelHeight;
+      const displayScale = Math.min(displayScaleX, displayScaleY, 1);
+      
+      // 最小サイズを保証（適切な値に）
+      const minDisplayScale = 0.7;
+      const finalDisplayScale = Math.max(displayScale, minDisplayScale);
+      
+      canvas.style.width = `${pixelWidth * finalDisplayScale}px`;
+      canvas.style.height = `${pixelHeight * finalDisplayScale}px`;
+      
+      console.log('🖼️ Initial canvas size set:', { width: pixelWidth, height: pixelHeight, displayScale: finalDisplayScale });
+    }
+  }, [canvasSettings]);
 
   // プロジェクト保存hook
   const settings = useMemo(() => ({ 
@@ -418,16 +459,30 @@ function App() {
     setSelectedEffect(null);
     setSelectedTone(null);
     
-    const newPanels = [...templates[template].panels];
-    setPanels(newPanels);
+    // 比率ベースのテンプレートを適用
+    const { applyRatioTemplate } = require('./utils/RatioTemplateScaler');
+    const scaledPanels = applyRatioTemplate(template, canvasSettings);
+    console.log('📐 Scaled panels:', scaledPanels);
+    setPanels(scaledPanels);
     
     setCharacters([]);
     setSpeechBubbles([]);
     setBackgrounds([]);
     setEffects([]);
     setTones([]);
-    console.log('✅ Template applied successfully');
-  }, []);
+    
+    // キャンバスを再描画
+    if (canvasRef.current) {
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        console.log('🔄 Canvas cleared for template change');
+      }
+    }
+    
+    console.log('✅ Template applied successfully with ratio scaling');
+  }, [canvasSettings]);
 
   // ページ管理hook
   const pageManager = usePageManager({
@@ -508,14 +563,18 @@ function App() {
       canvas.width = newWidth;
       canvas.height = newHeight;
       
-      const containerWidth = 1000; 
-      const containerHeight = 800; 
+      const containerWidth = 1000; // 適切なサイズに調整
+      const containerHeight = 700; // 高さを調整
       const displayScaleX = containerWidth / newWidth;
       const displayScaleY = containerHeight / newHeight;
       const displayScale = Math.min(displayScaleX, displayScaleY, 1);
       
-      canvas.style.width = `${newWidth * displayScale}px`;
-      canvas.style.height = `${newHeight * displayScale}px`;
+      // 最小サイズを保証（適切な値に）
+      const minDisplayScale = 0.7;
+      const finalDisplayScale = Math.max(displayScale, minDisplayScale);
+      
+      canvas.style.width = `${newWidth * finalDisplayScale}px`;
+      canvas.style.height = `${newHeight * finalDisplayScale}px`;
       
       console.log('🖼️ Canvas physical size updated');
       

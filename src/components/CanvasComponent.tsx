@@ -751,20 +751,22 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, ExtendedCanvasComponentPro
     onCharacterSelect,
   });
 
-  // テンプレート変更時の処理
+  // テンプレート変更時の処理（App.tsxで処理されるため、ここでは選択状態のみリセット）
   useEffect(() => {
-    if (templates[selectedTemplate]) {
-      setPanels([...templates[selectedTemplate].panels]);
+    if (selectedTemplate) {
+      console.log('📐 CanvasComponent: Template changed to:', selectedTemplate);
+      
+      // 選択状態をリセット
       actions.setSelectedPanel(null);
       actions.setSelectedCharacter(null);
       actions.setSelectedBubble(null);
       setSelectedBackground(null);
       setSelectedEffect(null);
-      handleToneSelect(null); // トーン選択解除
+      handleToneSelect(null);
       if (onPanelSelect) onPanelSelect(null);
       if (onCharacterSelect) onCharacterSelect(null);
     }
-  }, [selectedTemplate, setPanels]);
+  }, [selectedTemplate]);
 
   // ContextMenu外クリック処理
   useEffect(() => {
@@ -779,12 +781,12 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, ExtendedCanvasComponentPro
   }, [contextMenu.visible]);
 
   return (
-    <div style={{ position: "relative", display: "flex", justifyContent: "center", alignItems: "flex-start", minHeight: "100vh", padding: "0px" }}>
+    <div style={{ position: "relative", display: "flex", justifyContent: "center", alignItems: "flex-start", padding: "0px", maxHeight: "calc(100vh - 200px)" }}>
       {/* Canvas要素 */}
       <canvas
         ref={canvasRef}
-        width={600}
-        height={800}
+        width={800}
+        height={600}
         onClick={mouseEventHandlers.handleCanvasClick}
         onContextMenu={mouseEventHandlers.handleCanvasContextMenu}
         onDoubleClick={mouseEventHandlers.handleCanvasDoubleClick}
