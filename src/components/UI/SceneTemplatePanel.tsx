@@ -360,10 +360,9 @@ export const SceneTemplatePanel: React.FC<SceneTemplatePanelProps> = ({
                 handGesture: 'none',
                 viewType: 'upper_body' as const
               };
-              // 🔧 実際にキャンバスに追加
-              setCharacters([...characters, protagonistChar]);
+              // 🔧 キャラクター選択のみ（描画はしない）
               setSelectedCharacter(protagonistChar);
-              console.log('👤 主人公追加:', protagonistChar);
+              console.log('👤 主人公選択:', protagonistChar);
             }}
             style={{
               padding: '4px 8px',
@@ -403,10 +402,9 @@ export const SceneTemplatePanel: React.FC<SceneTemplatePanelProps> = ({
                 handGesture: 'none',
                 viewType: 'upper_body' as const
               };
-              // 🔧 実際にキャンバスに追加
-              setCharacters([...characters, heroineChar]);
+              // 🔧 キャラクター選択のみ（描画はしない）
               setSelectedCharacter(heroineChar);
-              console.log('👩 ヒロイン追加:', heroineChar);
+              console.log('👩 ヒロイン選択:', heroineChar);
             }}
             style={{
               padding: '4px 8px',
@@ -446,10 +444,9 @@ export const SceneTemplatePanel: React.FC<SceneTemplatePanelProps> = ({
                 handGesture: 'none',
                 viewType: 'upper_body' as const
               };
-              // 🔧 実際にキャンバスに追加
-              setCharacters([...characters, rivalChar]);
+              // 🔧 キャラクター選択のみ（描画はしない）
               setSelectedCharacter(rivalChar);
-              console.log('👨 ライバル追加:', rivalChar);
+              console.log('👨 ライバル選択:', rivalChar);
             }}
             style={{
               padding: '4px 8px',
@@ -489,10 +486,9 @@ export const SceneTemplatePanel: React.FC<SceneTemplatePanelProps> = ({
                 handGesture: 'none',
                 viewType: 'upper_body' as const
               };
-              // 🔧 実際にキャンバスに追加
-              setCharacters([...characters, friendChar]);
+              // 🔧 キャラクター選択のみ（描画はしない）
               setSelectedCharacter(friendChar);
-              console.log('👫 友人追加:', friendChar);
+              console.log('👫 友人選択:', friendChar);
             }}
             style={{
               padding: '4px 8px',
