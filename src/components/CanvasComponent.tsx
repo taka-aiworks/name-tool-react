@@ -781,7 +781,7 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, ExtendedCanvasComponentPro
   }, [contextMenu.visible]);
 
   return (
-    <div style={{ position: "relative", display: "flex", justifyContent: "center", alignItems: "flex-start", padding: "0px", maxHeight: "calc(100vh - 200px)" }}>
+    <div style={{ position: "relative", display: "flex", justifyContent: "center", alignItems: "flex-start", padding: "0px", minWidth: "fit-content" }}>
       {/* Canvas要素 */}
       <canvas
         ref={canvasRef}

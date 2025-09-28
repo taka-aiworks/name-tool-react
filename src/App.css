@@ -90,6 +90,7 @@ body {
 .main-content {
   display: flex;
   height: calc(100vh - 80px);
+  min-width: 0; /* フレックスアイテムの最小幅を0に設定 */
 }
 
 /* サイドバー */
@@ -114,6 +115,9 @@ body {
   padding: 10px; /* 20px → 10px に縮小 */
   overflow: auto;
   max-height: calc(100vh - 80px); /* ヘッダー分を引いた高さ制限 */
+  overflow-x: auto; /* 横スクロールを有効化 */
+  overflow-y: auto; /* 縦スクロールも有効化 */
+  min-width: 0; /* フレックスアイテムの最小幅を0に設定 */
 }
 
 
@@ -431,10 +435,12 @@ body {
 /* スクロールバー（ダークモード対応） */
 ::-webkit-scrollbar {
   width: 8px;
+  height: 8px; /* 横スクロールバーの高さも設定 */
 }
 
 ::-webkit-scrollbar-track {
   background: var(--bg-secondary);
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -444,6 +450,27 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--accent-color);
+}
+
+/* キャンバスエリア専用のスクロールバー */
+.canvas-area::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+.canvas-area::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+  border-radius: 6px;
+}
+
+.canvas-area::-webkit-scrollbar-thumb {
+  background: var(--accent-color);
+  border-radius: 6px;
+  border: 2px solid var(--bg-secondary);
+}
+
+.canvas-area::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-hover);
 }
 
 /* キャンバスコントロール - コンパクト化 */
