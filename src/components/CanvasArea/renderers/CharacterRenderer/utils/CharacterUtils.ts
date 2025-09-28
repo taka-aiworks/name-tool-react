@@ -180,44 +180,116 @@ export class CharacterUtils {
     }
   }
 
-  // 🎯 キャラクタータイプによる表示設定
+  // 🎯 キャラクタータイプによる表示設定（男女差対応）
   static getCharacterDisplayConfig(character: Character): {
     hairColor: string;
     hairStyle: string;
     bodyColor: string;
     defaultExpression: string;
+    isFemale: boolean;
   } {
-    switch (character.type) {
-      case "heroine": 
-        return {
-          hairColor: "#D2691E", 
-          hairStyle: "long",
-          bodyColor: "#4CAF50",
-          defaultExpression: "smiling" // 🔧 修正: smile → smiling
-        };
-      case "rival": 
-        return {
-          hairColor: "#2F4F4F", 
-          hairStyle: "spiky",
-          bodyColor: "#FF5722",
-          defaultExpression: "angry"
-        };
-      case "friend":
-        return {
-          hairColor: "#A0522D",
-          hairStyle: "curly",
-          bodyColor: "#2196F3",
-          defaultExpression: "smiling" // 🔧 修正: smile → smiling
-        };
-      case "hero":
-      default: 
-        return {
-          hairColor: "#8B4513",
-          hairStyle: "normal",
-          bodyColor: "#4CAF50",
-          defaultExpression: "neutral_expression" // 🔧 修正: normal → neutral_expression
-        };
+    // 🔧 characterId、name、typeで判断するように修正（部分マッチ対応）
+    const identifier = character.characterId || character.name || character.type;
+    
+    // 🔍 デバッグログ追加
+    console.log(`🎨 キャラクター色設定: ${character.name}`, {
+      characterId: character.characterId,
+      name: character.name,
+      type: character.type,
+      identifier: identifier
+    });
+    
+    // 部分マッチで判断
+    if (identifier.includes("heroine") || identifier.includes("ヒロイン")) {
+      console.log(`🎨 ヒロイン設定適用: ${character.name} → ピンク色`);
+      return {
+        hairColor: "#D2691E", 
+        hairStyle: "long",
+        bodyColor: "#FF69B4", // ピンク色で女性らしく
+        defaultExpression: "smiling",
+        isFemale: true
+      };
     }
+    
+    if (identifier.includes("rival") || identifier.includes("ライバル")) {
+      console.log(`🎨 ライバル設定適用: ${character.name} → オレンジ色`);
+      return {
+        hairColor: "#2F4F4F", 
+        hairStyle: "spiky",
+        bodyColor: "#FF5722",
+        defaultExpression: "angry",
+        isFemale: false
+      };
+    }
+    
+    if (identifier.includes("friend") || identifier.includes("友人")) {
+      console.log(`🎨 友人設定適用: ${character.name} → 青色`);
+      return {
+        hairColor: "#A0522D",
+        hairStyle: "curly",
+        bodyColor: "#2196F3",
+        defaultExpression: "smiling",
+        isFemale: false
+      };
+    }
+    
+    // 🔧 character_1タイプの特別対応
+    if (identifier.includes("character_1")) {
+      console.log(`🎨 主人公設定適用: ${character.name} → 緑色`);
+      return {
+        hairColor: "#8B4513",
+        hairStyle: "normal",
+        bodyColor: "#4CAF50", // 緑色で男性らしく
+        defaultExpression: "neutral_expression",
+        isFemale: false
+      };
+    }
+    
+    // 🔧 character_2タイプの特別対応（ヒロイン）
+    if (identifier.includes("character_2")) {
+      console.log(`🎨 ヒロイン設定適用: ${character.name} → ピンク色`);
+      return {
+        hairColor: "#D2691E", 
+        hairStyle: "long",
+        bodyColor: "#FF69B4", // ピンク色で女性らしく
+        defaultExpression: "smiling",
+        isFemale: true
+      };
+    }
+    
+    // 🔧 character_3タイプの特別対応（ライバル）
+    if (identifier.includes("character_3")) {
+      console.log(`🎨 ライバル設定適用: ${character.name} → オレンジ色`);
+      return {
+        hairColor: "#2F4F4F", 
+        hairStyle: "spiky",
+        bodyColor: "#FF5722",
+        defaultExpression: "angry",
+        isFemale: false
+      };
+    }
+    
+    // 🔧 character_4タイプの特別対応（友人）
+    if (identifier.includes("character_4")) {
+      console.log(`🎨 友人設定適用: ${character.name} → 青色`);
+      return {
+        hairColor: "#A0522D",
+        hairStyle: "curly",
+        bodyColor: "#2196F3",
+        defaultExpression: "smiling",
+        isFemale: false
+      };
+    }
+    
+    // デフォルト（主人公・男性）
+    console.log(`🎨 デフォルト設定適用: ${character.name} → 緑色`);
+    return {
+      hairColor: "#8B4513",
+      hairStyle: "normal",
+      bodyColor: "#4CAF50", // 緑色で男性らしく
+      defaultExpression: "neutral_expression",
+      isFemale: false
+    };
   }
 
   // 🎯 角度計算（回転用）

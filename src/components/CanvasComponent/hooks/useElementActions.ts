@@ -193,37 +193,33 @@ export const useElementActions = ({
       heroine: "ヒロイン", 
       rival: "ライバル",
       friend: "友人",
+      character_1: "主人公", // 🔧 character_1タイプに対応
+      character_2: "ヒロイン", // 🔧 character_2タイプに対応
+      character_3: "ライバル", // 🔧 character_3タイプに対応
+      character_4: "友人", // 🔧 character_4タイプに対応
     };
 
     let viewType: "face" | "upper_body" | "full_body";
-    let initialWidth: number;
-    let initialHeight: number;
 
     switch (type) {
       case "hero":
+      case "character_1":
         viewType = "upper_body";
-        initialWidth = 100;
-        initialHeight = 120;
         break;
       case "heroine":
+      case "character_2":
         viewType = "upper_body";
-        initialWidth = 95;
-        initialHeight = 115;
         break;
       case "rival":
+      case "character_3":
         viewType = "upper_body";
-        initialWidth = 105;
-        initialHeight = 125;
         break;
       case "friend":
+      case "character_4":
         viewType = "face";
-        initialWidth = 80;
-        initialHeight = 80;
         break;
       default:
         viewType = "upper_body";
-        initialWidth = 100;
-        initialHeight = 120;
     }
 
     const newCharacter: Character = {

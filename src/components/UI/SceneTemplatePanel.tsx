@@ -1,7 +1,7 @@
 // src/components/UI/SceneTemplatePanel.tsx - 統合シーンテンプレート
 import React, { useState, useCallback } from 'react';
 import { Panel, Character, SpeechBubble, BackgroundElement, EffectElement, ToneElement } from '../../types';
-import { getAllSceneTemplates, getTemplatesByCategory, applyEnhancedSceneTemplate, EnhancedSceneTemplate } from '../CanvasArea/sceneTemplates';
+import { getAllSceneTemplates, getTemplatesByCategory, applyEnhancedSceneTemplate } from '../CanvasArea/sceneTemplates';
 
 interface SceneTemplatePanelProps {
   panels: Panel[];
@@ -346,9 +346,9 @@ export const SceneTemplatePanel: React.FC<SceneTemplatePanelProps> = ({
                 id: `char_${Date.now()}_protagonist`,
                 characterId: 'protagonist',
                 name: '主人公',
-                x: 0,
-                y: 0,
-                panelId: 0,
+                x: selectedPanel.x + selectedPanel.width * 0.5,
+                y: selectedPanel.y + selectedPanel.height * 0.7,
+                panelId: selectedPanel.id,
                 isGlobalPosition: true,
                 scale: 2.0,
                 type: 'character_1',  // 🔧 修正: character → character_1
@@ -360,8 +360,10 @@ export const SceneTemplatePanel: React.FC<SceneTemplatePanelProps> = ({
                 handGesture: 'none',
                 viewType: 'upper_body' as const
               };
+              // 🔧 実際にキャンバスに追加
+              setCharacters([...characters, protagonistChar]);
               setSelectedCharacter(protagonistChar);
-              console.log('👤 主人公選択:', protagonistChar);
+              console.log('👤 主人公追加:', protagonistChar);
             }}
             style={{
               padding: '4px 8px',
@@ -382,14 +384,14 @@ export const SceneTemplatePanel: React.FC<SceneTemplatePanelProps> = ({
                 alert('パネルを選択してください');
                 return;
               }
-              // ヒロインキャラクターを作成または選択
-              const heroineChar = characters.find(char => char.characterId === 'heroine') || {
+              // ヒロインキャラクターを作成
+              const heroineChar = {
                 id: `char_${Date.now()}_heroine`,
                 characterId: 'heroine',
                 name: 'ヒロイン',
-                x: 0,
-                y: 0,
-                panelId: 0,
+                x: selectedPanel.x + selectedPanel.width * 0.5,
+                y: selectedPanel.y + selectedPanel.height * 0.7,
+                panelId: selectedPanel.id,
                 isGlobalPosition: true,
                 scale: 2.0,
                 type: 'character_2',  // 🔧 修正: character → character_2
@@ -401,8 +403,10 @@ export const SceneTemplatePanel: React.FC<SceneTemplatePanelProps> = ({
                 handGesture: 'none',
                 viewType: 'upper_body' as const
               };
+              // 🔧 実際にキャンバスに追加
+              setCharacters([...characters, heroineChar]);
               setSelectedCharacter(heroineChar);
-              console.log('👩 ヒロイン選択:', heroineChar);
+              console.log('👩 ヒロイン追加:', heroineChar);
             }}
             style={{
               padding: '4px 8px',
@@ -423,14 +427,14 @@ export const SceneTemplatePanel: React.FC<SceneTemplatePanelProps> = ({
                 alert('パネルを選択してください');
                 return;
               }
-              // ライバルキャラクターを作成または選択
-              const rivalChar = characters.find(char => char.characterId === 'rival') || {
+              // ライバルキャラクターを作成
+              const rivalChar = {
                 id: `char_${Date.now()}_rival`,
                 characterId: 'rival',
                 name: 'ライバル',
-                x: 0,
-                y: 0,
-                panelId: 0,
+                x: selectedPanel.x + selectedPanel.width * 0.5,
+                y: selectedPanel.y + selectedPanel.height * 0.7,
+                panelId: selectedPanel.id,
                 isGlobalPosition: true,
                 scale: 2.0,
                 type: 'character_3',  // 🔧 修正: character → character_3
@@ -442,8 +446,10 @@ export const SceneTemplatePanel: React.FC<SceneTemplatePanelProps> = ({
                 handGesture: 'none',
                 viewType: 'upper_body' as const
               };
+              // 🔧 実際にキャンバスに追加
+              setCharacters([...characters, rivalChar]);
               setSelectedCharacter(rivalChar);
-              console.log('👨 ライバル選択:', rivalChar);
+              console.log('👨 ライバル追加:', rivalChar);
             }}
             style={{
               padding: '4px 8px',
@@ -464,14 +470,14 @@ export const SceneTemplatePanel: React.FC<SceneTemplatePanelProps> = ({
                 alert('パネルを選択してください');
                 return;
               }
-              // 友人キャラクターを作成または選択
-              const friendChar = characters.find(char => char.characterId === 'friend') || {
+              // 友人キャラクターを作成
+              const friendChar = {
                 id: `char_${Date.now()}_friend`,
                 characterId: 'friend',
                 name: '友人',
-                x: 0,
-                y: 0,
-                panelId: 0,
+                x: selectedPanel.x + selectedPanel.width * 0.5,
+                y: selectedPanel.y + selectedPanel.height * 0.7,
+                panelId: selectedPanel.id,
                 isGlobalPosition: true,
                 scale: 2.0,
                 type: 'character_4',  // 🔧 修正: character_3 → character_4
@@ -483,8 +489,10 @@ export const SceneTemplatePanel: React.FC<SceneTemplatePanelProps> = ({
                 handGesture: 'none',
                 viewType: 'upper_body' as const
               };
+              // 🔧 実際にキャンバスに追加
+              setCharacters([...characters, friendChar]);
               setSelectedCharacter(friendChar);
-              console.log('👫 友人選択:', friendChar);
+              console.log('👫 友人追加:', friendChar);
             }}
             style={{
               padding: '4px 8px',

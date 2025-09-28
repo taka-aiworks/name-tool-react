@@ -69,6 +69,7 @@ export const createEmotionScenes = (): Record<string, EnhancedSceneTemplate> => 
       }
     ),
 
+
     // 😢 悲しい・落ち込みシーン  
     sad_basic: createFactoryScene(
       "😢 悲しみ・落ち込み",
@@ -80,6 +81,7 @@ export const createEmotionScenes = (): Record<string, EnhancedSceneTemplate> => 
         background: { preset: 'cloudy' }
       }
     ),
+
 
     // 😡 怒り・イライラシーン
     angry_basic: createFactoryScene(

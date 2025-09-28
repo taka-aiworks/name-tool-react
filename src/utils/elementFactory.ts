@@ -59,7 +59,7 @@ export const createCharacter = (config: {
 // 🎭 キャラクタープリセット（感情・行動別最適化）
 export const characterPresets = {
   // ==========================================
-  // 感情表現プリセット
+  // 感情表現プリセット（男女差対応）
   // ==========================================
   happy: (overrides?: Partial<Parameters<typeof createCharacter>[0]>) => 
     createCharacter({
@@ -75,6 +75,7 @@ export const characterPresets = {
       handGesture: "waving",
       ...overrides
     }),
+
     
   sad: (overrides?: Partial<Parameters<typeof createCharacter>[0]>) =>
     createCharacter({
@@ -91,6 +92,7 @@ export const characterPresets = {
       handGesture: "covering_mouth",
       ...overrides
     }),
+
     
   angry: (overrides?: Partial<Parameters<typeof createCharacter>[0]>) =>
     createCharacter({

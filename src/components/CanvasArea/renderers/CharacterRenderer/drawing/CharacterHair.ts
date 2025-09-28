@@ -82,8 +82,9 @@ export class CharacterHair {
     headSize: number, 
     direction: string
   ) {
-    const hairHeight = headSize * 0.4;
+    const hairHeight = headSize * 0.3; // 🔧 修正: 0.4 → 0.3 に縮小
     const hairWidth = headSize * 0.8;
+    const hairY = headY - headSize * 0.1; // 🔧 修正: 髪を頭の上部に配置
     
     switch (direction) {
       case "back":
@@ -91,28 +92,28 @@ export class CharacterHair {
       case "rightBack":
         // 後ろ向き：髪の毛全体をカバー
         ctx.beginPath();
-        ctx.roundRect(headX + headSize * 0.1, headY, hairWidth, headSize * 0.8, 8);
+        ctx.roundRect(headX + headSize * 0.1, hairY, hairWidth, headSize * 0.6, 8);
         ctx.fill();
         break;
         
       case "left":
         // 左向き：左側の髪のみ
         ctx.beginPath();
-        ctx.roundRect(headX, headY, hairWidth * 0.7, hairHeight, 6);
+        ctx.roundRect(headX, hairY, hairWidth * 0.7, hairHeight, 6);
         ctx.fill();
         break;
         
       case "right":
         // 右向き：右側の髪のみ
         ctx.beginPath();
-        ctx.roundRect(headX + headSize * 0.3, headY, hairWidth * 0.7, hairHeight, 6);
+        ctx.roundRect(headX + headSize * 0.3, hairY, hairWidth * 0.7, hairHeight, 6);
         ctx.fill();
         break;
         
       default: // front, leftFront, rightFront
         // 正面：前髪とサイド
         ctx.beginPath();
-        ctx.roundRect(headX + headSize * 0.1, headY, hairWidth, hairHeight, 6);
+        ctx.roundRect(headX + headSize * 0.1, hairY, hairWidth, hairHeight, 6);
         ctx.fill();
     }
   }
@@ -125,12 +126,13 @@ export class CharacterHair {
     headSize: number, 
     direction: string
   ) {
-    const hairHeight = headSize * 0.5;
+    const hairHeight = headSize * 0.4; // 🔧 修正: 0.5 → 0.4 に縮小
     const hairWidth = headSize * 0.9;
+    const hairY = headY - headSize * 0.1; // 🔧 修正: 髪を頭の上部に配置
     
     // 基本の髪（トップ）
     ctx.beginPath();
-    ctx.roundRect(headX + headSize * 0.05, headY, hairWidth, hairHeight, 8);
+    ctx.roundRect(headX + headSize * 0.05, hairY, hairWidth, hairHeight, 8);
     ctx.fill();
     
     // 後ろ向きでなければサイドの長い髪も描画

@@ -398,14 +398,348 @@ export class CharacterRenderer {
   // メソッドをそのまま移植します（長いので省略）
 
   static drawFaceFeatures(ctx: CanvasRenderingContext2D, character: Character, headX: number, headY: number, headSize: number, direction: string) {
-    // 🔧 types.tsの実際のプロパティに修正
-    const eyeDirection = character.eyeState || "front";  // eyeDirection → eyeState
-    const expression = character.expression || "normal";  // faceExpression → expression
-    
-    // 簡略化版（実際は既存の詳細な実装を使用）
-    CharacterRenderer.drawSimpleEyes(ctx, headX, headY, headSize, direction);
-    CharacterRenderer.drawSimpleMouth(ctx, headX, headY, headSize, expression);
+    // 🎯 プロンプトに合わせた表情描画
+    CharacterRenderer.drawExpressionBasedFace(ctx, character, headX, headY, headSize, direction);
   }
+
+  // 🎯 プロンプトに合わせた表情描画（辞書ベース）
+  static drawExpressionBasedFace(
+    ctx: CanvasRenderingContext2D, 
+    character: Character, 
+    headX: number, 
+    headY: number, 
+    headSize: number, 
+    direction: string
+  ) {
+    const expression = character.expression || "neutral";
+    const eyeState = character.eyeState || "normal";
+    const mouthState = character.mouthState || "neutral";
+    
+    // 🎯 表情に応じた目の描画
+    CharacterRenderer.drawExpressionEyes(ctx, character, headX, headY, headSize, expression, eyeState);
+    
+    // 🎯 表情に応じた口の描画
+    CharacterRenderer.drawExpressionMouth(ctx, character, headX, headY, headSize, expression, mouthState);
+  }
+
+  // 🎯 表情に応じた目の描画（元の座標システム + 表情変化）
+  static drawExpressionEyes(
+    ctx: CanvasRenderingContext2D, 
+    character: Character, 
+    headX: number, 
+    headY: number, 
+    headSize: number, 
+    expression: string,
+    eyeState: string
+  ) {
+    // 🔧 元の座標システムを使用
+    const eyeSize = headSize * 0.06;
+    const eyeY = headY + headSize * 0.35;
+    const leftEyeX = headX + headSize * 0.3;
+    const rightEyeX = headX + headSize * 0.7;
+    
+    // 表情に応じた目の描画（辞書プロンプト対応版）
+    switch (expression) {
+      case "smiling":
+      case "soft_smile":
+      case "bright_smile":
+      case "big_smile":
+      case "smiling_open_mouth":
+      case "laughing":
+      case "smug":
+      case "maniacal_grin":
+      case "cartoonish_grin":
+        // 笑顔系の目（細め）
+        CharacterRenderer.drawSmilingEyes(ctx, leftEyeX, rightEyeX, eyeY, eyeSize);
+        break;
+      case "sad":
+      case "crying":
+      case "teary_eyes":
+      case "sleepy_eyes":
+      case "comedic_crying":
+      case "crying_a_river":
+      case "despairing_expression":
+      case "gloomy":
+        // 悲しい目（下向き）
+        CharacterRenderer.drawSadEyes(ctx, leftEyeX, rightEyeX, eyeY, eyeSize);
+        break;
+      case "angry_look":
+      case "furious":
+      case "vein_popping":
+      case "gritted_teeth":
+      case "chibi_angry":
+        // 怒りの目（鋭い）
+        CharacterRenderer.drawAngryEyes(ctx, leftEyeX, rightEyeX, eyeY, eyeSize);
+        break;
+      case "surprised":
+      case "surprised_mild":
+      case "shocked_expression":
+      case "dismayed_expression":
+      case "aghast_expression":
+      case "stunned_expression":
+        // 驚きの目（大きく）
+        CharacterRenderer.drawSurprisedEyes(ctx, leftEyeX, rightEyeX, eyeY, eyeSize);
+        break;
+      case "blushing":
+      case "slight_blush":
+      case "embarrassed_face":
+      case "shy":
+        // 恥ずかしがりの目（小さめ）
+        CharacterRenderer.drawSmilingEyes(ctx, leftEyeX, rightEyeX, eyeY, eyeSize);
+        break;
+      case "determined":
+      case "serious":
+      case "confident":
+        // 決意の目（太い線）
+        CharacterRenderer.drawAngryEyes(ctx, leftEyeX, rightEyeX, eyeY, eyeSize);
+        break;
+      case "thoughtful":
+      case "worried_face":
+      case "nervous_face":
+        // 考え中の目
+        CharacterRenderer.drawSadEyes(ctx, leftEyeX, rightEyeX, eyeY, eyeSize);
+        break;
+      case "excited":
+      case "heart_eyes":
+        // 興奮の目（大きく）
+        CharacterRenderer.drawSurprisedEyes(ctx, leftEyeX, rightEyeX, eyeY, eyeSize);
+        break;
+      case "neutral_expression":
+      case "deadpan":
+      case "frown":
+      case "pouting":
+      case "relieved":
+      case "disappointed":
+      case "frustrated":
+      case "scared":
+      default:
+        // 通常の目
+        CharacterRenderer.drawSimpleEyes(ctx, headX, headY, headSize, character.facing || "front");
+    }
+  }
+
+  // 🎯 表情に応じた口の描画（元の座標システム + 表情変化）
+  static drawExpressionMouth(
+    ctx: CanvasRenderingContext2D, 
+    character: Character, 
+    headX: number, 
+    headY: number, 
+    headSize: number, 
+    expression: string,
+    mouthState: string
+  ) {
+    // 🔧 元の座標システムを使用
+    const mouthY = headY + headSize * 0.6;
+    const mouthX = headX + headSize * 0.5;
+    const mouthWidth = headSize * 0.15;
+    
+    // 表情に応じた口の描画（シーンテンプレート対応版）
+    switch (expression) {
+      case "smiling":
+        // 笑顔の口（上向きの弧）
+        CharacterRenderer.drawSmilingMouth(ctx, mouthX, mouthY, mouthWidth);
+        break;
+      case "sad":
+        // 悲しい口（下向きの弧）
+        CharacterRenderer.drawSadMouth(ctx, mouthX, mouthY, mouthWidth);
+        break;
+      case "angry_look":
+        // 怒りの口（直線）
+        CharacterRenderer.drawAngryMouth(ctx, mouthX, mouthY, mouthWidth);
+        break;
+      case "surprised":
+        // 驚きの口（丸）
+        CharacterRenderer.drawSurprisedMouth(ctx, mouthX, mouthY, mouthWidth);
+        break;
+      case "neutral_expression":
+      default:
+        // 通常の口
+        CharacterRenderer.drawSimpleMouth(ctx, headX, headY, headSize, character.facing || "front");
+    }
+  }
+
+
+
+  // 🎯 笑顔の目（線なし・自然な描画）
+  static drawSmilingEyes(ctx: CanvasRenderingContext2D, leftEyeX: number, rightEyeX: number, eyeY: number, eyeSize: number) {
+    // 白目
+    ctx.fillStyle = "#FFFFFF";
+    ctx.beginPath();
+    ctx.arc(leftEyeX, eyeY, eyeSize, 0, Math.PI * 2);
+    ctx.arc(rightEyeX, eyeY, eyeSize, 0, Math.PI * 2);
+    ctx.fill();
+    // 線を除去
+    
+    // 黒目（細め）
+    ctx.fillStyle = "#2E2E2E";
+    ctx.beginPath();
+    ctx.arc(leftEyeX, eyeY, eyeSize * 0.5, 0, Math.PI * 2);
+    ctx.arc(rightEyeX, eyeY, eyeSize * 0.5, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // ハイライト（自然な位置）
+    ctx.fillStyle = "#FFFFFF";
+    ctx.beginPath();
+    ctx.arc(leftEyeX - eyeSize * 0.2, eyeY - eyeSize * 0.2, eyeSize * 0.2, 0, Math.PI * 2);
+    ctx.arc(rightEyeX - eyeSize * 0.2, eyeY - eyeSize * 0.2, eyeSize * 0.2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // 🎯 悲しい目
+  static drawSadEyes(ctx: CanvasRenderingContext2D, leftEyeX: number, rightEyeX: number, eyeY: number, eyeSize: number) {
+    // 白目
+    ctx.fillStyle = "#FFFFFF";
+    ctx.beginPath();
+    ctx.arc(leftEyeX, eyeY + 2, eyeSize, 0, Math.PI * 2);
+    ctx.arc(rightEyeX, eyeY + 2, eyeSize, 0, Math.PI * 2);
+    ctx.fill();
+    // 線を除去
+    
+    // 黒目（下向き）
+    ctx.fillStyle = "#2E2E2E";
+    ctx.beginPath();
+    ctx.arc(leftEyeX, eyeY + 2, eyeSize * 0.6, 0, Math.PI * 2);
+    ctx.arc(rightEyeX, eyeY + 2, eyeSize * 0.6, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // 🎯 怒りの目
+  static drawAngryEyes(ctx: CanvasRenderingContext2D, leftEyeX: number, rightEyeX: number, eyeY: number, eyeSize: number) {
+    // 白目
+    ctx.fillStyle = "#FFFFFF";
+    ctx.beginPath();
+    ctx.arc(leftEyeX, eyeY, eyeSize, 0, Math.PI * 2);
+    ctx.arc(rightEyeX, eyeY, eyeSize, 0, Math.PI * 2);
+    ctx.fill();
+    // 線を除去
+    
+    // 黒目（鋭い）
+    ctx.fillStyle = "#2E2E2E";
+    ctx.beginPath();
+    ctx.arc(leftEyeX, eyeY, eyeSize * 0.8, 0, Math.PI * 2);
+    ctx.arc(rightEyeX, eyeY, eyeSize * 0.8, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // 🎯 驚きの目
+  static drawSurprisedEyes(ctx: CanvasRenderingContext2D, leftEyeX: number, rightEyeX: number, eyeY: number, eyeSize: number) {
+    // 白目
+    ctx.fillStyle = "#FFFFFF";
+    ctx.beginPath();
+    ctx.arc(leftEyeX, eyeY, eyeSize * 1.2, 0, Math.PI * 2);
+    ctx.arc(rightEyeX, eyeY, eyeSize * 1.2, 0, Math.PI * 2);
+    ctx.fill();
+    // 線を除去
+    
+    // 黒目（大きく）
+    ctx.fillStyle = "#2E2E2E";
+    ctx.beginPath();
+    ctx.arc(leftEyeX, eyeY, eyeSize * 0.8, 0, Math.PI * 2);
+    ctx.arc(rightEyeX, eyeY, eyeSize * 0.8, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // 🎯 恥ずかしがりの目
+  static drawEmbarrassedEyes(ctx: CanvasRenderingContext2D, leftEyeX: number, rightEyeX: number, eyeY: number, eyeSize: number) {
+    ctx.fillStyle = "#FFFFFF";
+    ctx.beginPath();
+    ctx.arc(leftEyeX, eyeY, eyeSize, 0, Math.PI * 2);
+    ctx.arc(rightEyeX, eyeY, eyeSize, 0, Math.PI * 2);
+    ctx.fill();
+    // 線を除去
+    
+    ctx.fillStyle = "#2E2E2E";
+    ctx.beginPath();
+    ctx.arc(leftEyeX, eyeY, eyeSize * 0.4, 0, Math.PI * 2);
+    ctx.arc(rightEyeX, eyeY, eyeSize * 0.4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // 🎯 決意の目
+  static drawDeterminedEyes(ctx: CanvasRenderingContext2D, leftEyeX: number, rightEyeX: number, eyeY: number, eyeSize: number) {
+    ctx.fillStyle = "#FFFFFF";
+    ctx.beginPath();
+    ctx.arc(leftEyeX, eyeY, eyeSize, 0, Math.PI * 2);
+    ctx.arc(rightEyeX, eyeY, eyeSize, 0, Math.PI * 2);
+    ctx.fill();
+    // 線を除去
+    
+    ctx.fillStyle = "#2E2E2E";
+    ctx.beginPath();
+    ctx.arc(leftEyeX, eyeY, eyeSize * 0.7, 0, Math.PI * 2);
+    ctx.arc(rightEyeX, eyeY, eyeSize * 0.7, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // 🎯 考え中の目
+  static drawThoughtfulEyes(ctx: CanvasRenderingContext2D, leftEyeX: number, rightEyeX: number, eyeY: number, eyeSize: number) {
+    ctx.fillStyle = "#FFFFFF";
+    ctx.beginPath();
+    ctx.arc(leftEyeX, eyeY, eyeSize, 0, Math.PI * 2);
+    ctx.arc(rightEyeX, eyeY, eyeSize, 0, Math.PI * 2);
+    ctx.fill();
+    // 線を除去
+    
+    ctx.fillStyle = "#2E2E2E";
+    ctx.beginPath();
+    ctx.arc(leftEyeX, eyeY, eyeSize * 0.6, 0, Math.PI * 2);
+    ctx.arc(rightEyeX, eyeY, eyeSize * 0.6, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // 🎯 興奮の目
+  static drawExcitedEyes(ctx: CanvasRenderingContext2D, leftEyeX: number, rightEyeX: number, eyeY: number, eyeSize: number) {
+    ctx.fillStyle = "#FFFFFF";
+    ctx.beginPath();
+    ctx.arc(leftEyeX, eyeY, eyeSize * 1.1, 0, Math.PI * 2);
+    ctx.arc(rightEyeX, eyeY, eyeSize * 1.1, 0, Math.PI * 2);
+    ctx.fill();
+    // 線を除去
+    
+    ctx.fillStyle = "#2E2E2E";
+    ctx.beginPath();
+    ctx.arc(leftEyeX, eyeY, eyeSize * 0.7, 0, Math.PI * 2);
+    ctx.arc(rightEyeX, eyeY, eyeSize * 0.7, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // 🎯 笑顔の口
+  static drawSmilingMouth(ctx: CanvasRenderingContext2D, mouthX: number, mouthY: number, mouthWidth: number) {
+    ctx.strokeStyle = "#000";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(mouthX, mouthY, mouthWidth, 0, Math.PI);
+    ctx.stroke();
+  }
+
+  // 🎯 悲しい口
+  static drawSadMouth(ctx: CanvasRenderingContext2D, mouthX: number, mouthY: number, mouthWidth: number) {
+    ctx.strokeStyle = "#000";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(mouthX, mouthY + 5, mouthWidth, Math.PI, 0);
+    ctx.stroke();
+  }
+
+  // 🎯 怒りの口
+  static drawAngryMouth(ctx: CanvasRenderingContext2D, mouthX: number, mouthY: number, mouthWidth: number) {
+    ctx.strokeStyle = "#000";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(mouthX - mouthWidth, mouthY);
+    ctx.lineTo(mouthX + mouthWidth, mouthY);
+    ctx.stroke();
+  }
+
+  // 🎯 驚きの口
+  static drawSurprisedMouth(ctx: CanvasRenderingContext2D, mouthX: number, mouthY: number, mouthWidth: number) {
+    ctx.fillStyle = "#000";
+    ctx.beginPath();
+    ctx.arc(mouthX, mouthY, mouthWidth * 0.8, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+
 
   static drawSimpleEyes(ctx: CanvasRenderingContext2D, headX: number, headY: number, headSize: number, direction: string) {
   const eyeSize = headSize * 0.06;
@@ -414,14 +748,11 @@ export class CharacterRenderer {
   if (direction !== "left" && direction !== "leftBack") {
     const leftEyeX = headX + headSize * 0.3;
     
-    // 白目
+    // 白目（線なし）
     ctx.fillStyle = "#FFFFFF";
     ctx.beginPath();
     ctx.arc(leftEyeX, eyeY, eyeSize, 0, Math.PI * 2);
     ctx.fill();
-    ctx.strokeStyle = "#333";
-    ctx.lineWidth = 1;
-    ctx.stroke();
     
     // 黒目（瞳）
     ctx.fillStyle = "#2E2E2E";
@@ -439,14 +770,11 @@ export class CharacterRenderer {
   if (direction !== "right" && direction !== "rightBack") {
     const rightEyeX = headX + headSize * 0.7;
     
-    // 白目
+    // 白目（線なし）
     ctx.fillStyle = "#FFFFFF";
     ctx.beginPath();
     ctx.arc(rightEyeX, eyeY, eyeSize, 0, Math.PI * 2);
     ctx.fill();
-    ctx.strokeStyle = "#333";
-    ctx.lineWidth = 1;
-    ctx.stroke();
     
     // 黒目（瞳）
     ctx.fillStyle = "#2E2E2E";
@@ -488,9 +816,13 @@ export class CharacterRenderer {
     const bodyHeight = charHeight * 0.8; // 0.55 → 0.8 に拡大
     const bodyX = charX + charWidth / 2 - bodyWidth / 2;
     
-    ctx.fillStyle = "#4CAF50";
+    // 🎨 男女で服の色を分ける
+    const { bodyColor, isFemale } = CharacterUtils.getCharacterDisplayConfig(character);
+    const strokeColor = isFemale ? "#C2185B" : "#2E7D32";
+    
+    ctx.fillStyle = bodyColor;
     ctx.fillRect(bodyX, bodyStartY, bodyWidth, bodyHeight);
-    ctx.strokeStyle = "#2E7D32";
+    ctx.strokeStyle = strokeColor;
     ctx.strokeRect(bodyX, bodyStartY, bodyWidth, bodyHeight);
   }
 
