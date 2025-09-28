@@ -317,9 +317,11 @@ export const useMouseEvents = ({
       return;
     }
 
-    // 2. キャラクタークリック判定（2番目の優先度）
+    // 2. キャラクタークリック判定（2番目の優先度 - パネルより優先）
+    console.log('🔍 キャラクタークリック判定開始:', { x, y, charactersCount: characters.length });
     const clickedCharacter = CharacterRenderer.findCharacterAt(x, y, characters, panels);
     if (clickedCharacter) {
+      console.log('✅ キャラクタークリック検出:', clickedCharacter.name);
       actions.setSelectedCharacter(clickedCharacter);
       actions.setSelectedBubble(null);
       actions.setSelectedPanel(null);
@@ -330,6 +332,8 @@ export const useMouseEvents = ({
       if (onCharacterSelect) onCharacterSelect(clickedCharacter);
       console.log("👤 キャラクター選択:", clickedCharacter.name);
       return;
+    } else {
+      console.log('❌ キャラクタークリック検出なし');
     }
 
     // 🆕 3. 効果線クリック判定（3番目の優先度）
@@ -482,10 +486,10 @@ export const useMouseEvents = ({
         };
         
         const expandedClicked = (
-          mouseX >= expandedBounds.x &&
-          mouseX <= expandedBounds.x + expandedBounds.width &&
-          mouseY >= expandedBounds.y &&
-          mouseY <= expandedBounds.y + expandedBounds.height
+          x >= expandedBounds.x &&
+          x <= expandedBounds.x + expandedBounds.width &&
+          y >= expandedBounds.y &&
+          y <= expandedBounds.y + expandedBounds.height
         );
         
         if (expandedClicked) {
@@ -499,18 +503,15 @@ export const useMouseEvents = ({
     if (clickedCharacter) {
       console.log("👤 キャラクター処理開始:", clickedCharacter.name);
       
-      const isAlreadySelected = state.selectedCharacter?.id === clickedCharacter.id;
-      
-      if (!isAlreadySelected) {
-        actions.setSelectedCharacter(clickedCharacter);
-        actions.setSelectedBubble(null);
-        actions.setSelectedPanel(null);
-        if (setSelectedBackground) setSelectedBackground(null);
-        if (setSelectedEffect) setSelectedEffect(null);
-        if (setSelectedTone) setSelectedTone(null);
-        if (onCharacterSelect) onCharacterSelect(clickedCharacter);
-        console.log("📱 キャラクター選択状態変更実行");
-      }
+      // 常にキャラクターを選択状態にする（既に選択済みでも）
+      actions.setSelectedCharacter(clickedCharacter);
+      actions.setSelectedBubble(null);
+      actions.setSelectedPanel(null);
+      if (setSelectedBackground) setSelectedBackground(null);
+      if (setSelectedEffect) setSelectedEffect(null);
+      if (setSelectedTone) setSelectedTone(null);
+      if (onCharacterSelect) onCharacterSelect(clickedCharacter);
+      console.log("📱 キャラクター選択状態確定");
       
       const panel = panels.find(p => p.id === clickedCharacter!.panelId);
       if (!panel) {
@@ -562,15 +563,13 @@ export const useMouseEvents = ({
         return;
       }
       
-      // 通常ドラッグ（選択済みの場合のみ開始）
-      if (isAlreadySelected) {
-        console.log("📱 キャラクター通常ドラッグ開始");
-        actions.setIsDragging(true);
-        actions.setDragOffset({
-          x: mouseX - clickedCharacter.x,
-          y: mouseY - clickedCharacter.y,
-        });
-      }
+      // 通常ドラッグ開始
+      console.log("📱 キャラクター通常ドラッグ開始");
+      actions.setIsDragging(true);
+      actions.setDragOffset({
+        x: x - clickedCharacter.x,
+        y: y - clickedCharacter.y,
+      });
       
       e.preventDefault();
       return;
@@ -1036,8 +1035,8 @@ if (selectedTone && state.isCharacterResizing && state.initialCharacterBounds &&
     if (state.selectedCharacter && state.isDragging) {
       console.log("📱 キャラクター移動実行中（回転なし）");
       
-      const newX = mouseX - state.dragOffset.x;
-      const newY = mouseY - state.dragOffset.y;
+      const newX = x - state.dragOffset.x;
+      const newY = y - state.dragOffset.y;
       
       const updatedCharacter = {
         ...state.selectedCharacter,
@@ -1198,6 +1197,25 @@ if (selectedTone && state.isCharacterResizing && state.initialCharacterBounds &&
       
       return;
     }
+
+    // 🆕 キャラクタードラッグ操作終了時の選択状態維持
+    if ((state.isDragging || state.isCharacterResizing) && state.selectedCharacter) {
+      console.log("👤 キャラクター操作完了 - 選択状態維持:", state.selectedCharacter.name);
+      const currentCharacter = state.selectedCharacter;
+      
+      // 状態リセット
+      actions.resetDragStates();
+      actions.setSnapLines([]);
+      
+      // 選択状態を明示的に再設定
+      setTimeout(() => {
+        actions.setSelectedCharacter(currentCharacter);
+        if (onCharacterSelect) onCharacterSelect(currentCharacter);
+        console.log("✅ キャラクター操作後選択状態復元:", currentCharacter.name);
+      }, 0);
+      
+      return;
+    }
     
     // その他の操作終了処理
     actions.resetDragStates();
@@ -1211,8 +1229,11 @@ if (selectedTone && state.isCharacterResizing && state.initialCharacterBounds &&
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    // 座標変換を適用
+    const { x, y } = convertMouseToCanvasCoordinates(mouseX, mouseY);
 
     // 右クリックメニューでも優先順位を調整（効果線+トーン追加）
     // 1. 吹き出し右クリック判定（最優先）
@@ -1314,8 +1335,11 @@ if (selectedTone && state.isCharacterResizing && state.initialCharacterBounds &&
     if (!canvas) return;
     
     const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    // 座標変換を適用
+    const { x, y } = convertMouseToCanvasCoordinates(mouseX, mouseY);
     
     // 🆕 効果線ダブルクリック処理
     if (effects.length > 0) {

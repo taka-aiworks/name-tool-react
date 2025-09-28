@@ -176,8 +176,8 @@ export class CharacterRenderer {
     getCharacterDisplayName?: (character: Character) => string
   ) {
     // 🔧 サイズを大幅に拡大
-    const baseFontSize = 16; // 元の8-12pxから16pxに拡大
-    const fontSize = Math.max(12, baseFontSize * character.scale);
+    const baseFontSize = 28; // 24 → 28 に拡大
+    const fontSize = Math.max(20, baseFontSize * character.scale); // 最小サイズを16 → 20 に拡大
     const padding = 6;
     const textY = charY + charHeight + 25; // 12 → 25に下げる
     
@@ -375,7 +375,7 @@ export class CharacterRenderer {
     ctx.fillStyle = "#FFCCAA";
     ctx.beginPath();
     
-    const headWidth = headSize * 0.85;
+    const headWidth = headSize * 1.0; // 0.85 → 1.0 に拡大
     const headHeight = headSize;
     ctx.ellipse(
       headX + headSize / 2, 
@@ -483,8 +483,8 @@ export class CharacterRenderer {
   }
 
   static drawBodyHalf(ctx: CanvasRenderingContext2D, character: Character, charX: number, charY: number, charWidth: number, charHeight: number, bodyStartY: number) {
-    const bodyWidth = charWidth * 0.7;
-    const bodyHeight = charHeight * 0.55;
+    const bodyWidth = charWidth * 1.0; // 0.7 → 1.0 に拡大
+    const bodyHeight = charHeight * 0.8; // 0.55 → 0.8 に拡大
     const bodyX = charX + charWidth / 2 - bodyWidth / 2;
     
     ctx.fillStyle = "#4CAF50";
@@ -498,8 +498,8 @@ export class CharacterRenderer {
     CharacterRenderer.drawBodyHalf(ctx, character, charX, charY, charWidth, charHeight * 0.5, bodyStartY);
     
     // 下半身（簡略版）
-    const legWidth = charWidth * 0.5;
-    const legHeight = charHeight * 0.4;
+    const legWidth = charWidth * 0.8; // 0.5 → 0.8 に拡大
+    const legHeight = charHeight * 0.6; // 0.4 → 0.6 に拡大
     const legX = charX + charWidth / 2 - legWidth / 2;
     const legY = bodyStartY + charHeight * 0.3;
     

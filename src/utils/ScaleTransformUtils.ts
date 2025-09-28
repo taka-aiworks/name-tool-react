@@ -75,7 +75,8 @@ export const scaleCharacter = (character: Character, { scaleX, scaleY }: ScaleTr
     ...character,
     x: Math.round(character.x * scaleX),
     y: Math.round(character.y * scaleY),
-    scale: character.scale * sizeScale
+    // scaleは変更せず、基本サイズで調整
+    scale: character.scale
   };
 };
 

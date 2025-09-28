@@ -261,8 +261,8 @@ export const createSpeechBubble = (config: {
   text: config.text ?? "",
   x: config.x ?? 0.15,
   y: config.y ?? 0.15,
-  width: config.width ?? 80,
-  height: config.height ?? 60,
+  width: config.width ?? 160, // 80 → 160 に拡大
+  height: config.height ?? 120, // 60 → 120 に拡大
   scale: config.scale ?? 1.0,
   vertical: config.vertical ?? true,
   // 🔧 編集互換性: 手動作成と同じ座標系を使用
@@ -275,8 +275,8 @@ export const bubblePresets = {
     createSpeechBubble({
       type: "普通",
       text,
-      width: 80,
-      height: 60,
+      width: 160, // 80 → 160 に拡大
+      height: 120, // 60 → 120 に拡大
       vertical: true,
       ...overrides
     }),
@@ -286,8 +286,8 @@ export const bubblePresets = {
       type: "叫び",
       text,
       // 🔧 叫び系は大きめ + 横書き推奨
-      width: 100,
-      height: 80,
+      width: 200, // 100 → 200 に拡大
+      height: 160, // 80 → 160 に拡大
       scale: 1.1,
       vertical: false, // 叫びは横書きが効果的
       ...overrides
@@ -298,8 +298,8 @@ export const bubblePresets = {
       type: "心の声", 
       text,
       // 🔧 思考系は楕円に適したサイズ + 右上配置
-      width: 90,
-      height: 70,
+      width: 180, // 90 → 180 に拡大
+      height: 140, // 70 → 140 に拡大
       x: 0.65,      // 右上配置が一般的
       y: 0.15,
       vertical: true, // 思考は縦書きが自然
@@ -311,8 +311,8 @@ export const bubblePresets = {
       type: "小声",
       text,
       // 🔧 小声は小さめ
-      width: 70,
-      height: 50,
+      width: 140, // 70 → 140 に拡大
+      height: 100, // 50 → 100 に拡大
       scale: 0.9,
       vertical: true,
       ...overrides
@@ -323,8 +323,8 @@ export const bubblePresets = {
     createSpeechBubble({
       type: "普通",
       text,
-      width: 85,
-      height: 65,
+      width: 170, // 85 → 170 に拡大
+      height: 130, // 65 → 130 に拡大
       vertical: true,
       ...overrides
     }),
@@ -334,8 +334,8 @@ export const bubblePresets = {
       type: "普通",
       text,
       // 🔧 ナレーション用は横長 + 上部配置
-      width: 120,
-      height: 40,
+      width: 240, // 120 → 240 に拡大
+      height: 80, // 40 → 80 に拡大
       vertical: false, // ナレーションは横書き
       x: 0.1,
       y: 0.05,
@@ -349,8 +349,8 @@ export const bubblePresets = {
       text,
       x: 0.05,
       y: 0.15,
-      width: 70,
-      height: 50,
+      width: 140, // 70 → 140 に拡大
+      height: 100, // 50 → 100 に拡大
       ...overrides
     }),
     
@@ -360,8 +360,8 @@ export const bubblePresets = {
       text,
       x: 0.75,
       y: 0.15,
-      width: 70,
-      height: 50,
+      width: 140, // 70 → 140 に拡大
+      height: 100, // 50 → 100 に拡大
       ...overrides
     }),
 };

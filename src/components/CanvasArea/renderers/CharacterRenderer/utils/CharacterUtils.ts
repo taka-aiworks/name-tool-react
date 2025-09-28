@@ -13,7 +13,7 @@ export class CharacterUtils {
     }
     
     // 従来のscale計算をフォールバック
-    const baseWidth = 50;
+    const baseWidth = 400; // 200 → 400 に極端に拡大
     let typeMultiplier = 1.0;
     
     switch (character.viewType) {
@@ -34,7 +34,7 @@ export class CharacterUtils {
     }
     
     // 従来のscale計算をフォールバック
-    const baseHeight = 60;
+    const baseHeight = 320; // 160 → 320 に極端に拡大
     let typeMultiplier = 1.0;
     
     switch (character.viewType) {
@@ -62,14 +62,14 @@ export class CharacterUtils {
       charX = character.x - charWidth / 2;
       charY = character.y - charHeight / 2;
     } else if (panel) {
-      charWidth = 60 * character.scale;
-      charHeight = 40 * character.scale;
+      charWidth = 400 * character.scale; // 200 → 400 に極端に拡大
+      charHeight = 320 * character.scale; // 160 → 320 に極端に拡大
       charX = panel.x + panel.width * character.x - charWidth / 2;
       charY = panel.y + panel.height * character.y - charHeight / 2;
     } else {
       // フォールバック
-      charWidth = 60 * character.scale;
-      charHeight = 40 * character.scale;
+      charWidth = 400 * character.scale; // 200 → 400 に極端に拡大
+      charHeight = 320 * character.scale; // 160 → 320 に極端に拡大
       charX = character.x - charWidth / 2;
       charY = character.y - charHeight / 2;
     }
@@ -94,11 +94,13 @@ export class CharacterUtils {
       charHeight = CharacterUtils.getCharacterHeight(character);
       charX = character.x - charWidth / 2;
       charY = character.y - charHeight / 2;
+      console.log(`🌍 グローバル位置キャラクター [${character.name}]:`, { charWidth, charHeight, scale: character.scale });
     } else {
-      charWidth = 60 * character.scale;
-      charHeight = 40 * character.scale;
+      charWidth = 400 * character.scale; // 200 → 400 に極端に拡大
+      charHeight = 320 * character.scale; // 160 → 320 に極端に拡大
       charX = panel.x + panel.width * character.x - charWidth / 2;
       charY = panel.y + panel.height * character.y - charHeight / 2;
+      console.log(`📐 パネル内キャラクター [${character.name}]:`, { charWidth, charHeight, scale: character.scale, x: character.x, y: character.y });
     }
 
     return { charX, charY, charWidth, charHeight };
@@ -130,25 +132,25 @@ export class CharacterUtils {
     
     switch (viewType) {
       case "face":
-        headSize = Math.min(charWidth, charHeight) * 0.9;
+        headSize = Math.min(charWidth, charHeight) * 1.5; // 1.2 → 1.5 に拡大
         headX = charX + charWidth / 2 - headSize / 2;
         headY = charY + charHeight / 2 - headSize / 2;
         break;
         
       case "upper_body": // 🔧 修正: halfBody → upper_body
-        headSize = charWidth * 0.45;
+        headSize = charWidth * 1.0; // 0.7 → 1.0 に極端に拡大
         headX = charX + charWidth / 2 - headSize / 2;
         headY = charY + charHeight * 0.05;
         break;
         
       case "full_body": // 🔧 修正: fullBody → full_body
-        headSize = charWidth * 0.35;
+        headSize = charWidth * 0.9; // 0.6 → 0.9 に極端に拡大
         headX = charX + charWidth / 2 - headSize / 2;
         headY = charY + charHeight * 0.02;
         break;
         
       default:
-        headSize = charWidth * 0.45;
+        headSize = charWidth * 1.0; // 0.7 → 1.0 に極端に拡大
         headX = charX + charWidth / 2 - headSize / 2;
         headY = charY + charHeight * 0.05;
     }

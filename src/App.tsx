@@ -563,14 +563,14 @@ function App() {
       canvas.width = newWidth;
       canvas.height = newHeight;
       
-      const containerWidth = 1000; // 適切なサイズに調整
-      const containerHeight = 700; // 高さを調整
+      const containerWidth = 1200; // 1000 → 1200 に拡大
+      const containerHeight = 800; // 700 → 800 に拡大
       const displayScaleX = containerWidth / newWidth;
       const displayScaleY = containerHeight / newHeight;
       const displayScale = Math.min(displayScaleX, displayScaleY, 1);
       
       // 最小サイズを保証（適切な値に）
-      const minDisplayScale = 0.7;
+      const minDisplayScale = 0.8; // 0.7 → 0.8 に拡大
       const finalDisplayScale = Math.max(displayScale, minDisplayScale);
       
       canvas.style.width = `${newWidth * finalDisplayScale}px`;
