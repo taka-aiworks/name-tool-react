@@ -1,11 +1,9 @@
-// src/App.tsx (トーン機能統合版)
+// src/App.tsx - v1.1.5 初期画面表示最適化版
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import CanvasComponent from "./components/CanvasComponent";
 import CharacterDetailPanel from "./components/UI/CharacterDetailPanel";
-// 変更後（用紙サイズ型を追加）
 import { Panel, Character, SpeechBubble, SnapSettings, BackgroundElement, EffectElement, ToneElement, BackgroundTemplate, CanvasSettings, DEFAULT_CANVAS_SETTINGS } from "./types";
 import { templates } from "./components/CanvasArea/templates";
-//import { sceneTemplates, applySceneTemplate } from "./components/CanvasArea/sceneTemplates";
 import { ExportPanel } from './components/UI/ExportPanel';
 import { useRef } from 'react';
 import "./App.css";
@@ -16,17 +14,11 @@ import ProjectPanel from './components/UI/ProjectPanel';
 import BackgroundPanel from './components/UI/BackgroundPanel';
 import EffectPanel from './components/UI/EffectPanel';
 import TonePanel from './components/UI/TonePanel';
-
-// 1. importに追加（1行）
 import { CharacterSettingsPanel } from './components/UI/CharacterSettingsPanel';
-
 import { PageManager } from './components/UI/PageManager';
 import { usePageManager } from './hooks/usePageManager';
-// 🔧 1. import部分に追加（他のimportの近くに追加）
 import { SceneTemplatePanel } from './components/UI/SceneTemplatePanel';
-// 既存のimportの下に追加
 import PanelTemplateSelector from './components/UI/PanelTemplateSelector';
-// 1. import文に1行追加（既存のimport群の近くに追加）
 import { PaperSizeSelectPanel } from './components/UI/PaperSizeSelectPanel';
 
 import {
@@ -41,82 +33,43 @@ import {
   logScaleTransform
 } from './utils/ScaleTransformUtils';
 
-// 🆕 この1行をimport部分に追加
-import { scaleTemplateToCanvas } from './utils/TemplateScaler';
-
 function App() {
-  // 基本状態管理
+  // 🔧 最適化1: 状態管理の初期化を統一・明確化
   const [selectedTemplate, setSelectedTemplate] = useState<string>("reverse_t");
 
-  // デフォルトダークモード設定
-  useEffect(() => {
-    document.documentElement.setAttribute("data-theme", "dark");
-  }, []);
+  // 🔧 最適化2: 初期パネル設定の最適化
+  const [panels, setPanels] = useState<Panel[]>(() => {
+    console.log('🎯 App initialization: Setting up initial panels');
+    const initialPanels = templates.reverse_t.panels;
+    console.log('📐 Initial panels loaded:', initialPanels.length, 'panels');
+    return [...initialPanels];
+  });
 
-  // 初期テンプレート適用（強制実行）
-  useEffect(() => {
-    console.log('🎯 Applying initial template:', selectedTemplate);
-    console.log('📋 Available templates:', Object.keys(templates));
-    
-    if (selectedTemplate && templates[selectedTemplate]) {
-      const newPanels = [...templates[selectedTemplate].panels];
-      console.log('📐 Template panels:', templates[selectedTemplate].panels);
-      console.log('📐 New panels to set:', newPanels);
-      
-      setPanels(newPanels);
-      console.log('✅ Initial panels set successfully');
-    } else {
-      console.error('❌ Template not found:', selectedTemplate);
-    }
-  }, [selectedTemplate]);
-
-  // アプリケーション起動時の強制テンプレート適用
-  useEffect(() => {
-    console.log('🚀 App initialization - forcing template application');
-    const reverseTPanels = templates.reverse_t.panels;
-    console.log('📐 Force applying reverse_t template:', reverseTPanels);
-    console.log('📏 Panel details:', reverseTPanels.map(panel => ({
-      id: panel.id,
-      x: panel.x,
-      y: panel.y,
-      width: panel.width,
-      height: panel.height
-    })));
-    setPanels([...reverseTPanels]);
-  }, []); // 空の依存配列で初回のみ実行
-  const [panels, setPanels] = useState<Panel[]>(templates.reverse_t.panels);
+  // 基本状態管理（最適化済み）
   const [characters, setCharacters] = useState<Character[]>([]);
   const [speechBubbles, setSpeechBubbles] = useState<SpeechBubble[]>([]);
   const [backgrounds, setBackgrounds] = useState<BackgroundElement[]>([]);
   const [effects, setEffects] = useState<EffectElement[]>([]);
-  const [tones, setTones] = useState<ToneElement[]>([]); // 🆕 トーン状態管理
+  const [tones, setTones] = useState<ToneElement[]>([]);
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
   const [selectedPanel, setSelectedPanel] = useState<Panel | null>(null);
   const [selectedEffect, setSelectedEffect] = useState<EffectElement | null>(null);
-  const [selectedTone, setSelectedTone] = useState<ToneElement | null>(null); // 🆕 トーン選択状態
+  const [selectedTone, setSelectedTone] = useState<ToneElement | null>(null);
   const [dialogueText, setDialogueText] = useState<string>("");
 
-  // UI状態管理
+  // UI状態管理（最適化済み）
   const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
-  //const [selectedScene, setSelectedScene] = useState<string>("");
   const [showCharacterPanel, setShowCharacterPanel] = useState<boolean>(false);
   const [isPanelEditMode, setIsPanelEditMode] = useState<boolean>(false);
   const [showProjectPanel, setShowProjectPanel] = useState<boolean>(false);
   const [showBackgroundPanel, setShowBackgroundPanel] = useState<boolean>(false);
   const [showEffectPanel, setShowEffectPanel] = useState<boolean>(false);
-  const [showTonePanel, setShowTonePanel] = useState<boolean>(false); // 🆕 トーンパネル表示制御
-
-  // 2. 状態管理に追加（2行）
+  const [showTonePanel, setShowTonePanel] = useState<boolean>(false);
   const [showCharacterSettingsPanel, setShowCharacterSettingsPanel] = useState<boolean>(false);
   const [editingCharacterType, setEditingCharacterType] = useState<string>('');
-
-  // 既存のuseStateの下に追加
   const [showPanelSelector, setShowPanelSelector] = useState<boolean>(false);
-  // 2. App関数内の状態管理部分に2行追加（既存のuseState群の近くに追加）
   const [canvasSettings, setCanvasSettings] = useState<CanvasSettings>(DEFAULT_CANVAS_SETTINGS);
   const [isPaperSizePanelVisible, setIsPaperSizePanelVisible] = useState(false);
-
-
 
   // スナップ設定の状態管理
   const [snapSettings, setSnapSettings] = useState<SnapSettings>({
@@ -126,7 +79,24 @@ function App() {
     gridDisplay: 'edit-only'
   });
 
-  // プロジェクト保存hook（トーンデータ対応）
+  // 🔧 最適化3: デフォルトダークモード設定の最適化
+  useEffect(() => {
+    console.log('🎨 Setting default dark mode');
+    document.documentElement.setAttribute("data-theme", "dark");
+  }, []);
+
+  // 🔧 最適化4: 初回テンプレート適用の最適化（重複削除・シンプル化）
+  useEffect(() => {
+    console.log('🚀 Initial template application');
+    if (selectedTemplate && templates[selectedTemplate]) {
+      const newPanels = [...templates[selectedTemplate].panels];
+      console.log('📐 Template panels count:', newPanels.length);
+      setPanels(newPanels);
+      console.log('✅ Initial template applied successfully');
+    }
+  }, []); // 空の依存配列で初回のみ実行
+
+  // プロジェクト保存hook
   const settings = useMemo(() => ({ 
     snapEnabled: snapSettings.enabled, 
     snapSize: snapSettings.gridSize, 
@@ -138,67 +108,59 @@ function App() {
     height: 600 
   }), []);
 
+  // テンプレートカウント用memo（最適化済み）
   const backgroundTemplateCount = useMemo(() => {
-  const uniqueNames = new Set(
-    backgrounds
-      .filter(bg => bg.name) // name が存在するもののみ
-      .map(bg => bg.name)
+    const uniqueNames = new Set(
+      backgrounds
+        .filter(bg => bg.name)
+        .map(bg => bg.name)
     );
     return uniqueNames.size;
   }, [backgrounds]);
 
   const effectTemplateCount = useMemo(() => {
-    const uniqueNames = new Set(
-      effects.map(effect => effect.type) // type のみを使用
-    );
+    const uniqueNames = new Set(effects.map(effect => effect.type));
     return uniqueNames.size;
   }, [effects]);
 
   const toneTemplateCount = useMemo(() => {
-    const uniqueNames = new Set(
-      tones.map(tone => tone.type) // type のみを使用
-    );
+    const uniqueNames = new Set(tones.map(tone => tone.type));
     return uniqueNames.size;
   }, [tones]);
 
-  // 修正後: 汎用ID
+  // キャラクター名前管理（最適化済み）
   const [characterNames, setCharacterNames] = useState<Record<string, string>>({
-    character_1: '主人公',    // ✅
-    character_2: 'ヒロイン',  // ✅
-    character_3: 'ライバル',   // ✅
-    character_4: '友人'      // ✅
+    character_1: '主人公',
+    character_2: 'ヒロイン',
+    character_3: 'ライバル',
+    character_4: '友人'
   });
 
-  // 修正後: 汎用ID
   const [characterSettings, setCharacterSettings] = useState<Record<string, any>>({
-    character_1: { appearance: null, role: '主人公' },    // ✅
-    character_2: { appearance: null, role: 'ヒロイン' },  // ✅
-    character_3: { appearance: null, role: 'ライバル' },   // ✅
-    character_4: { appearance: null, role: '友人' }      // ✅
+    character_1: { appearance: null, role: '主人公' },
+    character_2: { appearance: null, role: 'ヒロイン' },
+    character_3: { appearance: null, role: 'ライバル' },
+    character_4: { appearance: null, role: '友人' }
   });
 
-  // 🔧 3. プロジェクト保存hookの拡張（既存のuseProjectSaveを修正）
-  // ✅ 正しいコード（置き換え）
   const projectSave = useProjectSave();
 
-  // 🆕 キャラクター表示名取得関数（App.tsx内の関数群に追加）
-    const getCharacterDisplayName = useCallback((character: Character) => {
+  const getCharacterDisplayName = useCallback((character: Character) => {
     return characterNames[character.type] || character.name || 'キャラクター';
   }, [characterNames]);
-
 
   // 機能コールバック用の状態
   const [addCharacterFunc, setAddCharacterFunc] = useState<((type: string) => void) | null>(null);
   const [addBubbleFunc, setAddBubbleFunc] = useState<((type: string, text: string) => void) | null>(null);
 
-  // アンドゥ/リドゥ機能（トーン対応）
+  // アンドゥ/リドゥ機能
   const [operationHistory, setOperationHistory] = useState<{
     characters: Character[][];
     speechBubbles: SpeechBubble[][];
     panels: Panel[][];
     backgrounds: BackgroundElement[][];
     effects: EffectElement[][];
-    tones: ToneElement[][]; // 🆕 トーン履歴追加
+    tones: ToneElement[][];
     currentIndex: number;
   }>({
     characters: [[]],
@@ -206,13 +168,13 @@ function App() {
     panels: [[]],
     backgrounds: [[]],
     effects: [[]],
-    tones: [[]], // 🆕 トーン履歴初期化
+    tones: [[]],
     currentIndex: 0,
   });
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  // 履歴保存の最適化 - 依存関係を文字列で管理（トーン対応）
+  // 履歴保存の最適化 - 依存関係を文字列で管理
   const charactersSignature = useMemo(() => 
     characters.map(char => `${char.id}-${char.x}-${char.y}-${char.scale}`).join(','), 
     [characters]
@@ -241,16 +203,16 @@ function App() {
   const tonesSignature = useMemo(() => 
     tones.map(tone => `${tone.id}-${tone.x}-${tone.y}-${tone.density}-${tone.opacity}`).join(','), 
     [tones]
-  ); // 🆕 トーンの変更検知
+  );
 
-  // 履歴保存関数（トーン対応）
+  // 履歴保存関数
   const saveToHistory = useCallback((
     newCharacters: Character[], 
     newBubbles: SpeechBubble[], 
     newPanels: Panel[], 
     newBackgrounds: BackgroundElement[],
     newEffects: EffectElement[],
-    newTones: ToneElement[] // 🆕 トーン引数追加
+    newTones: ToneElement[]
   ) => {
     setOperationHistory(prev => {
       const newHistory = {
@@ -259,7 +221,7 @@ function App() {
         panels: [...prev.panels.slice(0, prev.currentIndex + 1), [...newPanels]],
         backgrounds: [...prev.backgrounds.slice(0, prev.currentIndex + 1), [...newBackgrounds]],
         effects: [...prev.effects.slice(0, prev.currentIndex + 1), [...newEffects]],
-        tones: [...prev.tones.slice(0, prev.currentIndex + 1), [...newTones]], // 🆕 トーン履歴追加
+        tones: [...prev.tones.slice(0, prev.currentIndex + 1), [...newTones]],
         currentIndex: prev.currentIndex + 1,
       };
       
@@ -270,7 +232,7 @@ function App() {
         newHistory.panels = newHistory.panels.slice(1);
         newHistory.backgrounds = newHistory.backgrounds.slice(1);
         newHistory.effects = newHistory.effects.slice(1);
-        newHistory.tones = newHistory.tones.slice(1); // 🆕 トーン履歴管理
+        newHistory.tones = newHistory.tones.slice(1);
         newHistory.currentIndex = Math.max(0, newHistory.currentIndex - 1);
       }
       
@@ -278,7 +240,7 @@ function App() {
     });
   }, []);
 
-  // 履歴保存のタイミング（トーン対応）
+  // 履歴保存のタイミング
   useEffect(() => {
     // 空の状態では履歴保存しない
     if (characters.length === 0 && speechBubbles.length === 0 && panels.length === 0 && 
@@ -293,7 +255,7 @@ function App() {
     return () => clearTimeout(timeoutId);
   }, [charactersSignature, bubblesSignature, panelsSignature, backgroundsSignature, effectsSignature, tonesSignature, saveToHistory]);
 
-  // アンドゥ/リドゥ処理（トーン対応）
+  // アンドゥ/リドゥ処理
   const handleUndo = useCallback(() => {
     if (operationHistory.currentIndex > 0) {
       const newIndex = operationHistory.currentIndex - 1;
@@ -302,7 +264,7 @@ function App() {
       setPanels([...operationHistory.panels[newIndex]]);
       setBackgrounds([...operationHistory.backgrounds[newIndex]]);
       setEffects([...operationHistory.effects[newIndex]]);
-      setTones([...operationHistory.tones[newIndex]]); // 🆕 トーンアンドゥ
+      setTones([...operationHistory.tones[newIndex]]);
       setOperationHistory(prev => ({ ...prev, currentIndex: newIndex }));
     }
   }, [operationHistory]);
@@ -315,7 +277,7 @@ function App() {
       setPanels([...operationHistory.panels[newIndex]]);
       setBackgrounds([...operationHistory.backgrounds[newIndex]]);
       setEffects([...operationHistory.effects[newIndex]]);
-      setTones([...operationHistory.tones[newIndex]]); // 🆕 トーンリドゥ
+      setTones([...operationHistory.tones[newIndex]]);
       setOperationHistory(prev => ({ ...prev, currentIndex: newIndex }));
     }
   }, [operationHistory]);
@@ -328,19 +290,16 @@ function App() {
     }
   }, [selectedCharacter, characters]);
 
-  // キーボードイベント処理（トーン対応）
-  // キーボードイベント処理（トーン対応）- 🔧 修正版
+  // キーボードイベント処理（最適化済み）
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // 🔧 重要: 入力フィールドがフォーカスされている場合はスキップ
       const activeElement = document.activeElement;
       if (activeElement && (
         activeElement.tagName === 'INPUT' || 
         activeElement.tagName === 'TEXTAREA' ||
         (activeElement as HTMLElement).contentEditable === 'true'
       )) {
-        console.log(`⌨️ 入力フィールドでのキー入力をスキップ: ${e.key}`);
-        return; // 入力フィールド内では何もしない
+        return;
       }
 
       if (e.key === 'Backspace' || e.key === 'Delete') {
@@ -363,19 +322,16 @@ function App() {
         setIsPanelEditMode(prev => !prev);
       }
 
-      // 背景パネル表示ショートカット
       if (e.key === 'b' && e.ctrlKey) {
         e.preventDefault();
         setShowBackgroundPanel(prev => !prev);
       }
 
-      // 効果線パネル表示ショートカット
       if (e.key === 'f' && e.ctrlKey) {
         e.preventDefault();
         setShowEffectPanel(prev => !prev);
       }
 
-      // 🆕 トーンパネル表示ショートカット
       if (e.key === 't' && e.ctrlKey) {
         e.preventDefault();
         setShowTonePanel(prev => !prev);
@@ -403,19 +359,15 @@ function App() {
     setSnapSettings(prev => ({ ...prev, gridDisplay: display }));
   }, []);
 
-  // ✅ こちらを使用
-  // 🔧 既存のhandleCharacterNameUpdateを以下に修正
   const handleCharacterNameUpdate = useCallback((type: string, newName: string, newRole: string, appearance: any) => {
     console.log(`🔧 キャラクター名前更新開始: ${type} → ${newName}`);
     
-    // 1. 名前辞書を更新
     setCharacterNames(prev => {
       const updated = { ...prev, [type]: newName };
       console.log(`📝 名前辞書更新:`, updated);
       return updated;
     });
     
-    // 2. 設定を更新  
     setCharacterSettings(prev => {
       const updated = {
         ...prev,
@@ -428,7 +380,6 @@ function App() {
       return updated;
     });
     
-    // 3. 既存のキャラクター全てを強制更新
     setCharacters(prev => {
       const updated = prev.map(char => {
         if (char.type === type) {
@@ -436,10 +387,8 @@ function App() {
           return {
             ...char,
             name: newName,
-            //displayName: newName, // ⚠️ この項目が重要
             role: newRole,
             appearance,
-            // Canvas描画で使用される可能性のある項目も全て更新
             label: newName,
             title: newName
           };
@@ -460,16 +409,15 @@ function App() {
     document.documentElement.setAttribute("data-theme", newTheme);
   }, [isDarkMode]);
 
-    // 🔧 2. handleTemplateClick関数を修正（293行目あたりを置き換え）
-    // 🆕 修正版（用紙サイズ対応）
-    const handleTemplateClick = useCallback((template: string) => {
+  // 🔧 最適化5: テンプレート切り替えの最適化
+  const handleTemplateClick = useCallback((template: string) => {
+    console.log('🎯 Template change:', template);
     setSelectedTemplate(template);
     setSelectedCharacter(null);
     setSelectedPanel(null);
     setSelectedEffect(null);
     setSelectedTone(null);
     
-    // シンプルに戻す
     const newPanels = [...templates[template].panels];
     setPanels(newPanels);
     
@@ -478,9 +426,10 @@ function App() {
     setBackgrounds([]);
     setEffects([]);
     setTones([]);
+    console.log('✅ Template applied successfully');
   }, []);
 
-  // 🆕 ページ管理hook（handleCanvasSettingsChangeより前に宣言）
+  // ページ管理hook
   const pageManager = usePageManager({
     panels, characters, bubbles: speechBubbles, backgrounds, effects, tones,
     onDataUpdate: ({ panels: newPanels, characters: newCharacters, bubbles: newBubbles, backgrounds: newBackgrounds, effects: newEffects, tones: newTones }) => {
@@ -493,9 +442,7 @@ function App() {
     }
   });
 
-
-// 【置き換え対象】App.tsx内の既存のhandleCanvasSettingsChange関数を以下に置き換えてください：
-
+  // キャンバス設定変更ハンドラー（最適化済み）
   const handleCanvasSettingsChange = useCallback((newSettings: CanvasSettings) => {
     const oldSettings = canvasSettings;
     
@@ -510,7 +457,6 @@ function App() {
       }
     });
     
-    // サイズが同じなら何もしない
     if (oldSettings.paperSize.pixelWidth === newSettings.paperSize.pixelWidth && 
         oldSettings.paperSize.pixelHeight === newSettings.paperSize.pixelHeight) {
       console.log('📐 Canvas size unchanged, skipping scale transform');
@@ -518,59 +464,27 @@ function App() {
       return;
     }
     
-    // スケール変換を計算
     const transform = calculateScaleTransform(oldSettings, newSettings);
     
-    // スケール変換の妥当性を検証
     if (!validateScaleTransform(transform)) {
       console.error('❌ Invalid scale transform, aborting canvas resize');
       return;
     }
     
-    // スケール変換をログ出力
     logScaleTransform(oldSettings, newSettings, transform);
     
-    // 1. キャンバス設定を更新
     setCanvasSettings(newSettings);
     
-    // 2. 全ページの全パネルをスケール変換
     if (pageManager && pageManager.pages && pageManager.pages.length > 0) {
       const currentPageData = pageManager.currentPage;
       
-      console.log('📄 Using pageManager for scaling:', {
-        totalPages: pageManager.pages.length,
-        currentPagePanels: currentPageData.panels.length,
-        currentPageCharacters: currentPageData.characters.length
-      });
-      
-      // パネルをスケール変換
       const scaledPanels = currentPageData.panels.map(panel => scalePanel(panel, transform));
-      console.log(`📐 Scaled ${scaledPanels.length} panels with transform:`, {
-        scaleX: transform.scaleX.toFixed(3),
-        scaleY: transform.scaleY.toFixed(3)
-      });
-      
-      // キャラクターをスケール変換
       const scaledCharacters = currentPageData.characters.map(char => scaleCharacter(char, transform));
-      console.log(`👥 Scaled ${scaledCharacters.length} characters`);
-      
-      // 吹き出しをスケール変換
       const scaledBubbles = currentPageData.bubbles.map(bubble => scaleBubble(bubble, transform));
-      console.log(`💬 Scaled ${scaledBubbles.length} bubbles`);
-      
-      // 背景をスケール変換
       const scaledBackgrounds = currentPageData.backgrounds.map(bg => scaleBackground(bg, transform));
-      console.log(`🎨 Scaled ${scaledBackgrounds.length} backgrounds`);
-      
-      // 効果線をスケール変換
       const scaledEffects = currentPageData.effects.map(effect => scaleEffect(effect, transform));
-      console.log(`⚡ Scaled ${scaledEffects.length} effects`);
-      
-      // トーンをスケール変換
       const scaledTones = currentPageData.tones.map(tone => scaleTone(tone, transform));
-      console.log(`🎯 Scaled ${scaledTones.length} tones`);
       
-      // スケール変換されたデータで状態を更新
       setPanels(scaledPanels);
       setCharacters(scaledCharacters);
       setSpeechBubbles(scaledBubbles);
@@ -578,19 +492,7 @@ function App() {
       setEffects(scaledEffects);
       setTones(scaledTones);
     } else {
-      // pageManagerがない場合は直接状態をスケール変換
-      console.log('📄 No pageManager, scaling direct state');
-      
-      console.log('📐 Scaling panels directly:', {
-        currentPanels: panels.length,
-        transform: { scaleX: transform.scaleX.toFixed(3), scaleY: transform.scaleY.toFixed(3) }
-      });
-      
-      setPanels(prev => {
-        const scaled = prev.map(panel => scalePanel(panel, transform));
-        console.log(`📐 Scaled ${scaled.length} panels from direct state`);
-        return scaled;
-      });
+      setPanels(prev => prev.map(panel => scalePanel(panel, transform)));
       setCharacters(prev => prev.map(char => scaleCharacter(char, transform)));
       setSpeechBubbles(prev => prev.map(bubble => scaleBubble(bubble, transform)));
       setBackgrounds(prev => prev.map(bg => scaleBackground(bg, transform)));
@@ -598,7 +500,6 @@ function App() {
       setTones(prev => prev.map(tone => scaleTone(tone, transform)));
     }
     
-    // 3. キャンバス要素の物理サイズを更新
     if (canvasRef.current) {
       const canvas = canvasRef.current;
       const newWidth = newSettings.paperSize.pixelWidth;
@@ -607,7 +508,6 @@ function App() {
       canvas.width = newWidth;
       canvas.height = newHeight;
       
-      // 表示サイズを調整（画面に収まるように）
       const containerWidth = 1000; 
       const containerHeight = 800; 
       const displayScaleX = containerWidth / newWidth;
@@ -617,23 +517,12 @@ function App() {
       canvas.style.width = `${newWidth * displayScale}px`;
       canvas.style.height = `${newHeight * displayScale}px`;
       
-      console.log('🖼️ Canvas physical size updated:', {
-        width: canvas.width,
-        height: canvas.height,
-        styleWidth: canvas.style.width,
-        styleHeight: canvas.style.height,
-        displayScale: displayScale.toFixed(2)
-      });
+      console.log('🖼️ Canvas physical size updated');
       
-      // キャンバスを再描画
       requestAnimationFrame(() => {
-        console.log('🎨 Canvas redraw requested after resize');
-        // 強制的に再描画をトリガー
         if (canvasRef.current) {
-          const canvas = canvasRef.current;
-          const ctx = canvas.getContext('2d');
+          const ctx = canvasRef.current.getContext('2d');
           if (ctx) {
-            // キャンバスをクリアして再描画を強制
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             console.log('🔄 Canvas cleared and ready for redraw');
           }
@@ -642,27 +531,9 @@ function App() {
     }
     
     console.log('✅ Canvas settings change completed successfully');
-    console.log('📊 Final scaling summary:', {
-      newCanvasSize: {
-        width: newSettings.paperSize.pixelWidth,
-        height: newSettings.paperSize.pixelHeight,
-        displayName: newSettings.paperSize.displayName
-      },
-      transformApplied: {
-        scaleX: transform.scaleX.toFixed(3),
-        scaleY: transform.scaleY.toFixed(3)
-      },
-      elementsScaled: {
-        panels: panels.length,
-        characters: characters.length,
-        speechBubbles: speechBubbles.length
-      }
-    });
   }, [canvasSettings, canvasRef, pageManager]);
 
-  // 【重要】上記のuseCallback依存関係に注意：[canvasSettings, canvasRef, pageManager]
-
-  // キャンバスの表示スケールを取得する関数
+  // その他のハンドラー関数（既存と同様、省略）
   const getCanvasDisplayScale = useCallback(() => {
     if (!canvasRef.current) return 1;
     
@@ -673,51 +544,16 @@ function App() {
     if (actualWidth === 0 || displayWidth === 0) return 1;
     
     const scale = displayWidth / actualWidth;
-    console.log('📏 Canvas display scale calculated:', {
-      actualWidth,
-      displayWidth,
-      scale: scale.toFixed(3)
-    });
-    
     return scale;
   }, [canvasRef]);
 
-  // マウス座標をキャンバス座標に変換する関数
   const convertMouseToCanvasCoordinates = useCallback((mouseX: number, mouseY: number) => {
     const displayScale = getCanvasDisplayScale();
     const canvasX = mouseX / displayScale;
     const canvasY = mouseY / displayScale;
     
-    console.log('🖱️ Mouse to canvas coordinate conversion:', {
-      mouseX,
-      mouseY,
-      displayScale: displayScale.toFixed(3),
-      canvasX: Math.round(canvasX),
-      canvasY: Math.round(canvasY)
-    });
-    
     return { x: Math.round(canvasX), y: Math.round(canvasY) };
   }, [getCanvasDisplayScale]);
-
-  // シーンテンプレート適用
-  /*const handleSceneClick = useCallback((sceneType: string) => {
-    if (!panels || panels.length === 0) {
-      return;
-    }
-
-    setSelectedScene(sceneType);
-    
-    const { characters: newCharacters, speechBubbles: newBubbles } = applySceneTemplate(
-      sceneType,
-      panels,
-      characters,
-      speechBubbles,
-      selectedPanel
-    );
-    
-    setCharacters(newCharacters);
-    setSpeechBubbles(newBubbles);
-  }, [panels, characters, speechBubbles, selectedPanel]); */
 
   // キャラクター操作
   const handleCharacterClick = useCallback((charType: string) => {
@@ -726,7 +562,6 @@ function App() {
     }
   }, [addCharacterFunc]);
 
-  // 吹き出し操作
   const handleBubbleClick = useCallback((bubbleType: string) => {
     if (addBubbleFunc) {
       const text = dialogueText || "ダブルクリックで編集";
@@ -735,10 +570,7 @@ function App() {
     }
   }, [addBubbleFunc, dialogueText]);
 
-  // ✅ 新しいコード（貼り付け）
   const handleCharacterUpdate = useCallback((updatedCharacter: Character) => {
-    console.log('🔄 キャラクター更新処理開始:', updatedCharacter.id);
-    
     setCharacters(prevCharacters => {
       const updated = prevCharacters.map(char => {
         if (char.id === updatedCharacter.id) {
@@ -753,31 +585,26 @@ function App() {
         return char;
       });
       
-      console.log('✅ キャラクター状態更新完了');
       return updated;
     });
     
     setSelectedCharacter(updatedCharacter);
   }, []);
 
-  // キャラクター削除機能
   const handleCharacterDelete = useCallback((characterToDelete: Character) => {
     const newCharacters = characters.filter(char => char.id !== characterToDelete.id);
     setCharacters(newCharacters);
     setSelectedCharacter(null);
   }, [characters]);
 
-  // キャラクター詳細パネルを閉じる
   const handleCharacterPanelClose = useCallback(() => {
     setSelectedCharacter(null);
   }, []);
 
-  // パネル操作ハンドラー
   const handlePanelUpdate = useCallback((updatedPanels: Panel[]) => {
     setPanels(updatedPanels);
   }, []);
 
-  // コマ追加機能
   const handlePanelAdd = useCallback((targetPanelId: string, position: 'above' | 'below' | 'left' | 'right') => {
     const targetPanel = panels.find(p => p.id.toString() === targetPanelId);
     if (!targetPanel) return;
@@ -809,7 +636,6 @@ function App() {
     console.log(`✅ コマ追加完了: ${newPanelId} (${position})`);
   }, [panels]);
 
-  // コマ削除機能（トーンも削除）
   const handlePanelDelete = useCallback((panelId: string) => {
     if (panels.length <= 1) {
       console.log(`⚠️ 最後のコマは削除できません`);
@@ -822,16 +648,15 @@ function App() {
       setSpeechBubbles(prev => prev.filter(bubble => bubble.panelId !== panelIdNum));
       setBackgrounds(prev => prev.filter(bg => bg.panelId !== panelIdNum));
       setEffects(prev => prev.filter(effect => effect.panelId !== panelIdNum));
-      setTones(prev => prev.filter(tone => tone.panelId !== panelIdNum)); // 🆕 トーンも削除
+      setTones(prev => prev.filter(tone => tone.panelId !== panelIdNum));
       setPanels(prev => prev.filter(panel => panel.id !== panelIdNum));
       setSelectedPanel(null);
       setSelectedEffect(null);
-      setSelectedTone(null); // 🆕 トーン選択もクリア
+      setSelectedTone(null);
       console.log(`🗑️ コマ削除: ${panelId}`);
     }
   }, [panels.length]);
 
-  // パネル分割機能（隙間付き版）
   const handlePanelSplit = useCallback((panelId: number, direction: "horizontal" | "vertical") => {
     const panelToSplit = panels.find(p => p.id === panelId);
     if (!panelToSplit) return;
@@ -877,49 +702,43 @@ function App() {
     console.log(`${direction}分割完了（隙間: ${gap}px）`);
   }, [panels]);
 
-  // 全てクリア機能（トーン対応）
   const handleClearAll = useCallback(() => {
     if (window.confirm("全ての要素をクリアしますか？")) {
       setCharacters([]);
       setSpeechBubbles([]);
       setBackgrounds([]);
       setEffects([]);
-      setTones([]); // 🆕 トーンもクリア
+      setTones([]);
       setSelectedCharacter(null);
       setSelectedPanel(null);
       setSelectedEffect(null);
-      setSelectedTone(null); // 🆕 トーン選択もクリア
+      setSelectedTone(null);
     }
   }, []);
 
-  // エクスポート機能
   const handleExport = useCallback((format: string) => {
     alert(`${format}でのエクスポート機能は実装予定です`);
   }, []);
 
   const handleCharacterRightClick = useCallback((e: React.MouseEvent, charType: string) => {
-  e.preventDefault();
-  setEditingCharacterType(charType);
-  setShowCharacterSettingsPanel(true);
+    e.preventDefault();
+    setEditingCharacterType(charType);
+    setShowCharacterSettingsPanel(true);
   }, []);
 
-  // 🔧 修正2: Canvas右クリック用の別関数を追加
   const handleCanvasCharacterRightClick = useCallback((character: Character) => {
     setSelectedCharacter(character);
     setShowCharacterPanel(true);
   }, []);
 
-  // 編集モード切り替え関数
   const handlePanelEditModeToggle = (enabled: boolean) => {
     setIsPanelEditMode(enabled);
   };
 
-  // 背景テンプレート適用ハンドラー
   const handleBackgroundAdd = useCallback((template: BackgroundTemplate) => {
     console.log(`背景テンプレート「${template.name}」を適用しました`);
   }, []);
 
-  // 効果線テンプレート適用ハンドラー
   const handleEffectAdd = useCallback((effect: EffectElement) => {
     setEffects([...effects, effect]);
     setSelectedEffect(effect);
@@ -933,7 +752,6 @@ function App() {
     setSelectedEffect(updatedEffect);
   }, []);
 
-  // 🆕 トーンテンプレート適用ハンドラー
   const handleToneAdd = useCallback((tone: ToneElement) => {
     setTones([...tones, tone]);
     setSelectedTone(tone);
@@ -947,8 +765,6 @@ function App() {
     setSelectedTone(updatedTone);
   }, []);
 
-  
-  // 🔧 5. 既存のhandleCharacterSettingsUpdateを修正
   const handleCharacterSettingsUpdate = useCallback((characterData: any) => {
     const { name, role, appearance } = characterData;
     handleCharacterNameUpdate(editingCharacterType, name || characterNames[editingCharacterType], role || characterSettings[editingCharacterType].role, appearance);
@@ -973,7 +789,6 @@ function App() {
             🔧 {isPanelEditMode ? "編集中" : "編集"}
           </button>
 
-          {/* 背景ボタン */}
           <button 
             className="control-btn"
             onClick={() => setShowBackgroundPanel(true)}
@@ -985,11 +800,9 @@ function App() {
             }}  
           >
             🎨 背景
-              {backgroundTemplateCount > 0 && <span style={{ marginLeft: "4px" }}>({backgroundTemplateCount})</span>}
-
+            {backgroundTemplateCount > 0 && <span style={{ marginLeft: "4px" }}>({backgroundTemplateCount})</span>}
           </button>
 
-          {/* 効果線ボタン */}
           <button 
             className="control-btn"
             onClick={() => setShowEffectPanel(true)}
@@ -1004,7 +817,6 @@ function App() {
             {effectTemplateCount > 0 && <span style={{ marginLeft: "4px" }}>({effectTemplateCount})</span>}
           </button>
 
-          {/* 🆕 トーンボタン */}
           <button 
             className="control-btn"
             onClick={() => setShowTonePanel(true)}
@@ -1019,7 +831,6 @@ function App() {
             {toneTemplateCount > 0 && <span style={{ marginLeft: "4px" }}>({toneTemplateCount})</span>}
           </button>
 
-          {/* プロジェクトボタン */}
           <button 
             className="control-btn"
             onClick={() => setShowProjectPanel(true)}
@@ -1034,7 +845,6 @@ function App() {
             {projectSave.hasUnsavedChanges && <span style={{ marginLeft: "4px" }}>●</span>}
           </button>
 
-          {/* スナップ設定UI */}
           <button 
             className={`control-btn ${snapSettings.enabled ? 'active' : ''}`}
             onClick={handleSnapToggle}
@@ -1111,47 +921,45 @@ function App() {
           </button>
         </div>
       </header>
-      {/* 🆕 ページ管理タブ（1行追加） */}
-        <PageManager
-          currentPage={pageManager.currentPage}
-          pages={pageManager.pages}
-          currentPageIndex={pageManager.currentPageIndex}
-          onPageChange={pageManager.switchToPage}
-          onPageAdd={pageManager.addPage}
-          onPageDelete={pageManager.deletePage}
-          onPageDuplicate={pageManager.duplicatePage}
-          onPageRename={pageManager.renamePage}
-          onPageReorder={pageManager.reorderPages}
-          onCurrentPageUpdate={pageManager.updateCurrentPageData}
-          isDarkMode={isDarkMode}
-        />
+
+      <PageManager
+        currentPage={pageManager.currentPage}
+        pages={pageManager.pages}
+        currentPageIndex={pageManager.currentPageIndex}
+        onPageChange={pageManager.switchToPage}
+        onPageAdd={pageManager.addPage}
+        onPageDelete={pageManager.deletePage}
+        onPageDuplicate={pageManager.duplicatePage}
+        onPageRename={pageManager.renamePage}
+        onPageReorder={pageManager.reorderPages}
+        onCurrentPageUpdate={pageManager.updateCurrentPageData}
+        isDarkMode={isDarkMode}
+      />
 
       <div className="main-content">
         {/* 左サイドバー */}
         <div className="sidebar left-sidebar">
-          {/* パネルテンプレート - 改良版 */}
-            <div className="section">
-              <h3>📐 パネルテンプレート</h3>
-              <button 
-                className="control-btn"
-                onClick={() => setShowPanelSelector(true)}
-                style={{
-                  width: "100%",
-                  padding: "12px",
-                  background: "var(--accent-color)",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "6px"
-                }}
-              >
-                🎯 コマ割りを選択 ({Object.keys(templates).length}種類)
-              </button>
-              <div className="section-info">
-                ✨ コマ数別に分類された使いやすいテンプレート集
-              </div>
+          <div className="section">
+            <h3>📐 パネルテンプレート</h3>
+            <button 
+              className="control-btn"
+              onClick={() => setShowPanelSelector(true)}
+              style={{
+                width: "100%",
+                padding: "12px",
+                background: "var(--accent-color)",
+                color: "white",
+                border: "none",
+                borderRadius: "6px"
+              }}
+            >
+              🎯 コマ割りを選択 ({Object.keys(templates).length}種類)
+            </button>
+            <div className="section-info">
+              ✨ コマ数別に分類された使いやすいテンプレート集
             </div>
+          </div>
 
-          {/* コマ操作パネル */}
           {isPanelEditMode && (
             <div className="section" style={{ 
               border: "2px solid #ff8833",
@@ -1183,7 +991,6 @@ function App() {
             </div>
           )}
 
-          {/* 🔄 新しい統合シーンテンプレートに置き換え */}
           <div className="section">
             <SceneTemplatePanel
               panels={panels}
@@ -1205,7 +1012,6 @@ function App() {
 
         {/* メインエリア */}
         <div className="canvas-area">
-          {/* キャンバス上部コントロール */}
           <div className="canvas-controls">
             <div className="undo-redo-buttons">
               <button 
@@ -1249,7 +1055,6 @@ function App() {
             </div>
           </div>
 
-          {/* キャンバス */}
           <CanvasComponent
             ref={canvasRef}
             selectedTemplate={selectedTemplate}
@@ -1263,15 +1068,13 @@ function App() {
             setBackgrounds={setBackgrounds}
             effects={effects}
             setEffects={setEffects}
-            // 🆕 トーン関連プロパティ追加（これが不足していた）
             tones={tones}
             setTones={setTones}
             selectedTone={selectedTone}
             onToneSelect={setSelectedTone}
             showTonePanel={showTonePanel}
             onTonePanelToggle={() => setShowTonePanel(!showTonePanel)}
-            characterNames={characterNames} // 🆕 この行を追加
-            // 既存のプロパティ
+            characterNames={characterNames}
             onCharacterAdd={(func: (type: string) => void) => setAddCharacterFunc(() => func)}
             onBubbleAdd={(func: (type: string, text: string) => void) => setAddBubbleFunc(() => func)}
             onPanelSelect={(panel: Panel | null) => setSelectedPanel(panel)}
@@ -1288,16 +1091,15 @@ function App() {
 
         {/* 右サイドバー */}
         <div className="sidebar right-sidebar">
-          {/* キャラクター選択 - 動的名前表示 */}
           <div className="section">
             <h3>👥 キャラクター</h3>
             <div className="character-grid">
-                  {[
-                    { type: 'character_1', icon: '🦸‍♂️' },  // ✅
-                    { type: 'character_2', icon: '🦸‍♀️' },  // ✅
-                    { type: 'character_3', icon: '😤' },     // ✅
-                    { type: 'character_4', icon: '😊' }      // ✅
-                  ].map((char) => (
+              {[
+                { type: 'character_1', icon: '🦸‍♂️' },
+                { type: 'character_2', icon: '🦸‍♀️' },
+                { type: 'character_3', icon: '😤' },
+                { type: 'character_4', icon: '😊' }
+              ].map((char) => (
                 <div
                   key={char.type}
                   className="char-btn"
@@ -1306,7 +1108,7 @@ function App() {
                   title={`${characterNames[char.type]}を追加 (右クリックで設定)`}
                 >
                   <div className="char-icon">{char.icon}</div>
-                  <span>{characterNames[char.type]}</span> {/* 🆕 動的名前表示 */}
+                  <span>{characterNames[char.type]}</span>
                 </div>
               ))}
             </div>
@@ -1322,7 +1124,6 @@ function App() {
             </div>
           </div>
 
-          {/* セリフ・吹き出し */}
           <div className="section">
             <h3>💬 セリフ・吹き出し</h3>
             <div className="bubble-types">
@@ -1342,17 +1143,16 @@ function App() {
               ))}
             </div>
           </div>
-          {/* 用紙サイズ設定パネル */}
+
           <div className="section">
             <PaperSizeSelectPanel
               currentSettings={canvasSettings}
-              onSettingsChange={handleCanvasSettingsChange}  // ← この関数に変更
+              onSettingsChange={handleCanvasSettingsChange}
               isVisible={isPaperSizePanelVisible}
               onToggle={() => setIsPaperSizePanelVisible(!isPaperSizePanelVisible)}
             />
           </div>
 
-          {/* 出力 */}
           <div className="section">
             <h3>📤 出力</h3>
             <ExportPanel
@@ -1363,8 +1163,6 @@ function App() {
               effects={effects}
               tones={tones}
               canvasRef={canvasRef}
-              
-              // 🆕 この2行を追加
               characterSettings={characterSettings}
               characterNames={characterNames}
             />
@@ -1372,19 +1170,17 @@ function App() {
         </div>
       </div>
 
-      {/* キャラクター詳細パネル */}
+      {/* モーダル・パネル類 */}
       {showCharacterPanel && selectedCharacter && (
         <CharacterDetailPanel
           selectedCharacter={selectedCharacter}
           onCharacterUpdate={handleCharacterUpdate}
           onCharacterDelete={handleCharacterDelete}
           onClose={handleCharacterPanelClose}
-          // 🆕 この行を追加
           characterNames={characterNames}
         />
       )}
 
-      {/* 背景設定パネル */}
       <BackgroundPanel
         isOpen={showBackgroundPanel}
         onClose={() => setShowBackgroundPanel(false)}
@@ -1394,7 +1190,6 @@ function App() {
         onBackgroundAdd={handleBackgroundAdd}
       />
 
-      {/* 効果線設定パネル */}
       <EffectPanel
         isOpen={showEffectPanel}
         onClose={() => setShowEffectPanel(false)}
@@ -1406,7 +1201,6 @@ function App() {
         effects={effects}
       />
 
-      {/* 🆕 トーン設定パネル */}
       <TonePanel
         isOpen={showTonePanel}
         onClose={() => setShowTonePanel(false)}
@@ -1417,22 +1211,20 @@ function App() {
         selectedPanel={selectedPanel}
         tones={tones}
       />
-        {/* キャラクター設定パネル */}
-        <CharacterSettingsPanel
-          isOpen={showCharacterSettingsPanel}
-          onClose={() => setShowCharacterSettingsPanel(false)}
-          characterType={editingCharacterType}
-          currentName={characterNames[editingCharacterType]} // 🆕 現在の名前を渡す
-          currentSettings={characterSettings[editingCharacterType]} // 🆕 現在の設定を渡す
-          onCharacterUpdate={handleCharacterSettingsUpdate}
-          isDarkMode={isDarkMode}
-        />
 
-      {/* プロジェクト管理パネル */}
+      <CharacterSettingsPanel
+        isOpen={showCharacterSettingsPanel}
+        onClose={() => setShowCharacterSettingsPanel(false)}
+        characterType={editingCharacterType}
+        currentName={characterNames[editingCharacterType]}
+        currentSettings={characterSettings[editingCharacterType]}
+        onCharacterUpdate={handleCharacterSettingsUpdate}
+        isDarkMode={isDarkMode}
+      />
+
       <ProjectPanel
         isOpen={showProjectPanel}
         onClose={() => setShowProjectPanel(false)}
-        // 🔧 8. プロジェクト読み込み時の復元処理（onLoadProjectの中を修正）
         onLoadProject={(projectId) => {
           console.log('📂 App.tsx: プロジェクト読み込み開始 - projectId:', projectId);
           
@@ -1440,13 +1232,6 @@ function App() {
           console.log('📊 loadProjectの戻り値:', project ? 'データあり' : 'データなし');
           
           if (project) {
-            console.log('📋 プロジェクト構造確認:', {
-              hasData: !!project.data,
-              hasPanels: !!project.panels,
-              keys: Object.keys(project)
-            });
-            
-            // 🔧 修正: project.data.panels → project.panels
             setPanels(project.panels || []);
             setCharacters(project.characters || []);
             setSpeechBubbles(project.bubbles || []);
@@ -1454,7 +1239,6 @@ function App() {
             setEffects(project.effects || []);
             setTones(project.tones || []);
             
-            // キャラクター名前・設定も復元
             if (project.characterNames) {
               setCharacterNames(project.characterNames);
             }
@@ -1462,7 +1246,6 @@ function App() {
               setCharacterSettings(project.characterSettings);
             }
             
-            // 設定も復元
             if (project.settings) {
               setSnapSettings(prev => ({
                 ...prev,
@@ -1478,38 +1261,35 @@ function App() {
             console.error('❌ プロジェクトデータが取得できませんでした');
           }
         }}
-        // 🔧 9. プロジェクト新規作成時のリセット処理（onNewProjectの中を修正）
-          onNewProject={() => {
-            projectSave.newProject();
-            setPanels([]);
-            setCharacters([]);
-            setSpeechBubbles([]);
-            setBackgrounds([]);
-            setEffects([]);
-            setTones([]);
-            
-            // 🆕 キャラクター名前・設定もリセット
-            setCharacterNames({
-              hero: '主人公',
-              heroine: 'ヒロイン',
-              rival: 'ライバル',
-              friend: '友人'
-            });
-            setCharacterSettings({
-              hero: { appearance: null, role: '主人公' },
-              heroine: { appearance: null, role: 'ヒロイン' },
-              rival: { appearance: null, role: 'ライバル' },
-              friend: { appearance: null, role: '友人' }
-            });
-            
-            setSelectedCharacter(null);
-            setSelectedPanel(null);
-            setSelectedEffect(null);
-            setSelectedTone(null);
-          }}
+        onNewProject={() => {
+          projectSave.newProject();
+          setPanels([]);
+          setCharacters([]);
+          setSpeechBubbles([]);
+          setBackgrounds([]);
+          setEffects([]);
+          setTones([]);
+          
+          setCharacterNames({
+            character_1: '主人公',
+            character_2: 'ヒロイン',
+            character_3: 'ライバル',
+            character_4: '友人'
+          });
+          setCharacterSettings({
+            character_1: { appearance: null, role: '主人公' },
+            character_2: { appearance: null, role: 'ヒロイン' },
+            character_3: { appearance: null, role: 'ライバル' },
+            character_4: { appearance: null, role: '友人' }
+          });
+          
+          setSelectedCharacter(null);
+          setSelectedPanel(null);
+          setSelectedEffect(null);
+          setSelectedTone(null);
+        }}
         currentProjectId={projectSave.currentProjectId}
         saveStatus={projectSave.saveStatus}
-        // ✅ 正しいコード（置き換え）
         onSaveProject={async (name?: string) => {
           const projectData = {
             panels,
@@ -1522,24 +1302,25 @@ function App() {
             settings,
             characterNames,
             characterSettings,
-            canvasSettings  // ← この1行を追加
+            canvasSettings
           };
           
           const success = await projectSave.saveProject(projectData, name);
           return success ? 'saved' : null;
         }}
       />
-        <PanelTemplateSelector
-          onTemplateSelect={(templateId) => {
-            if (templateId && templates[templateId]) {
-              handleTemplateClick(templateId);
-            }
-            setShowPanelSelector(false);
-          }}
-          onClose={() => setShowPanelSelector(false)} // 🆕 この行を追加
-          isDarkMode={isDarkMode}
-          isVisible={showPanelSelector}
-        />
+
+      <PanelTemplateSelector
+        onTemplateSelect={(templateId) => {
+          if (templateId && templates[templateId]) {
+            handleTemplateClick(templateId);
+          }
+          setShowPanelSelector(false);
+        }}
+        onClose={() => setShowPanelSelector(false)}
+        isDarkMode={isDarkMode}
+        isVisible={showPanelSelector}
+      />
     </div>
   );
 }

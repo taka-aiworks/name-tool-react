@@ -1,10 +1,10 @@
-// src/components/UI/PanelTemplateSelector.tsx - エラー修正完全版
+// src/components/UI/PanelTemplateSelector.tsx - v1.1.5 シンプル修正版
 import React, { useState } from 'react';
 import { templates, templateDescriptions, templateCategories, popularTemplates } from '../CanvasArea/templates';
 
 interface PanelTemplateSelectorProps {
   onTemplateSelect: (templateId: string) => void;
-  onClose?: () => void; // 🆕 閉じる専用のコールバック追加
+  onClose?: () => void;
   isDarkMode: boolean;
   isVisible: boolean;
 }
@@ -15,16 +15,12 @@ export const PanelTemplateSelector: React.FC<PanelTemplateSelectorProps> = ({
   isDarkMode,
   isVisible
 }) => {
-  // ✅ フックを必ず最初に呼ぶ
   const [activeCategory, setActiveCategory] = useState<string>('人気');
 
-  // ✅ 条件分岐はフックの後
   if (!isVisible) return null;
 
-  // カテゴリ一覧（人気を最初に追加）
   const categories = ['人気', ...Object.keys(templateCategories)];
 
-  // 現在選択されているカテゴリのテンプレート取得
   const getCurrentTemplates = (): string[] => {
     if (activeCategory === '人気') {
       return popularTemplates;
@@ -32,38 +28,66 @@ export const PanelTemplateSelector: React.FC<PanelTemplateSelectorProps> = ({
     return templateCategories[activeCategory] || [];
   };
 
-  // テンプレートプレビューSVG生成（最適化版）
+  // 🔧 修正: プレビューSVG生成の見切れ問題を解決
   const generatePreview = (templateId: string): string => {
     const template = templates[templateId];
-    if (!template || !template.panels) return '<svg viewBox="0 0 60 75"></svg>';
-
-    // 簡単なキャッシュ（再描画を減らす）
-    const cacheKey = `${templateId}-${isDarkMode}`;
-    if ((window as any).svgCache && (window as any).svgCache[cacheKey]) {
-      return (window as any).svgCache[cacheKey];
-    }
+    if (!template || !template.panels) return '<svg viewBox="0 0 100 120"></svg>';
 
     const strokeColor = isDarkMode ? '#6b7280' : '#d1d5db';
     const textColor = isDarkMode ? '#9ca3af' : '#6b7280';
+    const fillColor = isDarkMode ? '#1f2937' : '#f9fafb';
     
-    const panels = template.panels.map(panel => 
-      `<rect x="${panel.x * 0.1}" y="${panel.y * 0.1}" width="${panel.width * 0.1}" height="${panel.height * 0.1}" 
-       fill="none" stroke="${strokeColor}" stroke-width="1"/>
-       <text x="${(panel.x + panel.width/2) * 0.1}" y="${(panel.y + panel.height/2) * 0.1}" 
-       text-anchor="middle" dominant-baseline="middle" 
-       fill="${textColor}" font-size="8" font-family="sans-serif">${panel.id}</text>`
-    ).join('');
+    // 🔧 解決策: 全パネルの範囲を正確に計算
+    const allX = template.panels.map(p => [p.x, p.x + p.width]).flat();
+    const allY = template.panels.map(p => [p.y, p.y + p.height]).flat();
+    const minX = Math.min(...allX);
+    const maxX = Math.max(...allX);
+    const minY = Math.min(...allY);
+    const maxY = Math.max(...allY);
+    
+    const contentWidth = maxX - minX;
+    const contentHeight = maxY - minY;
+    
+    // 🔧 適切なマージンとビューポート
+    const margin = 5;
+    const viewWidth = 100;
+    const viewHeight = 120;
+    const availableWidth = viewWidth - (margin * 2);
+    const availableHeight = viewHeight - (margin * 2);
+    
+    // 🔧 アスペクト比を維持したスケール計算
+    const scaleX = availableWidth / contentWidth;
+    const scaleY = availableHeight / contentHeight;
+    const scale = Math.min(scaleX, scaleY);
+    
+    // 🔧 中央配置のためのオフセット
+    const scaledWidth = contentWidth * scale;
+    const scaledHeight = contentHeight * scale;
+    const offsetX = (viewWidth - scaledWidth) / 2 - (minX * scale);
+    const offsetY = (viewHeight - scaledHeight) / 2 - (minY * scale);
+    
+    const panels = template.panels.map(panel => {
+      const x = panel.x * scale + offsetX;
+      const y = panel.y * scale + offsetY;
+      const width = panel.width * scale;
+      const height = panel.height * scale;
+      
+      const fontSize = Math.min(width, height) * 0.12;
+      const textX = x + width / 2;
+      const textY = y + height / 2;
+      
+      return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" 
+               width="${width.toFixed(1)}" height="${height.toFixed(1)}" 
+               fill="${fillColor}" stroke="${strokeColor}" stroke-width="1"/>
+               <text x="${textX.toFixed(1)}" y="${textY.toFixed(1)}" 
+               text-anchor="middle" dominant-baseline="middle" 
+               fill="${textColor}" font-size="${fontSize.toFixed(1)}" 
+               font-family="sans-serif" font-weight="500">${panel.id}</text>`;
+    }).join('');
 
-    const svg = `<svg viewBox="0 0 60 75" width="100%" height="100%">${panels}</svg>`;
-    
-    // 簡単なキャッシュに保存
-    if (!(window as any).svgCache) (window as any).svgCache = {};
-    (window as any).svgCache[cacheKey] = svg;
-    
-    return svg;
+    return `<svg viewBox="0 0 ${viewWidth} ${viewHeight}" width="100%" height="100%">${panels}</svg>`;
   };
 
-  // カテゴリタブのスタイル
   const getTabStyle = (category: string) => ({
     padding: '8px 16px',
     margin: '0 4px',
@@ -81,16 +105,17 @@ export const PanelTemplateSelector: React.FC<PanelTemplateSelectorProps> = ({
     transition: 'all 0.2s ease'
   });
 
-  // テンプレートカードのスタイル（ホバー効果削除版）
+  // 🔧 修正: カードサイズを少し拡大して見切れを防止
   const getCardStyle = (templateId: string) => ({
-    width: '120px',
-    height: '100px',
+    width: '130px',   // 120px → 130px
+    height: '110px',  // 100px → 110px
     margin: '8px',
     borderRadius: '8px',
     cursor: 'pointer',
     border: `2px solid ${isDarkMode ? '#374151' : '#e5e7eb'}`,
     backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
-    boxShadow: isDarkMode ? '0 2px 4px rgba(0, 0, 0, 0.3)' : '0 2px 4px rgba(0, 0, 0, 0.1)'
+    boxShadow: isDarkMode ? '0 2px 4px rgba(0, 0, 0, 0.3)' : '0 2px 4px rgba(0, 0, 0, 0.1)',
+    transition: 'transform 0.2s ease, box-shadow 0.2s ease'
   });
 
   return (
@@ -99,8 +124,8 @@ export const PanelTemplateSelector: React.FC<PanelTemplateSelectorProps> = ({
       top: '50%',
       left: '50%',
       transform: 'translate(-50%, -50%)',
-      width: '800px',
-      maxHeight: '600px',
+      width: '850px',    // 800px → 850px
+      maxHeight: '650px', // 600px → 650px
       backgroundColor: isDarkMode ? '#111827' : '#ffffff',
       border: `1px solid ${isDarkMode ? '#374151' : '#d1d5db'}`,
       borderRadius: '12px',
@@ -123,7 +148,6 @@ export const PanelTemplateSelector: React.FC<PanelTemplateSelectorProps> = ({
           📐 コマ割りテンプレート選択
         </h3>
         
-        {/* カテゴリタブ */}
         <div style={{
           display: 'flex',
           flexWrap: 'wrap',
@@ -146,12 +170,12 @@ export const PanelTemplateSelector: React.FC<PanelTemplateSelectorProps> = ({
       {/* テンプレート一覧 */}
       <div style={{
         padding: '20px',
-        maxHeight: '400px',
+        maxHeight: '450px',  // 400px → 450px
         overflowY: 'auto'
       }}>
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', // 120px → 130px
           gap: '16px',
           justifyContent: 'center'
         }}>
@@ -160,10 +184,22 @@ export const PanelTemplateSelector: React.FC<PanelTemplateSelectorProps> = ({
               key={templateId}
               style={getCardStyle(templateId)}
               onClick={() => onTemplateSelect(templateId)}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = isDarkMode 
+                  ? '0 4px 8px rgba(0, 0, 0, 0.4)' 
+                  : '0 4px 8px rgba(0, 0, 0, 0.15)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = isDarkMode 
+                  ? '0 2px 4px rgba(0, 0, 0, 0.3)' 
+                  : '0 2px 4px rgba(0, 0, 0, 0.1)';
+              }}
             >
-              {/* プレビューエリア */}
+              {/* 🔧 修正: プレビューエリアを拡大 */}
               <div style={{
-                height: '60px',
+                height: '70px',    // 60px → 70px
                 padding: '8px',
                 display: 'flex',
                 alignItems: 'center',
@@ -175,7 +211,6 @@ export const PanelTemplateSelector: React.FC<PanelTemplateSelectorProps> = ({
                 />
               </div>
               
-              {/* テンプレート名 */}
               <div style={{
                 padding: '8px',
                 borderTop: `1px solid ${isDarkMode ? '#374151' : '#e5e7eb'}`,
@@ -201,7 +236,7 @@ export const PanelTemplateSelector: React.FC<PanelTemplateSelectorProps> = ({
         </div>
       </div>
 
-      {/* フッター - 詳細表示削除版 */}
+      {/* フッター */}
       <div style={{
         padding: '12px 24px',
         borderTop: `1px solid ${isDarkMode ? '#374151' : '#e5e7eb'}`,
@@ -216,14 +251,14 @@ export const PanelTemplateSelector: React.FC<PanelTemplateSelectorProps> = ({
         </div>
       </div>
 
-      {/* 閉じるボタン - 動作修正版 */}
+      {/* 閉じるボタン */}
       <button
         onClick={() => {
           setActiveCategory('人気');
           if (onClose) {
-            onClose(); // 🆕 専用の閉じる関数を呼ぶ
+            onClose();
           } else {
-            onTemplateSelect(''); // フォールバック
+            onTemplateSelect('');
           }
         }}
         style={{
