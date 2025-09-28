@@ -101,6 +101,30 @@ export const ratioTemplates: Templates = {
       { id: 4, x: 0.025, y: 0.55, width: 0.95, height: 0.425 },
     ],
   },
+  "triple_main": {
+    panels: [
+      { id: 1, x: 0.025, y: 0.025, width: 0.3, height: 0.45 },
+      { id: 2, x: 0.35, y: 0.025, width: 0.3, height: 0.45 },
+      { id: 3, x: 0.675, y: 0.025, width: 0.3, height: 0.45 },
+      { id: 4, x: 0.025, y: 0.525, width: 0.95, height: 0.45 },
+    ],
+  },
+  "dialogue": {
+    panels: [
+      { id: 1, x: 0.025, y: 0.025, width: 0.6, height: 0.5 },
+      { id: 2, x: 0.65, y: 0.025, width: 0.325, height: 0.225 },
+      { id: 3, x: 0.65, y: 0.275, width: 0.325, height: 0.225 },
+      { id: 4, x: 0.025, y: 0.55, width: 0.95, height: 0.425 },
+    ],
+  },
+  "action": {
+    panels: [
+      { id: 1, x: 0.025, y: 0.025, width: 0.3, height: 0.467 },
+      { id: 2, x: 0.35, y: 0.025, width: 0.625, height: 0.217 },
+      { id: 3, x: 0.35, y: 0.267, width: 0.625, height: 0.217 },
+      { id: 4, x: 0.025, y: 0.533, width: 0.95, height: 0.433 },
+    ],
+  },
 
   // === 5コマテンプレート ===
   "gag": {
@@ -144,7 +168,23 @@ export const ratioTemplates: Templates = {
   },
   "oneshot": {
     panels: [
-      { id: 1, x: 0.025, y: 0.025, width: 0.95, height: 0.95 },
+      { id: 1, x: 0.025, y: 0.025, width: 0.95, height: 0.133 },
+      { id: 2, x: 0.025, y: 0.183, width: 0.4625, height: 0.217 },
+      { id: 3, x: 0.5125, y: 0.183, width: 0.4625, height: 0.217 },
+      { id: 4, x: 0.025, y: 0.417, width: 0.95, height: 0.25 },
+      { id: 5, x: 0.025, y: 0.683, width: 0.4625, height: 0.283 },
+      { id: 6, x: 0.5125, y: 0.683, width: 0.4625, height: 0.283 },
+    ],
+  },
+  "manga_page": {
+    panels: [
+      { id: 1, x: 0.025, y: 0.025, width: 0.95, height: 0.15 },
+      { id: 2, x: 0.025, y: 0.2, width: 0.4625, height: 0.2 },
+      { id: 3, x: 0.5125, y: 0.2, width: 0.4625, height: 0.2 },
+      { id: 4, x: 0.025, y: 0.425, width: 0.3, height: 0.267 },
+      { id: 5, x: 0.35, y: 0.425, width: 0.3, height: 0.267 },
+      { id: 6, x: 0.675, y: 0.425, width: 0.3, height: 0.267 },
+      { id: 7, x: 0.025, y: 0.7, width: 0.95, height: 0.275 },
     ],
   },
 };
