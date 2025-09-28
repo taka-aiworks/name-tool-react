@@ -810,7 +810,7 @@ export const useCanvasDrawing = ({
         ctx.fillText(label, absoluteX + absoluteWidth - 150 + 70, absoluteY + 10 + 14);
       });
       
-      console.log(`✅ ラベル描画完了: 効果線座標修正版`);
+      // コンソールログは無効化
     } catch (error) {
       console.error("❌ Canvas描画エラー:", error);
     }
@@ -821,7 +821,7 @@ export const useCanvasDrawing = ({
    */
   const observeThemeChange = () => {
     const handleThemeChange = () => {
-      console.log("🎨 テーマ変更検出 - 再描画実行");
+      // コンソールログは無効化
       drawCanvas();
     };
     
@@ -833,7 +833,7 @@ export const useCanvasDrawing = ({
     
     return () => {
       observer.disconnect();
-      console.log("🎨 テーマ変更監視停止");
+      // コンソールログは無効化
     };
   };
 
@@ -843,26 +843,7 @@ export const useCanvasDrawing = ({
   // 1. 🔧 useEffect の依存配列に characterNames を追加
   useEffect(() => {
     drawCanvas();
-    console.log("🔄 描画トリガー:", {
-      panelsCount: panels.length,
-      charactersCount: characters.length,
-      bubblesCount: speechBubbles.length,
-      backgroundsCount: backgrounds.length,
-      effectsCount: effects.length,
-      tonesCount: tones.length,
-      selectedPanel: state.selectedPanel?.id,
-      selectedCharacter: state.selectedCharacter?.name,
-      selectedBubble: state.selectedBubble?.text?.substring(0, 10),
-      selectedBackground: selectedBackground?.type,
-      selectedEffect: selectedEffect?.type,
-      selectedTone: selectedTone?.type,
-      isPanelEditMode,
-      snapLinesCount: state.snapLines.length,
-      showGrid,
-      gridSize: snapSettings.gridSize,
-      // 🆕 characterNames の変更も監視に追加
-      characterNamesChanged: getCharacterDisplayName ? "available" : "unavailable"
-    });
+    // コンソールログは無効化
   }, [
     panels.length,
     state.selectedPanel,

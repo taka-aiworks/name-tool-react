@@ -406,41 +406,7 @@ export class CharacterUtils {
     };
   }
 
-  // 🎯 デバッグ情報生成（修正版）
-  static getDebugInfo(character: Character): string {
-    const bounds = CharacterUtils.getCharacterBounds(character);
-    return `Character Debug:
-      ID: ${character.id}
-      Name: ${character.name}
-      Type: ${character.type}
-      Position: (${character.x.toFixed(1)}, ${character.y.toFixed(1)})
-      Scale: ${character.scale.toFixed(2)}
-      ViewType: ${character.viewType}
-      Global: ${character.isGlobalPosition}
-      Bounds: ${bounds.width.toFixed(1)}x${bounds.height.toFixed(1)}
-      Expression: ${character.expression || 'neutral_expression'} 
-      Action: ${character.action || 'standing'}`; // 🔧 修正: faceExpression → expression, bodyPose → action
-  }
+  // デバッグ情報は無効化
 
-  // 🎯 デバッグ情報出力（詳細版）
-  static debugCharacterInfo(
-    character: Character,
-    panel: Panel,
-    operation: string
-  ): void {
-    console.log(`🔍 キャラクターデバッグ [${operation}]:`, {
-      id: character.id,
-      name: character.name,
-      position: { x: character.x, y: character.y },
-      size: { 
-        width: character.width || "計算値", 
-        height: character.height || "計算値",
-        scale: character.scale
-      },
-      rotation: character.rotation || 0,
-      viewType: character.viewType,
-      isGlobalPosition: character.isGlobalPosition,
-      panelId: character.panelId
-    });
-  }
+  // デバッグ情報は無効化
 }

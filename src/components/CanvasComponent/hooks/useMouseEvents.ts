@@ -136,12 +136,7 @@ const findToneAt = (
     if (clippedRight > clippedX && clippedBottom > clippedY &&
         x >= clippedX && x <= clippedRight &&
         y >= clippedY && y <= clippedBottom) {
-      console.log("🎨 トーンクリック判定成功:", {
-        id: tone.id,
-        type: tone.type,
-        panelId: tone.panelId,
-        clippedArea: { x: clippedX, y: clippedY, width: clippedRight - clippedX, height: clippedBottom - clippedY }
-      });
+      // コンソールログは無効化
       return tone;
     }
   }
@@ -219,11 +214,7 @@ const isToneResizeHandleClicked = (
         handleCenterY >= panel.y && handleCenterY <= panel.y + panel.height &&
         mouseX >= handle.x - tolerance && mouseX <= handle.x + handleSize + tolerance &&
         mouseY >= handle.y - tolerance && mouseY <= handle.y + handleSize + tolerance) {
-      console.log("🎨 トーンリサイズハンドルクリック:", {
-        direction: handle.direction,
-        handlePos: { x: handle.x, y: handle.y },
-        panelBounds: { x: panel.x, y: panel.y, width: panel.width, height: panel.height }
-      });
+      // コンソールログは無効化
       return { isClicked: true, direction: handle.direction };
     }
   }
@@ -292,12 +283,7 @@ export const useMouseEvents = ({
     // 座標変換を適用
     const { x, y } = convertMouseToCanvasCoordinates(mouseX, mouseY);
 
-    console.log('🖱️ Mouse click coordinate conversion:', {
-      mouseX,
-      mouseY,
-      canvasX: x,
-      canvasY: y
-    });
+    // コンソールログは無効化
 
     setContextMenu({ ...contextMenu, visible: false });
 
@@ -313,15 +299,15 @@ export const useMouseEvents = ({
       if (setSelectedTone) setSelectedTone(null);
       if (onPanelSelect) onPanelSelect(null);
       if (onCharacterSelect) onCharacterSelect(null);
-      console.log("💬 吹き出し選択:", clickedBubble.text);
+      // コンソールログは無効化
       return;
     }
 
     // 2. キャラクタークリック判定（2番目の優先度 - パネルより優先）
-    console.log('🔍 キャラクタークリック判定開始:', { x, y, charactersCount: characters.length });
+    // コンソールログは無効化
     const clickedCharacter = CharacterRenderer.findCharacterAt(x, y, characters, panels);
     if (clickedCharacter) {
-      console.log('✅ キャラクタークリック検出:', clickedCharacter.name);
+      // コンソールログは無効化
       actions.setSelectedCharacter(clickedCharacter);
       actions.setSelectedBubble(null);
       actions.setSelectedPanel(null);
@@ -330,10 +316,10 @@ export const useMouseEvents = ({
       if (setSelectedTone) setSelectedTone(null);
       if (onPanelSelect) onPanelSelect(null);
       if (onCharacterSelect) onCharacterSelect(clickedCharacter);
-      console.log("👤 キャラクター選択:", clickedCharacter.name);
+      // コンソールログは無効化
       return;
     } else {
-      console.log('❌ キャラクタークリック検出なし');
+      // コンソールログは無効化
     }
 
     // 🆕 3. 効果線クリック判定（3番目の優先度）
@@ -348,7 +334,7 @@ export const useMouseEvents = ({
         if (setSelectedTone) setSelectedTone(null);
         if (onPanelSelect) onPanelSelect(null);
         if (onCharacterSelect) onCharacterSelect(null);
-        console.log("⚡ 効果線選択:", clickedEffect.type);
+        // コンソールログは無効化
         return;
       }
     }
@@ -365,7 +351,7 @@ export const useMouseEvents = ({
         if (setSelectedEffect) setSelectedEffect(null);
         if (onPanelSelect) onPanelSelect(null);
         if (onCharacterSelect) onCharacterSelect(null);
-        console.log("🎨 トーン選択:", clickedTone.type);
+        // コンソールログは無効化
         return;
       }
     }
@@ -381,7 +367,7 @@ export const useMouseEvents = ({
       if (setSelectedTone) setSelectedTone(null);
       if (onPanelSelect) onPanelSelect(clickedPanel);
       if (onCharacterSelect) onCharacterSelect(null);
-      console.log("📐 パネル選択:", clickedPanel.id);
+      // コンソールログは無効化
       return;
     }
 
@@ -397,13 +383,13 @@ export const useMouseEvents = ({
         if (setSelectedTone) setSelectedTone(null);
         if (onPanelSelect) onPanelSelect(null);
         if (onCharacterSelect) onCharacterSelect(null);
-        console.log("🎨 背景選択:", clickedBackground.type);
+        // コンソールログは無効化
         return;
       }
     }
 
     // 7. 空白クリック（全選択解除）
-    console.log("🎯 空白クリック - 全選択解除");
+    // コンソールログは無効化
     actions.setSelectedPanel(null);
     actions.setSelectedCharacter(null);
     actions.setSelectedBubble(null);
@@ -427,19 +413,14 @@ export const useMouseEvents = ({
     // 座標変換を適用
     const { x, y } = convertMouseToCanvasCoordinates(mouseX, mouseY);
 
-    console.log("🖱️ マウスダウン開始:", { 
-      mouseX, 
-      mouseY, 
-      canvasX: x,
-      canvasY: y
-    });
+    // コンソールログは無効化
 
     // 優先順位1: パネル編集モードのハンドル判定（最優先）
     if (isPanelEditMode && state.selectedPanel) {
       const panelHandle = PanelManager.getPanelHandleAt(x, y, state.selectedPanel);
       
       if (panelHandle) {
-        console.log("🔧 パネル編集ハンドル:", panelHandle.type);
+        // コンソールログは無効化
         
         if (panelHandle.type === "delete") {
           contextMenuActions.onDeletePanel(state.selectedPanel);
@@ -494,14 +475,14 @@ export const useMouseEvents = ({
         
         if (expandedClicked) {
           clickedCharacter = character;
-          console.log(`✅ キャラクター発見: ${character.name}`);
+          // コンソールログは無効化
           break;
         }
       }
     }
 
     if (clickedCharacter) {
-      console.log("👤 キャラクター処理開始:", clickedCharacter.name);
+      // コンソールログは無効化
       
       // 常にキャラクターを選択状態にする（既に選択済みでも）
       actions.setSelectedCharacter(clickedCharacter);
@@ -511,7 +492,7 @@ export const useMouseEvents = ({
       if (setSelectedEffect) setSelectedEffect(null);
       if (setSelectedTone) setSelectedTone(null);
       if (onCharacterSelect) onCharacterSelect(clickedCharacter);
-      console.log("📱 キャラクター選択状態確定");
+      // コンソールログは無効化
       
       const panel = panels.find(p => p.id === clickedCharacter!.panelId);
       if (!panel) {
@@ -526,7 +507,7 @@ export const useMouseEvents = ({
       );
       
       if (rotationClicked) {
-        console.log("🔄 回転ハンドルクリック");
+        // コンソールログは無効化
         actions.setIsCharacterRotating(true);
         
         const { centerX, centerY } = CharacterUtils.calculateCenterCoordinates(clickedCharacter, panel);
@@ -545,7 +526,7 @@ export const useMouseEvents = ({
       );
       
       if (resizeResult.isClicked) {
-        console.log("📏 キャラクターリサイズ開始:", resizeResult.direction);
+        // コンソールログは無効化
         actions.setIsCharacterResizing(true);
         actions.setResizeDirection(resizeResult.direction);
         actions.setDragOffset({ x: mouseX, y: mouseY });
@@ -564,7 +545,7 @@ export const useMouseEvents = ({
       }
       
       // 通常ドラッグ開始
-      console.log("📱 キャラクター通常ドラッグ開始");
+      // コンソールログは無効化
       actions.setIsDragging(true);
       actions.setDragOffset({
         x: x - clickedCharacter.x,
@@ -578,7 +559,7 @@ export const useMouseEvents = ({
     // 優先順位3: 吹き出し操作判定
     const clickedBubble = BubbleRenderer.findBubbleAt(x, y, speechBubbles, panels);
     if (clickedBubble) {
-      console.log("🎯 吹き出しクリック:", clickedBubble.text);
+      // コンソールログは無効化
       
       actions.setSelectedBubble(clickedBubble);
       actions.setSelectedCharacter(null);
@@ -596,7 +577,7 @@ export const useMouseEvents = ({
       const resizeResult = BubbleRenderer.isBubbleResizeHandleClicked(x, y, clickedBubble, panel);
       
       if (resizeResult.isClicked) {
-        console.log("✅ 吹き出しリサイズ開始:", resizeResult.direction);
+        // コンソールログは無効化
         actions.setIsBubbleResizing(true);
         actions.setResizeDirection(resizeResult.direction);
         actions.setDragOffset({ x: mouseX, y: mouseY });
@@ -607,7 +588,7 @@ export const useMouseEvents = ({
           height: clickedBubble.height
         });
       } else {
-        console.log("📱 吹き出しドラッグ開始");
+        // コンソールログは無効化
         actions.setIsDragging(true);
         actions.setDragOffset({
           x: mouseX - clickedBubble.x,
@@ -623,7 +604,7 @@ export const useMouseEvents = ({
     if (effects.length > 0 && setSelectedEffect) {
       const clickedEffect = findEffectAt(x, y, effects, panels);
       if (clickedEffect) {
-        console.log("⚡ 効果線クリック:", clickedEffect.type);
+        // コンソールログは無効化
         
         const isAlreadySelected = selectedEffect?.id === clickedEffect.id;
         
@@ -636,7 +617,7 @@ export const useMouseEvents = ({
           if (setSelectedTone) setSelectedTone(null);
           if (onCharacterSelect) onCharacterSelect(null);
           if (onPanelSelect) onPanelSelect(null);
-          console.log("⚡ 効果線選択状態変更実行");
+          // コンソールログは無効化
         }
         
         const panel = panels.find(p => p.id === clickedEffect.panelId);
@@ -650,7 +631,7 @@ export const useMouseEvents = ({
         const resizeResult = isEffectResizeHandleClicked(x, y, clickedEffect, panel);
         
         if (resizeResult.isClicked) {
-          console.log("⚡ 効果線リサイズ開始:", resizeResult.direction);
+          // コンソールログは無効化
           actions.setIsCharacterResizing(true); // 既存のリサイズフラグを使用
           actions.setResizeDirection(resizeResult.direction);
           actions.setDragOffset({ x, y });
@@ -662,7 +643,7 @@ export const useMouseEvents = ({
           });
         } else if (isAlreadySelected) {
           // 通常ドラッグ（選択済みの場合のみ開始）
-          console.log("⚡ 効果線ドラッグ開始");
+          // コンソールログは無効化
           actions.setIsDragging(true);
           actions.setDragOffset({
             x: mouseX - (panel.x + clickedEffect.x * panel.width),
@@ -679,7 +660,7 @@ export const useMouseEvents = ({
 if (tones.length > 0 && setSelectedTone) {
   const clickedTone = findToneAt(x, y, tones, panels);
   if (clickedTone) {
-    console.log("🎨 トーンクリック:", clickedTone.type, "パネル:", clickedTone.panelId);
+    // コンソールログは無効化
     
     const isAlreadySelected = selectedTone?.id === clickedTone.id;
     
@@ -692,7 +673,7 @@ if (tones.length > 0 && setSelectedTone) {
       if (setSelectedEffect) setSelectedEffect(null);
       if (onCharacterSelect) onCharacterSelect(null);
       if (onPanelSelect) onPanelSelect(null);
-      console.log("🎨 トーン選択状態変更実行");
+      // コンソールログは無効化
     }
     
     const panel = panels.find(p => p.id === clickedTone.panelId);
@@ -706,7 +687,7 @@ if (tones.length > 0 && setSelectedTone) {
     const resizeResult = isToneResizeHandleClicked(x, y, clickedTone, panel);
     
     if (resizeResult.isClicked) {
-      console.log("🎨 トーンリサイズ開始:", resizeResult.direction);
+      // コンソールログは無効化
       actions.setIsCharacterResizing(true); // 既存のリサイズフラグを使用
       actions.setResizeDirection(resizeResult.direction);
       actions.setDragOffset({ x: mouseX, y: mouseY });
@@ -718,7 +699,7 @@ if (tones.length > 0 && setSelectedTone) {
       });
     } else if (isAlreadySelected) {
       // 🔧 パネル内相対座標でのドラッグ開始
-      console.log("🎨 トーンドラッグ開始（パネル内相対座標）");
+      // コンソールログは無効化
       actions.setIsDragging(true);
       
       // パネル内相対座標でドラッグオフセットを計算
@@ -739,7 +720,7 @@ if (tones.length > 0 && setSelectedTone) {
     // 優先順位6: 通常パネル処理（背景より優先）
     const clickedPanel = PanelManager.findPanelAt(x, y, panels);
     if (clickedPanel) {
-      console.log("🎯 パネルクリック:", clickedPanel.id);
+      // コンソールログは無効化
       actions.setSelectedPanel(clickedPanel);
       actions.setSelectedCharacter(null);
       actions.setSelectedBubble(null);
@@ -755,7 +736,7 @@ if (tones.length > 0 && setSelectedTone) {
     if (backgrounds.length > 0 && setSelectedBackground) {
       const clickedBackground = findBackgroundAt(x, y, backgrounds, panels);
       if (clickedBackground) {
-        console.log("🎨 背景クリック:", clickedBackground.type);
+        // コンソールログは無効化
         setSelectedBackground(clickedBackground);
         actions.setSelectedCharacter(null);
         actions.setSelectedBubble(null);
@@ -770,7 +751,7 @@ if (tones.length > 0 && setSelectedTone) {
     }
 
     // 最後: 空白クリック
-    console.log("🎯 空白クリック - 全選択解除");
+    // コンソールログは無効化
     actions.setSelectedPanel(null);
     actions.setSelectedCharacter(null);
     actions.setSelectedBubble(null);
@@ -799,11 +780,7 @@ if (tones.length > 0 && setSelectedTone) {
 
     // キャラクター回転処理（ハンドルのみ）
     if (state.isCharacterRotating && state.selectedCharacter) {
-      console.log("🔄 回転処理実行中（ハンドルのみ）:", {
-        character: state.selectedCharacter.name,
-        mousePos: { mouseX, mouseY },
-        canvasPos: { x, y }
-      });
+      // コンソールログは無効化
       
       const panel = panels.find(p => p.id === state.selectedCharacter!.panelId);
       if (panel && state.selectedCharacter) {
@@ -945,10 +922,7 @@ if (selectedTone && state.isCharacterResizing && state.initialCharacterBounds &&
     tone.id === selectedTone.id ? updatedTone : tone
   ));
   setSelectedTone?.(updatedTone);
-  console.log("🎨 トーンリサイズ実行:", {
-    direction: state.resizeDirection,
-    newBounds: { x: updatedTone.x, y: updatedTone.y, width: updatedTone.width, height: updatedTone.height }
-  });
+  // コンソールログは無効化
   return;
 }
 
@@ -1033,7 +1007,7 @@ if (selectedTone && state.isCharacterResizing && state.initialCharacterBounds &&
 
     // キャラクター移動（回転なし）
     if (state.selectedCharacter && state.isDragging) {
-      console.log("📱 キャラクター移動実行中（回転なし）");
+      // コンソールログは無効化
       
       const newX = x - state.dragOffset.x;
       const newY = y - state.dragOffset.y;
@@ -1137,11 +1111,11 @@ if (selectedTone && state.isCharacterResizing && state.initialCharacterBounds &&
   };
 
   const handleCanvasMouseUp = () => {
-    console.log("⬆️ マウスアップ - 操作終了処理");
+    // コンソールログは無効化
     
     // 回転終了時の選択状態維持
     if (state.isCharacterRotating && state.selectedCharacter) {
-      console.log("🔄 回転操作完了 - 選択状態維持:", state.selectedCharacter.name);
+      // コンソールログは無効化
       const currentCharacter = state.selectedCharacter;
       
       // 状態リセット
@@ -1152,7 +1126,7 @@ if (selectedTone && state.isCharacterResizing && state.initialCharacterBounds &&
       setTimeout(() => {
         actions.setSelectedCharacter(currentCharacter);
         if (onCharacterSelect) onCharacterSelect(currentCharacter);
-        console.log("✅ 回転後選択状態復元:", currentCharacter.name);
+        // コンソールログは無効化
       }, 0);
       
       return;
@@ -1160,7 +1134,7 @@ if (selectedTone && state.isCharacterResizing && state.initialCharacterBounds &&
     
     // 🆕 効果線操作終了時の選択状態維持
     if ((state.isDragging || state.isCharacterResizing) && selectedEffect && setSelectedEffect) {
-      console.log("⚡ 効果線操作完了 - 選択状態維持:", selectedEffect.type);
+      // コンソールログは無効化
       const currentEffect = selectedEffect;
       
       // 状態リセット
@@ -1172,7 +1146,7 @@ if (selectedTone && state.isCharacterResizing && state.initialCharacterBounds &&
         if (setSelectedEffect) {
           setSelectedEffect(currentEffect);
         }
-        console.log("✅ 効果線操作後選択状態復元:", currentEffect.type);
+        // コンソールログは無効化
       }, 0);
       
       return;
@@ -1180,7 +1154,7 @@ if (selectedTone && state.isCharacterResizing && state.initialCharacterBounds &&
 
     // 🆕 トーン操作終了時の選択状態維持
     if ((state.isDragging || state.isCharacterResizing) && selectedTone && setSelectedTone) {
-      console.log("🎨 トーン操作完了 - 選択状態維持:", selectedTone.type);
+      // コンソールログは無効化
       const currentTone = selectedTone;
       
       // 状態リセット
@@ -1192,7 +1166,7 @@ if (selectedTone && state.isCharacterResizing && state.initialCharacterBounds &&
         if (setSelectedTone) {
           setSelectedTone(currentTone);
         }
-        console.log("✅ トーン操作後選択状態復元:", currentTone.type);
+        // コンソールログは無効化
       }, 0);
       
       return;
@@ -1200,7 +1174,7 @@ if (selectedTone && state.isCharacterResizing && state.initialCharacterBounds &&
 
     // 🆕 キャラクタードラッグ操作終了時の選択状態維持
     if ((state.isDragging || state.isCharacterResizing) && state.selectedCharacter) {
-      console.log("👤 キャラクター操作完了 - 選択状態維持:", state.selectedCharacter.name);
+      // コンソールログは無効化
       const currentCharacter = state.selectedCharacter;
       
       // 状態リセット
@@ -1211,7 +1185,7 @@ if (selectedTone && state.isCharacterResizing && state.initialCharacterBounds &&
       setTimeout(() => {
         actions.setSelectedCharacter(currentCharacter);
         if (onCharacterSelect) onCharacterSelect(currentCharacter);
-        console.log("✅ キャラクター操作後選択状態復元:", currentCharacter.name);
+        // コンソールログは無効化
       }, 0);
       
       return;
@@ -1220,7 +1194,7 @@ if (selectedTone && state.isCharacterResizing && state.initialCharacterBounds &&
     // その他の操作終了処理
     actions.resetDragStates();
     actions.setSnapLines([]);
-    console.log("✅ 全状態リセット完了");
+    // コンソールログは無効化
   };
 
   const handleCanvasContextMenu = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -1346,7 +1320,7 @@ if (selectedTone && state.isCharacterResizing && state.initialCharacterBounds &&
       const clickedEffect = findEffectAt(x, y, effects, panels);
       if (clickedEffect && contextMenuActions.onOpenEffectPanel) {
         contextMenuActions.onOpenEffectPanel(clickedEffect);
-        console.log("⚡ 効果線設定パネル開く:", clickedEffect.type);
+        // コンソールログは無効化
         return;
       }
     }
@@ -1356,7 +1330,7 @@ if (selectedTone && state.isCharacterResizing && state.initialCharacterBounds &&
       const clickedTone = findToneAt(x, y, tones, panels);
       if (clickedTone && contextMenuActions.onOpenTonePanel) {
         contextMenuActions.onOpenTonePanel(clickedTone);
-        console.log("🎨 トーン設定パネル開く:", clickedTone.type);
+        // コンソールログは無効化
         return;
       }
     }
@@ -1366,7 +1340,7 @@ if (selectedTone && state.isCharacterResizing && state.initialCharacterBounds &&
       const clickedBackground = findBackgroundAt(x, y, backgrounds, panels);
       if (clickedBackground && contextMenuActions.onOpenBackgroundPanel) {
         contextMenuActions.onOpenBackgroundPanel(clickedBackground);
-        console.log("🎨 背景設定パネル開く:", clickedBackground.type);
+        // コンソールログは無効化
         return;
       }
     }
@@ -1375,7 +1349,7 @@ if (selectedTone && state.isCharacterResizing && state.initialCharacterBounds &&
     if (clickedBubble) {
       actions.setEditingBubble(clickedBubble);
       actions.setEditText(clickedBubble.text);
-      console.log("✏️ 吹き出し編集開始:", clickedBubble.text);
+      // コンソールログは無効化
     }
   };
 

@@ -158,22 +158,7 @@ const BackgroundPanel: React.FC<BackgroundPanelProps> = ({
           </div>
         ) : (
           <>
-            {/* 🆕 デバッグ情報表示 */}
-            <div style={{
-              background: '#f0f8ff',
-              border: '1px solid #4dabf7',
-              borderRadius: '8px',
-              padding: '12px',
-              marginBottom: '20px',
-              fontSize: '12px',
-              color: '#1971c2'
-            }}>
-              <strong>🔍 デバッグ情報:</strong><br/>
-              • パネルID: {currentPanel.id}<br/>
-              • 背景要素数: {panelBackgrounds.length}<br/>
-              • 検出された背景名: {backgroundName || '(未検出)'}<br/>
-              • 背景要素: {panelBackgrounds.map(bg => `${bg.type}(${bg.id})`).join(', ')}<br/>
-            </div>
+            {/* デバッグ情報は無効化 */}
 
             {/* カテゴリタブ */}
             <div style={{ marginBottom: '20px' }}>

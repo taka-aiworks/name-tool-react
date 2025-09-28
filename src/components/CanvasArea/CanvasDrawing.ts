@@ -56,40 +56,14 @@ export class CanvasDrawing {
     isDarkMode: boolean,
     isEditMode: boolean
   ): void {
-    console.log('🎨 Drawing panel:', {
-      id: panel.id,
-      x: panel.x,
-      y: panel.y,
-      width: panel.width,
-      height: panel.height,
-      isSelected,
-      canvasSize: { width: ctx.canvas.width, height: ctx.canvas.height },
-      canvasDisplaySize: { width: ctx.canvas.offsetWidth, height: ctx.canvas.offsetHeight },
-      displayScale: { 
-        x: ctx.canvas.offsetWidth / ctx.canvas.width, 
-        y: ctx.canvas.offsetHeight / ctx.canvas.height 
-      }
-    });
+    // コンソールログは無効化
     
     // パネルがキャンバス内にあるかチェック
     const isPanelInCanvas = panel.x >= 0 && panel.y >= 0 && 
                            panel.x + panel.width <= ctx.canvas.width && 
                            panel.y + panel.height <= ctx.canvas.height;
     
-    console.log('📐 Panel bounds check:', {
-      panelId: panel.id,
-      isInCanvas: isPanelInCanvas,
-      panelBounds: {
-        left: panel.x,
-        top: panel.y,
-        right: panel.x + panel.width,
-        bottom: panel.y + panel.height
-      },
-      canvasBounds: {
-        width: ctx.canvas.width,
-        height: ctx.canvas.height
-      }
-    });
+    // コンソールログは無効化
     
     // パネル背景
     if (isDarkMode) {

@@ -283,28 +283,28 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, ExtendedCanvasComponentPro
         setCharacters(newCharacters);
         actions.setSelectedCharacter(null);
         if (onCharacterSelect) onCharacterSelect(null);
-        console.log("キャラクター削除:", (element as Character).name);
+        // コンソールログは無効化
       } else if (type === 'bubble') {
         const newBubbles = speechBubbles.filter(bubble => bubble.id !== element.id);
         setSpeechBubbles(newBubbles);
         actions.setSelectedBubble(null);
-        console.log("吹き出し削除:", (element as SpeechBubble).text);
+        // コンソールログは無効化
       } else if (type === 'background') {
         const newBackgrounds = backgrounds.filter(bg => bg.id !== element.id);
         setBackgrounds(newBackgrounds);
         setSelectedBackground(null);
-        console.log("背景削除:", getCanvasBackgroundDisplayName(element as BackgroundElement, backgrounds));
+        // コンソールログは無効化
       } else if (type === 'effect') {
         const newEffects = effects.filter(effect => effect.id !== element.id);
         setEffects(newEffects);
         setSelectedEffect(null);
-        console.log("効果線削除:", (element as EffectElement).type);
+        // コンソールログは無効化
       } else if (type === 'tone') {
         // トーン削除
         const newTones = tones.filter(tone => tone.id !== element.id);
         setTones(newTones);
         handleToneSelect(null);
-        console.log("トーン削除:", (element as ToneElement).type);
+        // コンソールログは無効化
       }
     },
 
@@ -362,7 +362,7 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, ExtendedCanvasComponentPro
       if (onPanelSelect) onPanelSelect(null);
       if (onCharacterSelect) onCharacterSelect(null);
       
-      console.log(`コマ${panel.id}を削除しました`);
+      // コンソールログは無効化
     },
 
     onFlipHorizontal: () => {
@@ -455,7 +455,7 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, ExtendedCanvasComponentPro
       if (onPanelSelect) onPanelSelect(panel);
       if (onCharacterSelect) onCharacterSelect(null);
       if (onPanelEditModeToggle) onPanelEditModeToggle(true);
-      console.log("コマ編集モード開始:", panel.id);
+      // コンソールログは無効化
     },
 
     onSplitPanel: (panel: Panel, direction: 'horizontal' | 'vertical') => {
@@ -564,11 +564,11 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, ExtendedCanvasComponentPro
     },
 
     onOpenBackgroundPanel: (background: BackgroundElement) => {
-      console.log("背景設定パネルを開く:", background.type);
+      // コンソールログは無効化
     },
 
     onOpenEffectPanel: (effect: EffectElement) => {
-      console.log("効果線設定パネルを開く:", effect.type);
+      // コンソールログは無効化
     },
 
     // トーン設定パネル
@@ -576,7 +576,7 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, ExtendedCanvasComponentPro
       if (onTonePanelToggle) {
         onTonePanelToggle();
       }
-      console.log("トーン設定パネルを開く:", tone.type);
+      // コンソールログは無効化
     },
 
     onDeselectAll: () => {
@@ -676,28 +676,28 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, ExtendedCanvasComponentPro
       if (e.key === 'Delete' || e.key === 'Backspace') {
         if (state.selectedBubble) {
           contextMenuActions.onDeleteElement('bubble', state.selectedBubble);
-          console.log("💬 吹き出し削除（キーボード）:", state.selectedBubble.text);
+          // コンソールログは無効化
           e.preventDefault();
         } else if (state.selectedCharacter) {
           contextMenuActions.onDeleteElement('character', state.selectedCharacter);
-          console.log("👤 キャラクター削除（キーボード）:", state.selectedCharacter.name);
+          // コンソールログは無効化
           e.preventDefault();
         } else if (selectedTone) {
           // トーン削除
           contextMenuActions.onDeleteElement('tone', selectedTone);
-          console.log("🎯 トーン削除（キーボード）:", selectedTone.type);
+          // コンソールログは無効化
           e.preventDefault();
         } else if (selectedEffect) {
           contextMenuActions.onDeleteElement('effect', selectedEffect);
-          console.log("⚡ 効果線削除（キーボード）:", selectedEffect.type);
+          // コンソールログは無効化
           e.preventDefault();
         } else if (selectedBackground) {
           contextMenuActions.onDeleteElement('background', selectedBackground);
-          console.log("🎨 背景削除（キーボード）:", selectedBackground.type);
+          // コンソールログは無効化
           e.preventDefault();
         } else if (state.selectedPanel && isPanelEditMode) {
           contextMenuActions.onDeletePanel(state.selectedPanel);
-          console.log("📐 パネル削除（キーボード）:", state.selectedPanel.id);
+          // コンソールログは無効化
           e.preventDefault();
         }
       }
@@ -754,7 +754,7 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, ExtendedCanvasComponentPro
   // テンプレート変更時の処理（App.tsxで処理されるため、ここでは選択状態のみリセット）
   useEffect(() => {
     if (selectedTemplate) {
-      console.log('📐 CanvasComponent: Template changed to:', selectedTemplate);
+      // コンソールログは無効化
       
       // 選択状態をリセット
       actions.setSelectedPanel(null);
@@ -995,47 +995,9 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, ExtendedCanvasComponentPro
         </div>
       )}
 
-      {/* トーンパネル表示状態 */}
-      {showTonePanel && (
-        <div
-          style={{
-            position: "absolute",
-            top: "190px",
-            right: "10px",
-            background: "rgba(121, 85, 72, 0.9)",
-            color: "white",
-            padding: "6px 10px",
-            borderRadius: "4px",
-            fontSize: "11px",
-            fontWeight: "bold",
-          }}
-        >
-          🎯 トーンパネル表示中
-          <br/>
-          <small>Ctrl+T で開閉</small>
-        </div>
-      )}
+      {/* トーンパネル表示状態は無効化 */}
 
-      {/* クリップボード状態表示 */}
-      {clipboard && (
-        <div
-          style={{
-            position: "absolute",
-            top: showTonePanel ? "220px" : "190px",
-            right: "10px",
-            background: "rgba(128, 128, 128, 0.9)",
-            color: "white",
-            padding: "6px 10px",
-            borderRadius: "4px",
-            fontSize: "11px",
-            fontWeight: "bold",
-          }}
-        >
-          📋 クリップボード: {clipboard.type}
-          <br/>
-          <small>Ctrl+Vでペースト</small>
-        </div>
-      )}
+      {/* クリップボード状態表示は無効化 */}
 
       {/* スナップ設定状態表示 - 表示を無効化
       {snapSettings.enabled && (
@@ -1043,32 +1005,7 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, ExtendedCanvasComponentPro
       )}
       */}
 
-      {/* デバッグ情報表示 */}
-      <div
-        style={{
-          position: "absolute",
-          bottom: "10px",
-          right: "10px",
-          background: "rgba(0, 0, 0, 0.8)",
-          color: "white",
-          padding: "6px 10px",
-          borderRadius: "4px",
-          fontSize: "10px",
-          fontFamily: "monospace",
-        }}
-      >
-        🔧 デバッグ情報<br/>
-        ドラッグ: {state.isDragging || isBackgroundDragging || isEffectDragging || isToneDragging ? "✅" : "❌"}<br/>
-        吹き出しリサイズ: {state.isBubbleResizing ? "✅" : "❌"}<br/>
-        キャラリサイズ: {state.isCharacterResizing ? "✅" : "❌"}<br/>
-        背景操作: {selectedBackground ? "✅" : "❌"}<br/>
-        効果線操作: {selectedEffect ? "✅" : "❌"}<br/>
-        トーン操作: {selectedTone ? "✅" : "❌"}<br/>
-        トーンパネル: {showTonePanel ? "✅" : "❌"}<br/>
-        背景数: {backgrounds.length}個<br/>
-        効果線数: {effects.length}個<br/>
-        トーン数: {tones.length}個
-      </div>
+      {/* デバッグ情報は無効化 */}
     </div>
   );
 });

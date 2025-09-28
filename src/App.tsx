@@ -39,9 +39,9 @@ function App() {
 
   // 🔧 最適化2: 初期パネル設定の最適化
   const [panels, setPanels] = useState<Panel[]>(() => {
-    console.log('🎯 App initialization: Setting up initial panels');
+    // コンソールログは無効化
     const initialPanels = templates.reverse_t.panels;
-    console.log('📐 Initial panels loaded:', initialPanels.length, 'panels');
+    // コンソールログは無効化
     return [...initialPanels];
   });
 
@@ -81,19 +81,19 @@ function App() {
 
   // 🔧 最適化3: デフォルトダークモード設定の最適化
   useEffect(() => {
-    console.log('🎨 Setting default dark mode');
+    // コンソールログは無効化
     document.documentElement.setAttribute("data-theme", "dark");
   }, []);
 
   // 🔧 最適化4: 初回テンプレート適用の最適化（重複削除・シンプル化）
   useEffect(() => {
-    console.log('🚀 Initial template application');
+    // コンソールログは無効化
     if (selectedTemplate) {
       // 比率ベースのテンプレートを適用
       const { applyRatioTemplate } = require('./utils/RatioTemplateScaler');
       const scaledPanels = applyRatioTemplate(selectedTemplate, canvasSettings);
-      console.log('📐 Template panels count:', scaledPanels.length);
-      console.log('📐 Scaled panels:', scaledPanels);
+      // コンソールログは無効化
+      // コンソールログは無効化
       setPanels(scaledPanels);
       
       // キャンバスを再描画
@@ -102,11 +102,11 @@ function App() {
         const ctx = canvas.getContext('2d');
         if (ctx) {
           ctx.clearRect(0, 0, canvas.width, canvas.height);
-          console.log('🔄 Canvas cleared for initial template');
+          // コンソールログは無効化
         }
       }
       
-      console.log('✅ Initial template applied successfully with ratio scaling');
+      // コンソールログは無効化
     }
   }, [selectedTemplate, canvasSettings]); // テンプレートとキャンバス設定の両方に依存
 
@@ -133,7 +133,7 @@ function App() {
       canvas.style.width = `${pixelWidth * finalDisplayScale}px`;
       canvas.style.height = `${pixelHeight * finalDisplayScale}px`;
       
-      console.log('🖼️ Initial canvas size set:', { width: pixelWidth, height: pixelHeight, displayScale: finalDisplayScale });
+      // コンソールログは無効化
     }
   }, [canvasSettings]);
 
@@ -164,10 +164,7 @@ function App() {
     return uniqueNames.size;
   }, [effects]);
 
-  const toneTemplateCount = useMemo(() => {
-    const uniqueNames = new Set(tones.map(tone => tone.type));
-    return uniqueNames.size;
-  }, [tones]);
+  // トーン機能は無効化
 
   // キャラクター名前管理（最適化済み）
   const [characterNames, setCharacterNames] = useState<Record<string, string>>({
@@ -241,19 +238,15 @@ function App() {
     [effects]
   );
 
-  const tonesSignature = useMemo(() => 
-    tones.map(tone => `${tone.id}-${tone.x}-${tone.y}-${tone.density}-${tone.opacity}`).join(','), 
-    [tones]
-  );
+  // トーン機能は無効化
 
   // 履歴保存関数
   const saveToHistory = useCallback((
     newCharacters: Character[], 
     newBubbles: SpeechBubble[], 
-    newPanels: Panel[], 
+    newPanels: Panel[],
     newBackgrounds: BackgroundElement[],
-    newEffects: EffectElement[],
-    newTones: ToneElement[]
+    newEffects: EffectElement[]
   ) => {
     setOperationHistory(prev => {
       const newHistory = {
@@ -262,7 +255,7 @@ function App() {
         panels: [...prev.panels.slice(0, prev.currentIndex + 1), [...newPanels]],
         backgrounds: [...prev.backgrounds.slice(0, prev.currentIndex + 1), [...newBackgrounds]],
         effects: [...prev.effects.slice(0, prev.currentIndex + 1), [...newEffects]],
-        tones: [...prev.tones.slice(0, prev.currentIndex + 1), [...newTones]],
+        tones: [[]],
         currentIndex: prev.currentIndex + 1,
       };
       
@@ -285,16 +278,16 @@ function App() {
   useEffect(() => {
     // 空の状態では履歴保存しない
     if (characters.length === 0 && speechBubbles.length === 0 && panels.length === 0 && 
-        backgrounds.length === 0 && effects.length === 0 && tones.length === 0) {
+        backgrounds.length === 0 && effects.length === 0) {
       return;
     }
 
     const timeoutId = setTimeout(() => {
-      saveToHistory(characters, speechBubbles, panels, backgrounds, effects, tones);
+      saveToHistory(characters, speechBubbles, panels, backgrounds, effects);
     }, 500);
 
     return () => clearTimeout(timeoutId);
-  }, [charactersSignature, bubblesSignature, panelsSignature, backgroundsSignature, effectsSignature, tonesSignature, saveToHistory]);
+  }, [charactersSignature, bubblesSignature, panelsSignature, backgroundsSignature, effectsSignature, saveToHistory]);
 
   // アンドゥ/リドゥ処理
   const handleUndo = useCallback(() => {
@@ -305,7 +298,7 @@ function App() {
       setPanels([...operationHistory.panels[newIndex]]);
       setBackgrounds([...operationHistory.backgrounds[newIndex]]);
       setEffects([...operationHistory.effects[newIndex]]);
-      setTones([...operationHistory.tones[newIndex]]);
+      // トーン機能は無効化
       setOperationHistory(prev => ({ ...prev, currentIndex: newIndex }));
     }
   }, [operationHistory]);
@@ -318,7 +311,7 @@ function App() {
       setPanels([...operationHistory.panels[newIndex]]);
       setBackgrounds([...operationHistory.backgrounds[newIndex]]);
       setEffects([...operationHistory.effects[newIndex]]);
-      setTones([...operationHistory.tones[newIndex]]);
+      // トーン機能は無効化
       setOperationHistory(prev => ({ ...prev, currentIndex: newIndex }));
     }
   }, [operationHistory]);
@@ -373,10 +366,7 @@ function App() {
         setShowEffectPanel(prev => !prev);
       }
 
-      if (e.key === 't' && e.ctrlKey) {
-        e.preventDefault();
-        setShowTonePanel(prev => !prev);
-      }
+      // トーン機能は無効化
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -401,11 +391,11 @@ function App() {
   }, []);
 
   const handleCharacterNameUpdate = useCallback((type: string, newName: string, newRole: string, appearance: any) => {
-    console.log(`🔧 キャラクター名前更新開始: ${type} → ${newName}`);
+    // コンソールログは無効化
     
     setCharacterNames(prev => {
       const updated = { ...prev, [type]: newName };
-      console.log(`📝 名前辞書更新:`, updated);
+      // コンソールログは無効化
       return updated;
     });
     
@@ -457,7 +447,7 @@ function App() {
     setSelectedCharacter(null);
     setSelectedPanel(null);
     setSelectedEffect(null);
-    setSelectedTone(null);
+    // トーン機能は無効化
     
     // 比率ベースのテンプレートを適用
     const { applyRatioTemplate } = require('./utils/RatioTemplateScaler');
@@ -469,7 +459,7 @@ function App() {
     setSpeechBubbles([]);
     setBackgrounds([]);
     setEffects([]);
-    setTones([]);
+    // トーン機能は無効化
     
     // キャンバスを再描画
     if (canvasRef.current) {
@@ -538,21 +528,21 @@ function App() {
       const scaledBubbles = currentPageData.bubbles.map(bubble => scaleBubble(bubble, transform));
       const scaledBackgrounds = currentPageData.backgrounds.map(bg => scaleBackground(bg, transform));
       const scaledEffects = currentPageData.effects.map(effect => scaleEffect(effect, transform));
-      const scaledTones = currentPageData.tones.map(tone => scaleTone(tone, transform));
+      // トーン機能は無効化
       
       setPanels(scaledPanels);
       setCharacters(scaledCharacters);
       setSpeechBubbles(scaledBubbles);
       setBackgrounds(scaledBackgrounds);
       setEffects(scaledEffects);
-      setTones(scaledTones);
+      // トーン機能は無効化
     } else {
       setPanels(prev => prev.map(panel => scalePanel(panel, transform)));
       setCharacters(prev => prev.map(char => scaleCharacter(char, transform)));
       setSpeechBubbles(prev => prev.map(bubble => scaleBubble(bubble, transform)));
       setBackgrounds(prev => prev.map(bg => scaleBackground(bg, transform)));
       setEffects(prev => prev.map(effect => scaleEffect(effect, transform)));
-      setTones(prev => prev.map(tone => scaleTone(tone, transform)));
+      // トーン機能は無効化
     }
     
     if (canvasRef.current) {
@@ -707,11 +697,11 @@ function App() {
       setSpeechBubbles(prev => prev.filter(bubble => bubble.panelId !== panelIdNum));
       setBackgrounds(prev => prev.filter(bg => bg.panelId !== panelIdNum));
       setEffects(prev => prev.filter(effect => effect.panelId !== panelIdNum));
-      setTones(prev => prev.filter(tone => tone.panelId !== panelIdNum));
+      // トーン機能は無効化
       setPanels(prev => prev.filter(panel => panel.id !== panelIdNum));
       setSelectedPanel(null);
       setSelectedEffect(null);
-      setSelectedTone(null);
+      // トーン機能は無効化
       console.log(`🗑️ コマ削除: ${panelId}`);
     }
   }, [panels.length]);
@@ -767,11 +757,11 @@ function App() {
       setSpeechBubbles([]);
       setBackgrounds([]);
       setEffects([]);
-      setTones([]);
+      // トーン機能は無効化
       setSelectedCharacter(null);
       setSelectedPanel(null);
       setSelectedEffect(null);
-      setSelectedTone(null);
+      // トーン機能は無効化
     }
   }, []);
 
@@ -811,18 +801,7 @@ function App() {
     setSelectedEffect(updatedEffect);
   }, []);
 
-  const handleToneAdd = useCallback((tone: ToneElement) => {
-    setTones([...tones, tone]);
-    setSelectedTone(tone);
-    console.log(`トーン「${tone.type}」を追加しました`);
-  }, [tones]);
-
-  const handleToneUpdate = useCallback((updatedTone: ToneElement) => {
-    setTones(prev => prev.map(tone => 
-      tone.id === updatedTone.id ? updatedTone : tone
-    ));
-    setSelectedTone(updatedTone);
-  }, []);
+  // トーン機能は無効化
 
   const handleCharacterSettingsUpdate = useCallback((characterData: any) => {
     const { name, role, appearance } = characterData;
@@ -876,19 +855,7 @@ function App() {
             {effectTemplateCount > 0 && <span style={{ marginLeft: "4px" }}>({effectTemplateCount})</span>}
           </button>
 
-          <button 
-            className="control-btn"
-            onClick={() => setShowTonePanel(true)}
-            title="トーン設定 (Ctrl+T)"
-            style={{
-              background: toneTemplateCount > 0 ? "#795548" : "var(--bg-tertiary)",
-              color: toneTemplateCount > 0 ? "white" : "var(--text-primary)",
-              border: `1px solid ${toneTemplateCount > 0 ? "#795548" : "var(--border-color)"}`,
-            }}
-          >
-            🎯 トーン
-            {toneTemplateCount > 0 && <span style={{ marginLeft: "4px" }}>({toneTemplateCount})</span>}
-          </button>
+          {/* トーン機能は無効化 */}
 
           <button 
             className="control-btn"
@@ -1103,14 +1070,14 @@ function App() {
               {selectedCharacter && <span> | 選択中: {getCharacterDisplayName(selectedCharacter)}</span>}
               {selectedPanel && <span> | パネル{selectedPanel.id}選択中</span>}
               {selectedEffect && <span> | 効果線選択中</span>}
-              {selectedTone && <span> | トーン選択中</span>}
+              {/* トーン機能は無効化 */}
               {isPanelEditMode && <span> | 🔧 コマ編集モード</span>}
               {snapSettings.enabled && <span> | ⚙️ スナップ: {snapSettings.gridSize}px ({snapSettings.sensitivity})</span>}
               {projectSave.isAutoSaving && <span> | 💾 自動保存中...</span>}
               {projectSave.hasUnsavedChanges && <span> | ⚠️ 未保存</span>}
               {backgrounds.length > 0 && <span> | 🎨 背景: {backgrounds.length}個</span>}
               {effects.length > 0 && <span> | ⚡ 効果線: {effects.length}個</span>}
-              {tones.length > 0 && <span> | 🎯 トーン: {tones.length}個</span>}
+              {/* トーン機能は無効化 */}
             </div>
           </div>
 
@@ -1260,16 +1227,7 @@ function App() {
         effects={effects}
       />
 
-      <TonePanel
-        isOpen={showTonePanel}
-        onClose={() => setShowTonePanel(false)}
-        onAddTone={handleToneAdd}
-        selectedTone={selectedTone}
-        onUpdateTone={handleToneUpdate}
-        isDarkMode={isDarkMode}
-        selectedPanel={selectedPanel}
-        tones={tones}
-      />
+      {/* トーン機能は無効化 */}
 
       <CharacterSettingsPanel
         isOpen={showCharacterSettingsPanel}
@@ -1327,7 +1285,7 @@ function App() {
           setSpeechBubbles([]);
           setBackgrounds([]);
           setEffects([]);
-          setTones([]);
+          // トーン機能は無効化
           
           setCharacterNames({
             character_1: '主人公',
@@ -1345,7 +1303,7 @@ function App() {
           setSelectedCharacter(null);
           setSelectedPanel(null);
           setSelectedEffect(null);
-          setSelectedTone(null);
+          // トーン機能は無効化
         }}
         currentProjectId={projectSave.currentProjectId}
         saveStatus={projectSave.saveStatus}

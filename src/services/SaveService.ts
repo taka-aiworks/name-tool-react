@@ -66,22 +66,13 @@ export class SaveService {
     canvasSettings?: CanvasSettings  // ← この行を追加
   ): string {
     try {
-      console.log('💾 SaveService.saveProject開始');
-      console.log('📝 引数確認:', {
-        name,
-        panelsCount: panels.length,
-        charactersCount: characters.length,
-        bubblesCount: bubbles.length,
-        backgroundsCount: backgrounds.length,
-        effectsCount: effects.length,
-        tonesCount: tones.length,
-        projectId: projectId || 'new'
-      });
+      // コンソールログは無効化
+      // コンソールログは無効化
 
       const id = projectId || this.generateId();
       const now = new Date().toISOString();
       
-      console.log('🆔 プロジェクトID:', id);
+      // コンソールログは無効化
       
       const projectData: ProjectData = {
         id,
@@ -109,42 +100,38 @@ export class SaveService {
         }
       };
 
-      console.log('📦 作成したプロジェクトデータ:', {
-        id: projectData.id,
-        name: projectData.name,
-        dataKeys: Object.keys(projectData.data)
-      });
+      // コンソールログは無効化
 
       // 既存の保存ロジック
       const projects = this.getAllProjects();
-      console.log('📊 既存プロジェクト数:', projects.length);
+      // コンソールログは無効化
       
       const existingIndex = projects.findIndex(p => p.id === id);
-      console.log('🔍 既存インデックス:', existingIndex);
+      // コンソールログは無効化
       
       if (existingIndex >= 0) {
-        console.log('🔄 既存プロジェクトを更新');
+        // コンソールログは無効化
         projects[existingIndex] = projectData;
       } else {
-        console.log('🆕 新規プロジェクトを追加');
+        // コンソールログは無効化
         projects.push(projectData);
       }
 
-      console.log('📊 更新後プロジェクト数:', projects.length);
+      // コンソールログは無効化
 
       const dataToSave = JSON.stringify(projects);
-      console.log('💾 保存するデータサイズ:', dataToSave.length + '文字');
+      // コンソールログは無効化
       
       localStorage.setItem(this.STORAGE_KEY, dataToSave);
       localStorage.setItem(this.CURRENT_PROJECT_KEY, id);
       
-      console.log('✅ localStorage保存完了');
+      // コンソールログは無効化
 
       // 即座に確認
       const verification = localStorage.getItem(this.STORAGE_KEY);
-      console.log('🔍 保存確認:', verification ? `${verification.length}文字で保存済み` : '保存されていません！');
+      // コンソールログは無効化
 
-      console.log(`✅ プロジェクト "${name}" を保存しました (ID: ${id})${pages ? ` - ${pages.length}ページ` : ''}`);
+      // コンソールログは無効化
       return id;
 
         } catch (error) {
@@ -216,7 +203,7 @@ export class SaveService {
         }
         
         localStorage.setItem(this.CURRENT_PROJECT_KEY, projectId);
-        console.log(`プロジェクト "${project.name}" を読み込みました${project.data.pages ? ` - ${project.data.pages.length}ページ` : ''}`);
+        // コンソールログは無効化
         return project;
       }
       
@@ -249,22 +236,22 @@ export class SaveService {
    */
   static getAllProjects(): ProjectData[] {
     try {
-      console.log('🔍 getAllProjects開始 - ストレージキー:', this.STORAGE_KEY);
+      // コンソールログは無効化
       
       const data = localStorage.getItem(this.STORAGE_KEY);
-      console.log('💾 ストレージから取得:', data ? `データあり(${data.length}文字)` : 'データなし');
+      // コンソールログは無効化
       
       if (!data) {
-        console.log('📝 初回起動 - 空配列を返します');
+        // コンソールログは無効化
         return [];
       }
       
       const projects = JSON.parse(data);
-      console.log('✅ JSON解析成功:', Array.isArray(projects) ? `${projects.length}個のプロジェクト` : 'プロジェクトは配列ではありません');
+      // コンソールログは無効化
       
       if (Array.isArray(projects) && projects.length > 0) {
         projects.forEach((project, index) => {
-          console.log(`  ${index + 1}. ${project.name || 'Unknown'} (ID: ${project.id || 'Unknown'})`);
+          // コンソールログは無効化
         });
       }
       
@@ -296,7 +283,7 @@ export class SaveService {
         return project;
       });
       
-      console.log('🔧 後方互換性処理完了:', processedProjects.length + '個のプロジェクト');
+      // コンソールログは無効化
       return Array.isArray(processedProjects) ? processedProjects : [];
       
     } catch (error) {
@@ -311,14 +298,14 @@ export class SaveService {
    * プロジェクトメタデータ一覧を取得（デバッグ版）
    */
   static getProjectList(): ProjectMetadata[] {
-    console.log('🔍 getProjectList呼び出し開始');
+    // コンソールログは無効化
     
     const allProjects = this.getAllProjects();
-    console.log('📊 getAllProjectsの結果:', allProjects.length + '個のプロジェクト');
+    // コンソールログは無効化
     
     if (allProjects.length > 0) {
       allProjects.forEach((project, index) => {
-        console.log(`  ${index + 1}. ${project.name} (ID: ${project.id})`);
+        // コンソールログは無効化
       });
     }
     
@@ -329,7 +316,7 @@ export class SaveService {
       updatedAt: project.updatedAt
     }));
     
-    console.log('📋 変換後のプロジェクト一覧:', projectList.length + '個');
+    // コンソールログは無効化
     
     return projectList;
   }

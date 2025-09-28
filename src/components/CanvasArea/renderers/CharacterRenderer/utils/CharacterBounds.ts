@@ -137,7 +137,7 @@ export class CharacterBounds {
       }
 
       if (CharacterBounds.isCharacterClicked(mouseX, mouseY, character, panel)) {
-        console.log(`🎯 キャラクタークリック検出: ${character.name} (rotation: ${character.rotation || 0}°)`);
+        // コンソールログは無効化
         return character;
       }
     }
