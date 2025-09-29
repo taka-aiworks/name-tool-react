@@ -21,6 +21,8 @@ import { SceneTemplatePanel } from './components/UI/SceneTemplatePanel';
 import PanelTemplateSelector from './components/UI/PanelTemplateSelector';
 import { PaperSizeSelectPanel } from './components/UI/PaperSizeSelectPanel';
 import SnapSettingsPanel from './components/UI/SnapSettingsPanel';
+import { SimpleFeedbackPanel } from './components/UI/SimpleFeedbackPanel';
+import { CURRENT_CONFIG, BetaUtils } from './config/betaConfig';
 
 import {
   calculateScaleTransform,
@@ -72,6 +74,9 @@ function App() {
   const [showSnapSettingsPanel, setShowSnapSettingsPanel] = useState<boolean>(false);
   const [canvasSettings, setCanvasSettings] = useState<CanvasSettings>(DEFAULT_CANVAS_SETTINGS);
   const [isPaperSizePanelVisible, setIsPaperSizePanelVisible] = useState(false);
+
+  // 🧪 ベータ版フィードバック機能
+  const [showFeedbackPanel, setShowFeedbackPanel] = useState<boolean>(false);
 
   // スナップ設定の状態管理
   const [snapSettings, setSnapSettings] = useState<SnapSettings>({
@@ -886,6 +891,28 @@ function App() {
           >
             {isDarkMode ? '☀️' : '🌙'}
           </button>
+          
+          {/* 🧪 ベータ版フィードバックボタン */}
+          {CURRENT_CONFIG.isBetaVersion && (
+            <button 
+              className="feedback-button"
+              onClick={() => setShowFeedbackPanel(true)}
+              title="ベータ版フィードバックを送信"
+              style={{
+                padding: "8px 12px",
+                backgroundColor: "#ff6b35",
+                color: "white",
+                border: "none",
+                borderRadius: "6px",
+                cursor: "pointer",
+                fontSize: "14px",
+                fontWeight: "500",
+                marginLeft: "8px"
+              }}
+            >
+              🧪 フィードバック
+            </button>
+          )}
         </div>
       </header>
 
@@ -1289,6 +1316,13 @@ function App() {
         onClose={() => setShowPanelSelector(false)}
         isDarkMode={isDarkMode}
         isVisible={showPanelSelector}
+      />
+
+      {/* 🧪 ベータ版フィードバックパネル */}
+      <SimpleFeedbackPanel
+        isVisible={showFeedbackPanel}
+        onClose={() => setShowFeedbackPanel(false)}
+        onDarkMode={isDarkMode}
       />
     </div>
   );

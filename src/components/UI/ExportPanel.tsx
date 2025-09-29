@@ -16,6 +16,7 @@ import {
   PaperSize,
   PAPER_SIZES
 } from '../../types';
+import { BetaUtils } from '../../config/betaConfig';
 
 type ExportPurpose = 'print' | 'image' | 'clipstudio' | 'prompt' | 'nanobanana';
 

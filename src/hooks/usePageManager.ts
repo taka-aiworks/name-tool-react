@@ -11,6 +11,7 @@ import {
   ToneElement,
   UsePageManagerReturn 
 } from '../types';
+import { BetaUtils } from '../config/betaConfig';
 
 interface UsePageManagerProps {
   // 現在の単一ページデータ（既存システムから）
@@ -69,6 +70,12 @@ export const usePageManager = (props: UsePageManagerProps): UsePageManagerReturn
 
   // ページ追加
   const addPage = useCallback(() => {
+    // 🔒 ベータ版制限: ページ数制限チェック
+    if (!BetaUtils.canAddPage(pages.length)) {
+      alert('ベータ版では1ページのみ作成できます。\nフル版では複数ページが利用可能です！');
+      return;
+    }
+
     const newPage: Page = {
       id: generatePageId(),
       title: `ページ ${pages.length + 1}`,
