@@ -611,201 +611,176 @@ class PromptService {
   }
 
   /**
-   * 🔧 8カテゴリ対応版プロンプト出力
+   * 🆕 簡潔版プロンプト出力（パネルごと分離形式）
    */
   public formatPromptOutput(promptData: PromptOutput): string {
-    let output = "=== AI画像生成用プロンプト（8カテゴリ対応版） ===\n\n";
-
-    // 🆕 全体品質スコア表示
-    output += `🎯 全体品質スコア: ${promptData.overallQuality}% `;
-    if (promptData.overallQuality >= 80) {
-      output += "✨ 最高品質！\n";
-    } else if (promptData.overallQuality >= 60) {
-      output += "🌟 高品質！\n";
-    } else if (promptData.overallQuality >= 40) {
-      output += "👍 良好\n";
-    } else {
-      output += "⚠️ 改善推奨\n";
-    }
-    output += "\n";
+    let output = "=== AI画像生成用プロンプト ===\n\n";
 
     promptData.scenes.forEach((scene, index) => {
-      output += `━━━ Panel ${index + 1} ━━━\n`;
+      output += `【Panel ${index + 1}】\n`;
       
       const panelCharacters = scene.panelCharacters;
 
-      if (panelCharacters.length === 0) {
-        output += `【背景のみのパネル】\n`;
-        const bgPrompt = scene.backgroundPrompt || 'simple background';
-        output += `masterpiece, best quality, ${bgPrompt}, no humans, anime style\n`;
-        output += `\n───────────────────\n\n`;
-        return;
-      }
-
-      // 🔧 正プロンプト生成（8カテゴリ対応）
-      const validParts = ['masterpiece, best quality'];
-      
-      panelCharacters.forEach(char => {
-        console.log(`🎯 Panel ${index + 1} - ${char.name} プロンプト構成 (品質: ${char.qualityScore}%):`, {
-          basePrompt: char.basePrompt,
-          scenePrompt: char.scenePrompt,
-          fullPrompt: char.fullPrompt,
-          qualityScore: char.qualityScore
-        });
-        
-        // 🆕 fullPromptの厳密チェック
-        if (this.isValidValue(char.fullPrompt)) {
-          validParts.push(char.fullPrompt);
-        } else {
-          // フォールバック: 個別チェック
-          if (this.isValidValue(char.basePrompt)) {
-            validParts.push(char.basePrompt);
+      // キャラクター
+      if (panelCharacters.length > 0) {
+        panelCharacters.forEach(char => {
+          if (this.isValidValue(char.fullPrompt)) {
+            output += `キャラクター: masterpiece, best quality, ${char.fullPrompt}, single character, anime style\n`;
+          } else if (this.isValidValue(char.scenePrompt)) {
+            output += `キャラクター: masterpiece, best quality, ${char.scenePrompt}, single character, anime style\n`;
           }
+          
+          // キャラクターの日本語説明を追加
           if (this.isValidValue(char.scenePrompt)) {
-            validParts.push(char.scenePrompt);
+            const japaneseDesc = this.buildCharacterJapaneseDescription(char.scenePrompt);
+            if (japaneseDesc) {
+              output += `【日本語説明】\n${japaneseDesc}\n`;
+            }
           }
-        }
-      });
+        });
+      }
 
+      // 背景
       if (scene.backgroundPrompt && this.isValidValue(scene.backgroundPrompt)) {
-        validParts.push(scene.backgroundPrompt);
+        const bgMapping: Record<string, string> = {
+          'gradient': 'gradient background',
+          'solid': 'simple background',
+          'pattern': 'pattern background',
+          'texture': 'texture background'
+        };
+        const bgPrompt = bgMapping[scene.backgroundPrompt] || scene.backgroundPrompt;
+        output += `背景: ${bgPrompt}\n`;
+      } else {
+        output += `背景: simple background, no humans\n`;
       }
-      
+
+      // 効果線
       if (scene.effectsPrompt && this.isValidValue(scene.effectsPrompt)) {
-        validParts.push(scene.effectsPrompt);
-      }
-      
-      if (scene.compositionPrompt && this.isValidValue(scene.compositionPrompt)) {
-        validParts.push(scene.compositionPrompt);
+        output += `効果線: ${scene.effectsPrompt}\n`;
       }
 
-      validParts.push('anime style');
-
-      const positivePrompt = validParts.join(', ');
-      output += `【Positive Prompt】\n${positivePrompt}\n\n`;
-
-      const japaneseDesc = this.buildJapaneseDescription(panelCharacters, scene);
-      output += `【日本語説明】\n${japaneseDesc}\n\n`;
-
-      const negativePrompt = this.buildNegativePrompt();
-      output += `【Negative Prompt】\n${negativePrompt}\n\n`;
-
-      // 🆕 8カテゴリ設定完成度情報
-      output += `【8カテゴリ設定完成度】\n`;
-      panelCharacters.forEach(char => {
-        const validSceneTags = char.scenePrompt ? 
-          char.scenePrompt.split(', ').filter(tag => this.isValidValue(tag)).length : 0;
-        const hasValidBase = this.isValidValue(char.basePrompt);
-        
-        output += `• ${char.name} (品質スコア: ${char.qualityScore}%): `;
-        const details = [];
-        if (hasValidBase) {
-          details.push('基本設定✓');
-        }
-        if (validSceneTags > 0) {
-          details.push(`詳細設定${validSceneTags}/8項目✓`);
-        }
-        if (details.length === 0) {
-          details.push('基本設定のみ（詳細設定推奨）');
-        }
-        
-        // 🆕 品質スコア別のアドバイス
-        if (char.qualityScore >= 80) {
-          details.push('✨最高品質');
-        } else if (char.qualityScore >= 60) {
-          details.push('🌟高品質');
-        } else if (char.qualityScore >= 40) {
-          details.push('👍普通');
-        } else {
-          details.push('⚠️要改善');
-        }
-        
-        output += details.join(', ') + '\n';
-      });
       output += '\n';
-
-      output += `【推奨設定】\n`;
-      output += `• Steps: 20-30\n`;
-      output += `• CFG Scale: 7-11\n`;
-      output += `• サイズ: 512x768 (縦) または 768x512 (横)\n`;
-      output += `• サンプラー: DPM++ 2M Karras\n\n`;
-
-      output += `───────────────────\n\n`;
     });
 
-    // 🆕 8カテゴリキャラクター設定詳細情報
-    output += "=== 8カテゴリキャラクター詳細設定 ===\n\n";
-    promptData.characters.forEach((char, index) => {
-      output += `${index + 1}. ${char.name} (${char.role}) - 品質スコア: ${char.qualityScore}%:\n`;
-      
-      if (this.isValidValue(char.basePrompt)) {
-        output += `   基本設定: ${char.basePrompt}\n`;
-      } else {
-        output += `   基本設定: 未設定（CharacterSettingsPanelで設定推奨）\n`;
-      }
-      
-      if (this.isValidValue(char.scenePrompt)) {
-        output += `   詳細設定: ${char.scenePrompt}\n`;
-        
-        const validItems = char.scenePrompt.split(', ').filter(item => this.isValidValue(item));
-        if (validItems.length > 0) {
-          output += `   有効項目 (${validItems.length}/8): ${validItems.join(' | ')}\n`;
-        }
-      } else {
-        output += `   詳細設定: 未設定（CharacterDetailPanelで8カテゴリ設定推奨）\n`;
-      }
-      
-      if (this.isValidValue(char.fullPrompt)) {
-        output += `   統合プロンプト: ${char.fullPrompt}\n`;
-      } else {
-        output += `   統合プロンプト: 設定が必要です\n`;
-      }
-
-      // 🆕 品質スコア別改善提案
-      if (char.qualityScore < 40) {
-        output += `   💡 改善提案: 基本4項目（表情・動作・視線・目）の設定を推奨\n`;
-      } else if (char.qualityScore < 80) {
-        output += `   💡 改善提案: 拡張4項目（口・手・感情・状態）の設定でさらに高品質に\n`;
-      } else {
-        output += `   ✨ 完璧な設定！商用レベルの画像生成が期待できます\n`;
-      }
-      
-      output += `\n`;
-    });
-
-    output += "=== v1.2.0 8カテゴリ対応ガイド ===\n";
-    output += "🆕 【基本4項目】\n";
-    output += "1. 😊 表情 - キャラクターの表情を詳細に指定\n";
-    output += "2. 🤸 動作・ポーズ - 体全体の動きや姿勢\n";
-    output += "3. 🔄 体の向き・視線 - どちらを見ているか\n";
-    output += "4. 👀 目の状態 - 目の開閉や特殊な状態\n\n";
-    
-    output += "🆕 【拡張4項目】\n";
-    output += "5. 👄 口の状態 - 口の形や開閉\n";
-    output += "6. ✋ 手の動作 - 手のジェスチャーや位置\n";
-    output += "7. 💗 基本感情 - 喜怒哀楽などの根本的な感情\n";
-    output += "8. 🏃 体調・状態 - 健康状態や特殊な身体状況\n\n";
-    
-    output += "📊 【品質スコア解説】\n";
-    output += "• 80-100%: ✨ 最高品質 - 商用レベルの画像生成\n";
-    output += "• 60-79%: 🌟 高品質 - 十分に詳細な設定\n";
-    output += "• 40-59%: 👍 良好 - 基本的な品質を確保\n";
-    output += "• 0-39%: ⚠️ 要改善 - より多くの設定が必要\n\n";
-    
-    output += "💡 【設定のコツ】\n";
-    output += "• 表情と感情を組み合わせると表現力が大幅UP\n";
-    output += "• ポーズと手の動作で動きのある構図に\n";
-    output += "• 目・口の状態で細かいニュアンスを表現\n";
-    output += "• 体調・状態で特殊な演出効果も可能\n\n";
-
-    output += "=== 技術情報 ===\n";
-    output += `${promptData.storyFlow}\n`;
-    output += `生成日時: ${new Date().toLocaleString()}\n`;
-    output += `${promptData.technicalNotes}\n`;
-    output += `🆕 8カテゴリ詳細設定システム: v1.2.0対応\n`;
-    output += `🎯 全体品質スコア: ${promptData.overallQuality}%\n`;
+    // Negative Prompt
+    const negativePrompt = this.buildNegativePrompt();
+    output += `【Negative Prompt】\n${negativePrompt}\n`;
 
     return output;
+  }
+
+  /**
+   * 🆕 キャラクター専用の日本語説明生成
+   */
+  private buildCharacterJapaneseDescription(scenePrompt: string): string {
+    // キャラクター関連のタグのみを抽出（品質タグやスタイルタグは除外）
+    const characterTags = [
+      'close-up', 'upper_body', 'full_body',
+      'neutral_expression', 'smiling', 'sad', 'angry_look', 'surprised', 'worried_face',
+      'love_expression', 'frustrated', 'embarrassed_face', 'crying', 'excited', 
+      'confused', 'relieved', 'scared', 'confident', 'thoughtful', 'determined',
+      'standing', 'sitting', 'arms_crossed', 'running', 'pointing', 'walking', 
+      'jumping', 'cowering', 'hands_on_hips',
+      'at_viewer', 'away', 'to_side', 'down',
+      'eyes_open', 'eyes_closed', 'sparkling_eyes', 'half_closed_eyes', 'wide_eyes',
+      'heart_eyes', 'teary_eyes',
+      'mouth_closed', 'slight_smile', 'open_mouth', 'covering_mouth', 'frown',
+      'waving', 'clenched_fist', 'peace_sign', 'pointing', 'hands_clasped', 'thumbs_up',
+      'open_palm',
+      'joy', 'anger', 'sadness', 'surprise',
+      'healthy', 'tired'
+    ];
+    
+    const parts = scenePrompt.split(', ').filter(part => {
+      const trimmed = part.trim();
+      return this.isValidValue(trimmed) && characterTags.includes(trimmed);
+    });
+    
+    const japaneseParts = parts.map(part => {
+      part = part.trim();
+      
+      // 英語→日本語変換（キャラクター関連のみ）
+      const translations: Record<string, string> = {
+        // 構図
+        'close-up': '顔のみ',
+        'upper_body': '上半身',
+        'full_body': '全身',
+        
+        // 表情
+        'neutral_expression': '普通の表情',
+        'smiling': '笑顔',
+        'sad': '悲しみ',
+        'angry_look': '怒り顔',
+        'surprised': '驚き',
+        'worried_face': '心配顔',
+        'love_expression': '恋愛表情',
+        'frustrated': '悔しがる',
+        'embarrassed_face': '恥ずかしがり',
+        'crying': '泣く',
+        'excited': '興奮',
+        'confused': '困惑',
+        'relieved': '安堵',
+        'scared': '恐怖',
+        'confident': '自信',
+        'thoughtful': '考え中',
+        'determined': '決意',
+        
+        // 動作
+        'standing': '立ち',
+        'sitting': '座り',
+        'arms_crossed': '腕組み',
+        'running': '走る',
+        'pointing': '指差し',
+        'walking': '歩く',
+        'jumping': 'ジャンプ',
+        'cowering': '縮こまる',
+        'hands_on_hips': '腰に手',
+        
+        // 視線
+        'at_viewer': 'こちらを見る',
+        'away': 'そっぽ向く',
+        'to_side': '横向き',
+        'down': '下を見る',
+        
+        // 目の状態
+        'eyes_open': '目を開ける',
+        'eyes_closed': '目を閉じる',
+        'sparkling_eyes': 'キラキラ目',
+        'half_closed_eyes': '半目',
+        'wide_eyes': '見開いた目',
+        'heart_eyes': 'ハート目',
+        'teary_eyes': '涙目',
+        
+        // 口の状態
+        'mouth_closed': '口を閉じる',
+        'slight_smile': '微笑み',
+        'open_mouth': '口開け',
+        'covering_mouth': '口元を押さえる',
+        'frown': 'しかめっ面',
+        
+        // 手の動作
+        'waving': '手を振る',
+        'clenched_fist': '拳を握る',
+        'peace_sign': 'ピース',
+        'hands_clasped': '手を組む',
+        'thumbs_up': 'サムズアップ',
+        'open_palm': '手のひら',
+        
+        // 感情
+        'joy': '喜び',
+        'anger': '怒り',
+        'sadness': '悲しみ',
+        'surprise': '驚き',
+        
+        // 状態
+        'healthy': '健康',
+        'tired': '疲れた'
+      };
+      
+      return translations[part] || part;
+    }).filter(j => this.isValidValue(j));
+    
+    return japaneseParts.join('、');
   }
 
   /**

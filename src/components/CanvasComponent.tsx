@@ -825,87 +825,11 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, ExtendedCanvasComponentPro
         (e: React.MouseEvent) => e.stopPropagation()
       )}
 
-      {/* 選択状態表示 */}
-      {state.selectedPanel && (
-        <div
-          style={{
-            position: "absolute",
-            top: "10px",
-            right: "10px",
-            background: "rgba(255, 136, 51, 0.9)",
-            color: "white",
-            padding: "8px 12px",
-            borderRadius: "4px",
-            fontSize: "12px",
-            fontWeight: "bold",
-          }}
-        >
-          パネル{state.selectedPanel.id}選択中
-          {isPanelEditMode && <span> | 編集モード</span>}
-          {state.isPanelMoving && <span> | 移動中</span>}
-          {state.isPanelResizing && <span> | リサイズ中</span>}
-        </div>
-      )}
+      {/* 選択状態表示を削除 */}
     
-        {state.selectedCharacter && (
-          <div
-            style={{
-              position: "absolute",
-              top: "40px",
-              right: "10px",
-              background: state.isCharacterResizing 
-                ? "rgba(255, 0, 0, 0.9)"
-                : state.isDragging 
-                ? "rgba(0, 150, 255, 0.9)"
-                : "rgba(0, 102, 255, 0.9)",
-              color: "white",
-              padding: "8px 12px",
-              borderRadius: "4px",
-              fontSize: "12px",
-              fontWeight: "bold",
-            }}
-          >
-            {state.isCharacterResizing ? `リサイズ中 (${state.resizeDirection})` : 
-            state.isDragging ? "移動中" : 
-            getCharacterDisplayName(state.selectedCharacter)} {/* 🔧 ここを修正 */}
-            <br/>
-            <small>
-              {state.selectedCharacter.isGlobalPosition ? "自由移動" : "パネル内"}
-              {" | "}
-              {state.selectedCharacter.viewType}
-              {" | "}
-              {state.selectedCharacter.scale.toFixed(1)}x
-            </small>
-          </div>
-        )}
+        {/* キャラクター選択状態表示を削除 */}
       
-      {state.selectedBubble && (
-        <div
-          style={{
-            position: "absolute",
-            top: "70px",
-            right: "10px",
-            background: state.isBubbleResizing 
-              ? "rgba(255, 0, 0, 0.9)"
-              : state.isDragging 
-              ? "rgba(0, 150, 255, 0.9)"
-              : "rgba(255, 20, 147, 0.9)",
-            color: "white",
-            padding: "8px 12px",
-            borderRadius: "4px",
-            fontSize: "12px",
-            fontWeight: "bold",
-          }}
-        >
-          {state.isBubbleResizing ? `リサイズ中 (${state.resizeDirection})` : 
-          state.isDragging ? "移動中" : 
-          state.selectedBubble.text}
-          <br/>
-          <small>
-            {state.selectedBubble.width}x{state.selectedBubble.height}px
-          </small>
-        </div>
-      )}
+      {/* 吹き出し選択状態表示を削除 */}
 
       {/* 背景選択状態表示 */}
       {selectedBackground && (
@@ -938,33 +862,7 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, ExtendedCanvasComponentPro
       )}
 
       {/* 効果線選択状態表示 */}
-      {selectedEffect && (
-        <div
-          style={{
-            position: "absolute",
-            top: "130px",
-            right: "10px",
-            background: isEffectResizing 
-              ? "rgba(255, 193, 7, 0.9)"
-              : isEffectDragging 
-              ? "rgba(255, 152, 0, 0.9)"
-              : "rgba(255, 193, 7, 0.9)",
-            color: "white",
-            padding: "8px 12px",
-            borderRadius: "4px",
-            fontSize: "12px",
-            fontWeight: "bold",
-          }}
-        >
-          {isEffectResizing ? "効果線リサイズ中" : 
-          isEffectDragging ? "効果線移動中" : 
-          `効果線選択中`}
-          <br/>
-          <small>
-            {selectedEffect.type} | 強度: {selectedEffect.intensity} | 密度: {selectedEffect.density}
-          </small>
-        </div>
-      )}
+      {/* 効果線選択状態表示を削除 */}
 
       {/* 🔧 トーン選択状態表示（型安全版） */}
       {selectedTone && (

@@ -70,9 +70,7 @@ export class ContextMenuHandler {
         break;
 
       case 'duplicateEffect':
-        if (target === 'effect' && targetElement && actions.onDuplicateEffect) {
-          actions.onDuplicateEffect(targetElement as EffectElement);
-        }
+        // 効果線複製は無効化
         break;
 
       // 🆕 トーン複製
@@ -156,9 +154,7 @@ export class ContextMenuHandler {
         break;
 
       case 'effectPanel':
-        if (target === 'effect' && targetElement && actions.onOpenEffectPanel) {
-          actions.onOpenEffectPanel(targetElement as EffectElement);
-        }
+        // 効果線設定パネルは無効化
         break;
 
       // 🆕 トーン設定パネル
@@ -372,39 +368,6 @@ export class ContextMenuHandler {
       ],
 
       contextMenu.target === 'effect' && [
-        React.createElement(
-          'div',
-          {
-            key: 'effectPanel',
-            style: itemStyle,
-            onMouseEnter: handleMouseEnter,
-            onMouseLeave: handleMouseLeave,
-            onClick: () => onAction('effectPanel')
-          },
-          '⚡ 効果線設定'
-        ),
-        React.createElement(
-          'div',
-          {
-            key: 'duplicateEffect',
-            style: itemStyle,
-            onMouseEnter: handleMouseEnter,
-            onMouseLeave: handleMouseLeave,
-            onClick: () => onAction('duplicateEffect')
-          },
-          '⚡ 効果線複製'
-        ),
-        React.createElement(
-          'div',
-          {
-            key: 'copyEffect',
-            style: itemStyle,
-            onMouseEnter: handleMouseEnter,
-            onMouseLeave: handleMouseLeave,
-            onClick: () => onAction('copy')
-          },
-          '📋 コピー (Ctrl+C)'
-        ),
         React.createElement(
           'div',
           {
