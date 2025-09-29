@@ -645,37 +645,38 @@ const CharacterDetailPanel: React.FC<CharacterDetailPanelProps> = ({
         )}
       </div>
 
-      {/* 🆕 v1.2.0 8カテゴリ対応アピール */}
-      <div 
-        style={{
-          background: isDarkMode ? "rgba(16, 185, 129, 0.1)" : "rgba(16, 185, 129, 0.05)",
-          border: `1px solid ${isDarkMode ? "rgba(16, 185, 129, 0.3)" : "rgba(16, 185, 129, 0.2)"}`,
-          borderRadius: "6px",
-          padding: "8px",
-          marginBottom: "12px",
-          fontSize: "10px",
-          color: isDarkMode ? "#6ee7b7" : "#047857"
-        }}
-      >
-        <strong>🚀 v1.2.0 8カテゴリ完全対応:</strong><br/>
-        ✅ 基本4項目 + 新規4項目の詳細設定<br/>
-        ✅ ⭐人気順表示・検索機能付き<br/>
-        ✅ AI生成プロンプト品質大幅向上
-      </div>
 
       {/* 📷 表示タイプ（ラジオボタン）*/}
       <div style={sectionStyle}>
         <label style={labelStyle}>📷 表示タイプ</label>
-        <div style={{ display: "flex", gap: "6px" }}>
+        <div style={{ 
+          display: "grid", 
+          gridTemplateColumns: "repeat(2, 1fr)", 
+          gap: "6px",
+          width: "100%"
+        }}>
           {[
             { value: "face", label: "顔のみ", emoji: "👤" },
+            { value: "close_up_face", label: "クローズアップ", emoji: "🔍" },
             { value: "upper_body", label: "上半身", emoji: "👔" },
+            { value: "chest_up", label: "胸から上", emoji: "👕" },
+            { value: "three_quarters", label: "膝上程度", emoji: "🦵" },
             { value: "full_body", label: "全身", emoji: "🧍" },
           ].map((option) => (
             <button
               key={option.value}
               onClick={() => handleUpdate({ viewType: option.value as any })}
-              style={buttonStyle(selectedCharacter.viewType === option.value)}
+              style={{
+                ...buttonStyle(selectedCharacter.viewType === option.value),
+                display: "flex",
+                alignItems: "center",
+                gap: "4px",
+                fontSize: "11px",
+                padding: "6px 8px",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis"
+              }}
             >
               <span>{option.emoji}</span>
               <span>{option.label}</span>
@@ -830,76 +831,111 @@ const CharacterDetailPanel: React.FC<CharacterDetailPanelProps> = ({
         </div>
       </div>
 
-      {/* 📋 現在の設定（8項目対応版） */}
+      {/* 📋 設定中の情報 */}
       <div style={{
         ...sectionStyle,
         background: isDarkMode ? "#0d1117" : "#f0f8ff",
         border: `1px solid ${isDarkMode ? "#30363d" : "#b6e3ff"}`,
       }}>
-        <label style={labelStyle}>📋 現在の設定</label>
-        <div style={{ fontSize: "10px", color: isDarkMode ? "#8b949e" : "#666" }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px' }}>
-            <div>表示: {selectedCharacter.viewType === "face" ? "顔のみ" : selectedCharacter.viewType === "upper_body" ? "上半身" : "全身"}</div>
-            <div>表情: {getDisplayValue(selectedCharacter.expression)}</div>
-            <div>動作: {getDisplayValue(selectedCharacter.action)}</div>
-            <div>向き: {getDisplayValue(selectedCharacter.facing)}</div>
-            <div>目: {getDisplayValue((selectedCharacter as any).eyeState)}</div>
-            <div>口: {getDisplayValue((selectedCharacter as any).mouthState)}</div>
-            <div>手: {getDisplayValue((selectedCharacter as any).handGesture)}</div>
-            <div>感情: {getDisplayValue((selectedCharacter as any).emotion_primary)}</div>
-            <div>状態: {getDisplayValue((selectedCharacter as any).physical_state)}</div>
+        <label style={labelStyle}>📋 設定中の情報</label>
+        
+        {/* キャラクター基本情報 */}
+        <div style={{ marginBottom: "12px" }}>
+          <div style={{ 
+            fontSize: "11px", 
+            fontWeight: "600", 
+            color: isDarkMode ? "#f0f6fc" : "#24292f",
+            marginBottom: "6px"
+          }}>
+            👤 キャラクター基本情報
+          </div>
+          <div style={{ fontSize: "10px", color: isDarkMode ? "#8b949e" : "#666" }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px' }}>
+              <div>名前: {selectedCharacter.name}</div>
+              <div>役割: {selectedCharacter.characterId === 'protagonist' ? '主人公' : 
+                           selectedCharacter.characterId === 'heroine' ? 'ヒロイン' :
+                           selectedCharacter.characterId === 'friend' ? '友人' : 'その他'}</div>
+              <div>性別: {selectedCharacter.characterId === 'protagonist' ? '男性' : 
+                         selectedCharacter.characterId === 'heroine' ? '女性' : '未設定'}</div>
+              <div>外見: {getDisplayValue((selectedCharacter as any).hairColor) || '未設定'}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* 8カテゴリ設定状況 */}
+        <div style={{ marginBottom: "12px" }}>
+          <div style={{ 
+            fontSize: "11px", 
+            fontWeight: "600", 
+            color: isDarkMode ? "#f0f6fc" : "#24292f",
+            marginBottom: "6px"
+          }}>
+            🎭 8カテゴリ設定状況
+          </div>
+          <div style={{ fontSize: "10px", color: isDarkMode ? "#8b949e" : "#666" }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                表情: {getDisplayValue(selectedCharacter.expression)} 
+                {selectedCharacter.expression ? <span style={{ color: '#22c55e' }}>✓</span> : <span style={{ color: '#ef4444' }}>❌</span>}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                動作: {getDisplayValue(selectedCharacter.action)}
+                {selectedCharacter.action ? <span style={{ color: '#22c55e' }}>✓</span> : <span style={{ color: '#ef4444' }}>❌</span>}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                向き: {getDisplayValue(selectedCharacter.facing)}
+                {selectedCharacter.facing ? <span style={{ color: '#22c55e' }}>✓</span> : <span style={{ color: '#ef4444' }}>❌</span>}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                目の状態: {getDisplayValue((selectedCharacter as any).eyeState)}
+                {(selectedCharacter as any).eyeState ? <span style={{ color: '#22c55e' }}>✓</span> : <span style={{ color: '#ef4444' }}>❌</span>}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                口の状態: {getDisplayValue((selectedCharacter as any).mouthState)}
+                {(selectedCharacter as any).mouthState ? <span style={{ color: '#22c55e' }}>✓</span> : <span style={{ color: '#ef4444' }}>❌</span>}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                手の動作: {getDisplayValue((selectedCharacter as any).handGesture)}
+                {(selectedCharacter as any).handGesture ? <span style={{ color: '#22c55e' }}>✓</span> : <span style={{ color: '#ef4444' }}>❌</span>}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                感情: {getDisplayValue((selectedCharacter as any).emotion_primary)}
+                {(selectedCharacter as any).emotion_primary ? <span style={{ color: '#22c55e' }}>✓</span> : <span style={{ color: '#ef4444' }}>❌</span>}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                体調: {getDisplayValue((selectedCharacter as any).physical_state)}
+                {(selectedCharacter as any).physical_state ? <span style={{ color: '#22c55e' }}>✓</span> : <span style={{ color: '#ef4444' }}>❌</span>}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 表示設定 */}
+        <div>
+          <div style={{ 
+            fontSize: "11px", 
+            fontWeight: "600", 
+            color: isDarkMode ? "#f0f6fc" : "#24292f",
+            marginBottom: "6px"
+          }}>
+            📐 表示設定
+          </div>
+          <div style={{ fontSize: "10px", color: isDarkMode ? "#8b949e" : "#666" }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px' }}>
+              <div>表示タイプ: {selectedCharacter.viewType === "face" ? "顔のみ" : 
+                               selectedCharacter.viewType === "close_up_face" ? "クローズアップ" :
+                               selectedCharacter.viewType === "upper_body" ? "上半身" :
+                               selectedCharacter.viewType === "chest_up" ? "胸から上" :
+                               selectedCharacter.viewType === "three_quarters" ? "膝上程度" :
+                               selectedCharacter.viewType === "full_body" ? "全身" : "未設定"}</div>
+              <div>位置: ({Math.round(selectedCharacter.x || 0)}, {Math.round(selectedCharacter.y || 0)})</div>
+              <div>サイズ: {Math.round(selectedCharacter.width || 0)}×{Math.round(selectedCharacter.height || 0)}px</div>
+              <div>回転: {selectedCharacter.rotation ? `${Math.round(selectedCharacter.rotation)}°` : '0°'}</div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* 🆕 8項目設定完成度スコア */}
-      <div style={{
-        ...sectionStyle,
-        background: completion.percentage >= 50 ? 
-          (isDarkMode ? "rgba(34, 197, 94, 0.1)" : "rgba(34, 197, 94, 0.05)") :
-          (isDarkMode ? "rgba(239, 68, 68, 0.1)" : "rgba(239, 68, 68, 0.05)"),
-        border: `1px solid ${completion.percentage >= 50 ? 
-          (isDarkMode ? "rgba(34, 197, 94, 0.3)" : "rgba(34, 197, 94, 0.2)") :
-          (isDarkMode ? "rgba(239, 68, 68, 0.3)" : "rgba(239, 68, 68, 0.2)")
-        }`,
-      }}>
-        <label style={{
-          ...labelStyle,
-          color: completion.percentage >= 50 ? 
-            (isDarkMode ? "#86efac" : "#16a34a") :
-            (isDarkMode ? "#fca5a5" : "#dc2626")
-        }}>
-          🎯 AI生成品質スコア
-        </label>
-        <div style={{ 
-          fontSize: "10px", 
-          color: completion.percentage >= 50 ? 
-            (isDarkMode ? "#86efac" : "#16a34a") :
-            (isDarkMode ? "#fca5a5" : "#dc2626")
-        }}>
-          {(() => {
-            let quality = "要改善";
-            let emoji = "❌";
-            if (completion.percentage >= 80) { quality = "最高品質"; emoji = "✨"; }
-            else if (completion.percentage >= 60) { quality = "高品質"; emoji = "🌟"; }
-            else if (completion.percentage >= 40) { quality = "良好"; emoji = "👍"; }
-            else if (completion.percentage >= 20) { quality = "普通"; emoji = "⚠️"; }
-            
-            return `${emoji} ${quality} (${completion.count}/${completion.total}設定, ${completion.percentage}%)`;
-          })()}
-          <br/>
-          <span style={{ opacity: 0.8 }}>
-            {completion.percentage >= 80 ? 
-              "完璧！AI生成で最高品質の画像が期待できます" :
-            completion.percentage >= 60 ?
-              "良好！AI生成で高品質な画像が生成されます" :
-            completion.percentage >= 40 ?
-              "もう少し設定を追加すると品質が向上します" :
-              "より多くの設定でAI生成品質が大幅に向上します"
-            }
-          </span>
-        </div>
-      </div>
 
       {/* 🆕 カテゴリ別設定状況 */}
       <div style={sectionStyle}>
@@ -929,44 +965,6 @@ const CharacterDetailPanel: React.FC<CharacterDetailPanelProps> = ({
         </div>
       </div>
 
-      {/* 🆕 AI生成プロンプト最適化ガイド */}
-      <div style={{
-        ...sectionStyle,
-        background: isDarkMode ? "rgba(59, 130, 246, 0.1)" : "rgba(59, 130, 246, 0.05)",
-        border: `1px solid ${isDarkMode ? "rgba(59, 130, 246, 0.3)" : "rgba(59, 130, 246, 0.2)"}`,
-      }}>
-        <label style={{
-          ...labelStyle,
-          color: isDarkMode ? "#93c5fd" : "#1d4ed8"
-        }}>
-          💡 AI生成最適化ガイド
-        </label>
-        <div style={{ fontSize: "10px", color: isDarkMode ? "#93c5fd" : "#1d4ed8" }}>
-          {completion.percentage < 40 ? (
-            <>
-              <strong>🚀 設定を増やして品質向上！</strong><br/>
-              • ⭐人気項目から選ぶと効果的<br/>
-              • 表情と感情を設定すると表現力アップ<br/>
-              • ポーズや手の動作で動きのある絵に<br/>
-              • 視線や目・口の状態で細かい表現が可能
-            </>
-          ) : completion.percentage < 80 ? (
-            <>
-              <strong>👍 順調です！あと少しで完璧！</strong><br/>
-              • 未設定項目を埋めると更に高品質に<br/>
-              • 体調・状態で特殊な表現も可能<br/>
-              • 8項目全て設定すると最高品質達成
-            </>
-          ) : (
-            <>
-              <strong>✨ 完璧な設定！最高品質の生成が期待できます</strong><br/>
-              • 全ての設定が AI生成に活用されます<br/>
-              • プロンプト出力で確認してみてください<br/>
-              • この品質なら商用レベルの画像生成が可能
-            </>
-          )}
-        </div>
-      </div>
 
       {/* 🗑️ 削除ボタン */}
       {onCharacterDelete && (

@@ -361,7 +361,10 @@ class PromptService {
     if (this.isValidValue(viewType)) {
       const viewTypeMapping: Record<string, string> = {
         'face': 'close-up',
+        'close_up_face': 'extreme_close-up',
         'upper_body': 'upper_body',
+        'chest_up': 'chest_up',
+        'three_quarters': 'three_quarters',
         'full_body': 'full_body'
       };
       const compositionTag = viewTypeMapping[viewType];

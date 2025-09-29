@@ -18,7 +18,10 @@ export class CharacterUtils {
     
     switch (character.viewType) {
       case "face": typeMultiplier = 0.8; break;
+      case "close_up_face": typeMultiplier = 1.2; break; // より大きく
       case "upper_body": typeMultiplier = 1.0; break; // 🔧 修正: halfBody → upper_body
+      case "chest_up": typeMultiplier = 1.1; break; // 胸から上
+      case "three_quarters": typeMultiplier = 1.3; break; // 膝上程度
       case "full_body": typeMultiplier = 1.1; break; // 🔧 修正: fullBody → full_body
       default: typeMultiplier = 1.0;
     }
@@ -39,7 +42,10 @@ export class CharacterUtils {
     
     switch (character.viewType) {
       case "face": typeMultiplier = 0.8; break;
+      case "close_up_face": typeMultiplier = 1.0; break; // 顔のみなので高さは控えめ
       case "upper_body": typeMultiplier = 1.2; break; // 🔧 修正: halfBody → upper_body
+      case "chest_up": typeMultiplier = 1.4; break; // 胸から上
+      case "three_quarters": typeMultiplier = 1.6; break; // 膝上程度
       case "full_body": typeMultiplier = 1.8; break; // 🔧 修正: fullBody → full_body
       default: typeMultiplier = 1.0;
     }
@@ -137,10 +143,28 @@ export class CharacterUtils {
         headY = charY + charHeight / 2 - headSize / 2;
         break;
         
+      case "close_up_face":
+        headSize = Math.min(charWidth, charHeight) * 1.8; // より大きく
+        headX = charX + charWidth / 2 - headSize / 2;
+        headY = charY + charHeight / 2 - headSize / 2;
+        break;
+        
       case "upper_body": // 🔧 修正: halfBody → upper_body
         headSize = charWidth * 1.0; // 0.7 → 1.0 に極端に拡大
         headX = charX + charWidth / 2 - headSize / 2;
         headY = charY + charHeight * 0.05;
+        break;
+        
+      case "chest_up":
+        headSize = charWidth * 1.1; // 胸から上
+        headX = charX + charWidth / 2 - headSize / 2;
+        headY = charY + charHeight * 0.03;
+        break;
+        
+      case "three_quarters":
+        headSize = charWidth * 0.8; // 膝上程度
+        headX = charX + charWidth / 2 - headSize / 2;
+        headY = charY + charHeight * 0.02;
         break;
         
       case "full_body": // 🔧 修正: fullBody → full_body
@@ -169,8 +193,17 @@ export class CharacterUtils {
       case "face":
         return charY + charHeight; // 顔のみなので体なし
         
+      case "close_up_face":
+        return charY + charHeight; // 顔のみなので体なし
+        
       case "upper_body": // 🔧 修正: halfBody → upper_body
         return charY + charHeight * 0.05 + headSize;
+        
+      case "chest_up":
+        return charY + charHeight * 0.03 + headSize;
+        
+      case "three_quarters":
+        return charY + charHeight * 0.02 + headSize;
         
       case "full_body": // 🔧 修正: fullBody → full_body
         return charY + charHeight * 0.02 + headSize;

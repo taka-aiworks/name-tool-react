@@ -20,6 +20,7 @@ import { usePageManager } from './hooks/usePageManager';
 import { SceneTemplatePanel } from './components/UI/SceneTemplatePanel';
 import PanelTemplateSelector from './components/UI/PanelTemplateSelector';
 import { PaperSizeSelectPanel } from './components/UI/PaperSizeSelectPanel';
+import SnapSettingsPanel from './components/UI/SnapSettingsPanel';
 
 import {
   calculateScaleTransform,
@@ -68,6 +69,7 @@ function App() {
   const [showCharacterSettingsPanel, setShowCharacterSettingsPanel] = useState<boolean>(false);
   const [editingCharacterType, setEditingCharacterType] = useState<string>('');
   const [showPanelSelector, setShowPanelSelector] = useState<boolean>(false);
+  const [showSnapSettingsPanel, setShowSnapSettingsPanel] = useState<boolean>(false);
   const [canvasSettings, setCanvasSettings] = useState<CanvasSettings>(DEFAULT_CANVAS_SETTINGS);
   const [isPaperSizePanelVisible, setIsPaperSizePanelVisible] = useState(false);
 
@@ -375,20 +377,13 @@ function App() {
 
   // スナップ設定ハンドラー
   const handleSnapToggle = useCallback(() => {
-    setSnapSettings(prev => ({ ...prev, enabled: !prev.enabled }));
+    setShowSnapSettingsPanel(true);
   }, []);
 
-  const handleGridSizeChange = useCallback((size: number) => {
-    setSnapSettings(prev => ({ ...prev, gridSize: size }));
+  const handleSnapSettingsUpdate = useCallback((newSettings: SnapSettings) => {
+    setSnapSettings(newSettings);
   }, []);
 
-  const handleSensitivityChange = useCallback((sensitivity: 'weak' | 'medium' | 'strong') => {
-    setSnapSettings(prev => ({ ...prev, sensitivity }));
-  }, []);
-
-  const handleGridDisplayChange = useCallback((display: 'always' | 'edit-only' | 'hidden') => {
-    setSnapSettings(prev => ({ ...prev, gridDisplay: display }));
-  }, []);
 
   const handleCharacterNameUpdate = useCallback((type: string, newName: string, newRole: string, appearance: any) => {
     // コンソールログは無効化
@@ -812,7 +807,7 @@ function App() {
     <div className={`app ${isDarkMode ? 'dark' : 'light'}`}>
       {/* ヘッダー */}
       <header className="header">
-        <h1>📖 ネーム制作ツール</h1>
+        <h1>📖 AI漫画ネームメーカー</h1>
         <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
           <button 
             className={`control-btn ${isPanelEditMode ? 'active' : ''}`}
@@ -824,7 +819,7 @@ function App() {
               border: `1px solid ${isPanelEditMode ? "#ff8833" : "var(--border-color)"}`,
             }}
           >
-            🔧 {isPanelEditMode ? "編集中" : "編集"}
+            🔧 {isPanelEditMode ? "編集中" : "コマ編集"}
           </button>
 
           <button 
@@ -874,69 +869,15 @@ function App() {
           <button 
             className={`control-btn ${snapSettings.enabled ? 'active' : ''}`}
             onClick={handleSnapToggle}
-            title="スナップ機能のON/OFF"
+            title="スナップ設定を開く"
             style={{
               background: snapSettings.enabled ? "#4CAF50" : "var(--bg-tertiary)",
               color: snapSettings.enabled ? "white" : "var(--text-primary)",
               border: `1px solid ${snapSettings.enabled ? "#4CAF50" : "var(--border-color)"}`,
             }}
           >
-            ✅ スナップ
+            ⚙️ スナップ
           </button>
-
-          <select 
-            value={snapSettings.gridSize}
-            onChange={(e) => handleGridSizeChange(Number(e.target.value))}
-            style={{
-              padding: "4px 8px",
-              borderRadius: "4px",
-              border: "1px solid var(--border-color)",
-              background: "var(--bg-tertiary)",
-              color: "var(--text-primary)",
-              fontSize: "12px",
-            }}
-            title="グリッドサイズ"
-          >
-            <option value={10}>10px</option>
-            <option value={20}>20px</option>
-            <option value={40}>40px</option>
-          </select>
-
-          <select 
-            value={snapSettings.sensitivity}
-            onChange={(e) => handleSensitivityChange(e.target.value as 'weak' | 'medium' | 'strong')}
-            style={{
-              padding: "4px 8px",
-              borderRadius: "4px",
-              border: "1px solid var(--border-color)",
-              background: "var(--bg-tertiary)",
-              color: "var(--text-primary)",
-              fontSize: "12px",
-            }}
-            title="スナップ感度"
-          >
-            <option value="weak">弱</option>
-            <option value="medium">中</option>
-            <option value="strong">強</option>
-          </select>
-
-          <select 
-            value={snapSettings.gridDisplay}
-            onChange={(e) => handleGridDisplayChange(e.target.value as 'always' | 'edit-only' | 'hidden')}
-            style={{
-              padding: "4px 8px",
-              borderRadius: "4px",
-              border: "1px solid var(--border-color)",
-              background: "var(--bg-tertiary)",
-              color: "var(--text-primary)",
-              fontSize: "12px",
-            }}
-            title="グリッド表示"
-          >
-            <option value="always">📐 常時</option>
-            <option value="edit-only">📐 編集時</option>
-            <option value="hidden">📐 非表示</option>
-          </select>
           
           <button 
             className="theme-toggle"
@@ -1239,6 +1180,14 @@ function App() {
         currentName={characterNames[editingCharacterType]}
         currentSettings={characterSettings[editingCharacterType]}
         onCharacterUpdate={handleCharacterSettingsUpdate}
+        isDarkMode={isDarkMode}
+      />
+
+      <SnapSettingsPanel
+        isOpen={showSnapSettingsPanel}
+        onClose={() => setShowSnapSettingsPanel(false)}
+        snapSettings={snapSettings}
+        onSnapSettingsUpdate={handleSnapSettingsUpdate}
         isDarkMode={isDarkMode}
       />
 

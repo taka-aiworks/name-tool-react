@@ -8,6 +8,7 @@ import { CharacterRotation } from "./CharacterRotation";
 import { CharacterUtils } from "./utils/CharacterUtils";
 import { CharacterBounds } from "./utils/CharacterBounds";
 import { CharacterHair } from "./drawing/CharacterHair";
+import { CharacterBodyRenderer } from "../CharacterBodyRenderer";
 
 export class CharacterRenderer {
   
@@ -268,8 +269,17 @@ export class CharacterRenderer {
       case "face":
         CharacterRenderer.drawFaceOnly(ctx, character, charX, charY, charWidth, charHeight);
         break;
+      case "close_up_face":
+        CharacterRenderer.drawCloseUpFace(ctx, character, charX, charY, charWidth, charHeight);
+        break;
       case "upper_body":  // halfBody → upper_body
         CharacterRenderer.drawHalfBody(ctx, character, charX, charY, charWidth, charHeight);
+        break;
+      case "chest_up":
+        CharacterRenderer.drawChestUp(ctx, character, charX, charY, charWidth, charHeight);
+        break;
+      case "three_quarters":
+        CharacterRenderer.drawThreeQuarters(ctx, character, charX, charY, charWidth, charHeight);
         break;
       case "full_body":   // fullBody → full_body
         CharacterRenderer.drawFullBody(ctx, character, charX, charY, charWidth, charHeight);
@@ -295,6 +305,22 @@ export class CharacterRenderer {
     CharacterRenderer.drawHead(ctx, character, headX, headY, headSize);
   }
 
+  // 🎯 クローズアップ顔描画（より大きく）
+  static drawCloseUpFace(
+    ctx: CanvasRenderingContext2D,
+    character: Character,
+    charX: number,
+    charY: number,
+    charWidth: number,
+    charHeight: number
+  ) {
+    const { headX, headY, headSize } = CharacterUtils.calculateHeadDimensions(
+      charWidth, charHeight, charX, charY, "close_up_face"
+    );
+    
+    CharacterRenderer.drawHead(ctx, character, headX, headY, headSize);
+  }
+
   // 🎯 上半身描画
   static drawHalfBody(
     ctx: CanvasRenderingContext2D,
@@ -314,6 +340,50 @@ export class CharacterRenderer {
     CharacterRenderer.drawBodyHalf(ctx, character, charX, charY, charWidth, charHeight, bodyStartY);
     
     // 頭部を最後に描画（髪が体に重なるように）
+    CharacterRenderer.drawHead(ctx, character, headX, headY, headSize);
+  }
+
+  // 🎯 胸から上描画
+  static drawChestUp(
+    ctx: CanvasRenderingContext2D,
+    character: Character,
+    charX: number,
+    charY: number,
+    charWidth: number,
+    charHeight: number
+  ) {
+    const { headX, headY, headSize } = CharacterUtils.calculateHeadDimensions(
+      charWidth, charHeight, charX, charY, "chest_up"
+    );
+    
+    const bodyStartY = CharacterUtils.calculateBodyStartY(charY, charHeight, headSize, "chest_up");
+    
+    // 体を先に描画（胸から上のみ）
+    CharacterBodyRenderer.drawBodyChestUp(ctx, character, charX, charY, charWidth, charHeight, bodyStartY);
+    
+    // 頭部を最後に描画
+    CharacterRenderer.drawHead(ctx, character, headX, headY, headSize);
+  }
+
+  // 🎯 3/4全身描画（膝上程度）
+  static drawThreeQuarters(
+    ctx: CanvasRenderingContext2D,
+    character: Character,
+    charX: number,
+    charY: number,
+    charWidth: number,
+    charHeight: number
+  ) {
+    const { headX, headY, headSize } = CharacterUtils.calculateHeadDimensions(
+      charWidth, charHeight, charX, charY, "three_quarters"
+    );
+    
+    const bodyStartY = CharacterUtils.calculateBodyStartY(charY, charHeight, headSize, "three_quarters");
+    
+    // 体を先に描画（膝上程度）
+    CharacterBodyRenderer.drawBodyThreeQuarters(ctx, character, charX, charY, charWidth, charHeight, bodyStartY);
+    
+    // 頭部を最後に描画
     CharacterRenderer.drawHead(ctx, character, headX, headY, headSize);
   }
 

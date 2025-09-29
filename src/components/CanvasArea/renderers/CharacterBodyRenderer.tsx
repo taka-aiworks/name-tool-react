@@ -452,6 +452,53 @@ export class CharacterBodyRenderer {
     }
   }
 
+  // 🎯 胸から上描画（新規追加）
+  static drawBodyChestUp(
+    ctx: CanvasRenderingContext2D,
+    character: Character,
+    charX: number,
+    charY: number,
+    charWidth: number,
+    charHeight: number,
+    bodyStartY: number
+  ) {
+    // 上半身のみ描画（胸から上）
+    CharacterBodyRenderer.drawBodyHalf(ctx, character, charX, charY, charWidth, charHeight, bodyStartY);
+  }
+
+  // 🎯 3/4全身描画（膝上程度）
+  static drawBodyThreeQuarters(
+    ctx: CanvasRenderingContext2D,
+    character: Character,
+    charX: number,
+    charY: number,
+    charWidth: number,
+    charHeight: number,
+    bodyStartY: number
+  ) {
+    // 上半身
+    CharacterBodyRenderer.drawBodyHalf(ctx, character, charX, charY, charWidth, charHeight * 0.6, bodyStartY);
+    
+    // 下半身（膝上程度）
+    const legStartY = bodyStartY + charHeight * 0.4;
+    const legWidth = charWidth * 0.5;
+    const legHeight = charHeight * 0.3; // 膝上程度
+    const legX = charX + charWidth / 2 - legWidth / 2;
+    
+    // ポーズに応じた脚の描画
+    const pose = character.action || "standing";
+    switch (pose) {
+      case "walking":
+        CharacterBodyRenderer.drawWalkingLegs(ctx, legX, legStartY, legWidth, legHeight);
+        break;
+      case "sitting":
+        // 座っている場合は脚を描画しない
+        break;
+      default:
+        CharacterBodyRenderer.drawStandingLegs(ctx, legX, legStartY, legWidth, legHeight);
+    }
+  }
+
   // 立っている脚
   static drawStandingLegs(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) {
     // ズボン

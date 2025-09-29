@@ -28,7 +28,7 @@ export interface Character {
   expression: string;     // 辞書対応
   action: string;        // 辞書対応（旧pose）
   facing: string;        // 辞書対応（旧gaze/bodyDirection統合）
-  viewType: "face" | "upper_body" | "full_body";
+  viewType: "face" | "upper_body" | "full_body" | "close_up_face" | "chest_up" | "three_quarters";
   eyeState?: string;
   mouthState?: string; 
   handGesture?: string;
@@ -843,3 +843,121 @@ export const testPaperSizeScaling = () => {
   console.groupEnd();
 };
 
+// types.ts に追加するNanoBanana関連型定義（簡略版 - v1.1.5実装用）
+
+// ==========================================
+// NanoBanana連携機能用型定義（v1.1.5版）
+// ==========================================
+
+// NanoBananaエクスポートオプション
+export interface NanoBananaExportOptions {
+  includeInstructions: boolean;     // 使用方法ガイドを含める
+  includeCharacterMapping: boolean; // キャラクター名対応表を含める
+  layoutImageFormat: 'png' | 'jpg'; // レイアウト画像形式
+  layoutImageQuality: 'high' | 'medium' | 'low'; // レイアウト画像品質
+  promptLanguage: 'english' | 'japanese' | 'both'; // プロンプト言語
+  zipFilename?: string;            // ZIP ファイル名（省略時は自動生成）
+}
+
+// NanoBananaエクスポートパッケージの構成
+export interface NanoBananaExportPackage {
+  layoutImage: Blob;               // レイアウト画像（PNG/JPG）
+  promptText: string;              // 統合プロンプト
+  characterMapping: string;        // キャラクター名対応表
+  instructions: string;            // 使用方法ガイド
+  metadata: NanoBananaExportMetadata; // メタデータ
+}
+
+// エクスポートメタデータ
+export interface NanoBananaExportMetadata {
+  exportedAt: string;              // エクスポート日時
+  toolVersion: string;             // ツールバージョン
+  pageCount: number;               // ページ数
+  panelCount: number;              // コマ数
+  characterCount: number;          // キャラクター数
+  paperSize: string;               // 用紙サイズ
+  totalElements: number;           // 総要素数
+}
+
+// キャラクター名マッピング情報
+export interface CharacterNameMapping {
+  originalName: string;            // ネーム内での名前
+  suggestedFilename: string;       // 推奨ファイル名
+  characterId: string;             // キャラクターID
+  description?: string;            // キャラクター説明
+}
+
+// NanoBananaプロンプト構成要素
+export interface NanoBananaPromptStructure {
+  introduction: string;            // 導入説明
+  characterMappingSection: string; // キャラクター対応セクション
+  panelDetailsSection: string;     // パネル詳細セクション
+  styleSettingsSection: string;    // スタイル設定セクション
+  instructionsSection: string;     // 指示セクション
+}
+
+// レイアウト画像生成オプション
+export interface LayoutImageOptions {
+  showPanelNumbers: boolean;       // パネル番号表示
+  showGrid: boolean;              // グリッド表示
+  backgroundColor: string;         // 背景色
+  borderColor: string;            // 枠線色
+  borderWidth: number;            // 枠線太さ
+  fontSize: number;               // 番号フォントサイズ
+  fontColor: string;              // 番号フォント色
+  quality: number;                // 画像品質（0.1-1.0）
+}
+
+// NanoBananaエクスポート進行状況
+export interface NanoBananaExportProgress {
+  step: 'initialize' | 'generate_layout' | 'generate_prompt' | 'create_mapping' | 'create_instructions' | 'package_files' | 'complete';
+  progress: number;               // 進行率（0-100）
+  message: string;                // 現在の処理内容
+  currentFile?: string;           // 現在処理中のファイル
+}
+
+// NanoBananaエクスポート結果
+export interface NanoBananaExportResult {
+  success: boolean;               // 成功フラグ
+  zipBlob?: Blob;                // 生成されたZIPファイル
+  filename: string;               // ファイル名
+  size: number;                   // ファイルサイズ（バイト）
+  metadata: NanoBananaExportMetadata; // エクスポートメタデータ
+  error?: string;                 // エラーメッセージ
+}
+
+// デフォルト設定
+export const DEFAULT_NANOBANANA_EXPORT_OPTIONS: NanoBananaExportOptions = {
+  includeInstructions: true,
+  includeCharacterMapping: true,
+  layoutImageFormat: 'png',
+  layoutImageQuality: 'high',
+  promptLanguage: 'english',
+};
+
+export const DEFAULT_LAYOUT_IMAGE_OPTIONS: LayoutImageOptions = {
+  showPanelNumbers: true,
+  showGrid: false,
+  backgroundColor: '#ffffff',
+  borderColor: '#000000',
+  borderWidth: 2,
+  fontSize: 24,
+  fontColor: '#000000',
+  quality: 1.0,
+};
+
+// 🔧 v1.1.6以降で実装予定の型定義（現在は未使用）
+// 
+// export interface NanoBananaStylePreset {
+//   id: string;
+//   name: string;
+//   description: string;
+//   stylePrompt: string;
+//   colorMode: 'color' | 'black_white' | 'sepia';
+//   mangaStyle: 'shounen' | 'shoujo' | 'seinen' | 'josei' | 'general';
+//   artStyle: 'anime' | 'realistic' | 'cartoon' | 'sketch';
+// }
+// 
+// export const NANOBANANA_STYLE_PRESETS: NanoBananaStylePreset[] = [
+//   // v1.1.6以降で実装予定
+// ];

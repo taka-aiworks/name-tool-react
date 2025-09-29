@@ -25,7 +25,7 @@ export const createCharacter = (config: {
   rotation?: number;
   
   // 表示設定
-  viewType?: "face" | "upper_body" | "full_body";
+  viewType?: "face" | "upper_body" | "full_body" | "close_up_face" | "chest_up" | "three_quarters";
   
   // 🔧 辞書対応設定（未選択時は空文字でプロンプト除外）
   expression?: string;    // expressions カテゴリ

@@ -2,9 +2,22 @@
 import React, { useState } from 'react';
 import { ExportService, ExportOptions, ExportProgress } from '../../services/ExportService';
 import { promptService } from '../../services/PromptService';
-import { Panel, Character, SpeechBubble, BackgroundElement, EffectElement, ToneElement } from '../../types';
+import { nanoBananaExportService } from '../../services/NanoBananaExportService';
+import { 
+  Panel, 
+  Character, 
+  SpeechBubble, 
+  BackgroundElement, 
+  EffectElement, 
+  ToneElement,
+  NanoBananaExportOptions,
+  NanoBananaExportProgress,
+  DEFAULT_NANOBANANA_EXPORT_OPTIONS,
+  PaperSize,
+  PAPER_SIZES
+} from '../../types';
 
-type ExportPurpose = 'print' | 'image' | 'clipstudio' | 'prompt';
+type ExportPurpose = 'print' | 'image' | 'clipstudio' | 'prompt' | 'nanobanana';
 
 const purposeDefaults: Record<ExportPurpose, Partial<ExportOptions>> = {
   print: {
@@ -34,6 +47,13 @@ const purposeDefaults: Record<ExportPurpose, Partial<ExportOptions>> = {
     resolution: 512,
     includeBackground: false,
     separatePages: true
+  },
+  nanobanana: {
+    format: 'zip' as any,
+    quality: 'high',
+    resolution: 300,
+    includeBackground: true,
+    separatePages: false
   }
 };
 
@@ -47,6 +67,7 @@ interface ExportPanelProps {
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
   characterSettings?: Record<string, any>;
   characterNames?: Record<string, string>;
+  paperSize?: PaperSize;
 }
 
 export const ExportPanel: React.FC<ExportPanelProps> = ({
@@ -58,13 +79,19 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
   tones,
   canvasRef,
   characterSettings,
-  characterNames
+  characterNames,
+  paperSize
 }) => {
   const [selectedPurpose, setSelectedPurpose] = useState<ExportPurpose | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState<ExportProgress | null>(null);
   const [promptOutput, setPromptOutput] = useState<string>('');
   const [debugOutput, setDebugOutput] = useState<string>('');
+  
+  // 🆕 NanoBanana関連のstate
+  const [nanoBananaOptions, setNanoBananaOptions] = useState<NanoBananaExportOptions>(DEFAULT_NANOBANANA_EXPORT_OPTIONS);
+  const [nanoBananaProgress, setNanoBananaProgress] = useState<NanoBananaExportProgress | null>(null);
+  const [isNanoBananaExporting, setIsNanoBananaExporting] = useState(false);
   const [exportOptions, setExportOptions] = useState<ExportOptions>({
     format: 'pdf',
     quality: 'high',
@@ -76,20 +103,86 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
   const exportService = ExportService.getInstance();
   const isDarkMode = document.documentElement.getAttribute("data-theme") === "dark";
 
+  // 🍌 NanoBananaエクスポート処理関数
+  const handleNanoBananaExport = async () => {
+    if (!canvasRef.current || panels.length === 0) {
+      alert('エクスポートできるコンテンツがありません');
+      return;
+    }
+
+    const currentPaperSize = paperSize || PAPER_SIZES.A4_PORTRAIT;
+
+    setIsNanoBananaExporting(true);
+    setNanoBananaProgress({ 
+      step: 'initialize', 
+      progress: 0, 
+      message: 'NanoBananaエクスポートを開始しています...' 
+    });
+
+    try {
+      const result = await nanoBananaExportService.exportForNanoBanana(
+        panels,
+        characters,
+        bubbles,
+        currentPaperSize,
+        characterSettings,
+        characterNames,
+        nanoBananaOptions,
+        setNanoBananaProgress
+      );
+
+      if (result.success && result.zipBlob) {
+        // ダウンロードリンクを作成
+        const url = URL.createObjectURL(result.zipBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = result.filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        // 成功メッセージ
+        alert(`NanoBananaエクスポートが完了しました！\n\nファイル: ${result.filename}\nサイズ: ${(result.size / 1024).toFixed(1)} KB\n\nZIPファイルを解凍して、Google AI Studioで使用してください。`);
+      } else {
+        throw new Error(result.error || 'エクスポートに失敗しました');
+      }
+    } catch (error) {
+      console.error('NanoBanana export error:', error);
+      alert('NanoBananaエクスポートに失敗しました: ' + (error as Error).message);
+    } finally {
+      setIsNanoBananaExporting(false);
+      setTimeout(() => {
+        setNanoBananaProgress(null);
+        setSelectedPurpose(null);
+      }, 2000);
+    }
+  };
+
   const handlePurposeClick = (purpose: ExportPurpose) => {
     // その他の場合は設定画面を開く
     if (selectedPurpose === purpose) {
       setSelectedPurpose(null);
       setPromptOutput('');
       setDebugOutput('');
+      setNanoBananaProgress(null); // 🆕 追加
     } else {
       setSelectedPurpose(purpose);
       setPromptOutput('');
       setDebugOutput('');
-      setExportOptions({
-        ...exportOptions,
-        ...purposeDefaults[purpose]
-      });
+      setNanoBananaProgress(null); // 🆕 追加
+      
+      if (purpose === 'nanobanana') {
+        // NanoBanana用設定を適用
+        setNanoBananaOptions(DEFAULT_NANOBANANA_EXPORT_OPTIONS);
+      } else if (purpose === 'prompt') {
+        handlePromptExport();
+      } else {
+        setExportOptions({
+          ...exportOptions,
+          ...purposeDefaults[purpose]
+        });
+      }
     }
   };
 
@@ -547,6 +640,12 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
 
   const purposes = [
     {
+      id: 'nanobanana' as ExportPurpose,
+      icon: '🍌',
+      title: 'NanoBanana出力（調整中）',
+      desc: 'AI漫画生成用'
+    },
+    {
       id: 'prompt' as ExportPurpose,
       icon: '🎨',
       title: 'プロンプト出力',
@@ -675,7 +774,7 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
                     fontSize: "10px", 
                     opacity: 0.7
                   }}>
-                    {purpose.desc}
+                    {purpose.title}
                   </div>
                 </div>
               </div>
@@ -772,6 +871,268 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
                       }}>
                         {promptOutput}
                       </div>
+                    </div>
+                  )}
+                  
+                  {/* 🍌 NanoBanana設定画面 */}
+                  {selectedPurpose === 'nanobanana' && (
+                    <div>
+
+                      {/* 説明 */}
+                      <div 
+                        style={{
+                          background: isDarkMode ? "rgba(251, 191, 36, 0.1)" : "rgba(245, 158, 11, 0.05)",
+                          padding: "8px",
+                          borderRadius: "4px",
+                          marginBottom: "12px",
+                          textAlign: "center",
+                        }}
+                      >
+                        <p 
+                          style={{
+                            fontSize: "10px",
+                            color: isDarkMode ? "#fbbf24" : "#f59e0b",
+                            margin: 0,
+                            lineHeight: "1.4"
+                          }}
+                        >
+                          レイアウト画像＋プロンプト＋使用方法ガイドを一括出力。<br/>
+                          Google AI StudioのNanoBananaで完成した漫画を生成できます。<br/>
+                          <strong>商用利用する場合はGoogleの利用規約に従ってください。</strong>
+                        </p>
+                      </div>
+
+                      {/* オプション設定 */}
+                      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                        
+                        {/* レイアウト画像品質 */}
+                        <div>
+                          <label 
+                            style={{
+                              display: "block",
+                              fontSize: "11px",
+                              fontWeight: "600",
+                              color: isDarkMode ? "#ffffff" : "#333333",
+                              marginBottom: "4px",
+                            }}
+                          >
+                            レイアウト画像品質
+                          </label>
+                          <select
+                            value={nanoBananaOptions.layoutImageQuality}
+                            onChange={(e) => setNanoBananaOptions({
+                              ...nanoBananaOptions,
+                              layoutImageQuality: e.target.value as any
+                            })}
+                            disabled={isNanoBananaExporting}
+                            style={{
+                              width: "100%",
+                              padding: "6px 8px",
+                              border: `1px solid ${isDarkMode ? "#666666" : "#ddd"}`,
+                              borderRadius: "4px",
+                              background: isDarkMode ? "#2d2d2d" : "white",
+                              color: isDarkMode ? "#ffffff" : "#333333",
+                              fontSize: "11px",
+                              fontFamily: "inherit",
+                            }}
+                          >
+                            <option value="high">高品質（推奨）</option>
+                            <option value="medium">標準</option>
+                            <option value="low">軽量</option>
+                          </select>
+                        </div>
+
+                        {/* プロンプト言語 */}
+                        <div>
+                          <label 
+                            style={{
+                              display: "block",
+                              fontSize: "11px",
+                              fontWeight: "600",
+                              color: isDarkMode ? "#ffffff" : "#333333",
+                              marginBottom: "4px",
+                            }}
+                          >
+                            プロンプト言語
+                          </label>
+                          <select
+                            value={nanoBananaOptions.promptLanguage}
+                            onChange={(e) => setNanoBananaOptions({
+                              ...nanoBananaOptions,
+                              promptLanguage: e.target.value as any
+                            })}
+                            disabled={isNanoBananaExporting}
+                            style={{
+                              width: "100%",
+                              padding: "6px 8px",
+                              border: `1px solid ${isDarkMode ? "#666666" : "#ddd"}`,
+                              borderRadius: "4px",
+                              background: isDarkMode ? "#2d2d2d" : "white",
+                              color: isDarkMode ? "#ffffff" : "#333333",
+                              fontSize: "11px",
+                              fontFamily: "inherit",
+                            }}
+                          >
+                            <option value="english">英語（推奨）</option>
+                            <option value="japanese">日本語</option>
+                            <option value="both">両方</option>
+                          </select>
+                        </div>
+
+                        {/* チェックボックスオプション */}
+                        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                          <label style={{ 
+                            display: "flex", 
+                            alignItems: "center", 
+                            gap: "6px",
+                            fontSize: "11px",
+                            color: isDarkMode ? "#ffffff" : "#333333",
+                            cursor: "pointer"
+                          }}>
+                            <input
+                              type="checkbox"
+                              checked={nanoBananaOptions.includeInstructions}
+                              onChange={(e) => setNanoBananaOptions({
+                                ...nanoBananaOptions,
+                                includeInstructions: e.target.checked
+                              })}
+                              disabled={isNanoBananaExporting}
+                              style={{ margin: 0 }}
+                            />
+                            使用方法ガイドを含める
+                          </label>
+
+                          <label style={{ 
+                            display: "flex", 
+                            alignItems: "center", 
+                            gap: "6px",
+                            fontSize: "11px",
+                            color: isDarkMode ? "#ffffff" : "#333333",
+                            cursor: "pointer"
+                          }}>
+                            <input
+                              type="checkbox"
+                              checked={nanoBananaOptions.includeCharacterMapping}
+                              onChange={(e) => setNanoBananaOptions({
+                                ...nanoBananaOptions,
+                                includeCharacterMapping: e.target.checked
+                              })}
+                              disabled={isNanoBananaExporting}
+                              style={{ margin: 0 }}
+                            />
+                            キャラクター名対応表を含める
+                          </label>
+                        </div>
+                      </div>
+
+                      {/* エクスポートボタン */}
+                      <button
+                        onClick={handleNanoBananaExport}
+                        disabled={isNanoBananaExporting || panels.length === 0}
+                        style={{
+                          width: "100%",
+                          background: isNanoBananaExporting || panels.length === 0 ? "#999999" : "#f59e0b",
+                          color: "white",
+                          padding: "10px 12px",
+                          borderRadius: "4px",
+                          border: "none",
+                          fontSize: "12px",
+                          fontWeight: "600",
+                          cursor: isNanoBananaExporting || panels.length === 0 ? "not-allowed" : "pointer",
+                          transition: "background-color 0.2s",
+                          fontFamily: "inherit",
+                          marginTop: "12px"
+                        }}
+                      >
+                        {isNanoBananaExporting ? (
+                          <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+                            <div 
+                              style={{
+                                width: "12px",
+                                height: "12px",
+                                border: "2px solid white",
+                                borderTop: "2px solid transparent",
+                                borderRadius: "50%",
+                                animation: "spin 1s linear infinite",
+                              }}
+                            />
+                            エクスポート中...
+                          </span>
+                        ) : (
+                          '🍌 NanoBananaパッケージ作成'
+                        )}
+                      </button>
+
+                      {/* プログレス表示 */}
+                      {isNanoBananaExporting && nanoBananaProgress && (
+                        <div 
+                          style={{
+                            marginTop: "12px",
+                            background: isDarkMode ? "#404040" : "#f5f5f5",
+                            padding: "10px",
+                            borderRadius: "4px",
+                          }}
+                        >
+                          <div 
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              fontSize: "10px",
+                              marginBottom: "6px",
+                              color: isDarkMode ? "#ffffff" : "#333333",
+                            }}
+                          >
+                            <span>{nanoBananaProgress.message}</span>
+                            <span style={{ fontWeight: "bold" }}>
+                              {Math.round(nanoBananaProgress.progress)}%
+                            </span>
+                          </div>
+                          {nanoBananaProgress.currentFile && (
+                            <div style={{
+                              fontSize: "9px",
+                              color: isDarkMode ? "#cccccc" : "#666666",
+                              marginBottom: "4px"
+                            }}>
+                              📄 {nanoBananaProgress.currentFile}
+                            </div>
+                          )}
+                          <div 
+                            style={{
+                              width: "100%",
+                              height: "4px",
+                              background: isDarkMode ? "#666666" : "#e0e0e0",
+                              borderRadius: "2px",
+                              overflow: "hidden",
+                            }}
+                          >
+                            <div
+                              style={{
+                                height: "100%",
+                                background: "#f59e0b",
+                                borderRadius: "2px",
+                                transition: "width 0.3s",
+                                width: `${nanoBananaProgress.progress}%`,
+                              }}
+                            />
+                          </div>
+
+                          {/* 完了時のメッセージ */}
+                          {nanoBananaProgress.step === 'complete' && (
+                            <div style={{
+                              marginTop: "8px",
+                              padding: "6px",
+                              background: isDarkMode ? "rgba(16, 185, 129, 0.1)" : "rgba(16, 185, 129, 0.05)",
+                              borderRadius: "4px",
+                              fontSize: "10px",
+                              color: isDarkMode ? "#10b981" : "#059669",
+                              textAlign: "center"
+                            }}>
+                              ✅ エクスポート完了！ZIPファイルをダウンロードしてください。
+                            </div>
+                          )}
+                        </div>
+                      )}
+
                     </div>
                   )}
                   
