@@ -202,6 +202,11 @@ export class NanoBananaExportService {
       prompt += `  - Expression: ${char.expression || 'neutral'}\n`;
       prompt += `  - Action: ${char.action || 'standing'}\n`;
       if (char.facing) prompt += `  - Facing: ${char.facing}\n`;
+      if ((char as any).eyeState) prompt += `  - Eye State: ${(char as any).eyeState}\n`;
+      if ((char as any).mouthState) prompt += `  - Mouth State: ${(char as any).mouthState}\n`;
+      if ((char as any).handGesture) prompt += `  - Hand Gesture: ${(char as any).handGesture}\n`;
+      if ((char as any).emotion_primary) prompt += `  - Emotion: ${(char as any).emotion_primary}\n`;
+      if ((char as any).physical_state) prompt += `  - Physical State: ${(char as any).physical_state}\n`;
       prompt += '\n';
     });
 
@@ -238,6 +243,11 @@ export class NanoBananaExportService {
       prompt += `  - 表情: ${char.expression || '通常'}\n`;
       prompt += `  - 動作: ${char.action || '立っている'}\n`;
       if (char.facing) prompt += `  - 向き: ${char.facing}\n`;
+      if ((char as any).eyeState) prompt += `  - 目の状態: ${(char as any).eyeState}\n`;
+      if ((char as any).mouthState) prompt += `  - 口の状態: ${(char as any).mouthState}\n`;
+      if ((char as any).handGesture) prompt += `  - 手の動作: ${(char as any).handGesture}\n`;
+      if ((char as any).emotion_primary) prompt += `  - 感情: ${(char as any).emotion_primary}\n`;
+      if ((char as any).physical_state) prompt += `  - 体調・状態: ${(char as any).physical_state}\n`;
       prompt += '\n';
     });
 
@@ -271,7 +281,16 @@ export class NanoBananaExportService {
       mapping += `${index + 1}. ${displayName}\n`;
       mapping += `   Original ID: ${char.id}\n`;
       mapping += `   Character ID: ${char.characterId}\n`;
-      mapping += `   Type: ${char.viewType}\n\n`;
+      mapping += `   View Type: ${char.viewType}\n`;
+      mapping += `   Expression: ${char.expression || 'neutral'}\n`;
+      mapping += `   Action: ${char.action || 'standing'}\n`;
+      if (char.facing) mapping += `   Facing: ${char.facing}\n`;
+      if ((char as any).eyeState) mapping += `   Eye State: ${(char as any).eyeState}\n`;
+      if ((char as any).mouthState) mapping += `   Mouth State: ${(char as any).mouthState}\n`;
+      if ((char as any).handGesture) mapping += `   Hand Gesture: ${(char as any).handGesture}\n`;
+      if ((char as any).emotion_primary) mapping += `   Emotion: ${(char as any).emotion_primary}\n`;
+      if ((char as any).physical_state) mapping += `   Physical State: ${(char as any).physical_state}\n`;
+      mapping += '\n';
     });
 
     mapping += '=== Usage Instructions ===\n';
