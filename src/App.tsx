@@ -254,8 +254,8 @@ function App() {
     currentIndex: -1,
   });
   
-  // アンドゥリドゥ実行中フラグ
-  const [isUndoRedoExecuting, setIsUndoRedoExecuting] = useState(false);
+  // アンドゥリドゥ実行中フラグ（useRefで同期管理）
+  const isUndoRedoExecutingRef = useRef(false);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -335,25 +335,46 @@ function App() {
   }, []);
 
 
-  // 履歴保存のタイミング（元のコードに完全に戻す）
-  useEffect(() => {
-    // 空の状態では履歴保存しない
+  // デバウンス用のタイマーref
+  const saveHistoryTimerRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // 履歴保存（デバウンス付き）
+  const saveHistoryDebounced = useCallback(() => {
+    // アンドゥリドゥ実行中は保存しない
+    if (isUndoRedoExecutingRef.current) {
+      return;
+    }
+    
+    // 空の状態では保存しない
     if (characters.length === 0 && speechBubbles.length === 0 && panels.length === 0 && 
         backgrounds.length === 0 && effects.length === 0) {
       return;
     }
-
-    const timeoutId = setTimeout(() => {
+    
+    // 既存のタイマーをクリア
+    if (saveHistoryTimerRef.current) {
+      clearTimeout(saveHistoryTimerRef.current);
+    }
+    
+    // 500ms後に履歴保存
+    saveHistoryTimerRef.current = setTimeout(() => {
       saveToHistory(characters, speechBubbles, panels, backgrounds, effects);
+      saveHistoryTimerRef.current = null;
     }, 500);
-
-    return () => clearTimeout(timeoutId);
-  }, [charactersSignature, bubblesSignature, panelsSignature, backgroundsSignature, effectsSignature, saveToHistory]);
+  }, [characters, speechBubbles, panels, backgrounds, effects, saveToHistory]);
 
   // アンドゥ/リドゥ処理
   const handleUndo = useCallback(() => {
     if (operationHistory.currentIndex > 0) {
-      setIsUndoRedoExecuting(true);
+      // 実行中フラグを立てる
+      isUndoRedoExecutingRef.current = true;
+      
+      // 保留中の履歴保存をキャンセル
+      if (saveHistoryTimerRef.current) {
+        clearTimeout(saveHistoryTimerRef.current);
+        saveHistoryTimerRef.current = null;
+      }
+      
       const newIndex = operationHistory.currentIndex - 1;
       setCharacters([...operationHistory.characters[newIndex]]);
       setSpeechBubbles([...operationHistory.speechBubbles[newIndex]]);
@@ -363,14 +384,24 @@ function App() {
       // トーン機能は無効化
       setOperationHistory(prev => ({ ...prev, currentIndex: newIndex }));
       
-      // フラグをリセット（次のレンダリングサイクルで）
-      setTimeout(() => setIsUndoRedoExecuting(false), 100);
+      // フラグをリセット（履歴保存タイムアウトより長く）
+      setTimeout(() => {
+        isUndoRedoExecutingRef.current = false;
+      }, 600);
     }
   }, [operationHistory]);
 
   const handleRedo = useCallback(() => {
     if (operationHistory.currentIndex < operationHistory.characters.length - 1) {
-      setIsUndoRedoExecuting(true);
+      // 実行中フラグを立てる
+      isUndoRedoExecutingRef.current = true;
+      
+      // 保留中の履歴保存をキャンセル
+      if (saveHistoryTimerRef.current) {
+        clearTimeout(saveHistoryTimerRef.current);
+        saveHistoryTimerRef.current = null;
+      }
+      
       const newIndex = operationHistory.currentIndex + 1;
       setCharacters([...operationHistory.characters[newIndex]]);
       setSpeechBubbles([...operationHistory.speechBubbles[newIndex]]);
@@ -380,8 +411,10 @@ function App() {
       // トーン機能は無効化
       setOperationHistory(prev => ({ ...prev, currentIndex: newIndex }));
       
-      // フラグをリセット（次のレンダリングサイクルで）
-      setTimeout(() => setIsUndoRedoExecuting(false), 100);
+      // フラグをリセット（履歴保存タイムアウトより長く）
+      setTimeout(() => {
+        isUndoRedoExecutingRef.current = false;
+      }, 600);
     }
   }, [operationHistory]);
 
@@ -548,7 +581,10 @@ function App() {
     }
     
     console.log('✅ Template applied successfully with ratio scaling');
-  }, [canvasSettings]);
+    
+    // テンプレート適用後に履歴保存
+    saveHistoryDebounced();
+  }, [canvasSettings, saveHistoryDebounced]);
 
   // ページ管理hook
   const pageManager = usePageManager({
@@ -560,6 +596,8 @@ function App() {
       setBackgrounds(newBackgrounds);
       setEffects(newEffects);
       setTones(newTones);
+      // ページ切り替え後に履歴保存
+      saveHistoryDebounced();
     }
   });
 
@@ -783,13 +821,15 @@ function App() {
     });
     
     setSelectedCharacter(updatedCharacter);
-  }, []);
+    saveHistoryDebounced();
+  }, [saveHistoryDebounced]);
 
   const handleCharacterDelete = useCallback((characterToDelete: Character) => {
     const newCharacters = characters.filter(char => char.id !== characterToDelete.id);
     setCharacters(newCharacters);
     setSelectedCharacter(null);
-  }, [characters]);
+    saveHistoryDebounced();
+  }, [characters, saveHistoryDebounced]);
 
   const handleCharacterPanelClose = useCallback(() => {
     setSelectedCharacter(null);
@@ -797,7 +837,8 @@ function App() {
 
   const handlePanelUpdate = useCallback((updatedPanels: Panel[]) => {
     setPanels(updatedPanels);
-  }, []);
+    saveHistoryDebounced();
+  }, [saveHistoryDebounced]);
   
 
   const handlePanelAdd = useCallback((targetPanelId: string, position: 'above' | 'below' | 'left' | 'right') => {
@@ -829,7 +870,8 @@ function App() {
 
     setPanels(prevPanels => [...prevPanels, newPanel]);
     console.log(`✅ コマ追加完了: ${newPanelId} (${position})`);
-  }, [panels]);
+    saveHistoryDebounced();
+  }, [panels, saveHistoryDebounced]);
 
   const handlePanelDelete = useCallback((panelId: string) => {
     if (panels.length <= 1) {
@@ -849,8 +891,9 @@ function App() {
       setSelectedEffect(null);
       // トーン機能は無効化
       console.log(`🗑️ コマ削除: ${panelId}`);
+      saveHistoryDebounced();
     }
-  }, [panels.length]);
+  }, [panels.length, saveHistoryDebounced]);
 
   const handlePanelSplit = useCallback((panelId: number, direction: "horizontal" | "vertical") => {
     const panelToSplit = panels.find(p => p.id === panelId);
@@ -895,7 +938,8 @@ function App() {
 
     setPanels(newPanels);
     console.log(`${direction}分割完了（隙間: ${gap}px）`);
-  }, [panels]);
+    saveHistoryDebounced();
+  }, [panels, saveHistoryDebounced]);
 
   // コマの入れ替え機能（サイズはそのまま、内容のみ入れ替え）
   const handlePanelSwap = useCallback((panelId1: number, panelId2: number) => {
@@ -931,7 +975,8 @@ function App() {
     }));
 
     console.log(`🔄 コマ ${panelId1} と ${panelId2} の内容を入れ替えました`);
-  }, [panels]);
+    saveHistoryDebounced();
+  }, [panels, saveHistoryDebounced]);
 
   const handleClearAll = useCallback(() => {
     if (window.confirm("全ての要素をクリアしますか？")) {
