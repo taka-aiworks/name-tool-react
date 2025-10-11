@@ -30,6 +30,8 @@ export interface MouseEventCallbacks {
   onCharacterSelect?: (character: Character | null) => void;
   onPanelSplit?: (panelId: string, direction: 'horizontal' | 'vertical') => void;
   onDeletePanel: (panel: Panel) => void;
+  onDragStart?: () => void;
+  onDragEnd?: () => void;
 }
 
 export class MouseEventHandler {
@@ -114,6 +116,10 @@ export class MouseEventHandler {
             resizeDirection: String(panelHandle.direction || ""),
             dragOffset: { x: mouseX, y: mouseY }
           });
+          // ドラッグ開始時にイベントを発火
+          if (callbacks.onDragStart) {
+            callbacks.onDragStart();
+          }
           e.preventDefault();
           return;
         } else if (panelHandle.type === "move") {
@@ -124,6 +130,10 @@ export class MouseEventHandler {
               y: mouseY - selectedPanel.y,
             }
           });
+          // ドラッグ開始時にイベントを発火
+          if (callbacks.onDragStart) {
+            callbacks.onDragStart();
+          }
           e.preventDefault();
           return;
         } else if (panelHandle.type === "split" && callbacks.onPanelSplit) {
@@ -276,7 +286,7 @@ export class MouseEventHandler {
   static handleCanvasMouseUp(
     callbacks: MouseEventCallbacks
   ): void {
-    callbacks.setMouseState({
+    const wasDragging = callbacks.setMouseState({
       isDragging: false,
       isBubbleResizing: false,
       isCharacterResizing: false,
@@ -285,6 +295,11 @@ export class MouseEventHandler {
       resizeDirection: "",
       snapLines: []
     });
+    
+    // ドラッグ終了時にイベントを発火
+    if (callbacks.onDragEnd) {
+      callbacks.onDragEnd();
+    }
   }
 
   /**

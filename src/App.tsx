@@ -245,14 +245,21 @@ function App() {
     tones: ToneElement[][];
     currentIndex: number;
   }>({
-    characters: [[]],
-    speechBubbles: [[]],
-    panels: [[]],
-    backgrounds: [[]],
-    effects: [[]],
-    tones: [[]],
-    currentIndex: 0,
+    characters: [],
+    speechBubbles: [],
+    panels: [],
+    backgrounds: [],
+    effects: [],
+    tones: [],
+    currentIndex: -1,
   });
+  
+  // アンドゥリドゥ実行中フラグ
+  const [isUndoRedoExecuting, setIsUndoRedoExecuting] = useState(false);
+  
+  // ドラッグ状態管理
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStartState, setDragStartState] = useState<any>(null);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -293,6 +300,19 @@ function App() {
     newEffects: EffectElement[]
   ) => {
     setOperationHistory(prev => {
+      // 初回保存の場合は特別処理
+      if (prev.currentIndex === -1) {
+        return {
+          characters: [[...newCharacters]],
+          speechBubbles: [[...newBubbles]],
+          panels: [[...newPanels]],
+          backgrounds: [[...newBackgrounds]],
+          effects: [[...newEffects]],
+          tones: [[]],
+          currentIndex: 0,
+        };
+      }
+      
       const newHistory = {
         characters: [...prev.characters.slice(0, prev.currentIndex + 1), [...newCharacters]],
         speechBubbles: [...prev.speechBubbles.slice(0, prev.currentIndex + 1), [...newBubbles]],
@@ -318,24 +338,53 @@ function App() {
     });
   }, []);
 
-  // 履歴保存のタイミング
-  useEffect(() => {
+  // 履歴保存のタイミング（手動でのみ実行）
+  const saveHistoryManually = useCallback(() => {
+    // 初回のテンプレート適用時
+    if (operationHistory.currentIndex === -1 && panels.length > 0) {
+      saveToHistory(characters, speechBubbles, panels, backgrounds, effects);
+      return;
+    }
+    
     // 空の状態では履歴保存しない
     if (characters.length === 0 && speechBubbles.length === 0 && panels.length === 0 && 
         backgrounds.length === 0 && effects.length === 0) {
       return;
     }
 
-    const timeoutId = setTimeout(() => {
+    // アンドゥリドゥ実行中は履歴保存しない
+    if (operationHistory.currentIndex < 0 || isUndoRedoExecuting) {
+      return;
+    }
+
       saveToHistory(characters, speechBubbles, panels, backgrounds, effects);
+  }, [characters, speechBubbles, panels, backgrounds, effects, operationHistory.currentIndex, isUndoRedoExecuting, saveToHistory]);
+
+  // すべての状態変更を監視して履歴保存
+  useEffect(() => {
+    // 初回ロード時やテンプレート適用時は除外
+    if (operationHistory.currentIndex === -1) return;
+    
+    // アンドゥリドゥ実行中は除外
+    if (isUndoRedoExecuting) return;
+    
+    // 空の状態では除外
+    if (characters.length === 0 && speechBubbles.length === 0 && panels.length === 0 && 
+        backgrounds.length === 0 && effects.length === 0) {
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      saveHistoryManually();
     }, 500);
 
     return () => clearTimeout(timeoutId);
-  }, [charactersSignature, bubblesSignature, panelsSignature, backgroundsSignature, effectsSignature, saveToHistory]);
+  }, [charactersSignature, bubblesSignature, panelsSignature, backgroundsSignature, effectsSignature, saveHistoryManually, operationHistory.currentIndex, isUndoRedoExecuting]);
 
   // アンドゥ/リドゥ処理
   const handleUndo = useCallback(() => {
     if (operationHistory.currentIndex > 0) {
+      setIsUndoRedoExecuting(true);
       const newIndex = operationHistory.currentIndex - 1;
       setCharacters([...operationHistory.characters[newIndex]]);
       setSpeechBubbles([...operationHistory.speechBubbles[newIndex]]);
@@ -344,11 +393,15 @@ function App() {
       setEffects([...operationHistory.effects[newIndex]]);
       // トーン機能は無効化
       setOperationHistory(prev => ({ ...prev, currentIndex: newIndex }));
+      
+      // フラグをリセット（次のレンダリングサイクルで）
+      setTimeout(() => setIsUndoRedoExecuting(false), 100);
     }
   }, [operationHistory]);
 
   const handleRedo = useCallback(() => {
     if (operationHistory.currentIndex < operationHistory.characters.length - 1) {
+      setIsUndoRedoExecuting(true);
       const newIndex = operationHistory.currentIndex + 1;
       setCharacters([...operationHistory.characters[newIndex]]);
       setSpeechBubbles([...operationHistory.speechBubbles[newIndex]]);
@@ -357,6 +410,9 @@ function App() {
       setEffects([...operationHistory.effects[newIndex]]);
       // トーン機能は無効化
       setOperationHistory(prev => ({ ...prev, currentIndex: newIndex }));
+      
+      // フラグをリセット（次のレンダリングサイクルで）
+      setTimeout(() => setIsUndoRedoExecuting(false), 100);
     }
   }, [operationHistory]);
 
@@ -502,8 +558,8 @@ function App() {
         height: Math.round(panel.height * pixelHeight / templateBaseHeight)
       }));
       
-      console.log('📐 Scaled panels:', scaledPanels);
-      setPanels(scaledPanels);
+    console.log('📐 Scaled panels:', scaledPanels);
+    setPanels(scaledPanels);
     } else {
       console.error(`Template "${template}" not found`);
     }
@@ -772,7 +828,35 @@ function App() {
 
   const handlePanelUpdate = useCallback((updatedPanels: Panel[]) => {
     setPanels(updatedPanels);
-  }, []);
+    // すべてのパネル変更で履歴保存
+    setTimeout(() => saveHistoryManually(), 500);
+  }, [saveHistoryManually]);
+  
+  // ドラッグ開始時の履歴保存
+  const handleDragStart = useCallback(() => {
+    if (!isDragging) {
+      setIsDragging(true);
+      // ドラッグ開始時の状態を保存
+      setDragStartState({
+        panels: [...panels],
+        characters: [...characters],
+        speechBubbles: [...speechBubbles],
+        backgrounds: [...backgrounds],
+        effects: [...effects]
+      });
+    }
+  }, [isDragging, panels, characters, speechBubbles, backgrounds, effects]);
+  
+  // ドラッグ終了時の履歴保存
+  const handleDragEnd = useCallback(() => {
+    if (isDragging) {
+      setIsDragging(false);
+      // ドラッグ終了時に履歴保存
+      setTimeout(() => saveHistoryManually(), 100);
+      setDragStartState(null);
+    }
+  }, [isDragging, saveHistoryManually]);
+  
 
   const handlePanelAdd = useCallback((targetPanelId: string, position: 'above' | 'below' | 'left' | 'right') => {
     const targetPanel = panels.find(p => p.id.toString() === targetPanelId);
@@ -803,6 +887,8 @@ function App() {
 
     setPanels(prevPanels => [...prevPanels, newPanel]);
     console.log(`✅ コマ追加完了: ${newPanelId} (${position})`);
+    // 履歴保存
+    setTimeout(() => saveHistoryManually(), 500);
   }, [panels]);
 
   const handlePanelDelete = useCallback((panelId: string) => {
@@ -821,6 +907,8 @@ function App() {
       setPanels(prev => prev.filter(panel => panel.id !== panelIdNum));
       setSelectedPanel(null);
       setSelectedEffect(null);
+      // 履歴保存
+      setTimeout(() => saveHistoryManually(), 500);
       // トーン機能は無効化
       console.log(`🗑️ コマ削除: ${panelId}`);
     }
@@ -869,6 +957,8 @@ function App() {
 
     setPanels(newPanels);
     console.log(`${direction}分割完了（隙間: ${gap}px）`);
+    // 履歴保存
+    setTimeout(() => saveHistoryManually(), 500);
   }, [panels]);
 
   // コマの入れ替え機能（サイズはそのまま、内容のみ入れ替え）
@@ -905,6 +995,8 @@ function App() {
     }));
 
     console.log(`🔄 コマ ${panelId1} と ${panelId2} の内容を入れ替えました`);
+    // 履歴保存
+    setTimeout(() => saveHistoryManually(), 500);
   }, [panels]);
 
   const handleClearAll = useCallback(() => {
@@ -970,9 +1062,9 @@ function App() {
       <header className="header">
         <h1>📖 AI漫画ネームメーカー</h1>
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-          {projectSave.hasUnsavedChanges && (
-            <button 
-              className="control-btn"
+          {projectSave.hasUnsavedChanges && (projectSave.currentProjectId && projectSave.currentProjectName) && (
+          <button 
+            className="control-btn"
               onClick={async () => {
                 try {
                   const projectData = {
@@ -988,6 +1080,7 @@ function App() {
                     characterSettings,
                     canvasSettings
                   };
+                  
                   
                   if (projectSave.currentProjectId) {
                     // 既存プロジェクトの上書き保存
@@ -1016,18 +1109,18 @@ function App() {
                   alert('保存に失敗しました');
                 }
               }}
-              title={projectSave.currentProjectId ? "上書き保存" : "新規保存"}
-              style={{
+              title={projectSave.currentProjectId && projectSave.currentProjectName ? `上書き保存: ${projectSave.currentProjectName}` : "新規保存"}
+            style={{
                 background: COLOR_PALETTE.buttons.save.primary,
                 color: "white",
                 border: `1px solid ${COLOR_PALETTE.buttons.save.primary}`,
                 fontWeight: "bold"
               }}
             >
-              💾 {projectSave.currentProjectId ? "上書き保存" : "新規保存"}
-            </button>
+              💾 {projectSave.currentProjectId && projectSave.currentProjectName ? `上書き: ${projectSave.currentProjectName}` : "新規保存"}
+          </button>
           )}
-          
+
           <button 
             className="control-btn"
             onClick={() => setShowProjectPanel(true)}
@@ -1280,7 +1373,7 @@ function App() {
               <button 
                 className="control-btn"
                 onClick={handleUndo}
-                disabled={operationHistory.currentIndex <= 0}
+                disabled={operationHistory.currentIndex <= 0 || operationHistory.characters.length === 0}
                 title="元に戻す (Ctrl+Z)"
               >
                 ↶ 戻す
@@ -1288,7 +1381,7 @@ function App() {
               <button 
                 className="control-btn"
                 onClick={handleRedo}
-                disabled={operationHistory.currentIndex >= operationHistory.characters.length - 1}
+                disabled={operationHistory.currentIndex >= operationHistory.characters.length - 1 || operationHistory.characters.length === 0}
                 title="やり直し (Ctrl+Y)"
               >
                 ↷ 進む
@@ -1303,7 +1396,7 @@ function App() {
               </button>
             </div>
             <div className="canvas-info">
-              操作履歴: {operationHistory.currentIndex + 1} / {operationHistory.characters.length}
+              操作履歴: {operationHistory.currentIndex + 1} / {Math.max(1, operationHistory.characters.length)}
               {selectedCharacter && <span> | 選択中: {getCharacterDisplayName(selectedCharacter)}</span>}
               {selectedPanel && <span> | パネル{selectedPanel.id}選択中</span>}
               {selectedEffect && <span> | 効果線選択中</span>}
@@ -1391,6 +1484,8 @@ function App() {
             snapSettings={snapSettings}
             swapPanel1={swapPanel1}
             swapPanel2={swapPanel2}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
           />
         </div>
 
@@ -1437,6 +1532,8 @@ function App() {
 
           <div className="section">
             <h3>🤖 AI自動生成</h3>
+            
+            {/* 1ページ分生成 */}
             <button
               onClick={() => {
                 if (!openAIService.hasApiKey()) {
@@ -1463,7 +1560,114 @@ function App() {
                 marginBottom: '8px'
               }}
             >
-              📖 話からコマ内容を生成
+              📖 1ページ分を生成
+            </button>
+
+            {/* 1コマ生成 */}
+            <button
+              onClick={async () => {
+                if (!openAIService.hasApiKey()) {
+                  if (window.confirm('OpenAI APIキーが未設定です。設定画面を開きますか？')) {
+                    setShowOpenAISettingsModal(true);
+                  }
+                  return;
+                }
+                
+                if (!selectedPanel) {
+                  alert('生成したいコマを選択してください');
+                  return;
+                }
+
+                const story = prompt('このコマのストーリーを入力してください:');
+                if (!story || !story.trim()) return;
+
+                const tone = prompt('トーンを入力してください（コメディ、シリアス、日常など）:', 'コメディ');
+                
+                try {
+                  setIsGeneratingFromStory(true);
+                  
+                  // 既存のコマ情報を取得
+                  const existingPanels = panels.map(panel => ({
+                    panelId: panel.id,
+                    note: panel.note || '',
+                    dialogue: speechBubbles.find(bubble => bubble.panelId === panel.id)?.text || '',
+                    actionPrompt: panel.actionPrompt || '',
+                    characterId: panel.selectedCharacterId
+                  }));
+
+                  // 登録済みキャラクター情報
+                  const characters = Object.entries(characterNames).map(([id, name]) => ({
+                    id,
+                    name,
+                    prompt: characterSettings[id]?.appearance?.basePrompt || ''
+                  }));
+
+                  const newPanelContent = await openAIService.generateSinglePanel(
+                    story,
+                    selectedPanel.id,
+                    existingPanels,
+                    tone || undefined,
+                    characters
+                  );
+
+                  if (newPanelContent) {
+                    // 選択中のコマに内容を適用
+                    const updatedPanels = panels.map(panel => 
+                      panel.id === selectedPanel.id 
+                        ? {
+                            ...panel,
+                            note: newPanelContent.note,
+                            actionPrompt: newPanelContent.actionPrompt,
+                            actionPromptJa: newPanelContent.actionPromptJa,
+                            selectedCharacterId: newPanelContent.characterId
+                          }
+                        : panel
+                    );
+                    setPanels(updatedPanels);
+
+                    // セリフバブルを更新
+                    const updatedBubbles = speechBubbles.filter(bubble => bubble.panelId !== selectedPanel.id);
+                    if (newPanelContent.dialogue) {
+                      updatedBubbles.push({
+                        id: Date.now().toString(),
+                        panelId: selectedPanel.id,
+                        text: newPanelContent.dialogue,
+                        x: 0.5,
+                        y: 0.5,
+                        width: 0.8,
+                        height: 0.3,
+                        type: newPanelContent.bubbleType || 'normal',
+                        vertical: false,
+                        scale: 1,
+                        isGlobalPosition: false
+                      });
+                    }
+                    setSpeechBubbles(updatedBubbles);
+
+                    alert(`コマ${selectedPanel.id}の内容を生成しました！`);
+                  }
+                } catch (error) {
+                  console.error('Single panel generation error:', error);
+                  alert('コマ生成に失敗しました: ' + (error as Error).message);
+                } finally {
+                  setIsGeneratingFromStory(false);
+                }
+              }}
+              disabled={!selectedPanel || isGeneratingFromStory}
+              style={{
+                width: '100%',
+                padding: '12px',
+                background: !selectedPanel || isGeneratingFromStory ? '#999' : COLOR_PALETTE.buttons.edit.primary,
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: !selectedPanel || isGeneratingFromStory ? 'not-allowed' : 'pointer',
+                fontSize: '13px',
+                fontWeight: 'bold',
+                marginBottom: '8px'
+              }}
+            >
+              {isGeneratingFromStory ? '🤖 生成中...' : `🎯 コマ${selectedPanel?.id || '?'}を生成`}
             </button>
             <button
               onClick={() => setShowOpenAISettingsModal(true)}
@@ -1489,7 +1693,7 @@ function App() {
               marginTop: "8px"
             }}>
               💡 先にコマ割りを選択→話を入力→各コマに自動配置
-            </div>
+                </div>
           </div>
 
           {/* プロンプト入力セクション（コマ設定）をAI生成の直後に配置 */}
@@ -1606,10 +1810,10 @@ function App() {
                     lineHeight: '1.4'
                   }}>
                     {selectedPanel.characterPrompt}
-                  </div>
+            </div>
                 )}
                 
-                <div style={{
+            <div style={{
                   fontSize: "10px",
                   color: "var(--text-muted)",
                   padding: "4px 8px",
@@ -1624,7 +1828,7 @@ function App() {
               {/* 動作プロンプト（自動生成） */}
               <div>
                 <label style={{
-                  fontSize: "11px",
+              fontSize: "11px", 
                   fontWeight: "bold",
                   color: "var(--text-primary)",
                   display: "block",
@@ -1676,15 +1880,15 @@ function App() {
                 
                 <div style={{
                   fontSize: "10px",
-                  color: "var(--text-muted)",
-                  padding: "4px 8px",
-                  background: "var(--bg-secondary)",
-                  borderRadius: "4px",
+              color: "var(--text-muted)",
+              padding: "4px 8px",
+              background: "var(--bg-secondary)",
+              borderRadius: "4px",
                   marginTop: "4px"
-                }}>
+            }}>
                   💡 最終プロンプト = キャラ + 動作で自動合成
-                </div>
-              </div>
+            </div>
+          </div>
             </div>
           )}
 
@@ -1778,8 +1982,8 @@ function App() {
                 ⚡ 効果線
                 {effectTemplateCount > 0 && <span style={{ marginLeft: "4px" }}>({effectTemplateCount})</span>}
               </button>
-            </div>
           </div>
+        </div>
 
           {panels.length > 1 && (
           <div className="section">

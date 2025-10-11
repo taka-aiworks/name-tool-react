@@ -8,6 +8,9 @@ export interface StoryToComicRequest {
   panelCount: number;
   tone?: string; // コメディ、シリアス、日常など
   characters?: Array<{ id: string; name: string; prompt?: string }>; // 登録済みキャラ情報
+  generationMode?: 'page' | 'panel'; // 1ページ分 or 1コマずつ
+  existingPanels?: PanelContent[]; // 既存のコマ情報（1コマ生成時）
+  targetPanelId?: number; // 対象コマID（1コマ生成時）
 }
 
 export interface PanelContent {
@@ -239,6 +242,107 @@ ${characterInfo}
       updatedPanels,
       newBubbles: [...speechBubbles, ...newBubbles]
     };
+  }
+
+  /**
+   * 1コマのみ生成（既存のコマを置き換え）
+   */
+  public async generateSinglePanel(
+    story: string,
+    targetPanelId: number,
+    existingPanels: PanelContent[],
+    tone?: string,
+    characters?: Array<{ id: string; name: string; prompt?: string }>
+  ): Promise<PanelContent | null> {
+    if (!this.apiKey) {
+      throw new Error('APIキーが設定されていません');
+    }
+
+    const characterInfo = characters ? characters.map(char => 
+      `- ${char.name} (ID: ${char.id}): ${char.prompt || 'プロンプト未設定'}`
+    ).join('\n') : '';
+
+    const existingContext = existingPanels.length > 0 ? 
+      `\n\n【既存のコマ情報】\n${existingPanels.map(panel => 
+        `コマ${panel.panelId}: ${panel.note} - ${panel.dialogue}`
+      ).join('\n')}` : '';
+
+    const prompt = `あなたは漫画制作の専門家です。以下のストーリーから、指定されたコマの内容を生成してください。
+
+【ストーリー】
+${story}
+
+【トーン】
+${tone || 'コメディ'}
+
+【登録済みキャラクター】
+${characterInfo || 'キャラクター情報なし'}
+
+【対象コマ】
+コマ${targetPanelId}の内容を生成してください。${existingContext}
+
+【出力形式】
+以下のJSON形式で1つのコマの情報のみを返してください：
+{
+  "panelId": ${targetPanelId},
+  "note": "コマの内容説明（日本語）",
+  "dialogue": "セリフ",
+  "bubbleType": "普通",
+  "actionPrompt": "動作・表情・構図のプロンプト（英語）",
+  "actionPromptJa": "動作プロンプトの日本語説明",
+  "characterId": "character_1"
+}
+
+【注意事項】
+- 既存のコマとの整合性を保つ
+- ストーリーの流れに沿った内容にする
+- セリフは自然で魅力的にする
+- プロンプトは画像生成に適した英語で記述する`;
+
+    try {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.apiKey}`
+        },
+        body: JSON.stringify({
+          model: this.model,
+          messages: [
+            {
+              role: 'system',
+              content: prompt
+            }
+          ],
+          temperature: 0.8,
+          max_tokens: 500
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      const content = data.choices[0]?.message?.content;
+
+      if (!content) {
+        throw new Error('API response is empty');
+      }
+
+      // JSON部分を抽出
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error('JSON形式のレスポンスが見つかりません');
+      }
+
+      const panelData = JSON.parse(jsonMatch[0]);
+      return panelData as PanelContent;
+
+    } catch (error) {
+      console.error('Single panel generation error:', error);
+      throw error;
+    }
   }
 }
 

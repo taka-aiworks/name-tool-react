@@ -202,6 +202,30 @@ export class SaveService {
           project.data.currentPageIndex = 0;
         }
         
+        // 🆕 canvasSettingsの後方互換性：ない場合はデフォルト値で初期化
+        if (!project.data.canvasSettings) {
+          project.data.canvasSettings = {
+            paperSize: {
+              id: 'a4_portrait',
+              name: 'A4縦',
+              displayName: 'A4 縦（210×297mm）',
+              width: 210,
+              height: 297,
+              pixelWidth: 800,
+              pixelHeight: 1131,
+              aspectRatio: 297/210,
+              category: 'standard',
+              description: '最も一般的な印刷サイズ',
+              isPortrait: true
+            },
+            dpi: 300,
+            showMargins: false,
+            marginSize: 10,
+            gridVisible: false,
+            gridSize: 5
+          };
+        }
+        
         localStorage.setItem(this.CURRENT_PROJECT_KEY, projectId);
         // コンソールログは無効化
         return project;
@@ -278,6 +302,29 @@ export class SaveService {
             heroine: { appearance: null, role: 'ヒロイン' },
             rival: { appearance: null, role: 'ライバル' },
             friend: { appearance: null, role: '友人' }
+          };
+        }
+        // 🆕 canvasSettingsの後方互換性
+        if (!project.data.canvasSettings) {
+          project.data.canvasSettings = {
+            paperSize: {
+              id: 'a4_portrait',
+              name: 'A4縦',
+              displayName: 'A4 縦（210×297mm）',
+              width: 210,
+              height: 297,
+              pixelWidth: 800,
+              pixelHeight: 1131,
+              aspectRatio: 297/210,
+              category: 'standard',
+              description: '最も一般的な印刷サイズ',
+              isPortrait: true
+            },
+            dpi: 300,
+            showMargins: false,
+            marginSize: 10,
+            gridVisible: false,
+            gridSize: 5
           };
         }
         return project;

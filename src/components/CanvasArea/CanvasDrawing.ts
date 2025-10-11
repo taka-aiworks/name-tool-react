@@ -43,13 +43,8 @@ export class CanvasDrawing {
     swapPanel1?: number | null,
     swapPanel2?: number | null
   ): void {
-    console.log('🎨 Drawing panels:', panels.map(p => `ID:${p.id}@(${p.x},${p.y})`));
-    console.log('🎨 Panel order check:', panels.map((p, i) => `Index:${i} ID:${p.id}`));
-    
     // 🔧 パネルの順序をID順で固定（座標順ソートを防ぐ）
     const orderedPanels = [...panels].sort((a, b) => a.id - b.id);
-    console.log('🔧 FIXED: Ordered panels by ID:', orderedPanels.map(p => `ID:${p.id}@(${p.x},${p.y})`));
-    console.log('🔧 FIXED: This should show ID:1, ID:2, ID:3 in that order!');
     
     orderedPanels.forEach((panel) => {
       const isSelected = panel === selectedPanel;

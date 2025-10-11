@@ -203,6 +203,10 @@ export interface CanvasComponentProps {
   // 🆕 入れ替え選択状態
   swapPanel1?: number | null;
   swapPanel2?: number | null;
+  
+  // 🆕 ドラッグイベント
+  onDragStart?: () => void;
+  onDragEnd?: () => void;
 }
 
 // テンプレート定義の型
