@@ -7,6 +7,7 @@ import { templates } from "./components/CanvasArea/templates";
 import { ExportPanel } from './components/UI/ExportPanel';
 import { useRef } from 'react';
 import "./App.css";
+import { COLOR_PALETTE, getThemeColors } from './styles/colorPalette';
 
 // 必要なimport（トーン機能含む）
 import useProjectSave from './hooks/useProjectSave';
@@ -969,18 +970,76 @@ function App() {
       <header className="header">
         <h1>📖 AI漫画ネームメーカー</h1>
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          {projectSave.hasUnsavedChanges && (
+            <button 
+              className="control-btn"
+              onClick={async () => {
+                try {
+                  const projectData = {
+                    panels,
+                    characters,
+                    bubbles: speechBubbles,
+                    backgrounds,
+                    effects,
+                    tones,
+                    canvasSize,
+                    settings,
+                    characterNames,
+                    characterSettings,
+                    canvasSettings
+                  };
+                  
+                  if (projectSave.currentProjectId) {
+                    // 既存プロジェクトの上書き保存
+                    const success = await projectSave.saveProject(projectData);
+                    if (success) {
+                      alert('プロジェクトを上書き保存しました');
+                    }
+                  } else {
+                    // 新規プロジェクトの作成
+                    const projectName = prompt('プロジェクト名を入力してください:');
+                    if (projectName && projectName.trim()) {
+                      const projectId = await projectSave.saveProject(projectData, projectName.trim());
+                      if (projectId) {
+                        alert(`プロジェクト「${projectName}」を新規作成しました`);
+                      }
+                    } else if (projectName !== null) {
+                      // 空文字列の場合はデフォルト名で作成
+                      const projectId = await projectSave.saveProject(projectData, '無題のプロジェクト');
+                      if (projectId) {
+                        alert('プロジェクト「無題のプロジェクト」を新規作成しました');
+                      }
+                    }
+                  }
+                } catch (error) {
+                  console.error('保存エラー:', error);
+                  alert('保存に失敗しました');
+                }
+              }}
+              title={projectSave.currentProjectId ? "上書き保存" : "新規保存"}
+              style={{
+                background: COLOR_PALETTE.buttons.save.primary,
+                color: "white",
+                border: `1px solid ${COLOR_PALETTE.buttons.save.primary}`,
+                fontWeight: "bold"
+              }}
+            >
+              💾 {projectSave.currentProjectId ? "上書き保存" : "新規保存"}
+            </button>
+          )}
+          
           <button 
             className="control-btn"
             onClick={() => setShowProjectPanel(true)}
             title="プロジェクト管理"
             style={{
-              background: projectSave.hasUnsavedChanges ? "#ff6b6b" : "var(--bg-tertiary)",
-              color: projectSave.hasUnsavedChanges ? "white" : "var(--text-primary)",
-              border: `1px solid ${projectSave.hasUnsavedChanges ? "#ff6b6b" : "var(--border-color)"}`,
+              background: COLOR_PALETTE.buttons.manage.primary,
+              color: "white",
+              border: `1px solid ${COLOR_PALETTE.buttons.manage.primary}`,
+              fontWeight: "bold"
             }}
           >
-            💾 プロジェクト
-            {projectSave.hasUnsavedChanges && <span style={{ marginLeft: "4px" }}>●</span>}
+            📁 プロジェクト管理
           </button>
 
           <div style={{ width: "1px", height: "24px", background: "var(--border-color)" }}></div>
@@ -990,9 +1049,9 @@ function App() {
             onClick={() => setShowExportPanel(true)}
             title="プロンプト出力"
             style={{
-              background: "#10b981",
+              background: COLOR_PALETTE.buttons.export.primary,
               color: "white",
-              border: "1px solid #10b981",
+              border: `1px solid ${COLOR_PALETTE.buttons.export.primary}`,
               fontWeight: "bold"
             }}
           >
@@ -1006,9 +1065,9 @@ function App() {
             onClick={handleSnapToggle}
             title="スナップ設定"
             style={{
-              background: snapSettings.enabled ? "#4CAF50" : "var(--bg-tertiary)",
+              background: snapSettings.enabled ? COLOR_PALETTE.buttons.success.primary : "var(--bg-tertiary)",
               color: snapSettings.enabled ? "white" : "var(--text-primary)",
-              border: `1px solid ${snapSettings.enabled ? "#4CAF50" : "var(--border-color)"}`,
+              border: `1px solid ${snapSettings.enabled ? COLOR_PALETTE.buttons.success.primary : "var(--border-color)"}`,
             }}
           >
             ⚙️ スナップ
@@ -1030,7 +1089,7 @@ function App() {
               title="ベータ版フィードバックを送信"
               style={{
                 padding: "8px 12px",
-                backgroundColor: "#ff6b35",
+                backgroundColor: COLOR_PALETTE.primary.orange,
                 color: "white",
                 border: "none",
                 borderRadius: "6px",
@@ -1122,59 +1181,6 @@ function App() {
             </div>
           </div>
 
-          {/* プロジェクト保存セクション */}
-          {projectSave.hasUnsavedChanges && (
-            <div className="section" style={{ 
-              border: "2px solid #ff6b6b",
-              background: "var(--bg-tertiary)",
-            }}>
-              <h3>💾 プロジェクト保存</h3>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <span style={{ fontSize: "12px", color: "#ff6b6b" }}>⚠️ 未保存の変更があります</span>
-              </div>
-              <button
-                onClick={async () => {
-                  try {
-                    const projectData = {
-                      panels,
-                      characters,
-                      bubbles: speechBubbles,
-                      backgrounds,
-                      effects,
-                      tones,
-                      canvasSize,
-                      settings,
-                      characterNames,
-                      characterSettings,
-                      canvasSettings
-                    };
-                    const success = await projectSave.saveProject(projectData);
-                    if (success) {
-                      alert('プロジェクトを上書き保存しました');
-                    }
-                  } catch (error) {
-                    console.error('上書き保存エラー:', error);
-                    alert('上書き保存に失敗しました');
-                  }
-                }}
-                style={{
-                  width: "100%",
-                  padding: "10px",
-                  background: "#10b981",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "6px",
-                  cursor: "pointer",
-                  fontSize: "14px",
-                  fontWeight: "500",
-                  marginTop: "8px"
-                }}
-              >
-                💾 上書き保存
-              </button>
-            </div>
-          )}
-
           {/* キャラクター登録セクション */}
           <div className="section">
             <h3>👤 キャラクター登録</h3>
@@ -1215,7 +1221,7 @@ function App() {
 
           {isPanelEditMode && (
             <div className="section" style={{ 
-              border: "2px solid #ff8833",
+              border: `2px solid ${COLOR_PALETTE.primary.orange}`,
               background: "var(--bg-tertiary)",
             }}>
               <h3>🔧 コマ操作</h3>
@@ -1447,7 +1453,7 @@ function App() {
               style={{
                 width: '100%',
                 padding: '12px',
-                background: panels.length === 0 ? '#999' : '#8b5cf6',
+                background: panels.length === 0 ? '#999' : COLOR_PALETTE.buttons.export.primary,
                 color: 'white',
                 border: 'none',
                 borderRadius: '6px',
@@ -1486,204 +1492,7 @@ function App() {
             </div>
           </div>
 
-          <div className="section">
-            <h3>💬 セリフ・吹き出し</h3>
-            <div className="bubble-types">
-              {[
-                { id: 'normal', icon: '💬', name: '普通' },
-                { id: 'shout', icon: '❗', name: '叫び' },
-                { id: 'whisper', icon: '💭', name: '小声' },
-                { id: 'thought', icon: '☁️', name: '心の声' }
-              ].map(bubble => (
-                <div 
-                  key={bubble.id}
-                  className="bubble-btn"
-                  onClick={() => handleBubbleClick(bubble.name)}
-                >
-                  {bubble.icon} {bubble.name}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="section">
-            <h3>🔧 編集</h3>
-            <button 
-              className={`control-btn ${isPanelEditMode ? 'active' : ''}`}
-              onClick={() => setIsPanelEditMode(!isPanelEditMode)}
-              style={{
-                width: "100%",
-                padding: "10px",
-                background: isPanelEditMode ? "#ff8833" : "var(--bg-secondary)",
-                color: isPanelEditMode ? "white" : "var(--text-primary)",
-                border: `1px solid ${isPanelEditMode ? "#ff8833" : "var(--border-color)"}`,
-                borderRadius: "4px",
-                cursor: "pointer",
-                fontSize: "13px",
-                fontWeight: "bold"
-              }}
-            >
-              {isPanelEditMode ? "✅ 編集モード中" : "🔧 コマ編集モード"}
-            </button>
-            <div style={{
-              fontSize: "10px",
-              color: "var(--text-muted)",
-              padding: "8px",
-              background: "var(--bg-tertiary)",
-              borderRadius: "4px",
-              marginTop: "8px",
-              lineHeight: "1.4"
-            }}>
-              💡 コマをクリック→ハンドルで移動・リサイズ・分割
-            </div>
-          </div>
-
-          <div className="section">
-            <h3>🎨 装飾</h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              <button 
-                className="control-btn"
-                onClick={() => setShowBackgroundPanel(true)}
-                style={{
-                  width: "100%",
-                  padding: "10px",
-                  background: backgroundTemplateCount > 0 ? "#9c27b0" : "var(--bg-secondary)",
-                  color: backgroundTemplateCount > 0 ? "white" : "var(--text-primary)",
-                  border: `1px solid ${backgroundTemplateCount > 0 ? "#9c27b0" : "var(--border-color)"}`,
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                  fontSize: "13px"
-                }}
-              >
-                🎨 背景
-                {backgroundTemplateCount > 0 && <span style={{ marginLeft: "4px" }}>({backgroundTemplateCount})</span>}
-              </button>
-
-              <button 
-                className="control-btn"
-                onClick={() => setShowEffectPanel(true)}
-                style={{
-                  width: "100%",
-                  padding: "10px",
-                  background: effectTemplateCount > 0 ? "#ff5722" : "var(--bg-secondary)",
-                  color: effectTemplateCount > 0 ? "white" : "var(--text-primary)",
-                  border: `1px solid ${effectTemplateCount > 0 ? "#ff5722" : "var(--border-color)"}`,
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                  fontSize: "13px"
-                }}
-              >
-                ⚡ 効果線
-                {effectTemplateCount > 0 && <span style={{ marginLeft: "4px" }}>({effectTemplateCount})</span>}
-              </button>
-            </div>
-          </div>
-
-          {panels.length > 1 && (
-          <div className="section">
-              <h3>🔄 コマ操作</h3>
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                <button
-                  onClick={() => {
-                    setIsSwapMode(!isSwapMode);
-                    if (isSwapMode) {
-                      setSwapPanel1(null);
-                      setSwapPanel2(null);
-                    }
-                  }}
-                  style={{
-                    width: "100%",
-                    padding: "10px",
-                    background: isSwapMode ? "#ef4444" : "#3b82f6",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "6px",
-                    cursor: "pointer",
-                    fontSize: "13px",
-                    fontWeight: "bold"
-                  }}
-                >
-                  {isSwapMode ? "❌ 入れ替えモード終了" : "🔄 コマ入れ替えモード"}
-                </button>
-
-                {isSwapMode && (
-                  <>
-                    <div style={{ display: "flex", gap: "8px" }}>
-                      <div style={{
-                        flex: 1,
-                        padding: "8px",
-                        background: swapPanel1 ? "#10b981" : "#f3f4f6",
-                        color: swapPanel1 ? "white" : "#374151",
-                        border: `2px solid ${swapPanel1 ? "#10b981" : "#d1d5db"}`,
-                        borderRadius: "6px",
-                        textAlign: "center",
-                        fontSize: "12px",
-                        fontWeight: "bold"
-                      }}>
-                        1️⃣ {swapPanel1 ? `コマ ${swapPanel1}` : "未選択"}
-                      </div>
-                      <div style={{
-                        flex: 1,
-                        padding: "8px",
-                        background: swapPanel2 ? "#10b981" : "#f3f4f6",
-                        color: swapPanel2 ? "white" : "#374151",
-                        border: `2px solid ${swapPanel2 ? "#10b981" : "#d1d5db"}`,
-                        borderRadius: "6px",
-                        textAlign: "center",
-                        fontSize: "12px",
-                        fontWeight: "bold"
-                      }}>
-                        2️⃣ {swapPanel2 ? `コマ ${swapPanel2}` : "未選択"}
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => {
-                        if (swapPanel1 && swapPanel2 && swapPanel1 !== swapPanel2) {
-                          handlePanelSwap(swapPanel1, swapPanel2);
-                          setSwapPanel1(null);
-                          setSwapPanel2(null);
-                          setIsSwapMode(false);
-                        } else {
-                          alert('異なる2つのコマを選択してください');
-                        }
-                      }}
-                      disabled={!swapPanel1 || !swapPanel2 || swapPanel1 === swapPanel2}
-                      style={{
-                        width: "100%",
-                        padding: "10px",
-                        background: (!swapPanel1 || !swapPanel2 || swapPanel1 === swapPanel2) ? "#999" : "#10b981",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "6px",
-                        cursor: (!swapPanel1 || !swapPanel2 || swapPanel1 === swapPanel2) ? "not-allowed" : "pointer",
-                        fontSize: "13px",
-                        fontWeight: "bold"
-                      }}
-                    >
-                      🔄 内容を入れ替え実行
-                    </button>
-                  </>
-                )}
-              </div>
-              {isSwapMode && (
-                <div style={{
-                  fontSize: "10px",
-                  color: "var(--text-muted)",
-                  padding: "8px",
-                  background: "#fef3c7",
-                  border: "1px solid #f59e0b",
-                  borderRadius: "4px",
-                  marginTop: "8px"
-                }}>
-                  💡 コマをクリックして選択→「入れ替え実行」で内容を交換<br/>
-                  サイズ・位置はそのまま、内容（メモ・プロンプト・キャラ）のみ入れ替え
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* プロンプト入力セクション */}
+          {/* プロンプト入力セクション（コマ設定）をAI生成の直後に配置 */}
           {selectedPanel && (
             <div className="section">
               <h3>📝 コマ {selectedPanel.id}</h3>
@@ -1876,6 +1685,203 @@ function App() {
                   💡 最終プロンプト = キャラ + 動作で自動合成
                 </div>
               </div>
+            </div>
+          )}
+
+          <div className="section">
+            <h3>💬 セリフ・吹き出し</h3>
+            <div className="bubble-types">
+              {[
+                { id: 'normal', icon: '💬', name: '普通' },
+                { id: 'shout', icon: '❗', name: '叫び' },
+                { id: 'whisper', icon: '💭', name: '小声' },
+                { id: 'thought', icon: '☁️', name: '心の声' }
+              ].map(bubble => (
+                <div 
+                  key={bubble.id}
+                  className="bubble-btn"
+                  onClick={() => handleBubbleClick(bubble.name)}
+                >
+                  {bubble.icon} {bubble.name}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="section">
+            <h3>🔧 編集</h3>
+            <button 
+              className={`control-btn ${isPanelEditMode ? 'active' : ''}`}
+              onClick={() => setIsPanelEditMode(!isPanelEditMode)}
+              style={{
+                width: "100%",
+                padding: "10px",
+                background: isPanelEditMode ? COLOR_PALETTE.buttons.edit.primary : "var(--bg-secondary)",
+                color: isPanelEditMode ? "white" : "var(--text-primary)",
+                border: `1px solid ${isPanelEditMode ? COLOR_PALETTE.buttons.edit.primary : "var(--border-color)"}`,
+                borderRadius: "4px",
+                cursor: "pointer",
+                fontSize: "13px",
+                fontWeight: "bold"
+              }}
+            >
+              {isPanelEditMode ? "✅ 編集モード中" : "🔧 コマ編集モード"}
+            </button>
+            <div style={{
+              fontSize: "10px",
+              color: "var(--text-muted)",
+              padding: "8px",
+              background: "var(--bg-tertiary)",
+              borderRadius: "4px",
+              marginTop: "8px",
+              lineHeight: "1.4"
+            }}>
+              💡 コマをクリック→ハンドルで移動・リサイズ・分割
+            </div>
+          </div>
+
+          <div className="section">
+            <h3>🎨 装飾</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <button 
+                className="control-btn"
+                onClick={() => setShowBackgroundPanel(true)}
+                style={{
+                  width: "100%",
+                  padding: "10px",
+                  background: backgroundTemplateCount > 0 ? COLOR_PALETTE.buttons.export.primary : "var(--bg-secondary)",
+                  color: backgroundTemplateCount > 0 ? "white" : "var(--text-primary)",
+                  border: `1px solid ${backgroundTemplateCount > 0 ? COLOR_PALETTE.buttons.export.primary : "var(--border-color)"}`,
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                  fontSize: "13px"
+                }}
+              >
+                🎨 背景
+                {backgroundTemplateCount > 0 && <span style={{ marginLeft: "4px" }}>({backgroundTemplateCount})</span>}
+              </button>
+
+              <button 
+                className="control-btn"
+                onClick={() => setShowEffectPanel(true)}
+                style={{
+                  width: "100%",
+                  padding: "10px",
+                  background: effectTemplateCount > 0 ? COLOR_PALETTE.primary.red : "var(--bg-secondary)",
+                  color: effectTemplateCount > 0 ? "white" : "var(--text-primary)",
+                  border: `1px solid ${effectTemplateCount > 0 ? COLOR_PALETTE.primary.red : "var(--border-color)"}`,
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                  fontSize: "13px"
+                }}
+              >
+                ⚡ 効果線
+                {effectTemplateCount > 0 && <span style={{ marginLeft: "4px" }}>({effectTemplateCount})</span>}
+              </button>
+            </div>
+          </div>
+
+          {panels.length > 1 && (
+          <div className="section">
+              <h3>🔄 コマ操作</h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                <button
+                  onClick={() => {
+                    setIsSwapMode(!isSwapMode);
+                    if (isSwapMode) {
+                      setSwapPanel1(null);
+                      setSwapPanel2(null);
+                    }
+                  }}
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    background: isSwapMode ? COLOR_PALETTE.buttons.delete.primary : COLOR_PALETTE.buttons.save.primary,
+                    color: "white",
+                    border: "none",
+                    borderRadius: "6px",
+                    cursor: "pointer",
+                    fontSize: "13px",
+                    fontWeight: "bold"
+                  }}
+                >
+                  {isSwapMode ? "❌ 入れ替えモード終了" : "🔄 コマ入れ替えモード"}
+                </button>
+
+                {isSwapMode && (
+                  <>
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <div style={{
+                        flex: 1,
+                        padding: "8px",
+                        background: swapPanel1 ? COLOR_PALETTE.buttons.success.primary : "#f3f4f6",
+                        color: swapPanel1 ? "white" : "#374151",
+                        border: `2px solid ${swapPanel1 ? COLOR_PALETTE.buttons.success.primary : "#d1d5db"}`,
+                        borderRadius: "6px",
+                        textAlign: "center",
+                        fontSize: "12px",
+                        fontWeight: "bold"
+                      }}>
+                        1️⃣ {swapPanel1 ? `コマ ${swapPanel1}` : "未選択"}
+                      </div>
+                      <div style={{
+                        flex: 1,
+                        padding: "8px",
+                        background: swapPanel2 ? COLOR_PALETTE.buttons.success.primary : "#f3f4f6",
+                        color: swapPanel2 ? "white" : "#374151",
+                        border: `2px solid ${swapPanel2 ? COLOR_PALETTE.buttons.success.primary : "#d1d5db"}`,
+                        borderRadius: "6px",
+                        textAlign: "center",
+                        fontSize: "12px",
+                        fontWeight: "bold"
+                      }}>
+                        2️⃣ {swapPanel2 ? `コマ ${swapPanel2}` : "未選択"}
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        if (swapPanel1 && swapPanel2 && swapPanel1 !== swapPanel2) {
+                          handlePanelSwap(swapPanel1, swapPanel2);
+                          setSwapPanel1(null);
+                          setSwapPanel2(null);
+                          setIsSwapMode(false);
+                        } else {
+                          alert('異なる2つのコマを選択してください');
+                        }
+                      }}
+                      disabled={!swapPanel1 || !swapPanel2 || swapPanel1 === swapPanel2}
+                      style={{
+                        width: "100%",
+                        padding: "10px",
+                        background: (!swapPanel1 || !swapPanel2 || swapPanel1 === swapPanel2) ? "#999" : COLOR_PALETTE.buttons.success.primary,
+                        color: "white",
+                        border: "none",
+                        borderRadius: "6px",
+                        cursor: (!swapPanel1 || !swapPanel2 || swapPanel1 === swapPanel2) ? "not-allowed" : "pointer",
+                        fontSize: "13px",
+                        fontWeight: "bold"
+                      }}
+                    >
+                      🔄 内容を入れ替え実行
+                    </button>
+                  </>
+                )}
+              </div>
+              {isSwapMode && (
+                <div style={{
+                  fontSize: "10px",
+                  color: "var(--text-muted)",
+                  padding: "8px",
+                  background: "#fef3c7",
+                  border: "1px solid #f59e0b",
+                  borderRadius: "4px",
+                  marginTop: "8px"
+                }}>
+                  💡 コマをクリックして選択→「入れ替え実行」で内容を交換<br/>
+                  サイズ・位置はそのまま、内容（メモ・プロンプト・キャラ）のみ入れ替え
+                </div>
+              )}
             </div>
           )}
 
@@ -2114,6 +2120,7 @@ function App() {
           const success = await projectSave.saveProject(projectData, name);
           return success ? 'saved' : null;
         }}
+        isDarkMode={isDarkMode}
       />
 
       <PanelTemplateSelector

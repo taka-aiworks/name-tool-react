@@ -17,6 +17,7 @@ interface ProjectPanelProps {
   };
   onSaveProject: (name?: string) => Promise<string | null>;
   className?: string;
+  isDarkMode?: boolean;
 }
 
 const ProjectPanel: React.FC<ProjectPanelProps> = ({
@@ -27,6 +28,7 @@ const ProjectPanel: React.FC<ProjectPanelProps> = ({
   currentProjectId,
   saveStatus,
   onSaveProject,
+  isDarkMode = false
 }) => {
   const [projects, setProjects] = useState<ProjectMetadata[]>(() => 
     SaveService.getProjectList()
@@ -223,7 +225,7 @@ const ProjectPanel: React.FC<ProjectPanelProps> = ({
     >
       <div 
         style={{
-          backgroundColor: 'white',
+          backgroundColor: isDarkMode ? '#1e1e1e' : '#ffffff',
           borderRadius: '12px',
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
           width: '100%',
@@ -240,8 +242,8 @@ const ProjectPanel: React.FC<ProjectPanelProps> = ({
           justifyContent: 'space-between',
           alignItems: 'center',
           padding: '24px',
-          borderBottom: '1px solid #e5e7eb',
-          background: 'linear-gradient(to right, #eff6ff, #e0e7ff)'
+          borderBottom: `1px solid ${isDarkMode ? '#333' : '#e5e7eb'}`,
+          background: isDarkMode ? 'linear-gradient(to right, #1e3a8a, #1e40af)' : 'linear-gradient(to right, #eff6ff, #e0e7ff)'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{
@@ -258,7 +260,7 @@ const ProjectPanel: React.FC<ProjectPanelProps> = ({
             <h2 style={{
               fontSize: '20px',
               fontWeight: 'bold',
-              color: '#111827',
+              color: isDarkMode ? '#f9fafb' : '#111827',
               margin: 0
             }}>
               プロジェクト管理
@@ -275,7 +277,7 @@ const ProjectPanel: React.FC<ProjectPanelProps> = ({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#6b7280',
+              color: isDarkMode ? '#d1d5db' : '#6b7280',
               cursor: 'pointer',
               fontSize: '18px'
             }}
@@ -287,8 +289,8 @@ const ProjectPanel: React.FC<ProjectPanelProps> = ({
         {/* 保存状態表示 */}
         <div style={{
           padding: '16px 24px',
-          backgroundColor: '#f9fafb',
-          borderBottom: '1px solid #e5e7eb'
+          backgroundColor: isDarkMode ? '#111827' : '#f9fafb',
+          borderBottom: `1px solid ${isDarkMode ? '#333' : '#e5e7eb'}`
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <div style={{
@@ -301,7 +303,7 @@ const ProjectPanel: React.FC<ProjectPanelProps> = ({
             <span style={{
               fontSize: '14px',
               fontWeight: '500',
-              color: '#374151'
+              color: isDarkMode ? '#d1d5db' : '#374151'
             }}>
               {saveStatus.isAutoSaving ? '自動保存中...' :
                saveStatus.hasUnsavedChanges ? '未保存の変更あり' : '保存済み'}
@@ -325,7 +327,7 @@ const ProjectPanel: React.FC<ProjectPanelProps> = ({
         {/* アクションボタン */}
         <div style={{
           padding: '16px 24px',
-          borderBottom: '1px solid #e5e7eb'
+          borderBottom: `1px solid ${isDarkMode ? '#333' : '#e5e7eb'}`
         }}>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
             <button
@@ -389,7 +391,8 @@ const ProjectPanel: React.FC<ProjectPanelProps> = ({
         <div style={{
           flex: 1,
           overflowY: 'auto',
-          padding: '16px 24px'
+          padding: '16px 24px',
+          backgroundColor: isDarkMode ? '#1f2937' : '#ffffff'
         }}>
           {projects.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '48px 0' }}>
@@ -406,10 +409,12 @@ const ProjectPanel: React.FC<ProjectPanelProps> = ({
                   key={project.id}
                   style={{
                     padding: '16px',
-                    border: currentProjectId === project.id ? '2px solid #3b82f6' : '1px solid #e5e7eb',
+                    border: currentProjectId === project.id ? '2px solid #3b82f6' : `1px solid ${isDarkMode ? '#374151' : '#e5e7eb'}`,
                     borderRadius: '12px',
                     cursor: 'pointer',
-                    backgroundColor: currentProjectId === project.id ? '#eff6ff' : 'white',
+                    backgroundColor: currentProjectId === project.id ? 
+                      (isDarkMode ? '#1e40af' : '#eff6ff') : 
+                      (isDarkMode ? '#374151' : 'white'),
                     boxShadow: currentProjectId === project.id ? '0 4px 6px -1px rgba(0, 0, 0, 0.1)' : 'none'
                   }}
                   onClick={() => handleLoadProject(project.id)}
@@ -432,7 +437,8 @@ const ProjectPanel: React.FC<ProjectPanelProps> = ({
                             border: '1px solid #d1d5db',
                             borderRadius: '8px',
                             fontSize: '16px',
-                            color: '#111827'
+                            backgroundColor: isDarkMode ? '#4b5563' : '#ffffff',
+                            color: isDarkMode ? '#f9fafb' : '#111827'
                           }}
                           autoFocus
                           onClick={(e) => e.stopPropagation()}
@@ -441,7 +447,7 @@ const ProjectPanel: React.FC<ProjectPanelProps> = ({
                         <div>
                           <h3 style={{ 
                             fontWeight: '600', 
-                            color: '#111827',
+                            color: isDarkMode ? '#f9fafb' : '#111827',
                             fontSize: '16px',
                             margin: 0,
                             padding: 0
@@ -463,7 +469,7 @@ const ProjectPanel: React.FC<ProjectPanelProps> = ({
                           )}
                           <div style={{ 
                             fontSize: '14px', 
-                            color: '#6b7280',
+                            color: isDarkMode ? '#9ca3af' : '#6b7280',
                             marginTop: '8px' 
                           }}>
                             作成: {formatDate(project.createdAt)}<br/>
@@ -541,16 +547,16 @@ const ProjectPanel: React.FC<ProjectPanelProps> = ({
             justifyContent: 'space-between',
             fontSize: '14px'
           }}>
-            <span style={{ color: '#4b5563' }}>
+            <span style={{ color: isDarkMode ? '#9ca3af' : '#4b5563' }}>
               ストレージ使用量: {Math.round(storageInfo.percentage)}%
             </span>
-            <span style={{ color: '#6b7280' }}>
+            <span style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}>
               {(storageInfo.used / 1024).toFixed(1)}KB / {(storageInfo.available / 1024).toFixed(0)}KB
             </span>
           </div>
           <div style={{
             width: '100%',
-            backgroundColor: '#e5e7eb',
+            backgroundColor: isDarkMode ? '#374151' : '#e5e7eb',
             borderRadius: '9999px',
             height: '8px',
             marginTop: '8px'
