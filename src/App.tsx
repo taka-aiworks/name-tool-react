@@ -256,10 +256,6 @@ function App() {
   
   // アンドゥリドゥ実行中フラグ
   const [isUndoRedoExecuting, setIsUndoRedoExecuting] = useState(false);
-  
-  // ドラッグ状態管理
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStartState, setDragStartState] = useState<any>(null);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -338,29 +334,8 @@ function App() {
     });
   }, []);
 
-  // 履歴保存のタイミング（手動でのみ実行）
-  const saveHistoryManually = useCallback(() => {
-    // 初回のテンプレート適用時
-    if (operationHistory.currentIndex === -1 && panels.length > 0) {
-      saveToHistory(characters, speechBubbles, panels, backgrounds, effects);
-      return;
-    }
-    
-    // 空の状態では履歴保存しない
-    if (characters.length === 0 && speechBubbles.length === 0 && panels.length === 0 && 
-        backgrounds.length === 0 && effects.length === 0) {
-      return;
-    }
 
-    // アンドゥリドゥ実行中は履歴保存しない
-    if (operationHistory.currentIndex < 0 || isUndoRedoExecuting) {
-      return;
-    }
-
-      saveToHistory(characters, speechBubbles, panels, backgrounds, effects);
-  }, [characters, speechBubbles, panels, backgrounds, effects, operationHistory.currentIndex, isUndoRedoExecuting, saveToHistory]);
-
-  // すべての状態変更を監視して履歴保存
+  // すべての状態変更を監視して履歴保存（元の動作に戻す）
   useEffect(() => {
     // 初回ロード時やテンプレート適用時は除外
     if (operationHistory.currentIndex === -1) return;
@@ -375,11 +350,11 @@ function App() {
     }
 
     const timeoutId = setTimeout(() => {
-      saveHistoryManually();
+      saveToHistory(characters, speechBubbles, panels, backgrounds, effects);
     }, 500);
 
     return () => clearTimeout(timeoutId);
-  }, [charactersSignature, bubblesSignature, panelsSignature, backgroundsSignature, effectsSignature, saveHistoryManually, operationHistory.currentIndex, isUndoRedoExecuting]);
+  }, [charactersSignature, bubblesSignature, panelsSignature, backgroundsSignature, effectsSignature, saveToHistory, operationHistory.currentIndex, isUndoRedoExecuting, characters, speechBubbles, panels, backgrounds, effects]);
 
   // アンドゥ/リドゥ処理
   const handleUndo = useCallback(() => {
@@ -828,34 +803,7 @@ function App() {
 
   const handlePanelUpdate = useCallback((updatedPanels: Panel[]) => {
     setPanels(updatedPanels);
-    // すべてのパネル変更で履歴保存
-    setTimeout(() => saveHistoryManually(), 500);
-  }, [saveHistoryManually]);
-  
-  // ドラッグ開始時の履歴保存
-  const handleDragStart = useCallback(() => {
-    if (!isDragging) {
-      setIsDragging(true);
-      // ドラッグ開始時の状態を保存
-      setDragStartState({
-        panels: [...panels],
-        characters: [...characters],
-        speechBubbles: [...speechBubbles],
-        backgrounds: [...backgrounds],
-        effects: [...effects]
-      });
-    }
-  }, [isDragging, panels, characters, speechBubbles, backgrounds, effects]);
-  
-  // ドラッグ終了時の履歴保存
-  const handleDragEnd = useCallback(() => {
-    if (isDragging) {
-      setIsDragging(false);
-      // ドラッグ終了時に履歴保存
-      setTimeout(() => saveHistoryManually(), 100);
-      setDragStartState(null);
-    }
-  }, [isDragging, saveHistoryManually]);
+  }, []);
   
 
   const handlePanelAdd = useCallback((targetPanelId: string, position: 'above' | 'below' | 'left' | 'right') => {
@@ -887,8 +835,6 @@ function App() {
 
     setPanels(prevPanels => [...prevPanels, newPanel]);
     console.log(`✅ コマ追加完了: ${newPanelId} (${position})`);
-    // 履歴保存
-    setTimeout(() => saveHistoryManually(), 500);
   }, [panels]);
 
   const handlePanelDelete = useCallback((panelId: string) => {
@@ -907,8 +853,6 @@ function App() {
       setPanels(prev => prev.filter(panel => panel.id !== panelIdNum));
       setSelectedPanel(null);
       setSelectedEffect(null);
-      // 履歴保存
-      setTimeout(() => saveHistoryManually(), 500);
       // トーン機能は無効化
       console.log(`🗑️ コマ削除: ${panelId}`);
     }
@@ -957,8 +901,6 @@ function App() {
 
     setPanels(newPanels);
     console.log(`${direction}分割完了（隙間: ${gap}px）`);
-    // 履歴保存
-    setTimeout(() => saveHistoryManually(), 500);
   }, [panels]);
 
   // コマの入れ替え機能（サイズはそのまま、内容のみ入れ替え）
@@ -995,8 +937,6 @@ function App() {
     }));
 
     console.log(`🔄 コマ ${panelId1} と ${panelId2} の内容を入れ替えました`);
-    // 履歴保存
-    setTimeout(() => saveHistoryManually(), 500);
   }, [panels]);
 
   const handleClearAll = useCallback(() => {
@@ -1484,8 +1424,6 @@ function App() {
             snapSettings={snapSettings}
             swapPanel1={swapPanel1}
             swapPanel2={swapPanel2}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
           />
         </div>
 
