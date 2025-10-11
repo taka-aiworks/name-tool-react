@@ -199,6 +199,10 @@ export interface CanvasComponentProps {
   onPanelAdd?: (targetPanelId: string, position: 'above' | 'below' | 'left' | 'right') => void;
   onPanelDelete?: (panelId: string) => void;
   snapSettings?: SnapSettings;
+  
+  // 🆕 入れ替え選択状態
+  swapPanel1?: number | null;
+  swapPanel2?: number | null;
 }
 
 // テンプレート定義の型

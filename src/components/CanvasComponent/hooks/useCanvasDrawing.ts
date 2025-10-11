@@ -27,6 +27,10 @@ export interface CanvasDrawingHookProps {
   snapSettings: SnapSettings;
   // 🆕 キャラクター名前取得関数を追加
   getCharacterDisplayName?: (character: Character) => string;
+  
+  // 🆕 入れ替え選択状態
+  swapPanel1?: number | null;
+  swapPanel2?: number | null;
 }
 
 /**
@@ -51,6 +55,8 @@ export const useCanvasDrawing = ({
   isPanelEditMode,
   snapSettings,
   getCharacterDisplayName, // 🆕 追加
+  swapPanel1, // 🆕 入れ替え選択1
+  swapPanel2, // 🆕 入れ替え選択2
 }: CanvasDrawingHookProps) => {
 
   /**
@@ -698,7 +704,7 @@ export const useCanvasDrawing = ({
       }
 
       // 4. パネル描画
-      CanvasDrawing.drawPanels(ctx, panels, state.selectedPanel, isDarkMode, isPanelEditMode);
+      CanvasDrawing.drawPanels(ctx, panels, state.selectedPanel, isDarkMode, isPanelEditMode, swapPanel1, swapPanel2);
       
       // 5. 背景要素描画（パネル内で zIndex 順）
       drawBackgrounds(ctx);

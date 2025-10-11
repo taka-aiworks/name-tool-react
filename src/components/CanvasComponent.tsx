@@ -70,7 +70,10 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, ExtendedCanvasComponentPro
       gridSize: 20,
       sensitivity: 'medium',
       gridDisplay: 'edit-only'
-    }
+    },
+    // 🆕 入れ替え選択状態
+    swapPanel1,
+    swapPanel2
   } = props;
 
   // 🆕 キャラクター表示名取得関数（関数内に移動）
@@ -720,21 +723,23 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, ExtendedCanvasComponentPro
 
   // Canvas描画hook使用
   const { drawCanvas } = useCanvasDrawing({
-  canvasRef,
-  state,
-  panels,
-  characters,
-  speechBubbles,
-  backgrounds,
-  selectedBackground,
-  effects,
-  selectedEffect,
-  tones,
-  selectedTone,
-  isPanelEditMode,
-  snapSettings,
-  getCharacterDisplayName, // 🔧 この行が重要！確実に渡す
-});
+    canvasRef,
+    state,
+    panels,
+    characters,
+    speechBubbles,
+    backgrounds,
+    selectedBackground,
+    effects,
+    selectedEffect,
+    tones,
+    selectedTone,
+    isPanelEditMode,
+    snapSettings,
+    getCharacterDisplayName, // 🔧 この行が重要！確実に渡す
+    swapPanel1, // 🆕 入れ替え選択1
+    swapPanel2, // 🆕 入れ替え選択2
+  });
 
   // 要素追加・編集hook使用
   const { handleEditComplete, handleEditCancel } = useElementActions({

@@ -39,10 +39,24 @@ export class CanvasDrawing {
     panels: Panel[],
     selectedPanel: Panel | null,
     isDarkMode: boolean,
-    isEditMode: boolean
+    isEditMode: boolean,
+    swapPanel1?: number | null,
+    swapPanel2?: number | null
   ): void {
-    panels.forEach((panel) => {
-      CanvasDrawing.drawPanel(ctx, panel, panel === selectedPanel, isDarkMode, isEditMode);
+    console.log('🎨 Drawing panels:', panels.map(p => `ID:${p.id}@(${p.x},${p.y})`));
+    console.log('🎨 Panel order check:', panels.map((p, i) => `Index:${i} ID:${p.id}`));
+    
+    // 🔧 パネルの順序をID順で固定（座標順ソートを防ぐ）
+    const orderedPanels = [...panels].sort((a, b) => a.id - b.id);
+    console.log('🔧 FIXED: Ordered panels by ID:', orderedPanels.map(p => `ID:${p.id}@(${p.x},${p.y})`));
+    console.log('🔧 FIXED: This should show ID:1, ID:2, ID:3 in that order!');
+    
+    orderedPanels.forEach((panel) => {
+      const isSelected = panel === selectedPanel;
+      const isSwapSelected1 = swapPanel1 === panel.id;
+      const isSwapSelected2 = swapPanel2 === panel.id;
+      
+      CanvasDrawing.drawPanel(ctx, panel, isSelected, isDarkMode, isEditMode, isSwapSelected1, isSwapSelected2);
     });
   }
 
@@ -54,7 +68,9 @@ export class CanvasDrawing {
     panel: Panel,
     isSelected: boolean,
     isDarkMode: boolean,
-    isEditMode: boolean
+    isEditMode: boolean,
+    isSwapSelected1?: boolean,
+    isSwapSelected2?: boolean
   ): void {
     // コンソールログは無効化
     
@@ -73,8 +89,14 @@ export class CanvasDrawing {
     }
     ctx.fillRect(panel.x, panel.y, panel.width, panel.height);
 
-    // パネル枠線
-    if (isSelected) {
+    // パネル枠線（入れ替え選択状態を優先）
+    if (isSwapSelected1) {
+      ctx.strokeStyle = "#ff0000"; // 赤色で1番目選択
+      ctx.lineWidth = 5;
+    } else if (isSwapSelected2) {
+      ctx.strokeStyle = "#0000ff"; // 青色で2番目選択
+      ctx.lineWidth = 5;
+    } else if (isSelected) {
       ctx.strokeStyle = "#ff8833";
       ctx.lineWidth = 4;
     } else {
@@ -83,8 +105,21 @@ export class CanvasDrawing {
     }
     ctx.strokeRect(panel.x, panel.y, panel.width, panel.height);
 
-    // パネル番号
-    ctx.fillStyle = isSelected ? "#ff8833" : isDarkMode ? "#ffffff" : "#333333";
+    // パネル番号（入れ替え選択状態を優先）
+    let numberColor = isDarkMode ? "#ffffff" : "#333333";
+    let numberBgColor = isDarkMode ? "rgba(0, 0, 0, 0.7)" : "rgba(255, 255, 255, 0.8)";
+    
+    if (isSwapSelected1) {
+      numberColor = "#ffffff";
+      numberBgColor = "rgba(255, 0, 0, 0.8)";
+    } else if (isSwapSelected2) {
+      numberColor = "#ffffff";
+      numberBgColor = "rgba(0, 0, 255, 0.8)";
+    } else if (isSelected) {
+      numberColor = "#ffffff";
+      numberBgColor = "rgba(255, 136, 51, 0.8)";
+    }
+    
     ctx.font = "bold 18px Arial";
     ctx.textAlign = "left";
     ctx.textBaseline = "top";
@@ -94,10 +129,10 @@ export class CanvasDrawing {
     const textWidth = 30;
     const textHeight = 25;
     
-    ctx.fillStyle = isSelected ? "rgba(255, 136, 51, 0.8)" : isDarkMode ? "rgba(0, 0, 0, 0.7)" : "rgba(255, 255, 255, 0.8)";
+    ctx.fillStyle = numberBgColor;
     ctx.fillRect(textX - 4, textY - 2, textWidth, textHeight);
     
-    ctx.fillStyle = isSelected ? "#ffffff" : isDarkMode ? "#ffffff" : "#333333";
+    ctx.fillStyle = numberColor;
     ctx.fillText(`${panel.id}`, textX, textY);
 
     // コマメモ表示（panel.noteがあれば）

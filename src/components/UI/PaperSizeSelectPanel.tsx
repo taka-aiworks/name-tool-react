@@ -7,18 +7,22 @@ interface PaperSizeSelectPanelProps {
   onSettingsChange: (settings: CanvasSettings) => void;
   isVisible: boolean;
   onToggle: () => void;
+  isDarkMode?: boolean;
 }
 
 export const PaperSizeSelectPanel: React.FC<PaperSizeSelectPanelProps> = ({
   currentSettings,
   onSettingsChange,
   isVisible,
-  onToggle
+  onToggle,
+  isDarkMode = false
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('standard');
   // カスタムサイズ用のstate
   const [customWidth, setCustomWidth] = useState(210);
   const [customHeight, setCustomHeight] = useState(297);
+  
+  if (!isVisible) return null;
 
   // カテゴリ別にサイズを分類
   const categorizedSizes = {
@@ -51,42 +55,64 @@ export const PaperSizeSelectPanel: React.FC<PaperSizeSelectPanelProps> = ({
   };
 
   return (
-    <div className="ui-panel">
-      {/* パネルヘッダー */}
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: 'rgba(0, 0, 0, 0.5)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 1000
+    }} onClick={onToggle}>
+      <div style={{
+        background: isDarkMode ? '#1e1e1e' : '#ffffff',
+        borderRadius: '8px',
+        padding: '20px',
+        maxWidth: '600px',
+        width: '90%',
+        maxHeight: '80vh',
+        overflowY: 'auto',
+        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+      }} onClick={(e) => e.stopPropagation()}>
+    <div className="ui-panel" style={{ margin: 0, border: 'none', background: 'transparent' }}>
+      {/* モーダルヘッダー */}
       <div 
-        className="panel-header" 
-        onClick={onToggle}
         style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          padding: '10px 12px',
-          cursor: 'pointer',
-          background: 'var(--bg-secondary)',
-          border: '1px solid var(--border-color)',
-          borderRadius: '6px',
-          marginBottom: isVisible ? '8px' : '0'
+          marginBottom: '20px',
+          borderBottom: '2px solid var(--border-color)',
+          paddingBottom: '10px'
         }}
       >
         <h3 style={{ 
           margin: 0, 
-          fontSize: '14px', 
+          fontSize: '18px', 
           color: 'var(--text-primary)',
           fontWeight: 'bold'
         }}>
-          📐 用紙サイズ
+          📐 用紙サイズ設定
         </h3>
-        <span style={{ 
-          fontSize: '12px', 
-          color: 'var(--text-muted)',
-          transform: isVisible ? 'rotate(90deg)' : 'rotate(0deg)',
-          transition: 'transform 0.2s ease'
-        }}>
-          ▶
-        </span>
+        <button
+          onClick={onToggle}
+          style={{
+            background: 'none',
+            border: 'none',
+            fontSize: '24px',
+            cursor: 'pointer',
+            color: 'var(--text-primary)',
+            padding: '0 8px'
+          }}
+        >
+          ×
+        </button>
       </div>
 
-      {isVisible && (
+      {(
         <div style={{ 
           background: 'var(--bg-tertiary)', 
           border: '1px solid var(--border-color)', 
@@ -374,6 +400,8 @@ export const PaperSizeSelectPanel: React.FC<PaperSizeSelectPanelProps> = ({
           </div>
         </div>
       )}
+    </div>
+    </div>
     </div>
   );
 };

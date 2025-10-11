@@ -78,6 +78,17 @@ function App() {
   const [showSnapSettingsPanel, setShowSnapSettingsPanel] = useState<boolean>(false);
   const [canvasSettings, setCanvasSettings] = useState<CanvasSettings>(DEFAULT_CANVAS_SETTINGS);
   const [isPaperSizePanelVisible, setIsPaperSizePanelVisible] = useState(false);
+  const [showExportPanel, setShowExportPanel] = useState<boolean>(false);
+
+  // サイドバーの開閉状態
+  const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState<boolean>(true);
+  const [isRightSidebarOpen, setIsRightSidebarOpen] = useState<boolean>(true);
+
+  // 🔄 コマ入れ替え機能
+  const [swapPanel1, setSwapPanel1] = useState<number | null>(null);
+  const [swapPanel2, setSwapPanel2] = useState<number | null>(null);
+  const [isSwapMode, setIsSwapMode] = useState<boolean>(false);
+  const lastPanelClickRef = useRef<{ panelId: number; timestamp: number } | null>(null);
 
   // 🧪 ベータ版フィードバック機能
   const [showFeedbackPanel, setShowFeedbackPanel] = useState<boolean>(false);
@@ -105,30 +116,24 @@ function App() {
     document.documentElement.setAttribute("data-theme", "dark");
   }, []);
 
-  // 🔧 最適化4: 初回テンプレート適用の最適化（重複削除・シンプル化）
+  // 🔧 初期テンプレートのスケーリング適用
   useEffect(() => {
-    // コンソールログは無効化
-    if (selectedTemplate) {
-      // 比率ベースのテンプレートを適用
-      const { applyRatioTemplate } = require('./utils/RatioTemplateScaler');
-      const scaledPanels = applyRatioTemplate(selectedTemplate, canvasSettings);
-      // コンソールログは無効化
-      // コンソールログは無効化
+    const { pixelWidth, pixelHeight } = canvasSettings.paperSize;
+    const templateBaseWidth = 800;
+    const templateBaseHeight = 600;
+    
+    const templateData = templates[selectedTemplate];
+    if (templateData) {
+      const scaledPanels = templateData.panels.map(panel => ({
+        ...panel,
+        x: Math.round(panel.x * pixelWidth / templateBaseWidth),
+        y: Math.round(panel.y * pixelHeight / templateBaseHeight),
+        width: Math.round(panel.width * pixelWidth / templateBaseWidth),
+        height: Math.round(panel.height * pixelHeight / templateBaseHeight)
+      }));
       setPanels(scaledPanels);
-      
-      // キャンバスを再描画
-      if (canvasRef.current) {
-        const canvas = canvasRef.current;
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          // コンソールログは無効化
-        }
-      }
-      
-      // コンソールログは無効化
     }
-  }, [selectedTemplate, canvasSettings]); // テンプレートとキャンバス設定の両方に依存
+  }, [canvasSettings.paperSize, selectedTemplate]);
 
   // 🔧 初期キャンバスサイズ設定
   useEffect(() => {
@@ -478,21 +483,35 @@ function App() {
     setSelectedCharacter(null);
     setSelectedPanel(null);
     setSelectedEffect(null);
-    // トーン機能は無効化
     
-    // 比率ベースのテンプレートを適用
-    const { applyRatioTemplate } = require('./utils/RatioTemplateScaler');
-    const scaledPanels = applyRatioTemplate(template, canvasSettings);
-    console.log('📐 Scaled panels:', scaledPanels);
-    setPanels(scaledPanels);
+    const templateData = templates[template];
+    if (templateData) {
+      console.log('📐 Template panels with corrected IDs:', templateData.panels);
+      console.log('📐 Panel IDs:', templateData.panels.map(p => p.id));
+      
+      const { pixelWidth, pixelHeight } = canvasSettings.paperSize;
+      const templateBaseWidth = 800;
+      const templateBaseHeight = 600;
+      
+      const scaledPanels = templateData.panels.map(panel => ({
+        ...panel,
+        x: Math.round(panel.x * pixelWidth / templateBaseWidth),
+        y: Math.round(panel.y * pixelHeight / templateBaseHeight),
+        width: Math.round(panel.width * pixelWidth / templateBaseWidth),
+        height: Math.round(panel.height * pixelHeight / templateBaseHeight)
+      }));
+      
+      console.log('📐 Scaled panels:', scaledPanels);
+      setPanels(scaledPanels);
+    } else {
+      console.error(`Template "${template}" not found`);
+    }
     
     setCharacters([]);
     setSpeechBubbles([]);
     setBackgrounds([]);
     setEffects([]);
-    // トーン機能は無効化
     
-    // キャンバスを再描画
     if (canvasRef.current) {
       const canvas = canvasRef.current;
       const ctx = canvas.getContext('2d');
@@ -851,6 +870,42 @@ function App() {
     console.log(`${direction}分割完了（隙間: ${gap}px）`);
   }, [panels]);
 
+  // コマの入れ替え機能（サイズはそのまま、内容のみ入れ替え）
+  const handlePanelSwap = useCallback((panelId1: number, panelId2: number) => {
+    const panel1 = panels.find(p => p.id === panelId1);
+    const panel2 = panels.find(p => p.id === panelId2);
+    
+    if (!panel1 || !panel2) return;
+
+    const swappedPanel1: Panel = {
+      ...panel1,
+      note: panel2.note,
+      prompt: panel2.prompt,
+      characterPrompt: panel2.characterPrompt,
+      actionPrompt: panel2.actionPrompt,
+      actionPromptJa: panel2.actionPromptJa,
+      selectedCharacterId: panel2.selectedCharacterId
+    };
+
+    const swappedPanel2: Panel = {
+      ...panel2,
+      note: panel1.note,
+      prompt: panel1.prompt,
+      characterPrompt: panel1.characterPrompt,
+      actionPrompt: panel1.actionPrompt,
+      actionPromptJa: panel1.actionPromptJa,
+      selectedCharacterId: panel1.selectedCharacterId
+    };
+
+    setPanels(prev => prev.map(panel => {
+      if (panel.id === panelId1) return swappedPanel1;
+      if (panel.id === panelId2) return swappedPanel2;
+      return panel;
+    }));
+
+    console.log(`🔄 コマ ${panelId1} と ${panelId2} の内容を入れ替えました`);
+  }, [panels]);
+
   const handleClearAll = useCallback(() => {
     if (window.confirm("全ての要素をクリアしますか？")) {
       setCharacters([]);
@@ -913,50 +968,7 @@ function App() {
       {/* ヘッダー */}
       <header className="header">
         <h1>📖 AI漫画ネームメーカー</h1>
-        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-          <button 
-            className={`control-btn ${isPanelEditMode ? 'active' : ''}`}
-            onClick={() => setIsPanelEditMode(!isPanelEditMode)}
-            title="コマ編集モード (Ctrl+E)"
-            style={{
-              background: isPanelEditMode ? "#ff8833" : "var(--bg-tertiary)",
-              color: isPanelEditMode ? "white" : "var(--text-primary)",
-              border: `1px solid ${isPanelEditMode ? "#ff8833" : "var(--border-color)"}`,
-            }}
-          >
-            🔧 {isPanelEditMode ? "編集中" : "コマ編集"}
-          </button>
-
-          <button 
-            className="control-btn"
-            onClick={() => setShowBackgroundPanel(true)}
-            title="背景設定 (Ctrl+B)"
-            style={{
-              background: backgroundTemplateCount > 0 ? "#9c27b0" : "var(--bg-tertiary)",
-              color: backgroundTemplateCount > 0 ? "white" : "var(--text-primary)",
-              border: `1px solid ${backgroundTemplateCount > 0 ? "#9c27b0" : "var(--border-color)"}`,
-            }}  
-          >
-            🎨 背景
-            {backgroundTemplateCount > 0 && <span style={{ marginLeft: "4px" }}>({backgroundTemplateCount})</span>}
-          </button>
-
-          <button 
-            className="control-btn"
-            onClick={() => setShowEffectPanel(true)}
-            title="効果線設定 (Ctrl+F)"
-            style={{
-              background: effectTemplateCount > 0 ? "#ff5722" : "var(--bg-tertiary)",
-              color: effectTemplateCount > 0 ? "white" : "var(--text-primary)",
-              border: `1px solid ${effectTemplateCount > 0 ? "#ff5722" : "var(--border-color)"}`,
-            }}
-          >
-            ⚡ 効果線
-            {effectTemplateCount > 0 && <span style={{ marginLeft: "4px" }}>({effectTemplateCount})</span>}
-          </button>
-
-          {/* トーン機能は無効化 */}
-
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
           <button 
             className="control-btn"
             onClick={() => setShowProjectPanel(true)}
@@ -971,10 +983,28 @@ function App() {
             {projectSave.hasUnsavedChanges && <span style={{ marginLeft: "4px" }}>●</span>}
           </button>
 
+          <div style={{ width: "1px", height: "24px", background: "var(--border-color)" }}></div>
+
+          <button 
+            className="control-btn"
+            onClick={() => setShowExportPanel(true)}
+            title="プロンプト出力"
+            style={{
+              background: "#10b981",
+              color: "white",
+              border: "1px solid #10b981",
+              fontWeight: "bold"
+            }}
+          >
+            📤 出力
+          </button>
+
+          <div style={{ width: "1px", height: "24px", background: "var(--border-color)" }}></div>
+
           <button 
             className={`control-btn ${snapSettings.enabled ? 'active' : ''}`}
             onClick={handleSnapToggle}
-            title="スナップ設定を開く"
+            title="スナップ設定"
             style={{
               background: snapSettings.enabled ? "#4CAF50" : "var(--bg-tertiary)",
               color: snapSettings.enabled ? "white" : "var(--text-primary)",
@@ -1031,8 +1061,46 @@ function App() {
       />
 
       <div className="main-content">
-        {/* 左サイドバー */}
+        {!isLeftSidebarOpen && (
+          <button
+            onClick={() => setIsLeftSidebarOpen(true)}
+            style={{
+              position: 'fixed',
+              left: 0,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              padding: '12px 8px',
+              background: 'var(--accent-color)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '0 6px 6px 0',
+              cursor: 'pointer',
+              zIndex: 100,
+              fontSize: '16px'
+            }}
+          >
+            ▶
+          </button>
+        )}
+        
+        {isLeftSidebarOpen && (
         <div className="sidebar left-sidebar">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+            <h3 style={{ margin: 0, fontSize: '16px', color: 'var(--text-primary)' }}>🛠️ ツール</h3>
+            <button
+              onClick={() => setIsLeftSidebarOpen(false)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--text-primary)',
+                cursor: 'pointer',
+                fontSize: '18px',
+                padding: '4px 8px'
+              }}
+            >
+              ◀
+            </button>
+          </div>
           <div className="section">
             <h3>📐 パネルテンプレート</h3>
             <button 
@@ -1176,8 +1244,28 @@ function App() {
             </div>
           )}
 
+          <div className="section">
+            <h3>📐 用紙サイズ</h3>
+            <button
+              onClick={() => setIsPaperSizePanelVisible(true)}
+              style={{
+                width: '100%',
+                padding: '10px',
+                background: 'var(--bg-secondary)',
+                color: 'var(--text-primary)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '12px'
+              }}
+            >
+              📄 {canvasSettings.paperSize.displayName}
+            </button>
+          </div>
+
           {/* SceneTemplatePanel非表示 - シンプルなネームツールに集中 */}
         </div>
+        )}
 
         {/* メインエリア */}
         <div className="canvas-area">
@@ -1246,7 +1334,47 @@ function App() {
             characterNames={characterNames}
             onCharacterAdd={(func: (type: string) => void) => setAddCharacterFunc(() => func)}
             onBubbleAdd={(func: (type: string, text: string) => void) => setAddBubbleFunc(() => func)}
-            onPanelSelect={(panel: Panel | null) => setSelectedPanel(panel)}
+            onPanelSelect={(panel: Panel | null) => {
+              if (isSwapMode && panel) {
+                const now = Date.now();
+                if (lastPanelClickRef.current && 
+                    lastPanelClickRef.current.panelId === panel.id && 
+                    now - lastPanelClickRef.current.timestamp < 300) {
+                  console.log('⏭️ 重複クリック無視');
+                  return;
+                }
+                lastPanelClickRef.current = { panelId: panel.id, timestamp: now };
+                
+                console.log('🔄 入れ替えモード: コマクリック', { 
+                  panelId: panel.id, 
+                  currentSwap1: swapPanel1, 
+                  currentSwap2: swapPanel2 
+                });
+                
+                setSwapPanel1((prev1) => {
+                  const currentSwap2 = swapPanel2;
+                  
+                  if (panel.id === prev1) {
+                    console.log('❌ 1番目のコマを選択解除');
+                    return null;
+                  } else if (panel.id === currentSwap2) {
+                    console.log('❌ 2番目のコマを選択解除');
+                    setSwapPanel2(null);
+                    return prev1;
+                  } else if (!prev1) {
+                    console.log('✅ 1番目のコマを選択:', panel.id);
+                    return panel.id;
+                  } else if (prev1 && !currentSwap2) {
+                    console.log('✅ 2番目のコマを選択:', panel.id);
+                    setSwapPanel2(panel.id);
+                    return prev1;
+                  }
+                  return prev1;
+                });
+                return;
+              }
+              setSelectedPanel(panel);
+            }}
             onCharacterSelect={(character: Character | null) => setSelectedCharacter(character)}
             onCharacterRightClick={handleCanvasCharacterRightClick}
             isPanelEditMode={isPanelEditMode}
@@ -1255,14 +1383,52 @@ function App() {
             onPanelAdd={handlePanelAdd}
             onPanelDelete={handlePanelDelete}
             snapSettings={snapSettings}
+            swapPanel1={swapPanel1}
+            swapPanel2={swapPanel2}
           />
         </div>
 
-        {/* 右サイドバー */}
-        <div className="sidebar right-sidebar">
-          {/* キャラクター追加ボタン非表示 - プロンプト中心のワークフローに集中 */}
+        {!isRightSidebarOpen && (
+          <button
+            onClick={() => setIsRightSidebarOpen(true)}
+            style={{
+              position: 'fixed',
+              right: 0,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              padding: '12px 8px',
+              background: 'var(--accent-color)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px 0 0 6px',
+              cursor: 'pointer',
+              zIndex: 100,
+              fontSize: '16px'
+            }}
+          >
+            ◀
+          </button>
+        )}
 
-          {/* OpenAI連携: 話からコマ内容生成 */}
+        {isRightSidebarOpen && (
+        <div className="sidebar right-sidebar">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+            <h3 style={{ margin: 0, fontSize: '16px', color: 'var(--text-primary)' }}>⚙️ 設定</h3>
+            <button
+              onClick={() => setIsRightSidebarOpen(false)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--text-primary)',
+                cursor: 'pointer',
+                fontSize: '18px',
+                padding: '4px 8px'
+              }}
+            >
+              ▶
+            </button>
+          </div>
+
           <div className="section">
             <h3>🤖 AI自動生成</h3>
             <button
@@ -1339,6 +1505,183 @@ function App() {
               ))}
             </div>
           </div>
+
+          <div className="section">
+            <h3>🔧 編集</h3>
+            <button 
+              className={`control-btn ${isPanelEditMode ? 'active' : ''}`}
+              onClick={() => setIsPanelEditMode(!isPanelEditMode)}
+              style={{
+                width: "100%",
+                padding: "10px",
+                background: isPanelEditMode ? "#ff8833" : "var(--bg-secondary)",
+                color: isPanelEditMode ? "white" : "var(--text-primary)",
+                border: `1px solid ${isPanelEditMode ? "#ff8833" : "var(--border-color)"}`,
+                borderRadius: "4px",
+                cursor: "pointer",
+                fontSize: "13px",
+                fontWeight: "bold"
+              }}
+            >
+              {isPanelEditMode ? "✅ 編集モード中" : "🔧 コマ編集モード"}
+            </button>
+            <div style={{
+              fontSize: "10px",
+              color: "var(--text-muted)",
+              padding: "8px",
+              background: "var(--bg-tertiary)",
+              borderRadius: "4px",
+              marginTop: "8px",
+              lineHeight: "1.4"
+            }}>
+              💡 コマをクリック→ハンドルで移動・リサイズ・分割
+            </div>
+          </div>
+
+          <div className="section">
+            <h3>🎨 装飾</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <button 
+                className="control-btn"
+                onClick={() => setShowBackgroundPanel(true)}
+                style={{
+                  width: "100%",
+                  padding: "10px",
+                  background: backgroundTemplateCount > 0 ? "#9c27b0" : "var(--bg-secondary)",
+                  color: backgroundTemplateCount > 0 ? "white" : "var(--text-primary)",
+                  border: `1px solid ${backgroundTemplateCount > 0 ? "#9c27b0" : "var(--border-color)"}`,
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                  fontSize: "13px"
+                }}
+              >
+                🎨 背景
+                {backgroundTemplateCount > 0 && <span style={{ marginLeft: "4px" }}>({backgroundTemplateCount})</span>}
+              </button>
+
+              <button 
+                className="control-btn"
+                onClick={() => setShowEffectPanel(true)}
+                style={{
+                  width: "100%",
+                  padding: "10px",
+                  background: effectTemplateCount > 0 ? "#ff5722" : "var(--bg-secondary)",
+                  color: effectTemplateCount > 0 ? "white" : "var(--text-primary)",
+                  border: `1px solid ${effectTemplateCount > 0 ? "#ff5722" : "var(--border-color)"}`,
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                  fontSize: "13px"
+                }}
+              >
+                ⚡ 効果線
+                {effectTemplateCount > 0 && <span style={{ marginLeft: "4px" }}>({effectTemplateCount})</span>}
+              </button>
+            </div>
+          </div>
+
+          {panels.length > 1 && (
+          <div className="section">
+              <h3>🔄 コマ操作</h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                <button
+                  onClick={() => {
+                    setIsSwapMode(!isSwapMode);
+                    if (isSwapMode) {
+                      setSwapPanel1(null);
+                      setSwapPanel2(null);
+                    }
+                  }}
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    background: isSwapMode ? "#ef4444" : "#3b82f6",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "6px",
+                    cursor: "pointer",
+                    fontSize: "13px",
+                    fontWeight: "bold"
+                  }}
+                >
+                  {isSwapMode ? "❌ 入れ替えモード終了" : "🔄 コマ入れ替えモード"}
+                </button>
+
+                {isSwapMode && (
+                  <>
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <div style={{
+                        flex: 1,
+                        padding: "8px",
+                        background: swapPanel1 ? "#10b981" : "#f3f4f6",
+                        color: swapPanel1 ? "white" : "#374151",
+                        border: `2px solid ${swapPanel1 ? "#10b981" : "#d1d5db"}`,
+                        borderRadius: "6px",
+                        textAlign: "center",
+                        fontSize: "12px",
+                        fontWeight: "bold"
+                      }}>
+                        1️⃣ {swapPanel1 ? `コマ ${swapPanel1}` : "未選択"}
+                      </div>
+                      <div style={{
+                        flex: 1,
+                        padding: "8px",
+                        background: swapPanel2 ? "#10b981" : "#f3f4f6",
+                        color: swapPanel2 ? "white" : "#374151",
+                        border: `2px solid ${swapPanel2 ? "#10b981" : "#d1d5db"}`,
+                        borderRadius: "6px",
+                        textAlign: "center",
+                        fontSize: "12px",
+                        fontWeight: "bold"
+                      }}>
+                        2️⃣ {swapPanel2 ? `コマ ${swapPanel2}` : "未選択"}
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        if (swapPanel1 && swapPanel2 && swapPanel1 !== swapPanel2) {
+                          handlePanelSwap(swapPanel1, swapPanel2);
+                          setSwapPanel1(null);
+                          setSwapPanel2(null);
+                          setIsSwapMode(false);
+                        } else {
+                          alert('異なる2つのコマを選択してください');
+                        }
+                      }}
+                      disabled={!swapPanel1 || !swapPanel2 || swapPanel1 === swapPanel2}
+                      style={{
+                        width: "100%",
+                        padding: "10px",
+                        background: (!swapPanel1 || !swapPanel2 || swapPanel1 === swapPanel2) ? "#999" : "#10b981",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "6px",
+                        cursor: (!swapPanel1 || !swapPanel2 || swapPanel1 === swapPanel2) ? "not-allowed" : "pointer",
+                        fontSize: "13px",
+                        fontWeight: "bold"
+                      }}
+                    >
+                      🔄 内容を入れ替え実行
+                    </button>
+                  </>
+                )}
+              </div>
+              {isSwapMode && (
+                <div style={{
+                  fontSize: "10px",
+                  color: "var(--text-muted)",
+                  padding: "8px",
+                  background: "#fef3c7",
+                  border: "1px solid #f59e0b",
+                  borderRadius: "4px",
+                  marginTop: "8px"
+                }}>
+                  💡 コマをクリックして選択→「入れ替え実行」で内容を交換<br/>
+                  サイズ・位置はそのまま、内容（メモ・プロンプト・キャラ）のみ入れ替え
+                </div>
+              )}
+            </div>
+          )}
 
           {/* プロンプト入力セクション */}
           {selectedPanel && (
@@ -1536,26 +1879,9 @@ function App() {
             </div>
           )}
 
-          {/* PaperSizePanel非表示 - サイズ設定はシンプルに */}
-
-          <div className="section">
-            <h3>📤 出力</h3>
-            <ExportPanel
-              panels={panels}
-              characters={characters}
-              bubbles={speechBubbles}
-              backgrounds={backgrounds}
-              effects={effects}
-              tones={tones}
-              canvasRef={canvasRef}
-              characterSettings={characterSettings}
-              characterNames={characterNames}
-              currentPageIndex={pageManager.currentPageIndex}
-              pages={pageManager.pages}
-              paperSize={canvasSettings.paperSize}
-            />
-          </div>
+          {/* 出力は上バーに移動 */}
         </div>
+        )}
       </div>
 
       {/* モーダル・パネル類 */}
@@ -1587,6 +1913,72 @@ function App() {
         isDarkMode={isDarkMode}
         selectedPanel={selectedPanel}
         effects={effects}
+      />
+
+      {showExportPanel && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }} onClick={() => setShowExportPanel(false)}>
+          <div style={{
+            background: isDarkMode ? '#1e1e1e' : '#ffffff',
+            borderRadius: '8px',
+            padding: '20px',
+            maxWidth: '800px',
+            width: '90%',
+            maxHeight: '80vh',
+            overflowY: 'auto',
+            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+          }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ margin: 0, fontSize: '18px', color: 'var(--text-primary)' }}>📤 プロンプト出力</h3>
+              <button
+                onClick={() => setShowExportPanel(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '24px',
+                  cursor: 'pointer',
+                  color: 'var(--text-primary)'
+                }}
+              >
+                ×
+              </button>
+            </div>
+            <ExportPanel
+              panels={panels}
+              characters={characters}
+              bubbles={speechBubbles}
+              backgrounds={backgrounds}
+              effects={effects}
+              tones={tones}
+              canvasRef={canvasRef}
+              characterSettings={characterSettings}
+              characterNames={characterNames}
+              currentPageIndex={pageManager.currentPageIndex}
+              pages={pageManager.pages}
+              paperSize={canvasSettings.paperSize}
+            />
+          </div>
+        </div>
+      )}
+
+      <PaperSizeSelectPanel
+        currentSettings={canvasSettings}
+        onSettingsChange={(newSettings: CanvasSettings) => {
+          setCanvasSettings(newSettings);
+        }}
+        isVisible={isPaperSizePanelVisible}
+        onToggle={() => setIsPaperSizePanelVisible(!isPaperSizePanelVisible)}
+        isDarkMode={isDarkMode}
       />
 
       {/* トーン機能は無効化 */}
