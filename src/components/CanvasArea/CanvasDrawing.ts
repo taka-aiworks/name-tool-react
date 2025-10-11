@@ -100,6 +100,37 @@ export class CanvasDrawing {
     ctx.fillStyle = isSelected ? "#ffffff" : isDarkMode ? "#ffffff" : "#333333";
     ctx.fillText(`${panel.id}`, textX, textY);
 
+    // コマメモ表示（panel.noteがあれば）
+    if ((panel as any).note) {
+      const note = (panel as any).note as string;
+      const noteLines = note.split('\n').slice(0, 4); // 最大4行
+      
+      ctx.font = "bold 16px Arial";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "top";
+      
+      const noteX = panel.x + 16;
+      const noteY = panel.y + panel.height - 24 - (noteLines.length * 20);
+      const maxWidth = panel.width - 32;
+      
+      // 背景
+      const noteHeight = noteLines.length * 20 + 12;
+      ctx.fillStyle = isDarkMode ? "rgba(0, 0, 0, 0.85)" : "rgba(255, 255, 255, 0.9)";
+      ctx.fillRect(noteX - 6, noteY - 6, Math.min(maxWidth + 12, panel.width - 20), noteHeight);
+      
+      // 枠線
+      ctx.strokeStyle = isDarkMode ? "#fbbf24" : "#f59e0b";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(noteX - 6, noteY - 6, Math.min(maxWidth + 12, panel.width - 20), noteHeight);
+      
+      // テキスト
+      ctx.fillStyle = isDarkMode ? "#fbbf24" : "#d97706";
+      noteLines.forEach((line, i) => {
+        const truncated = line.length > 25 ? line.substring(0, 25) + '...' : line;
+        ctx.fillText(truncated, noteX, noteY + i * 20);
+      });
+    }
+
     // 編集モード時のハンドル描画
     if (isSelected && isEditMode) {
       CanvasDrawing.drawPanelEditHandles(ctx, panel, isDarkMode);

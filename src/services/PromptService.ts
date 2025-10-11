@@ -616,11 +616,54 @@ class PromptService {
   /**
    * 🆕 簡潔版プロンプト出力（パネルごと分離形式）
    */
-  public formatPromptOutput(promptData: PromptOutput): string {
+  public formatPromptOutput(promptData: PromptOutput, panels?: Panel[], pageInfo?: { pageIndex: number; pageTitle: string }, characterSettings?: Record<string, any>): string {
     let output = "=== AI画像生成用プロンプト ===\n\n";
+    
+    if (pageInfo) {
+      output += `📄 Page ${pageInfo.pageIndex + 1}: ${pageInfo.pageTitle}\n`;
+      output += `${'='.repeat(60)}\n\n`;
+    }
 
     promptData.scenes.forEach((scene, index) => {
-      output += `【Panel ${index + 1}】\n`;
+      const panelLabel = pageInfo 
+        ? `【Page ${pageInfo.pageIndex + 1} - Panel ${index + 1}】`
+        : `【Panel ${index + 1}】`;
+      output += `${panelLabel}\n`;
+      
+      // Panel用メモ
+      if (panels && panels[index]?.note) {
+        output += `📌 メモ: ${panels[index].note}\n`;
+      }
+      
+      // 🆕 分離プロンプトシステム: キャラ＋動作を合成
+      const panel = panels?.[index];
+      if (panel) {
+        const parts: string[] = [];
+        
+        // キャラプロンプト取得（panel.characterPrompt or characterSettingsから）
+        let charPrompt = panel.characterPrompt;
+        if (!charPrompt && panel.selectedCharacterId && characterSettings?.[panel.selectedCharacterId]?.appearance?.basePrompt) {
+          charPrompt = characterSettings[panel.selectedCharacterId].appearance.basePrompt;
+        }
+        
+        if (charPrompt) {
+          parts.push(charPrompt.trim());
+        }
+        
+        // 動作プロンプト
+        if (panel.actionPrompt) {
+          parts.push(panel.actionPrompt.trim());
+        }
+        
+        // 合成プロンプト出力
+        if (parts.length > 0) {
+          const combinedPrompt = parts.join(', ');
+          output += `プロンプト: ${combinedPrompt}\n`;
+        } else if (panel.prompt) {
+          // フォールバック: 旧形式のpromptがあれば使用
+          output += `プロンプト: ${panel.prompt}\n`;
+        }
+      }
       
       const panelCharacters = scene.panelCharacters;
 

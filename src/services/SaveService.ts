@@ -354,23 +354,27 @@ export class SaveService {
       const original = this.getProject(projectId);
       if (!original) return null;
 
-      const newId = this.generateId();
-      const now = new Date().toISOString();
-      
-      const duplicated: ProjectData = {
-        ...JSON.parse(JSON.stringify(original)),
-        id: newId,
-        name: newName || `${original.name} のコピー`,
-        createdAt: now,
-        updatedAt: now
-      };
-
-      const projects = this.getAllProjects();
-      projects.push(duplicated);
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(projects));
+      // saveProjectメソッドを使って正しく複製（characterNames, characterSettings含む）
+      const newProjectId = this.saveProject(
+        newName || `${original.name} のコピー`,
+        original.data.panels,
+        original.data.characters,
+        original.data.bubbles,
+        original.data.backgrounds,
+        original.data.effects,
+        original.data.tones,
+        original.data.canvasSize,
+        original.data.settings,
+        undefined, // 新規ID
+        original.data.characterNames,
+        original.data.characterSettings,
+        original.data.pages,
+        original.data.currentPageIndex,
+        original.data.canvasSettings
+      );
 
       console.log(`プロジェクト "${original.name}" を複製しました`);
-      return newId;
+      return newProjectId;
     } catch (error) {
       console.error('プロジェクト複製エラー:', error);
       return null;
@@ -416,12 +420,28 @@ export class SaveService {
         throw new Error('無効なプロジェクトファイルです');
       }
 
-      // 🔧 後方互換性：効果線・トーンデータがない場合は空配列で初期化
+      // 🔧 後方互換性：各種データがない場合は初期化
       if (!projectData.data.effects) {
         projectData.data.effects = [];
       }
       if (!projectData.data.tones) {
         projectData.data.tones = [];
+      }
+      if (!projectData.data.characterNames) {
+        projectData.data.characterNames = {
+          hero: '主人公',
+          heroine: 'ヒロイン',
+          rival: 'ライバル',
+          friend: '友人'
+        };
+      }
+      if (!projectData.data.characterSettings) {
+        projectData.data.characterSettings = {
+          hero: { appearance: null, role: '主人公' },
+          heroine: { appearance: null, role: 'ヒロイン' },
+          rival: { appearance: null, role: 'ライバル' },
+          friend: { appearance: null, role: '友人' }
+        };
       }
 
       const newId = this.generateId();
@@ -469,7 +489,7 @@ export class SaveService {
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
   }
 
-  // 🔧 トーン対応版バリデーション
+  // 🔧 完全版バリデーション（characterNames, characterSettings含む）
   private static validateProjectData(data: any): data is ProjectData {
     return (
       data &&
@@ -483,7 +503,13 @@ export class SaveService {
       Array.isArray(data.data.backgrounds) &&
       // effectsとtonesは後方互換性のため必須ではない
       (data.data.effects === undefined || Array.isArray(data.data.effects)) &&
-      (data.data.tones === undefined || Array.isArray(data.data.tones))
+      (data.data.tones === undefined || Array.isArray(data.data.tones)) &&
+      // characterNames, characterSettingsは後方互換性のため必須ではない
+      (data.data.characterNames === undefined || typeof data.data.characterNames === 'object') &&
+      (data.data.characterSettings === undefined || typeof data.data.characterSettings === 'object') &&
+      // pages, currentPageIndex, canvasSettingsは後方互換性のため必須ではない
+      (data.data.pages === undefined || Array.isArray(data.data.pages)) &&
+      (data.data.currentPageIndex === undefined || typeof data.data.currentPageIndex === 'number')
     );
   }
 }

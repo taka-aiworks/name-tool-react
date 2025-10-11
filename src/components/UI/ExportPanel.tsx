@@ -69,6 +69,8 @@ interface ExportPanelProps {
   characterSettings?: Record<string, any>;
   characterNames?: Record<string, string>;
   paperSize?: PaperSize;
+  currentPageIndex?: number;
+  pages?: any[];
 }
 
 export const ExportPanel: React.FC<ExportPanelProps> = ({
@@ -81,13 +83,16 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
   canvasRef,
   characterSettings,
   characterNames,
-  paperSize
+  paperSize,
+  currentPageIndex,
+  pages
 }) => {
   const [selectedPurpose, setSelectedPurpose] = useState<ExportPurpose | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState<ExportProgress | null>(null);
   const [promptOutput, setPromptOutput] = useState<string>('');
   const [debugOutput, setDebugOutput] = useState<string>('');
+  const [exportCurrentPageOnly, setExportCurrentPageOnly] = useState<boolean>(false);
   
   // 🆕 NanoBanana関連のstate
   const [nanoBananaOptions, setNanoBananaOptions] = useState<NanoBananaExportOptions>(DEFAULT_NANOBANANA_EXPORT_OPTIONS);
@@ -432,13 +437,32 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
 
       setExportProgress({ step: 'processing', progress: 30, message: 'キャラクター詳細分析中...' });
 
+      // 現在ページのみ出力の場合はフィルタ
+      let filteredPanels = panels;
+      let filteredCharacters = characters;
+      let filteredBubbles = bubbles;
+      let filteredBackgrounds = backgrounds;
+      let filteredEffects = effects;
+      
+      if (exportCurrentPageOnly && typeof currentPageIndex === 'number' && pages) {
+        const currentPage = pages[currentPageIndex];
+        if (currentPage) {
+          filteredPanels = currentPage.panels || [];
+          const panelIds = new Set(filteredPanels.map((p: Panel) => p.id));
+          filteredCharacters = (currentPage.characters || []).filter((c: Character) => panelIds.has(c.panelId));
+          filteredBubbles = (currentPage.speechBubbles || []).filter((b: SpeechBubble) => panelIds.has(b.panelId));
+          filteredBackgrounds = (currentPage.backgrounds || []).filter((bg: BackgroundElement) => panelIds.has(bg.panelId));
+          filteredEffects = (currentPage.effects || []).filter((e: EffectElement) => panelIds.has(e.panelId));
+        }
+      }
+
       // 🔧 修正: characterAssignmentsを使ってプロジェクトデータを構築
       const project = {
-        panels,
-        characters,
-        speechBubbles: bubbles,
-        backgrounds,
-        effects,
+        panels: filteredPanels,
+        characters: filteredCharacters,
+        speechBubbles: filteredBubbles,
+        backgrounds: filteredBackgrounds,
+        effects: filteredEffects,
         characterSettings,
         characterNames
       };
@@ -450,7 +474,82 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
       
       setExportProgress({ step: 'processing', progress: 70, message: 'プロンプト整形中...' });
 
-      let output = promptService.formatPromptOutput(promptData);
+      // ページ情報を準備
+      let output = '';
+      
+      if (exportCurrentPageOnly && typeof currentPageIndex === 'number' && pages) {
+        // 現在ページのみ出力
+        const currentPage = pages[currentPageIndex];
+        if (currentPage) {
+          const pageInfo = {
+            pageIndex: currentPageIndex,
+            pageTitle: currentPage.title || `Page ${currentPageIndex + 1}`
+          };
+          output = promptService.formatPromptOutput(promptData, filteredPanels, pageInfo, characterSettings);
+        }
+      } else {
+        // 全ページ出力（現在のpanels配列を使用）
+        output = "=== AI画像生成用プロンプト ===\n\n";
+        
+        filteredPanels.forEach((panel: Panel, panelIdx: number) => {
+            const sceneData = promptData.scenes[panelIdx];
+            if (!sceneData) return;
+            
+            output += `【Panel ${panelIdx + 1}】\n`;
+            
+            // デバッグ: パネルの内容を確認
+            console.log(`Panel ${panelIdx + 1} データ:`, {
+              note: panel.note,
+              characterPrompt: panel.characterPrompt,
+              actionPrompt: panel.actionPrompt,
+              selectedCharacterId: panel.selectedCharacterId,
+              prompt: panel.prompt,
+              // キャラ設定の確認
+              characterSettings: panel.selectedCharacterId ? characterSettings?.[panel.selectedCharacterId] : null
+            });
+            
+            // Panel用メモ
+            if (panel.note) {
+              output += `📌 メモ: ${panel.note}\n`;
+            }
+            
+            // 🆕 分離プロンプトシステム: キャラ＋動作を合成
+            const parts: string[] = [];
+            
+            // キャラプロンプト取得（panel.characterPrompt or characterSettingsから）
+            let charPrompt = panel.characterPrompt;
+            if (!charPrompt && panel.selectedCharacterId && characterSettings?.[panel.selectedCharacterId]?.appearance?.basePrompt) {
+              charPrompt = characterSettings[panel.selectedCharacterId].appearance.basePrompt;
+            }
+            
+            if (charPrompt) {
+              parts.push(charPrompt.trim());
+            }
+            
+            if (panel.actionPrompt) {
+              parts.push(panel.actionPrompt.trim());
+            }
+            
+            if (parts.length > 0) {
+              const combinedPrompt = parts.join(', ');
+              output += `プロンプト: ${combinedPrompt}\n`;
+            } else if (panel.prompt) {
+              // フォールバック: 旧形式
+              output += `プロンプト: ${panel.prompt}\n`;
+            }
+            
+            output += '\n';
+          });
+        
+        // Negative Prompt
+        const negativePrompt = [
+          'lowres', 'bad anatomy', 'bad hands', 'text', 'error',
+          'worst quality', 'low quality', 'blurry', 'bad face',
+          'extra fingers', 'watermark', 'signature',
+          'deformed', 'mutated', 'disfigured', 'bad proportions'
+        ].join(', ');
+        output += `\n【Negative Prompt】\n${negativePrompt}\n`;
+      }
 
       // 追加で背景・効果線・トーン情報を統合
       output += await generateAdditionalPrompts(characterAssignments);
@@ -698,28 +797,6 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
         出力
       </h3>
 
-      <div 
-        style={{
-          background: isDarkMode ? "#404040" : "#f9f9f9",
-          border: `1px solid ${isDarkMode ? "#666666" : "#ddd"}`,
-          borderRadius: "6px",
-          padding: "8px",
-          marginBottom: "12px",
-          fontSize: "11px",
-          color: isDarkMode ? "#cccccc" : "#666666"
-        }}
-      >
-        <strong>出力内容:</strong><br/>
-        📐 コマ: {panels.length}個<br/>
-        👥 キャラクター: {characters.length}体<br/>
-        💬 吹き出し: {bubbles.length}個<br/>
-        🎨 背景: {backgrounds.length}個<br/>
-        ⚡ 効果線: {effects.length}個<br/>
-        🎯 トーン: {tones.length}個
-        <hr style={{ margin: "4px 0", borderColor: isDarkMode ? "#666666" : "#ddd" }} />
-        📊 総要素数: {totalElements}個
-      </div>
-      
       <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
         {purposes.map((purpose) => (
           <div key={purpose.id}>
@@ -833,6 +910,29 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
                         >
                           {isExporting ? '更新中...' : '🔄 再生成'}
                         </button>
+                      </div>
+
+                      {/* ページ出力オプション */}
+                      <div style={{
+                        marginBottom: "12px",
+                        padding: "8px",
+                        background: isDarkMode ? "#333" : "#f0f0f0",
+                        borderRadius: "4px"
+                      }}>
+                        <label style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                          fontSize: "11px",
+                          cursor: "pointer"
+                        }}>
+                          <input
+                            type="checkbox"
+                            checked={exportCurrentPageOnly}
+                            onChange={(e) => setExportCurrentPageOnly(e.target.checked)}
+                          />
+                          📄 現在のページのみ出力
+                        </label>
                       </div>
 
                       <div style={{ 

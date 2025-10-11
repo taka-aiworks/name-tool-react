@@ -195,25 +195,49 @@ export class NanoBananaExportService {
     prompt += 'Characters: ' + characters.length + '\n';
     prompt += 'Dialogue bubbles: ' + bubbles.length + '\n\n';
 
-    prompt += '=== Character Details ===\n';
-    characters.forEach((char, index) => {
-      prompt += `Character ${index + 1}: ${char.name}\n`;
-      prompt += `  - View: ${char.viewType}\n`;
-      prompt += `  - Expression: ${char.expression || 'neutral'}\n`;
-      prompt += `  - Action: ${char.action || 'standing'}\n`;
-      if (char.facing) prompt += `  - Facing: ${char.facing}\n`;
-      if ((char as any).eyeState) prompt += `  - Eye State: ${(char as any).eyeState}\n`;
-      if ((char as any).mouthState) prompt += `  - Mouth State: ${(char as any).mouthState}\n`;
-      if ((char as any).handGesture) prompt += `  - Hand Gesture: ${(char as any).handGesture}\n`;
-      if ((char as any).emotion_primary) prompt += `  - Emotion: ${(char as any).emotion_primary}\n`;
-      if ((char as any).physical_state) prompt += `  - Physical State: ${(char as any).physical_state}\n`;
+    // Panel別プロンプト（キャラ＋動作の分離システム）
+    prompt += '=== Panel Prompts ===\n';
+    panels.forEach((panel, index) => {
+      prompt += `Panel ${index + 1}:\n`;
+      if (panel.note) {
+        prompt += `  Note: ${panel.note}\n`;
+      }
+      
+      // 分離プロンプトシステム
+      const parts: string[] = [];
+      if (panel.characterPrompt) parts.push(panel.characterPrompt.trim());
+      if (panel.actionPrompt) parts.push(panel.actionPrompt.trim());
+      
+      if (parts.length > 0) {
+        prompt += `  Combined Prompt: ${parts.join(', ')}\n`;
+        if (panel.characterPrompt) prompt += `    - Character: ${panel.characterPrompt}\n`;
+        if (panel.actionPrompt) prompt += `    - Action: ${panel.actionPrompt}\n`;
+      } else if (panel.prompt) {
+        // フォールバック
+        prompt += `  Prompt: ${panel.prompt}\n`;
+      } else {
+        prompt += `  Size: ${Math.round(panel.width * 100)}% x ${Math.round(panel.height * 100)}%\n`;
+      }
       prompt += '\n';
     });
 
-    prompt += '=== Panel Layout ===\n';
-    panels.forEach((panel, index) => {
-      prompt += `Panel ${index + 1}: ${Math.round(panel.width * 100)}% x ${Math.round(panel.height * 100)}%\n`;
-    });
+    // キャラクター詳細（キャラクターがいる場合のみ）
+    if (characters.length > 0) {
+      prompt += '=== Character Details ===\n';
+      characters.forEach((char, index) => {
+        prompt += `Character ${index + 1}: ${char.name}\n`;
+        prompt += `  - View: ${char.viewType}\n`;
+        prompt += `  - Expression: ${char.expression || 'neutral'}\n`;
+        prompt += `  - Action: ${char.action || 'standing'}\n`;
+        if (char.facing) prompt += `  - Facing: ${char.facing}\n`;
+        if ((char as any).eyeState) prompt += `  - Eye State: ${(char as any).eyeState}\n`;
+        if ((char as any).mouthState) prompt += `  - Mouth State: ${(char as any).mouthState}\n`;
+        if ((char as any).handGesture) prompt += `  - Hand Gesture: ${(char as any).handGesture}\n`;
+        if ((char as any).emotion_primary) prompt += `  - Emotion: ${(char as any).emotion_primary}\n`;
+        if ((char as any).physical_state) prompt += `  - Physical State: ${(char as any).physical_state}\n`;
+        prompt += '\n';
+      });
+    }
 
     prompt += '\n=== Style Instructions ===\n';
     prompt += 'Create a high-quality manga/comic with:\n';
@@ -236,25 +260,49 @@ export class NanoBananaExportService {
     prompt += 'キャラクター: ' + characters.length + '人\n';
     prompt += '吹き出し: ' + bubbles.length + '個\n\n';
 
-    prompt += '=== キャラクター詳細 ===\n';
-    characters.forEach((char, index) => {
-      prompt += `キャラクター${index + 1}: ${char.name}\n`;
-      prompt += `  - 表示範囲: ${char.viewType}\n`;
-      prompt += `  - 表情: ${char.expression || '通常'}\n`;
-      prompt += `  - 動作: ${char.action || '立っている'}\n`;
-      if (char.facing) prompt += `  - 向き: ${char.facing}\n`;
-      if ((char as any).eyeState) prompt += `  - 目の状態: ${(char as any).eyeState}\n`;
-      if ((char as any).mouthState) prompt += `  - 口の状態: ${(char as any).mouthState}\n`;
-      if ((char as any).handGesture) prompt += `  - 手の動作: ${(char as any).handGesture}\n`;
-      if ((char as any).emotion_primary) prompt += `  - 感情: ${(char as any).emotion_primary}\n`;
-      if ((char as any).physical_state) prompt += `  - 体調・状態: ${(char as any).physical_state}\n`;
+    // コマ別プロンプト（キャラ＋動作の分離システム）
+    prompt += '=== コマ別プロンプト ===\n';
+    panels.forEach((panel, index) => {
+      prompt += `コマ${index + 1}:\n`;
+      if (panel.note) {
+        prompt += `  メモ: ${panel.note}\n`;
+      }
+      
+      // 分離プロンプトシステム
+      const parts: string[] = [];
+      if (panel.characterPrompt) parts.push(panel.characterPrompt.trim());
+      if (panel.actionPrompt) parts.push(panel.actionPrompt.trim());
+      
+      if (parts.length > 0) {
+        prompt += `  合成プロンプト: ${parts.join(', ')}\n`;
+        if (panel.characterPrompt) prompt += `    - キャラ: ${panel.characterPrompt}\n`;
+        if (panel.actionPrompt) prompt += `    - 動作: ${panel.actionPrompt}\n`;
+      } else if (panel.prompt) {
+        // フォールバック
+        prompt += `  プロンプト: ${panel.prompt}\n`;
+      } else {
+        prompt += `  サイズ: ${Math.round(panel.width * 100)}% x ${Math.round(panel.height * 100)}%\n`;
+      }
       prompt += '\n';
     });
 
-    prompt += '=== コマ構成 ===\n';
-    panels.forEach((panel, index) => {
-      prompt += `コマ${index + 1}: ${Math.round(panel.width * 100)}% x ${Math.round(panel.height * 100)}%\n`;
-    });
+    // キャラクター詳細（キャラクターがいる場合のみ）
+    if (characters.length > 0) {
+      prompt += '=== キャラクター詳細 ===\n';
+      characters.forEach((char, index) => {
+        prompt += `キャラクター${index + 1}: ${char.name}\n`;
+        prompt += `  - 表示範囲: ${char.viewType}\n`;
+        prompt += `  - 表情: ${char.expression || '通常'}\n`;
+        prompt += `  - 動作: ${char.action || '立っている'}\n`;
+        if (char.facing) prompt += `  - 向き: ${char.facing}\n`;
+        if ((char as any).eyeState) prompt += `  - 目の状態: ${(char as any).eyeState}\n`;
+        if ((char as any).mouthState) prompt += `  - 口の状態: ${(char as any).mouthState}\n`;
+        if ((char as any).handGesture) prompt += `  - 手の動作: ${(char as any).handGesture}\n`;
+        if ((char as any).emotion_primary) prompt += `  - 感情: ${(char as any).emotion_primary}\n`;
+        if ((char as any).physical_state) prompt += `  - 体調・状態: ${(char as any).physical_state}\n`;
+        prompt += '\n';
+      });
+    }
 
     prompt += '\n=== スタイル指示 ===\n';
     prompt += '高品質な漫画を作成してください：\n';

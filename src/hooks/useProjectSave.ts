@@ -24,6 +24,7 @@ interface UseProjectSaveReturn {
     error: string | null;
   };
   newProject: () => void;
+  checkForChanges: (currentData: any) => void;
 }
 
 // 🔧 引数なしで呼び出し可能にする
@@ -32,6 +33,7 @@ export const useProjectSave = (): UseProjectSaveReturn => {
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [lastSavedData, setLastSavedData] = useState<string>('');
   const [isAutoSaving, setIsAutoSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -79,8 +81,15 @@ export const useProjectSave = (): UseProjectSaveReturn => {
       );
       
       setCurrentProjectId(projectId);
-      setLastSaved(new Date());
+      // SaveServiceから実際の保存時刻を取得
+      const savedProject = SaveService.loadProject(projectId);
+      if (savedProject) {
+        setLastSaved(new Date(savedProject.updatedAt));
+      } else {
+        setLastSaved(new Date());
+      }
       setHasUnsavedChanges(false);
+      setLastSavedData(JSON.stringify(projectData));
       
       console.log('✅ プロジェクト保存完了:', projectId);
       return true;
@@ -242,6 +251,13 @@ export const useProjectSave = (): UseProjectSaveReturn => {
     error
   };
 
+  // 変更検知用の関数を追加
+  const checkForChanges = useCallback((currentData: any) => {
+    const currentDataString = JSON.stringify(currentData);
+    const hasChanges = currentDataString !== lastSavedData;
+    setHasUnsavedChanges(hasChanges);
+  }, [lastSavedData]);
+
   return {
     saveProject,
     loadProject,
@@ -254,7 +270,8 @@ export const useProjectSave = (): UseProjectSaveReturn => {
     isAutoSaving,
     currentProjectId,
     saveStatus,
-    newProject
+    newProject,
+    checkForChanges
   };
 };
 

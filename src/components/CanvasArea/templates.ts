@@ -6,33 +6,33 @@ export const templates: Templates = {
   // === 1コマテンプレート ===
   "single_impact": {
     panels: [
-      { id: 1, x: 20, y: 20, width: 760, height: 560 },
+      { id: 1, x: 34, y: 17, width: 732, height: 566 },
     ],
   },
 
   // === 2コマテンプレート ===
   "split_horizontal": {
     panels: [
-      { id: 1, x: 20, y: 20, width: 370, height: 560 },
-      { id: 2, x: 410, y: 20, width: 370, height: 560 },
+      { id: 1, x: 34, y: 17, width: 348, height: 566 },
+      { id: 2, x: 418, y: 17, width: 348, height: 566 },
     ],
   },
   "split_vertical": {
     panels: [
-      { id: 1, x: 20, y: 20, width: 760, height: 270 },
-      { id: 2, x: 20, y: 310, width: 760, height: 270 },
+      { id: 1, x: 34, y: 17, width: 732, height: 268 },
+      { id: 2, x: 34, y: 315, width: 732, height: 268 },
     ],
   },
   "dialogue_2": {
     panels: [
-      { id: 1, x: 20, y: 20, width: 760, height: 400 },
-      { id: 2, x: 20, y: 440, width: 760, height: 140 },
+      { id: 1, x: 34, y: 17, width: 732, height: 398 },
+      { id: 2, x: 34, y: 431, width: 732, height: 152 },
     ],
   },
   "main_sub": {
     panels: [
-      { id: 1, x: 20, y: 20, width: 520, height: 560 },
-      { id: 2, x: 560, y: 20, width: 220, height: 560 },
+      { id: 1, x: 34, y: 17, width: 494, height: 566 },
+      { id: 2, x: 544, y: 17, width: 222, height: 566 },
     ],
   },
   "custom": {
@@ -45,33 +45,33 @@ export const templates: Templates = {
   // === 3コマテンプレート ===
   "three_vertical": {
     panels: [
-      { id: 1, x: 20, y: 20, width: 760, height: 150 },
-      { id: 2, x: 20, y: 190, width: 760, height: 150 },
-      { id: 3, x: 20, y: 360, width: 760, height: 150 },
+      { id: 1, x: 34, y: 17, width: 732, height: 148 },
+      { id: 2, x: 34, y: 185, width: 732, height: 148 },
+      { id: 3, x: 34, y: 353, width: 732, height: 148 },
     ],
   },
   "t_shape": {
     panels: [
-      { id: 1, x: 20, y: 20, width: 760, height: 150 },
-      { id: 2, x: 20, y: 190, width: 370, height: 300 },
-      { id: 3, x: 410, y: 190, width: 370, height: 300 },
+      { id: 1, x: 34, y: 17, width: 732, height: 148 },
+      { id: 2, x: 34, y: 185, width: 348, height: 398 },
+      { id: 3, x: 418, y: 185, width: 348, height: 398 },
     ],
   },
   "reverse_t": {
     panels: [
-      { id: 1, x: 20, y: 20, width: 370, height: 300 },
-      { id: 2, x: 410, y: 20, width: 370, height: 300 },
-      { id: 3, x: 20, y: 340, width: 760, height: 150 },
+      { id: 1, x: 34, y: 17, width: 348, height: 298 },
+      { id: 2, x: 418, y: 17, width: 348, height: 298 },
+      { id: 3, x: 34, y: 331, width: 732, height: 152 },
     ],
   },
 
   // === 4コマテンプレート ===
   "4koma": {
     panels: [
-      { id: 1, x: 20, y: 20, width: 760, height: 120 },
-      { id: 2, x: 20, y: 150, width: 760, height: 120 },
-      { id: 3, x: 20, y: 280, width: 760, height: 120 },
-      { id: 4, x: 20, y: 410, width: 760, height: 120 },
+      { id: 1, x: 34, y: 17,  width: 732, height: 112 },
+      { id: 2, x: 34, y: 141, width: 732, height: 112 },
+      { id: 3, x: 34, y: 265, width: 732, height: 112 },
+      { id: 4, x: 34, y: 389, width: 732, height: 112 },
     ],
   },
   "grid_2x2": {

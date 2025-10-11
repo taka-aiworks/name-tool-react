@@ -811,6 +811,13 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, ExtendedCanvasComponentPro
         setEditText={actions.setEditText}
         onComplete={handleEditComplete}
         onCancel={handleEditCancel}
+        onUpdateBubble={(updatedBubble) => {
+          const updatedBubbles = speechBubbles.map(b =>
+            b.id === updatedBubble.id ? updatedBubble : b
+          );
+          setSpeechBubbles(updatedBubbles);
+          actions.setEditingBubble(updatedBubble);
+        }}
       />
 
       {/* 右クリックメニュー */}

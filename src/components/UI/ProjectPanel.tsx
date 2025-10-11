@@ -98,7 +98,7 @@ const ProjectPanel: React.FC<ProjectPanelProps> = ({
         const effects: EffectElement[] = (project.data as any).effects || [];
         const tones: ToneElement[] = (project.data as any).tones || []; // 🆕 トーンデータ追加
         
-        // 🔧 正しい引数順序で呼び出し
+        // 🔧 正しい引数順序で呼び出し（characterNames, characterSettings含む）
         SaveService.saveProject(
           newName.trim(),           // プロジェクト名
           project.data.panels,      // パネルデータ
@@ -109,7 +109,12 @@ const ProjectPanel: React.FC<ProjectPanelProps> = ({
           tones,                    // 🆕 トーンデータ（正しい位置）
           project.data.canvasSize,  // キャンバスサイズ
           project.data.settings,    // 設定
-          projectId                 // プロジェクトID
+          projectId,                // プロジェクトID
+          project.data.characterNames,    // キャラクター名
+          project.data.characterSettings, // キャラクター設定
+          project.data.pages,       // ページデータ
+          project.data.currentPageIndex, // 現在ページインデックス
+          project.data.canvasSettings    // キャンバス設定
         );
         refreshProjects();
       }
@@ -285,33 +290,22 @@ const ProjectPanel: React.FC<ProjectPanelProps> = ({
           backgroundColor: '#f9fafb',
           borderBottom: '1px solid #e5e7eb'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{
-                width: '12px',
-                height: '12px',
-                borderRadius: '50%',
-                backgroundColor: saveStatus.isAutoSaving ? '#3b82f6' : 
-                               saveStatus.hasUnsavedChanges ? '#f59e0b' : '#10b981'
-              }}></div>
-              <span style={{
-                fontSize: '14px',
-                fontWeight: '500',
-                color: '#374151'
-              }}>
-                {saveStatus.isAutoSaving ? '自動保存中...' :
-                 saveStatus.hasUnsavedChanges ? '未保存の変更あり' : '保存済み'}
-              </span>
-            </div>
-            
-            {saveStatus.lastSaved && (
-              <span style={{
-                fontSize: '12px',
-                color: '#6b7280'
-              }}>
-                最終保存: {formatDate(saveStatus.lastSaved.toISOString())}
-              </span>
-            )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{
+              width: '12px',
+              height: '12px',
+              borderRadius: '50%',
+              backgroundColor: saveStatus.isAutoSaving ? '#3b82f6' : 
+                             saveStatus.hasUnsavedChanges ? '#f59e0b' : '#10b981'
+            }}></div>
+            <span style={{
+              fontSize: '14px',
+              fontWeight: '500',
+              color: '#374151'
+            }}>
+              {saveStatus.isAutoSaving ? '自動保存中...' :
+               saveStatus.hasUnsavedChanges ? '未保存の変更あり' : '保存済み'}
+            </span>
           </div>
           
           {saveStatus.error && (
@@ -453,24 +447,26 @@ const ProjectPanel: React.FC<ProjectPanelProps> = ({
                             padding: 0
                           }}>
                             {project.name}
-                            {currentProjectId === project.id && (
-                              <span style={{
-                                marginLeft: '8px',
-                                padding: '2px 8px',
-                                fontSize: '12px',
-                                backgroundColor: '#3b82f6',
-                                color: 'white',
-                                borderRadius: '9999px'
-                              }}>
-                                現在のプロジェクト
-                              </span>
-                            )}
                           </h3>
+                          {currentProjectId === project.id && (
+                            <div style={{
+                              marginTop: '8px',
+                              padding: '4px 8px',
+                              fontSize: '12px',
+                              backgroundColor: '#3b82f6',
+                              color: 'white',
+                              borderRadius: '9999px',
+                              display: 'inline-block'
+                            }}>
+                              現在のプロジェクト
+                            </div>
+                          )}
                           <div style={{ 
                             fontSize: '14px', 
                             color: '#6b7280',
-                            marginTop: '4px' 
+                            marginTop: '8px' 
                           }}>
+                            作成: {formatDate(project.createdAt)}<br/>
                             更新: {formatDate(project.updatedAt)}
                           </div>
                         </div>

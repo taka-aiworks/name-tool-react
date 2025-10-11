@@ -8,6 +8,7 @@ interface EditBubbleModalProps {
   setEditText: (text: string) => void;
   onComplete: () => void;
   onCancel: () => void;
+  onUpdateBubble?: (bubble: SpeechBubble) => void;
 }
 
 const EditBubbleModal: React.FC<EditBubbleModalProps> = ({
@@ -16,8 +17,18 @@ const EditBubbleModal: React.FC<EditBubbleModalProps> = ({
   setEditText,
   onComplete,
   onCancel,
+  onUpdateBubble,
 }) => {
   if (!editingBubble) return null;
+
+  const handleVerticalToggle = () => {
+    if (onUpdateBubble) {
+      onUpdateBubble({
+        ...editingBubble,
+        vertical: !editingBubble.vertical
+      });
+    }
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     // 編集モーダル内でのキーイベントをグローバルに伝播させない
@@ -56,6 +67,36 @@ const EditBubbleModal: React.FC<EditBubbleModalProps> = ({
         💬 セリフ編集
       </div>
 
+      {/* 縦書き/横書き切り替え */}
+      <div style={{ 
+        marginBottom: "12px",
+        display: "flex",
+        gap: "8px",
+        alignItems: "center"
+      }}>
+        <button
+          onClick={handleVerticalToggle}
+          style={{
+            padding: "6px 12px",
+            border: "1px solid #ccc",
+            borderRadius: "4px",
+            background: editingBubble.vertical ? "#007bff" : "white",
+            color: editingBubble.vertical ? "white" : "#333",
+            cursor: "pointer",
+            fontSize: "12px",
+            fontWeight: "bold",
+            display: "flex",
+            alignItems: "center",
+            gap: "4px"
+          }}
+        >
+          {editingBubble.vertical ? "📖 縦書き" : "📄 横書き"}
+        </button>
+        <span style={{ fontSize: "11px", color: "#666" }}>
+          {editingBubble.vertical ? "右→左で表示" : "左→右で表示"}
+        </span>
+      </div>
+
       {/* セリフ編集エリア */}
       <textarea
         value={editText}
@@ -75,6 +116,7 @@ const EditBubbleModal: React.FC<EditBubbleModalProps> = ({
           lineHeight: "1.5",
           minHeight: "80px",
           maxHeight: "200px",
+          writingMode: editingBubble.vertical ? "vertical-rl" : "horizontal-tb",
         }}
       />
 

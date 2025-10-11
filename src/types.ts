@@ -6,6 +6,13 @@ export interface Panel {
   y: number;
   width: number;
   height: number;
+  prompt?: string;  // AI Prompt Maker Pro連携用（廃止予定）
+  note?: string;    // コマの日本語メモ（構図・動き・シーン説明）
+  // 🆕 分離プロンプトシステム
+  characterPrompt?: string;  // キャラベースプロンプト（AI Prompt Maker Pro）
+  actionPrompt?: string;     // 動作・シチュエーションプロンプト（OpenAI自動生成）
+  actionPromptJa?: string;   // 動作プロンプトの日本語説明
+  selectedCharacterId?: string; // 使用キャラクターID（character_1, character_2等）
 }
 
 export interface Character {

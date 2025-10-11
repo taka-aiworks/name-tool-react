@@ -23,6 +23,10 @@ import { PaperSizeSelectPanel } from './components/UI/PaperSizeSelectPanel';
 import SnapSettingsPanel from './components/UI/SnapSettingsPanel';
 import { SimpleFeedbackPanel } from './components/UI/SimpleFeedbackPanel';
 import { CURRENT_CONFIG, BetaUtils } from './config/betaConfig';
+import { StoryToComicModal } from './components/UI/StoryToComicModal';
+import { OpenAISettingsModal } from './components/UI/OpenAISettingsModal';
+import { CharacterPromptRegisterModal } from './components/UI/CharacterPromptRegisterModal';
+import { openAIService } from './services/OpenAIService';
 
 import {
   calculateScaleTransform,
@@ -77,6 +81,15 @@ function App() {
 
   // 🧪 ベータ版フィードバック機能
   const [showFeedbackPanel, setShowFeedbackPanel] = useState<boolean>(false);
+  
+  // 🤖 OpenAI連携機能
+  const [showStoryToComicModal, setShowStoryToComicModal] = useState<boolean>(false);
+  const [showOpenAISettingsModal, setShowOpenAISettingsModal] = useState<boolean>(false);
+  const [isGeneratingFromStory, setIsGeneratingFromStory] = useState<boolean>(false);
+  
+  // 👤 キャラプロンプト登録
+  const [showCharacterPromptRegister, setShowCharacterPromptRegister] = useState<boolean>(false);
+  const [registeringCharacterId, setRegisteringCharacterId] = useState<string>('character_1');
 
   // スナップ設定の状態管理
   const [snapSettings, setSnapSettings] = useState<SnapSettings>({
@@ -189,6 +202,24 @@ function App() {
   });
 
   const projectSave = useProjectSave();
+
+  // 変更検知のためのuseEffect
+  useEffect(() => {
+    const projectData = {
+      panels,
+      characters,
+      bubbles: speechBubbles,
+      backgrounds,
+      effects,
+      tones,
+      canvasSize,
+      settings,
+      characterNames,
+      characterSettings,
+      canvasSettings
+    };
+    projectSave.checkForChanges(projectData);
+  }, [panels, characters, speechBubbles, backgrounds, effects, tones, canvasSize, settings, characterNames, characterSettings, canvasSettings, projectSave]);
 
   const getCharacterDisplayName = useCallback((character: Character) => {
     return characterNames[character.type] || character.name || 'キャラクター';
@@ -619,6 +650,75 @@ function App() {
     }
   }, [addBubbleFunc, dialogueText]);
 
+  // 👤 キャラプロンプト登録保存
+  const handleSaveCharacterPrompt = useCallback((characterId: string, name: string, prompt: string) => {
+    // キャラクター名を更新
+    setCharacterNames(prev => ({
+      ...prev,
+      [characterId]: name
+    }));
+
+    // キャラクター設定にプロンプトを保存
+    setCharacterSettings(prev => ({
+      ...prev,
+      [characterId]: {
+        ...prev[characterId],
+        appearance: {
+          ...prev[characterId]?.appearance,
+          basePrompt: prompt
+        }
+      }
+    }));
+
+    alert(`✅ ${name} のプロンプトを登録しました！`);
+  }, []);
+
+  // 🤖 OpenAI: プレビュー生成
+  const handleGeneratePreview = useCallback(async (story: string, tone: string): Promise<any[]> => {
+    if (!openAIService.hasApiKey()) {
+      alert('OpenAI APIキーを設定してください');
+      setShowOpenAISettingsModal(true);
+      throw new Error('API key not set');
+    }
+
+    // 登録済みキャラ情報を準備
+    const registeredCharacters = Object.entries(characterNames)
+      .filter(([id, name]) => characterSettings[id]?.appearance?.basePrompt)
+      .map(([id, name]) => ({
+        id,
+        name,
+        prompt: characterSettings[id].appearance.basePrompt
+      }));
+
+    const result = await openAIService.generatePanelContent({
+      story,
+      panelCount: panels.length,
+      tone,
+      characters: registeredCharacters
+    });
+
+    if (!result.success || !result.panels) {
+      throw new Error(result.error || '生成に失敗しました');
+    }
+
+    return result.panels;
+  }, [panels, characterNames, characterSettings]);
+
+  // 🤖 OpenAI: プレビュー適用
+  const handleApplyPreview = useCallback((previewData: any[]) => {
+    const { updatedPanels, newBubbles } = openAIService.applyPanelContent(
+      panels,
+      speechBubbles,
+      previewData,
+      characterSettings
+    );
+
+    setPanels(updatedPanels);
+    setSpeechBubbles(newBubbles);
+    
+    alert(`✅ ${previewData.length}コマの内容を適用しました！`);
+  }, [panels, speechBubbles, characterSettings]);
+
   const handleCharacterUpdate = useCallback((updatedCharacter: Character) => {
     setCharacters(prevCharacters => {
       const updated = prevCharacters.map(char => {
@@ -954,6 +1054,97 @@ function App() {
             </div>
           </div>
 
+          {/* プロジェクト保存セクション */}
+          {projectSave.hasUnsavedChanges && (
+            <div className="section" style={{ 
+              border: "2px solid #ff6b6b",
+              background: "var(--bg-tertiary)",
+            }}>
+              <h3>💾 プロジェクト保存</h3>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <span style={{ fontSize: "12px", color: "#ff6b6b" }}>⚠️ 未保存の変更があります</span>
+              </div>
+              <button
+                onClick={async () => {
+                  try {
+                    const projectData = {
+                      panels,
+                      characters,
+                      bubbles: speechBubbles,
+                      backgrounds,
+                      effects,
+                      tones,
+                      canvasSize,
+                      settings,
+                      characterNames,
+                      characterSettings,
+                      canvasSettings
+                    };
+                    const success = await projectSave.saveProject(projectData);
+                    if (success) {
+                      alert('プロジェクトを上書き保存しました');
+                    }
+                  } catch (error) {
+                    console.error('上書き保存エラー:', error);
+                    alert('上書き保存に失敗しました');
+                  }
+                }}
+                style={{
+                  width: "100%",
+                  padding: "10px",
+                  background: "#10b981",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "6px",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  fontWeight: "500",
+                  marginTop: "8px"
+                }}
+              >
+                💾 上書き保存
+              </button>
+            </div>
+          )}
+
+          {/* キャラクター登録セクション */}
+          <div className="section">
+            <h3>👤 キャラクター登録</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              {Object.entries(characterNames).map(([id, name]) => (
+                <button
+                  key={id}
+                  onClick={() => {
+                    setRegisteringCharacterId(id);
+                    setShowCharacterPromptRegister(true);
+                  }}
+                  style={{
+                    width: "100%",
+                    padding: "8px 12px",
+                    background: "var(--bg-secondary)",
+                    color: "var(--text-primary)",
+                    border: "1px solid var(--border-color)",
+                    borderRadius: "4px",
+                    cursor: "pointer",
+                    fontSize: "12px",
+                    textAlign: "left",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center"
+                  }}
+                >
+                  <span>{name}</span>
+                  <span style={{ fontSize: "10px", opacity: 0.7 }}>
+                    {characterSettings[id]?.appearance?.basePrompt ? '✅' : '未登録'}
+                  </span>
+                </button>
+              ))}
+            </div>
+            <div className="section-info" style={{ marginTop: "8px" }}>
+              💡 プロンプトを登録すると使い回せます
+            </div>
+          </div>
+
           {isPanelEditMode && (
             <div className="section" style={{ 
               border: "2px solid #ff8833",
@@ -985,26 +1176,7 @@ function App() {
             </div>
           )}
 
-          <div className="section">
-            <SceneTemplatePanel
-              panels={panels}
-              selectedPanel={selectedPanel}
-              characters={characters}
-              setCharacters={setCharacters}
-              speechBubbles={speechBubbles}
-              setSpeechBubbles={setSpeechBubbles}
-              backgrounds={backgrounds}
-              setBackgrounds={setBackgrounds}
-              effects={effects}
-              setEffects={setEffects}
-              tones={tones}
-              setTones={setTones}
-              isDarkMode={isDarkMode}
-              onCreateCharacter={() => setShowCharacterPanel(true)}
-              selectedCharacter={selectedCharacter}
-              setSelectedCharacter={setSelectedCharacter}
-            />
-          </div>
+          {/* SceneTemplatePanel非表示 - シンプルなネームツールに集中 */}
         </div>
 
         {/* メインエリア */}
@@ -1088,36 +1260,63 @@ function App() {
 
         {/* 右サイドバー */}
         <div className="sidebar right-sidebar">
+          {/* キャラクター追加ボタン非表示 - プロンプト中心のワークフローに集中 */}
+
+          {/* OpenAI連携: 話からコマ内容生成 */}
           <div className="section">
-            <h3>👥 キャラクター</h3>
-            <div className="character-grid">
-              {[
-                { type: 'character_1', icon: '🦸‍♂️' },
-                { type: 'character_2', icon: '🦸‍♀️' },
-                { type: 'character_3', icon: '😤' },
-                { type: 'character_4', icon: '😊' }
-              ].map((char) => (
-                <div
-                  key={char.type}
-                  className="char-btn"
-                  onClick={() => handleCharacterClick(char.type)}
-                  onContextMenu={(e) => handleCharacterRightClick(e, char.type)}
-                  title={`${characterNames[char.type]}を追加 (右クリックで設定)`}
-                >
-                  <div className="char-icon">{char.icon}</div>
-                  <span>{characterNames[char.type]}</span>
-                </div>
-              ))}
-            </div>
+            <h3>🤖 AI自動生成</h3>
+            <button
+              onClick={() => {
+                if (!openAIService.hasApiKey()) {
+                  if (window.confirm('OpenAI APIキーが未設定です。設定画面を開きますか？')) {
+                    setShowOpenAISettingsModal(true);
+                  }
+                } else if (panels.length === 0) {
+                  alert('先にコマ割りテンプレートを選択してください');
+                } else {
+                  setShowStoryToComicModal(true);
+                }
+              }}
+              disabled={panels.length === 0}
+              style={{
+                width: '100%',
+                padding: '12px',
+                background: panels.length === 0 ? '#999' : '#8b5cf6',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: panels.length === 0 ? 'not-allowed' : 'pointer',
+                fontSize: '13px',
+                fontWeight: 'bold',
+                marginBottom: '8px'
+              }}
+            >
+              📖 話からコマ内容を生成
+            </button>
+            <button
+              onClick={() => setShowOpenAISettingsModal(true)}
+              style={{
+                width: '100%',
+                padding: '8px',
+                background: 'var(--bg-secondary)',
+                color: 'var(--text-primary)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '11px'
+              }}
+            >
+              🔑 APIキー設定
+            </button>
             <div style={{
-              fontSize: "11px", 
+              fontSize: "10px",
               color: "var(--text-muted)",
-              padding: "4px 8px",
+              padding: "6px 8px",
               background: "var(--bg-secondary)",
               borderRadius: "4px",
               marginTop: "8px"
             }}>
-              💡 右クリックで名前・見た目を設定できます
+              💡 先にコマ割りを選択→話を入力→各コマに自動配置
             </div>
           </div>
 
@@ -1141,14 +1340,203 @@ function App() {
             </div>
           </div>
 
-          <div className="section">
-            <PaperSizeSelectPanel
-              currentSettings={canvasSettings}
-              onSettingsChange={handleCanvasSettingsChange}
-              isVisible={isPaperSizePanelVisible}
-              onToggle={() => setIsPaperSizePanelVisible(!isPaperSizePanelVisible)}
-            />
-          </div>
+          {/* プロンプト入力セクション */}
+          {selectedPanel && (
+            <div className="section">
+              <h3>📝 コマ {selectedPanel.id}</h3>
+              
+              {/* コマメモ */}
+              <div style={{ marginBottom: "12px" }}>
+                <label style={{
+                  fontSize: "11px",
+                  fontWeight: "bold",
+                  color: "var(--text-primary)",
+                  display: "block",
+                  marginBottom: "4px"
+                }}>
+                  📌 メモ（構図・シーン説明）
+                </label>
+                <textarea
+                  value={selectedPanel.note || ''}
+                  onChange={(e) => {
+                    const updatedPanels = panels.map(p =>
+                      p.id === selectedPanel.id
+                        ? { ...p, note: e.target.value }
+                        : p
+                    );
+                    setPanels(updatedPanels);
+                    setSelectedPanel({ ...selectedPanel, note: e.target.value });
+                  }}
+                  placeholder="例: リナ驚く、サユ笑顔でツッコミ"
+                  style={{
+                    width: '100%',
+                    minHeight: '50px',
+                    padding: '8px',
+                    fontSize: '12px',
+                    background: 'var(--bg-secondary)',
+                    color: 'var(--text-primary)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '4px',
+                    resize: 'vertical'
+                  }}
+                />
+              </div>
+
+              {/* キャラクター選択＋プロンプト表示 */}
+              <div style={{ marginBottom: "12px" }}>
+                <label style={{
+                  fontSize: "11px",
+                  fontWeight: "bold",
+                  color: "var(--text-primary)",
+                  display: "block",
+                  marginBottom: "4px"
+                }}>
+                  👤 使用キャラクター
+                </label>
+                
+                <select
+                  value={selectedPanel.selectedCharacterId || ''}
+                  onChange={(e) => {
+                    const charId = e.target.value;
+                    const updatedPanels = panels.map(p =>
+                      p.id === selectedPanel.id
+                        ? { ...p, selectedCharacterId: charId }
+                        : p
+                    );
+                    setPanels(updatedPanels);
+                    setSelectedPanel({ ...selectedPanel, selectedCharacterId: charId });
+                    
+                    // キャラ設定からプロンプトを自動取得
+                    if (charId && characterSettings[charId]?.appearance?.basePrompt) {
+                      const basePrompt = characterSettings[charId].appearance.basePrompt;
+                      const updatedPanelsWithPrompt = panels.map(p =>
+                        p.id === selectedPanel.id
+                          ? { ...p, selectedCharacterId: charId, characterPrompt: basePrompt }
+                          : p
+                      );
+                      setPanels(updatedPanelsWithPrompt);
+                      setSelectedPanel({ 
+                        ...selectedPanel, 
+                        selectedCharacterId: charId,
+                        characterPrompt: basePrompt 
+                      });
+                    }
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '8px',
+                    fontSize: '12px',
+                    background: 'var(--bg-secondary)',
+                    color: 'var(--text-primary)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '4px',
+                    marginBottom: '8px'
+                  }}
+                >
+                  <option value="">（キャラなし）</option>
+                  {Object.entries(characterNames).map(([id, name]) => (
+                    <option key={id} value={id}>{name}</option>
+                  ))}
+                </select>
+
+                {/* キャラプロンプト表示（読み取り専用的に） */}
+                {selectedPanel.characterPrompt && (
+                  <div style={{
+                    padding: '8px',
+                    fontSize: '10px',
+                    fontFamily: 'monospace',
+                    background: isDarkMode ? '#1a1a1a' : '#f8f8f8',
+                    color: 'var(--text-muted)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '4px',
+                    maxHeight: '60px',
+                    overflowY: 'auto',
+                    lineHeight: '1.4'
+                  }}>
+                    {selectedPanel.characterPrompt}
+                  </div>
+                )}
+                
+                <div style={{
+                  fontSize: "10px",
+                  color: "var(--text-muted)",
+                  padding: "4px 8px",
+                  background: "var(--bg-secondary)",
+                  borderRadius: "4px",
+                  marginTop: "4px"
+                }}>
+                  💡 左サイドバーでキャラ登録→選択で自動入力
+                </div>
+              </div>
+
+              {/* 動作プロンプト（自動生成） */}
+              <div>
+                <label style={{
+                  fontSize: "11px",
+                  fontWeight: "bold",
+                  color: "var(--text-primary)",
+                  display: "block",
+                  marginBottom: "4px"
+                }}>
+                  🎬 動作・シチュエーション
+                </label>
+                <textarea
+                  value={selectedPanel.actionPrompt || ''}
+                  onChange={(e) => {
+                    const updatedPanels = panels.map(p =>
+                      p.id === selectedPanel.id
+                        ? { ...p, actionPrompt: e.target.value }
+                        : p
+                    );
+                    setPanels(updatedPanels);
+                    setSelectedPanel({ ...selectedPanel, actionPrompt: e.target.value });
+                  }}
+                  placeholder="動作・表情・構図（OpenAI自動生成 or 手動入力）"
+                  style={{
+                    width: '100%',
+                    minHeight: '60px',
+                    padding: '8px',
+                    fontSize: '11px',
+                    fontFamily: 'monospace',
+                    background: 'var(--bg-secondary)',
+                    color: 'var(--text-primary)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '4px',
+                    resize: 'vertical'
+                  }}
+                />
+                
+                {/* 日本語説明表示 */}
+                {(selectedPanel as any).actionPromptJa && (
+                  <div style={{
+                    fontSize: "11px",
+                    color: isDarkMode ? "#fbbf24" : "#d97706",
+                    padding: "6px 8px",
+                    background: isDarkMode ? "#2d2520" : "#fef3c7",
+                    border: `1px solid ${isDarkMode ? "#92400e" : "#fbbf24"}`,
+                    borderRadius: "4px",
+                    marginTop: "6px",
+                    lineHeight: "1.5"
+                  }}>
+                    💬 日本語: {(selectedPanel as any).actionPromptJa}
+                  </div>
+                )}
+                
+                <div style={{
+                  fontSize: "10px",
+                  color: "var(--text-muted)",
+                  padding: "4px 8px",
+                  background: "var(--bg-secondary)",
+                  borderRadius: "4px",
+                  marginTop: "4px"
+                }}>
+                  💡 最終プロンプト = キャラ + 動作で自動合成
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* PaperSizePanel非表示 - サイズ設定はシンプルに */}
 
           <div className="section">
             <h3>📤 出力</h3>
@@ -1162,6 +1550,9 @@ function App() {
               canvasRef={canvasRef}
               characterSettings={characterSettings}
               characterNames={characterNames}
+              currentPageIndex={pageManager.currentPageIndex}
+              pages={pageManager.pages}
+              paperSize={canvasSettings.paperSize}
             />
           </div>
         </div>
@@ -1215,6 +1606,33 @@ function App() {
         onClose={() => setShowSnapSettingsPanel(false)}
         snapSettings={snapSettings}
         onSnapSettingsUpdate={handleSnapSettingsUpdate}
+        isDarkMode={isDarkMode}
+      />
+
+      {/* OpenAI連携モーダル */}
+      <StoryToComicModal
+        isOpen={showStoryToComicModal}
+        onClose={() => setShowStoryToComicModal(false)}
+        panelCount={panels.length}
+        onGeneratePreview={handleGeneratePreview}
+        onApply={handleApplyPreview}
+        isDarkMode={isDarkMode}
+        characterNames={characterNames}
+      />
+
+      <OpenAISettingsModal
+        isOpen={showOpenAISettingsModal}
+        onClose={() => setShowOpenAISettingsModal(false)}
+        isDarkMode={isDarkMode}
+      />
+
+      <CharacterPromptRegisterModal
+        isOpen={showCharacterPromptRegister}
+        onClose={() => setShowCharacterPromptRegister(false)}
+        characterId={registeringCharacterId}
+        characterName={characterNames[registeringCharacterId] || `キャラクター${registeringCharacterId.replace('character_', '')}`}
+        currentPrompt={characterSettings[registeringCharacterId]?.appearance?.basePrompt || selectedPanel?.characterPrompt || ''}
+        onSave={handleSaveCharacterPrompt}
         isDarkMode={isDarkMode}
       />
 
