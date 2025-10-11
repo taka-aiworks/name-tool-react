@@ -56,58 +56,96 @@ AI漫画制作支援アプリケーション（ネーム段階）
 
 ## ⚠️ 現在の問題
 
-### 🐛 アンドゥ/リドゥ機能の不具合
-**重大度: 高 - 要調査・再設計**
+### 🔄 アンドゥ/リドゥ機能の再実装状況
+**状態: 部分的に完了 - 追加実装が必要**
 
-#### 現状の問題:
-1. **履歴保存の挙動が不安定**
-   - 元のコードに戻したが、挙動が変
-   - 履歴が消える現象が発生
-   - 勝手に履歴が増える問題も発生していた
+#### 再実装の方針:
+**useEffect自動保存をやめて、明示的な履歴保存に変更**
 
-2. **試行錯誤の失敗経緯:**
-   - **最初（コミット 32380f4）**: 動作していた
-     ```typescript
-     useEffect(() => {
-       if (すべて空) return;
-       setTimeout(() => saveToHistory(...), 500);
-     }, [charactersSignature, bubblesSignature, ...]);
-     ```
-   
-   - **問題発覚**: 「何もしてないのに操作カウントが増える」
-   
-   - **誤った対応1**: useEffectを削除 → 一部操作で履歴が保存されない
-   
-   - **誤った対応2**: 手動履歴保存を追加 → 実装漏れが多数
-   
-   - **誤った対応3**: ドラッグイベント追加 → 実装不完全
-   
-   - **誤った対応4**: 条件分岐を追加（currentIndex, isUndoRedoExecuting） → 勝手に履歴が増える
-   
-   - **現在**: 元のコードに戻した → 履歴が消える
+1. **useRefで同期的フラグ管理**
+   ```typescript
+   const isUndoRedoExecutingRef = useRef(false);
+   ```
 
-#### 根本的な問題:
-- **状態管理の複雑さ**: App.tsx、CanvasComponent、MouseEventHandlerの3層で状態更新
-- **useEffect依存配列の難しさ**: 何を入れても副作用が発生
-- **デバッグの難しさ**: いつ履歴が保存されているか追跡困難
+2. **デバウンス付き履歴保存関数**
+   ```typescript
+   const saveHistoryDebounced = () => {
+     if (isUndoRedoExecutingRef.current) return;
+     clearTimeout(saveHistoryTimerRef.current);
+     saveHistoryTimerRef.current = setTimeout(() => {
+       saveToHistory(...);
+     }, 500);
+   };
+   ```
 
-#### 必要な対応:
-1. **詳細なログ追加**: いつ、何がトリガーで履歴保存されているか可視化
-2. **再現手順の確立**: 具体的にどの操作で問題が起きるか特定
-3. **根本的な再設計検討**: 
-   - カスタムフックで履歴管理を分離
-   - または状態管理ライブラリ（Redux/Zustand）導入
-   - またはCommand パターンで操作を管理
+3. **各操作関数で明示的に呼び出し**
 
-#### 暫定的な回避策:
-- ユーザーに手動で「保存」を促す
-- アンドゥ/リドゥは慎重に使用
-- 重要な作業前にプロジェクトを複製
+#### ✅ 履歴保存が実装済みの操作:
+1. **テンプレート操作**
+   - ✅ テンプレート適用時 (`handleTemplateClick`)
 
-**状態: 不安定、要再設計**
+2. **ページ操作**
+   - ✅ ページ切り替え時 (`pageManager.onDataUpdate`)
+
+3. **パネル操作（App.tsx内）**
+   - ✅ パネル移動/リサイズ (`handlePanelUpdate`)
+   - ✅ パネル追加 (`handlePanelAdd`)
+   - ✅ パネル削除 (`handlePanelDelete`)
+   - ✅ パネル分割 (`handlePanelSplit`)
+   - ✅ パネル入れ替え (`handlePanelSwap`)
+
+4. **キャラクター操作（App.tsx内）**
+   - ✅ キャラクター更新 (`handleCharacterUpdate`)
+   - ✅ キャラクター削除 (`handleCharacterDelete`)
+
+#### ❌ 履歴保存が未実装の操作:
+1. **キャラクター操作（CanvasComponent内）**
+   - ❌ キャラクター追加（Canvas上でのドロップ）
+   - ❌ キャラクター移動（Canvas上でのドラッグ）
+   - ❌ キャラクターリサイズ（Canvas上でのハンドル操作）
+   - ❌ キャラクター表情変更（Canvas上での操作）
+
+2. **吹き出し操作（CanvasComponent内）**
+   - ❌ 吹き出し追加（Canvas上での追加）
+   - ❌ 吹き出し移動（Canvas上でのドラッグ）
+   - ❌ 吹き出しリサイズ（Canvas上でのハンドル操作）
+   - ❌ 吹き出しテキスト編集（ダブルクリック編集）
+   - ❌ 吹き出し削除（Canvas上での削除）
+
+3. **背景操作（CanvasComponent内）**
+   - ❌ 背景追加
+   - ❌ 背景移動
+   - ❌ 背景リサイズ
+   - ❌ 背景削除
+
+4. **効果操作（CanvasComponent内）**
+   - ❌ 効果追加
+   - ❌ 効果移動
+   - ❌ 効果設定変更
+   - ❌ 効果削除
+
+5. **AI生成操作**
+   - ❌ AI生成でコマ内容が更新された時
+
+#### 技術的な課題:
+**CanvasComponent内で直接状態更新が行われている**
+```typescript
+<CanvasComponent
+  characters={characters}
+  setCharacters={setCharacters}  // ← 直接渡している
+  speechBubbles={speechBubbles}
+  setSpeechBubbles={setSpeechBubbles}  // ← 直接渡している
+  ...
+/>
+```
+
+**解決策:**
+1. **ラッパー関数を作成**: `setCharacters`の代わりに`handleCharactersChange`を渡す
+2. **ラッパー内で履歴保存**: 状態更新後に`saveHistoryDebounced()`を呼ぶ
+3. **CanvasComponentのすべての操作に適用**
 
 ## 🔄 進行中の作業
-- **アンドゥ/リドゥ機能の調査と再設計**: 根本的な解決が必要
+- **アンドゥ/リドゥ機能の完全実装**: CanvasComponent内の操作に履歴保存を追加
 
 ## 📋 今後の予定
 1. **漫画制作**: リナ×サユのストーリー展開
@@ -162,26 +200,25 @@ src/
 
 ## 📝 開発メモ
 
-### アンドゥ/リドゥ実装の失敗分析:
-**根本原因:**
-- React の useEffect 依存配列の複雑さ
+### アンドゥ/リドゥ再実装の経緯:
+**問題の本質:**
+- useEffect依存配列による自動履歴保存は制御が困難
+- アンドゥ/リドゥ実行時に新しい履歴が作られる問題
 - 状態更新が3層（App.tsx → CanvasComponent → MouseEventHandler）に分散
-- 履歴保存のタイミング制御が困難
 
-**学んだこと:**
-- useEffect で「すべての状態変更を監視」するアプローチは副作用が多い
-- 依存配列を少しでも変更すると挙動が大きく変わる
-- デバッグログなしでは何が起きているか追跡不可能
+**採用した解決策:**
+1. **useRefで同期的フラグ管理** - レースコンディション防止
+2. **明示的な履歴保存** - 各操作関数で`saveHistoryDebounced()`を呼び出し
+3. **デバウンス処理** - 連続操作を1つの履歴にまとめる
 
-**次に試すべきアプローチ:**
-1. **Command パターン**: すべての操作をコマンドオブジェクトとして管理
-2. **Zustand + middleware**: 状態管理ライブラリで履歴を自動管理
-3. **Immer + 手動スナップショット**: 操作完了時に明示的にスナップショット保存
+**現在の課題:**
+- CanvasComponent内の操作（Canvas上でのドラッグ/リサイズなど）で履歴保存されない
+- `setCharacters`などを直接渡しているため、ラッパー関数が必要
 
-**当面の対応:**
-- アンドゥ/リドゥ機能は「おまけ」として扱う
-- プロジェクト保存機能を充実させて、手動バックアップを推奨
-- 漫画制作の本筋（AI生成、プロンプト出力）を優先
+**次のステップ:**
+1. ラッパー関数を作成（`handleCharactersChange`など）
+2. CanvasComponentに渡すpropsを変更
+3. すべてのCanvas操作で履歴保存を確認
 
 ---
 *最終更新: 2025年10月11日*
