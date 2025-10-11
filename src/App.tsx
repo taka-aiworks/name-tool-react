@@ -335,32 +335,20 @@ function App() {
   }, []);
 
 
-  // すべての状態変更を監視して履歴保存（元の動作に戻す）
+  // 履歴保存のタイミング（元のコードに完全に戻す）
   useEffect(() => {
-    // 初回のテンプレート適用時（currentIndex === -1 かつ panels があるとき）
-    if (operationHistory.currentIndex === -1 && panels.length > 0) {
-      saveToHistory(characters, speechBubbles, panels, backgrounds, effects);
-      return;
-    }
-    
-    // アンドゥリドゥ実行中は除外
-    if (isUndoRedoExecuting) return;
-    
-    // 空の状態では除外
+    // 空の状態では履歴保存しない
     if (characters.length === 0 && speechBubbles.length === 0 && panels.length === 0 && 
         backgrounds.length === 0 && effects.length === 0) {
       return;
     }
-
-    // currentIndex が -1 のときは除外（初回テンプレート適用前）
-    if (operationHistory.currentIndex === -1) return;
 
     const timeoutId = setTimeout(() => {
       saveToHistory(characters, speechBubbles, panels, backgrounds, effects);
     }, 500);
 
     return () => clearTimeout(timeoutId);
-  }, [charactersSignature, bubblesSignature, panelsSignature, backgroundsSignature, effectsSignature, saveToHistory, operationHistory.currentIndex, isUndoRedoExecuting, characters, speechBubbles, panels, backgrounds, effects]);
+  }, [charactersSignature, bubblesSignature, panelsSignature, backgroundsSignature, effectsSignature, saveToHistory]);
 
   // アンドゥ/リドゥ処理
   const handleUndo = useCallback(() => {
