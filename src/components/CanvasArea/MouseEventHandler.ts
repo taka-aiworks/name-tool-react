@@ -157,6 +157,7 @@ export class MouseEventHandler {
       if (panel && !clickedBubble.isGlobalPosition) {
         // 相対座標の場合: パネル内での相対位置を保存
         const bubblePos = BubbleRenderer.calculateBubblePosition(clickedBubble, panel);
+        console.log(`🖱️ 吹き出しクリック(相対): bubble=(${clickedBubble.x},${clickedBubble.y}), 画面座標=(${bubblePos.x},${bubblePos.y}), mouse=(${mouseX},${mouseY}), offset=(${mouseX - bubblePos.x},${mouseY - bubblePos.y})`);
         callbacks.setMouseState({
           isDragging: true,
           dragOffset: {
@@ -166,6 +167,7 @@ export class MouseEventHandler {
         });
       } else {
         // 絶対座標の場合: そのまま使用
+        console.log(`🖱️ 吹き出しクリック(絶対): bubble=(${clickedBubble.x},${clickedBubble.y}), mouse=(${mouseX},${mouseY}), offset=(${mouseX - clickedBubble.x},${mouseY - clickedBubble.y})`);
         callbacks.setMouseState({
           isDragging: true,
           dragOffset: {
@@ -275,6 +277,8 @@ export class MouseEventHandler {
         const relativeX = (newAbsX - panel.x) / panel.width;
         const relativeY = (newAbsY - panel.y) / panel.height;
         
+        console.log(`📍 吹き出し移動(相対): mouse=(${mouseX},${mouseY}), offset=(${mouseState.dragOffset.x},${mouseState.dragOffset.y}), 新画面座標=(${newAbsX},${newAbsY}), panel=(${panel.x},${panel.y},${panel.width}x${panel.height}), 新相対座標=(${relativeX},${relativeY})`);
+        
         const updatedBubble = {
           ...selectedBubble,
           x: relativeX,
@@ -291,6 +295,8 @@ export class MouseEventHandler {
         // 絶対座標の場合: そのまま使用
         const newX = mouseX - mouseState.dragOffset.x;
         const newY = mouseY - mouseState.dragOffset.y;
+        
+        console.log(`📍 吹き出し移動(絶対): mouse=(${mouseX},${mouseY}), offset=(${mouseState.dragOffset.x},${mouseState.dragOffset.y}), 新座標=(${newX},${newY})`);
         
         const updatedBubble = {
           ...selectedBubble,
