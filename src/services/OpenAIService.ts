@@ -240,7 +240,6 @@ ${characterInfo}
           isGlobalPosition: false  // パネル相対座標を使用
         };
         
-        console.log(`🔧 AI生成吹き出し作成: panel=${panel.id}, bubble=${newBubble.id}, coords=(${newBubble.x},${newBubble.y},${newBubble.width}x${newBubble.height}), isGlobal=${newBubble.isGlobalPosition}`);
         
         newBubbles.push(newBubble);
       }

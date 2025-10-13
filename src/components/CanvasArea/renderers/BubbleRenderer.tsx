@@ -90,36 +90,30 @@ export class BubbleRenderer {
     ctx.strokeStyle = isDarkMode ? "#555" : "#333";
     ctx.lineWidth = 2;
 
-    console.log(`🎨 吹き出し描画: type="${bubble.type}", id="${bubble.id}"`);
-
     // 🔧 型に応じて確実に異なる形状を描画
     switch (bubble.type) {
       case "speech":
       case "普通":
+      case "normal":
         this.drawSpeechBubble(ctx, bubble);
-        console.log("💬 通常の吹き出しを描画");
         break;
         
       case "thought":
       case "心の声":
         this.drawThoughtBubble(ctx, bubble);
-        console.log("💭 思考吹き出しを描画");
         break;
         
       case "shout":
       case "叫び":
         this.drawShoutBubble(ctx, bubble);
-        console.log("❗ 叫び吹き出しを描画");
         break;
         
       case "whisper":
       case "小声":
         this.drawWhisperBubble(ctx, bubble);
-        console.log("🤫 ささやき吹き出しを描画");
         break;
         
       default:
-        console.warn(`⚠️ 未知の吹き出しタイプ: "${bubble.type}" - 通常の吹き出しで描画`);
         this.drawSpeechBubble(ctx, bubble);
     }
   }
@@ -389,7 +383,6 @@ export class BubbleRenderer {
       }
     }
 
-    console.log(`💬 縦書きテキスト描画: "${text.substring(0, 10)}..." フォントサイズ:${fontSize} 列数:${totalColumns}`);
   }
 
   // 🆕 高度なテキスト折り返し処理（日本語対応）
