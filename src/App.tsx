@@ -785,6 +785,81 @@ function App() {
     alert(`✅ ${previewData.length}コマの内容を適用しました！`);
   }, [panels, speechBubbles, characterSettings]);
 
+  // 🤖 OpenAI: 1コマ生成
+  const handleGenerateSinglePanel = useCallback(async (story: string, tone: string, targetPanelId: number) => {
+    if (!openAIService.hasApiKey()) {
+      alert('OpenAI APIキーを設定してください');
+      setShowOpenAISettingsModal(true);
+      throw new Error('API key not set');
+    }
+
+    // 既存のコマ情報を取得
+    const existingPanels = panels.map(panel => ({
+      panelId: panel.id,
+      note: panel.note || '',
+      dialogue: speechBubbles.find(bubble => bubble.panelId === panel.id)?.text || '',
+      actionPrompt: panel.actionPrompt || '',
+      characterId: panel.selectedCharacterId
+    }));
+
+    // 登録済みキャラクター情報
+    const characters = Object.entries(characterNames).map(([id, name]) => ({
+      id,
+      name,
+      prompt: characterSettings[id]?.appearance?.basePrompt || ''
+    }));
+
+    const result = await openAIService.generateSinglePanel(
+      story,
+      targetPanelId,
+      existingPanels,
+      tone || undefined,
+      characters
+    );
+
+    return result;
+  }, [panels, speechBubbles, characterNames, characterSettings]);
+
+  // 🤖 OpenAI: 1コマ適用
+  const handleApplySinglePanel = useCallback((panelData: any) => {
+    if (!panelData) return;
+
+    // 選択中のコマに内容を適用
+    const updatedPanels = panels.map(panel => 
+      panel.id === panelData.panelId 
+        ? {
+            ...panel,
+            note: panelData.note,
+            actionPrompt: panelData.actionPrompt,
+            actionPromptJa: panelData.actionPromptJa,
+            selectedCharacterId: panelData.characterId
+          }
+        : panel
+    );
+    setPanels(updatedPanels);
+
+    // セリフバブルを更新
+    const updatedBubbles = speechBubbles.filter(bubble => bubble.panelId !== panelData.panelId);
+    if (panelData.dialogue) {
+      updatedBubbles.push({
+        id: Date.now().toString(),
+        panelId: panelData.panelId,
+        text: panelData.dialogue,
+        x: 0.5,
+        y: 0.5,
+        width: 0.8,
+        height: 0.3,
+        type: panelData.bubbleType || 'normal',
+        vertical: false,
+        scale: 1,
+        isGlobalPosition: false
+      });
+    }
+    setSpeechBubbles(updatedBubbles);
+
+    alert(`✅ コマ${panelData.panelId}の内容を適用しました！`);
+  }, [panels, speechBubbles]);
+
   const handleCharacterUpdate = useCallback((updatedCharacter: Character) => {
     setCharacters(prevCharacters => {
       const updated = prevCharacters.map(char => {
@@ -1487,7 +1562,7 @@ function App() {
           <div className="section">
             <h3>🤖 AI自動生成</h3>
             
-            {/* 1ページ分生成 */}
+            {/* AI生成 */}
             <button
               onClick={() => {
                 if (!openAIService.hasApiKey()) {
@@ -1514,115 +1589,9 @@ function App() {
                 marginBottom: '8px'
               }}
             >
-              📖 1ページ分を生成
+              📖 話からコマ内容を生成
             </button>
 
-            {/* 1コマ生成 */}
-            <button
-              onClick={async () => {
-                if (!openAIService.hasApiKey()) {
-                  if (window.confirm('OpenAI APIキーが未設定です。設定画面を開きますか？')) {
-                    setShowOpenAISettingsModal(true);
-                  }
-                  return;
-                }
-                
-                if (!selectedPanel) {
-                  alert('生成したいコマを選択してください');
-                  return;
-                }
-
-                const story = prompt('このコマのストーリーを入力してください:');
-                if (!story || !story.trim()) return;
-
-                const tone = prompt('トーンを入力してください（コメディ、シリアス、日常など）:', 'コメディ');
-                
-                try {
-                  setIsGeneratingFromStory(true);
-                  
-                  // 既存のコマ情報を取得
-                  const existingPanels = panels.map(panel => ({
-                    panelId: panel.id,
-                    note: panel.note || '',
-                    dialogue: speechBubbles.find(bubble => bubble.panelId === panel.id)?.text || '',
-                    actionPrompt: panel.actionPrompt || '',
-                    characterId: panel.selectedCharacterId
-                  }));
-
-                  // 登録済みキャラクター情報
-                  const characters = Object.entries(characterNames).map(([id, name]) => ({
-                    id,
-                    name,
-                    prompt: characterSettings[id]?.appearance?.basePrompt || ''
-                  }));
-
-                  const newPanelContent = await openAIService.generateSinglePanel(
-                    story,
-                    selectedPanel.id,
-                    existingPanels,
-                    tone || undefined,
-                    characters
-                  );
-
-                  if (newPanelContent) {
-                    // 選択中のコマに内容を適用
-                    const updatedPanels = panels.map(panel => 
-                      panel.id === selectedPanel.id 
-                        ? {
-                            ...panel,
-                            note: newPanelContent.note,
-                            actionPrompt: newPanelContent.actionPrompt,
-                            actionPromptJa: newPanelContent.actionPromptJa,
-                            selectedCharacterId: newPanelContent.characterId
-                          }
-                        : panel
-                    );
-                    setPanels(updatedPanels);
-
-                    // セリフバブルを更新
-                    const updatedBubbles = speechBubbles.filter(bubble => bubble.panelId !== selectedPanel.id);
-                    if (newPanelContent.dialogue) {
-                      updatedBubbles.push({
-                        id: Date.now().toString(),
-                        panelId: selectedPanel.id,
-                        text: newPanelContent.dialogue,
-                        x: 0.5,
-                        y: 0.5,
-                        width: 0.8,
-                        height: 0.3,
-                        type: newPanelContent.bubbleType || 'normal',
-                        vertical: false,
-                        scale: 1,
-                        isGlobalPosition: false
-                      });
-                    }
-                    setSpeechBubbles(updatedBubbles);
-
-                    alert(`コマ${selectedPanel.id}の内容を生成しました！`);
-                  }
-                } catch (error) {
-                  console.error('Single panel generation error:', error);
-                  alert('コマ生成に失敗しました: ' + (error as Error).message);
-                } finally {
-                  setIsGeneratingFromStory(false);
-                }
-              }}
-              disabled={!selectedPanel || isGeneratingFromStory}
-              style={{
-                width: '100%',
-                padding: '12px',
-                background: !selectedPanel || isGeneratingFromStory ? '#999' : COLOR_PALETTE.buttons.edit.primary,
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: !selectedPanel || isGeneratingFromStory ? 'not-allowed' : 'pointer',
-                fontSize: '13px',
-                fontWeight: 'bold',
-                marginBottom: '8px'
-              }}
-            >
-              {isGeneratingFromStory ? '🤖 生成中...' : `🎯 コマ${selectedPanel?.id || '?'}を生成`}
-            </button>
             <button
               onClick={() => setShowOpenAISettingsModal(true)}
               style={{
@@ -1782,7 +1751,7 @@ function App() {
               {/* 動作プロンプト（自動生成） */}
               <div>
                 <label style={{
-              fontSize: "11px", 
+                  fontSize: "11px", 
                   fontWeight: "bold",
                   color: "var(--text-primary)",
                   display: "block",
@@ -1790,6 +1759,86 @@ function App() {
                 }}>
                   🎬 動作・シチュエーション
                 </label>
+                
+                {/* AI生成用の入力欄 */}
+                <div style={{ marginBottom: '8px' }}>
+                  <input
+                    type="text"
+                    placeholder="例: 驚いた表情で振り向く"
+                    id={`action-input-${selectedPanel.id}`}
+                    style={{
+                      width: '100%',
+                      padding: '8px',
+                      fontSize: '12px',
+                      background: 'var(--bg-secondary)',
+                      color: 'var(--text-primary)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '4px',
+                      marginBottom: '6px'
+                    }}
+                  />
+                  <button
+                    onClick={async () => {
+                      const input = document.getElementById(`action-input-${selectedPanel.id}`) as HTMLInputElement;
+                      const description = input?.value?.trim();
+                      
+                      if (!description) {
+                        alert('動作・シチュエーションの説明を入力してください');
+                        return;
+                      }
+
+                      if (!openAIService.hasApiKey()) {
+                        if (window.confirm('OpenAI APIキーが未設定です。設定画面を開きますか？')) {
+                          setShowOpenAISettingsModal(true);
+                        }
+                        return;
+                      }
+
+                      try {
+                        setIsGeneratingFromStory(true);
+                        
+                        const actionPrompt: { prompt: string; promptJa: string } = await openAIService.generateActionPrompt(description);
+                        
+                        if (actionPrompt) {
+                          const updatedPanels = panels.map(p =>
+                            p.id === selectedPanel.id
+                              ? { ...p, actionPrompt: actionPrompt.prompt, actionPromptJa: description }
+                              : p
+                          );
+                          setPanels(updatedPanels);
+                          setSelectedPanel({ 
+                            ...selectedPanel, 
+                            actionPrompt: actionPrompt.prompt,
+                            actionPromptJa: description
+                          });
+                          
+                          // 入力欄をクリア
+                          if (input) input.value = '';
+                        }
+                      } catch (error) {
+                        console.error('Action prompt generation error:', error);
+                        alert('動作プロンプト生成に失敗しました: ' + (error as Error).message);
+                      } finally {
+                        setIsGeneratingFromStory(false);
+                      }
+                    }}
+                    disabled={isGeneratingFromStory}
+                    style={{
+                      width: '100%',
+                      padding: '8px',
+                      background: isGeneratingFromStory ? '#999' : COLOR_PALETTE.buttons.export.primary,
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: isGeneratingFromStory ? 'not-allowed' : 'pointer',
+                      fontSize: '11px',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    {isGeneratingFromStory ? '🤖 生成中...' : '🎬 プロンプト生成'}
+                  </button>
+                </div>
+
                 <textarea
                   value={selectedPanel.actionPrompt || ''}
                   onChange={(e) => {
@@ -1834,15 +1883,15 @@ function App() {
                 
                 <div style={{
                   fontSize: "10px",
-              color: "var(--text-muted)",
-              padding: "4px 8px",
-              background: "var(--bg-secondary)",
-              borderRadius: "4px",
+                  color: "var(--text-muted)",
+                  padding: "4px 8px",
+                  background: "var(--bg-secondary)",
+                  borderRadius: "4px",
                   marginTop: "4px"
-            }}>
+                }}>
                   💡 最終プロンプト = キャラ + 動作で自動合成
-            </div>
-          </div>
+                </div>
+              </div>
             </div>
           )}
 
@@ -2171,9 +2220,12 @@ function App() {
         onClose={() => setShowStoryToComicModal(false)}
         panelCount={panels.length}
         onGeneratePreview={handleGeneratePreview}
+        onGenerateSinglePanel={handleGenerateSinglePanel}
         onApply={handleApplyPreview}
+        onApplySinglePanel={handleApplySinglePanel}
         isDarkMode={isDarkMode}
         characterNames={characterNames}
+        selectedPanelId={selectedPanel?.id}
       />
 
       <OpenAISettingsModal

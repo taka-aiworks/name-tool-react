@@ -7,9 +7,12 @@ interface StoryToComicModalProps {
   onClose: () => void;
   panelCount: number;
   onGeneratePreview: (story: string, tone: string) => Promise<PanelContent[]>;
+  onGenerateSinglePanel: (story: string, tone: string, targetPanelId: number) => Promise<PanelContent | null>;
   onApply: (previewData: PanelContent[]) => void;
+  onApplySinglePanel: (panelData: PanelContent) => void;
   isDarkMode?: boolean;
   characterNames?: Record<string, string>;
+  selectedPanelId?: number | null;
 }
 
 export const StoryToComicModal: React.FC<StoryToComicModalProps> = ({
@@ -17,13 +20,18 @@ export const StoryToComicModal: React.FC<StoryToComicModalProps> = ({
   onClose,
   panelCount,
   onGeneratePreview,
+  onGenerateSinglePanel,
   onApply,
+  onApplySinglePanel,
   isDarkMode = false,
-  characterNames = {}
+  characterNames = {},
+  selectedPanelId = null
 }) => {
+  const [generationMode, setGenerationMode] = useState<'full' | 'single'>('full');
   const [story, setStory] = useState('');
   const [tone, setTone] = useState('コメディ');
   const [previewData, setPreviewData] = useState<PanelContent[] | null>(null);
+  const [singlePanelData, setSinglePanelData] = useState<PanelContent | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [step, setStep] = useState<'input' | 'preview'>('input');
 
@@ -35,10 +43,20 @@ export const StoryToComicModal: React.FC<StoryToComicModalProps> = ({
       return;
     }
 
+    if (generationMode === 'single' && !selectedPanelId) {
+      alert('生成したいコマを選択してください');
+      return;
+    }
+
     setIsGenerating(true);
     try {
-      const result = await onGeneratePreview(story, tone);
-      setPreviewData(result);
+      if (generationMode === 'full') {
+        const result = await onGeneratePreview(story, tone);
+        setPreviewData(result);
+      } else {
+        const result = await onGenerateSinglePanel(story, tone, selectedPanelId!);
+        setSinglePanelData(result);
+      }
       setStep('preview');
     } catch (error) {
       console.error('Preview generation error:', error);
@@ -49,8 +67,11 @@ export const StoryToComicModal: React.FC<StoryToComicModalProps> = ({
   };
 
   const handleApply = () => {
-    if (previewData) {
+    if (generationMode === 'full' && previewData) {
       onApply(previewData);
+      handleClose();
+    } else if (generationMode === 'single' && singlePanelData) {
+      onApplySinglePanel(singlePanelData);
       handleClose();
     }
   };
@@ -59,7 +80,9 @@ export const StoryToComicModal: React.FC<StoryToComicModalProps> = ({
     setStory('');
     setTone('コメディ');
     setPreviewData(null);
+    setSinglePanelData(null);
     setStep('input');
+    setGenerationMode('full');
     onClose();
   };
 
@@ -114,6 +137,55 @@ export const StoryToComicModal: React.FC<StoryToComicModalProps> = ({
 
         {step === 'input' ? (
           <>
+            {/* 生成モード選択 */}
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{
+                display: 'block',
+                marginBottom: '8px',
+                fontWeight: 'bold',
+                fontSize: '13px',
+                color: isDarkMode ? '#fff' : '#333'
+              }}>
+                🎯 生成モード
+              </label>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  onClick={() => setGenerationMode('full')}
+                  style={{
+                    flex: 1,
+                    padding: '10px',
+                    border: generationMode === 'full' ? '2px solid #8b5cf6' : `1px solid ${isDarkMode ? '#555' : '#ccc'}`,
+                    borderRadius: '6px',
+                    background: generationMode === 'full' ? (isDarkMode ? '#3b2a5a' : '#f3e8ff') : (isDarkMode ? '#404040' : 'white'),
+                    color: isDarkMode ? '#fff' : '#333',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    fontWeight: generationMode === 'full' ? 'bold' : 'normal'
+                  }}
+                >
+                  📄 1ページ分を生成
+                </button>
+                <button
+                  onClick={() => setGenerationMode('single')}
+                  disabled={!selectedPanelId}
+                  style={{
+                    flex: 1,
+                    padding: '10px',
+                    border: generationMode === 'single' ? '2px solid #8b5cf6' : `1px solid ${isDarkMode ? '#555' : '#ccc'}`,
+                    borderRadius: '6px',
+                    background: !selectedPanelId ? '#999' : (generationMode === 'single' ? (isDarkMode ? '#3b2a5a' : '#f3e8ff') : (isDarkMode ? '#404040' : 'white')),
+                    color: !selectedPanelId ? '#666' : (isDarkMode ? '#fff' : '#333'),
+                    cursor: !selectedPanelId ? 'not-allowed' : 'pointer',
+                    fontSize: '13px',
+                    fontWeight: generationMode === 'single' ? 'bold' : 'normal',
+                    opacity: !selectedPanelId ? 0.6 : 1
+                  }}
+                >
+                  🎬 1コマのみ生成 {selectedPanelId && `(コマ${selectedPanelId})`}
+                </button>
+              </div>
+            </div>
+
             {/* 入力画面 */}
             <div style={{
               marginBottom: '16px',
@@ -165,12 +237,16 @@ export const StoryToComicModal: React.FC<StoryToComicModalProps> = ({
                 fontSize: '13px',
                 color: isDarkMode ? '#fff' : '#333'
               }}>
-                📝 コマごとの内容
+                📝 {generationMode === 'full' ? 'コマごとの内容' : 'このコマの内容'}
               </label>
               <textarea
                 value={story}
                 onChange={(e) => setStory(e.target.value)}
-                placeholder={"例:\n１コマ目→リナが悩んでる\n２コマ目→リナが漫画が描けないよーって悩んでる\n３コマ目→サユがこのアプリを使えばできる！"}
+                placeholder={
+                  generationMode === 'full'
+                    ? "例:\n１コマ目→リナが悩んでる\n２コマ目→リナが漫画が描けないよーって悩んでる\n３コマ目→サユがこのアプリを使えばできる！"
+                    : "例:\nリナが驚いた表情で「え！？本当に！？」と言っている"
+                }
                 autoFocus
                 style={{
                   width: '100%',
@@ -191,7 +267,9 @@ export const StoryToComicModal: React.FC<StoryToComicModalProps> = ({
                 color: isDarkMode ? '#999' : '#666',
                 marginTop: '6px'
               }}>
-                💡 コマごとに改行して、登場キャラ・動作・場所を書いてください
+                💡 {generationMode === 'full' 
+                  ? 'コマごとに改行して、登場キャラ・動作・場所を書いてください' 
+                  : '登場キャラ・動作・セリフ・場所を書いてください'}
               </div>
             </div>
 
@@ -257,58 +335,111 @@ export const StoryToComicModal: React.FC<StoryToComicModalProps> = ({
               overflowY: 'auto',
               marginBottom: '16px'
             }}>
-              {previewData?.map((panel, index) => (
-                <div
-                  key={panel.panelId}
-                  style={{
-                    marginBottom: '12px',
-                    padding: '12px',
-                    background: isDarkMode ? '#404040' : '#f9f9f9',
-                    border: `1px solid ${isDarkMode ? '#555' : '#ddd'}`,
-                    borderRadius: '6px'
-                  }}
-                >
-                  <div style={{
-                    fontWeight: 'bold',
-                    fontSize: '13px',
-                    color: isDarkMode ? '#8b5cf6' : '#7c3aed',
-                    marginBottom: '8px'
-                  }}>
-                    コマ {panel.panelId}
-                  </div>
-
-                  {panel.characterId && (
-                    <div style={{ fontSize: '12px', marginBottom: '4px', color: isDarkMode ? '#fbbf24' : '#d97706' }}>
-                      👤 キャラ: <strong>{characterNames[panel.characterId] || panel.characterId}</strong>
-                    </div>
-                  )}
-
-                  <div style={{ fontSize: '12px', marginBottom: '4px', color: isDarkMode ? '#ccc' : '#666' }}>
-                    📌 メモ: {panel.note}
-                  </div>
-
-                  <div style={{ fontSize: '12px', marginBottom: '4px', color: isDarkMode ? '#ccc' : '#666' }}>
-                    💬 吹き出し: 「{panel.dialogue}」 ({panel.bubbleType || '普通'})
-                  </div>
-
-                  <div style={{ fontSize: '11px', marginBottom: '4px', color: isDarkMode ? '#999' : '#888', fontFamily: 'monospace' }}>
-                    🎬 動作: {panel.actionPrompt}
-                  </div>
-
-                  {panel.actionPromptJa && (
+              {generationMode === 'full' ? (
+                previewData?.map((panel, index) => (
+                  <div
+                    key={panel.panelId}
+                    style={{
+                      marginBottom: '12px',
+                      padding: '12px',
+                      background: isDarkMode ? '#404040' : '#f9f9f9',
+                      border: `1px solid ${isDarkMode ? '#555' : '#ddd'}`,
+                      borderRadius: '6px'
+                    }}
+                  >
                     <div style={{
-                      fontSize: '11px',
-                      color: isDarkMode ? '#fbbf24' : '#d97706',
-                      padding: '6px',
-                      background: isDarkMode ? '#2d2520' : '#fef3c7',
-                      borderRadius: '4px',
-                      marginTop: '4px'
+                      fontWeight: 'bold',
+                      fontSize: '13px',
+                      color: isDarkMode ? '#8b5cf6' : '#7c3aed',
+                      marginBottom: '8px'
                     }}>
-                      💬 日本語: {panel.actionPromptJa}
+                      コマ {panel.panelId}
                     </div>
-                  )}
-                </div>
-              ))}
+
+                    {panel.characterId && (
+                      <div style={{ fontSize: '12px', marginBottom: '4px', color: isDarkMode ? '#fbbf24' : '#d97706' }}>
+                        👤 キャラ: <strong>{characterNames[panel.characterId] || panel.characterId}</strong>
+                      </div>
+                    )}
+
+                    <div style={{ fontSize: '12px', marginBottom: '4px', color: isDarkMode ? '#ccc' : '#666' }}>
+                      📌 メモ: {panel.note}
+                    </div>
+
+                    <div style={{ fontSize: '12px', marginBottom: '4px', color: isDarkMode ? '#ccc' : '#666' }}>
+                      💬 吹き出し: 「{panel.dialogue}」 ({panel.bubbleType || '普通'})
+                    </div>
+
+                    <div style={{ fontSize: '11px', marginBottom: '4px', color: isDarkMode ? '#999' : '#888', fontFamily: 'monospace' }}>
+                      🎬 動作: {panel.actionPrompt}
+                    </div>
+
+                    {panel.actionPromptJa && (
+                      <div style={{
+                        fontSize: '11px',
+                        color: isDarkMode ? '#fbbf24' : '#d97706',
+                        padding: '6px',
+                        background: isDarkMode ? '#2d2520' : '#fef3c7',
+                        borderRadius: '4px',
+                        marginTop: '4px'
+                      }}>
+                        💬 日本語: {panel.actionPromptJa}
+                      </div>
+                    )}
+                  </div>
+                ))
+              ) : (
+                singlePanelData && (
+                  <div
+                    style={{
+                      padding: '12px',
+                      background: isDarkMode ? '#404040' : '#f9f9f9',
+                      border: `1px solid ${isDarkMode ? '#555' : '#ddd'}`,
+                      borderRadius: '6px'
+                    }}
+                  >
+                    <div style={{
+                      fontWeight: 'bold',
+                      fontSize: '13px',
+                      color: isDarkMode ? '#8b5cf6' : '#7c3aed',
+                      marginBottom: '8px'
+                    }}>
+                      コマ {singlePanelData.panelId}
+                    </div>
+
+                    {singlePanelData.characterId && (
+                      <div style={{ fontSize: '12px', marginBottom: '4px', color: isDarkMode ? '#fbbf24' : '#d97706' }}>
+                        👤 キャラ: <strong>{characterNames[singlePanelData.characterId] || singlePanelData.characterId}</strong>
+                      </div>
+                    )}
+
+                    <div style={{ fontSize: '12px', marginBottom: '4px', color: isDarkMode ? '#ccc' : '#666' }}>
+                      📌 メモ: {singlePanelData.note}
+                    </div>
+
+                    <div style={{ fontSize: '12px', marginBottom: '4px', color: isDarkMode ? '#ccc' : '#666' }}>
+                      💬 吹き出し: 「{singlePanelData.dialogue}」 ({singlePanelData.bubbleType || '普通'})
+                    </div>
+
+                    <div style={{ fontSize: '11px', marginBottom: '4px', color: isDarkMode ? '#999' : '#888', fontFamily: 'monospace' }}>
+                      🎬 動作: {singlePanelData.actionPrompt}
+                    </div>
+
+                    {singlePanelData.actionPromptJa && (
+                      <div style={{
+                        fontSize: '11px',
+                        color: isDarkMode ? '#fbbf24' : '#d97706',
+                        padding: '6px',
+                        background: isDarkMode ? '#2d2520' : '#fef3c7',
+                        borderRadius: '4px',
+                        marginTop: '4px'
+                      }}>
+                        💬 日本語: {singlePanelData.actionPromptJa}
+                      </div>
+                    )}
+                  </div>
+                )
+              )}
             </div>
 
             {/* ボタンエリア */}

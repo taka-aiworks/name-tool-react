@@ -344,6 +344,79 @@ ${characterInfo || 'キャラクター情報なし'}
       throw error;
     }
   }
+
+  /**
+   * 動作・シチュエーションの説明から英語プロンプトを生成
+   */
+  public async generateActionPrompt(description: string): Promise<{ prompt: string; promptJa: string }> {
+    const apiKey = this.getApiKey();
+    
+    if (!apiKey) {
+      throw new Error('APIキーが設定されていません');
+    }
+
+    try {
+      const systemPrompt = `あなたは漫画の画像生成プロンプト作成の専門家です。
+ユーザーが入力した日本語の動作・シチュエーション説明を、画像生成AI用の詳細な英語プロンプトに変換してください。
+
+プロンプトには以下を含めてください：
+- キャラクターの動作・ポーズ
+- 表情・感情
+- カメラアングル・構図
+- 背景・環境の簡単な説明（必要に応じて）
+
+JSON形式で返してください：
+{
+  "prompt": "英語プロンプト（詳細に）",
+  "promptJa": "日本語の説明（元の入力を整形したもの）"
+}`;
+
+      const userPrompt = `以下の説明から画像生成用プロンプトを作成してください：
+
+${description}`;
+
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: this.model,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt }
+          ],
+          temperature: 0.7,
+          max_tokens: 500
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      const content = data.choices[0]?.message?.content;
+
+      if (!content) {
+        throw new Error('API response is empty');
+      }
+
+      // JSON部分を抽出
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error('JSON形式のレスポンスが見つかりません');
+      }
+
+      const result = JSON.parse(jsonMatch[0]);
+      return result as { prompt: string; promptJa: string };
+
+    } catch (error) {
+      console.error('Action prompt generation error:', error);
+      throw error;
+    }
+  }
 }
 
 export const openAIService = new OpenAIService();
