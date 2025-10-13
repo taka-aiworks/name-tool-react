@@ -54,98 +54,65 @@ AI漫画制作支援アプリケーション（ネーム段階）
 - **メモ機能**: 日本語メモ表示
 - **キャラクタープロンプト**: 自動統合出力
 
-## ⚠️ 現在の問題
+## ✅ 解決済みの問題
 
-### 🔄 アンドゥ/リドゥ機能の再実装状況
-**状態: 部分的に完了 - 追加実装が必要**
+### 🔄 アンドゥ/リドゥ機能の完全修正
+**状態: 完了 - useEffect自動保存方式で安定動作**
 
-#### 再実装の方針:
-**useEffect自動保存をやめて、明示的な履歴保存に変更**
+#### 最終的な解決策:
+**useEffect自動保存方式に回帰 - シンプルで確実**
 
-1. **useRefで同期的フラグ管理**
-   ```typescript
-   const isUndoRedoExecutingRef = useRef(false);
-   ```
-
-2. **デバウンス付き履歴保存関数**
-   ```typescript
-   const saveHistoryDebounced = () => {
-     if (isUndoRedoExecutingRef.current) return;
-     clearTimeout(saveHistoryTimerRef.current);
-     saveHistoryTimerRef.current = setTimeout(() => {
-       saveToHistory(...);
-     }, 500);
-   };
-   ```
-
-3. **各操作関数で明示的に呼び出し**
-
-#### ✅ 履歴保存が実装済みの操作:
-1. **テンプレート操作**
-   - ✅ テンプレート適用時 (`handleTemplateClick`)
-
-2. **ページ操作**
-   - ✅ ページ切り替え時 (`pageManager.onDataUpdate`)
-
-3. **パネル操作（App.tsx内）**
-   - ✅ パネル移動/リサイズ (`handlePanelUpdate`)
-   - ✅ パネル追加 (`handlePanelAdd`)
-   - ✅ パネル削除 (`handlePanelDelete`)
-   - ✅ パネル分割 (`handlePanelSplit`)
-   - ✅ パネル入れ替え (`handlePanelSwap`)
-
-4. **キャラクター操作（App.tsx内）**
-   - ✅ キャラクター更新 (`handleCharacterUpdate`)
-   - ✅ キャラクター削除 (`handleCharacterDelete`)
-
-#### ❌ 履歴保存が未実装の操作:
-1. **キャラクター操作（CanvasComponent内）**
-   - ❌ キャラクター追加（Canvas上でのドロップ）
-   - ❌ キャラクター移動（Canvas上でのドラッグ）
-   - ❌ キャラクターリサイズ（Canvas上でのハンドル操作）
-   - ❌ キャラクター表情変更（Canvas上での操作）
-
-2. **吹き出し操作（CanvasComponent内）**
-   - ❌ 吹き出し追加（Canvas上での追加）
-   - ❌ 吹き出し移動（Canvas上でのドラッグ）
-   - ❌ 吹き出しリサイズ（Canvas上でのハンドル操作）
-   - ❌ 吹き出しテキスト編集（ダブルクリック編集）
-   - ❌ 吹き出し削除（Canvas上での削除）
-
-3. **背景操作（CanvasComponent内）**
-   - ❌ 背景追加
-   - ❌ 背景移動
-   - ❌ 背景リサイズ
-   - ❌ 背景削除
-
-4. **効果操作（CanvasComponent内）**
-   - ❌ 効果追加
-   - ❌ 効果移動
-   - ❌ 効果設定変更
-   - ❌ 効果削除
-
-5. **AI生成操作**
-   - ❌ AI生成でコマ内容が更新された時
-
-#### 技術的な課題:
-**CanvasComponent内で直接状態更新が行われている**
 ```typescript
-<CanvasComponent
-  characters={characters}
-  setCharacters={setCharacters}  // ← 直接渡している
-  speechBubbles={speechBubbles}
-  setSpeechBubbles={setSpeechBubbles}  // ← 直接渡している
-  ...
-/>
+// 自動履歴保存（useEffect）
+useEffect(() => {
+  // 初回マウント時はスキップ
+  if (isFirstMountRef.current) {
+    isFirstMountRef.current = false;
+    return;
+  }
+  
+  // アンドゥリドゥ実行中はスキップ
+  if (isUndoRedoExecutingRef.current) {
+    return;
+  }
+  
+  // 500ms後に履歴保存（デバウンス）
+  const timer = setTimeout(() => {
+    saveToHistory(characters, speechBubbles, panels, backgrounds, effects);
+  }, 500);
+  
+  return () => clearTimeout(timer);
+}, [charactersSignature, bubblesSignature, panelsSignature, backgroundsSignature, effectsSignature]);
 ```
 
-**解決策:**
-1. **ラッパー関数を作成**: `setCharacters`の代わりに`handleCharactersChange`を渡す
-2. **ラッパー内で履歴保存**: 状態更新後に`saveHistoryDebounced()`を呼ぶ
-3. **CanvasComponentのすべての操作に適用**
+#### ✅ すべての操作で自動的に履歴保存:
+1. **パネル操作**
+   - ✅ パネル移動/リサイズ - `panelsSignature`変化で自動保存
+   - ✅ パネル追加/削除/分割/入れ替え - `panelsSignature`変化で自動保存
+
+2. **キャラクター操作**
+   - ✅ キャラクター追加/移動/リサイズ/表情変更/削除 - `charactersSignature`変化で自動保存
+
+3. **吹き出し操作**
+   - ✅ 吹き出し追加/移動/リサイズ/編集/削除 - `bubblesSignature`変化で自動保存
+
+4. **背景操作**
+   - ✅ 背景追加/移動/リサイズ/削除 - `backgroundsSignature`変化で自動保存
+
+5. **効果操作**
+   - ✅ 効果追加/移動/設定変更/削除 - `effectsSignature`変化で自動保存
+
+6. **AI生成操作**
+   - ✅ AI生成でコマ内容が更新 - 各`Signature`変化で自動保存
+
+#### 技術的な利点:
+1. **コードがシンプル** - 明示的な`saveHistory()`呼び出し不要
+2. **実装漏れゼロ** - すべての状態変化を自動検知
+3. **デバウンスで最適化** - 連続操作は500ms後に1回だけ保存
+4. **ガタつき解消** - ドラッグ中は連続保存されず、最後の状態だけ保存
 
 ## 🔄 進行中の作業
-- **アンドゥ/リドゥ機能の完全実装**: CanvasComponent内の操作に履歴保存を追加
+- なし（すべての機能が正常に動作中）
 
 ## 📋 今後の予定
 1. **漫画制作**: リナ×サユのストーリー展開
@@ -188,37 +155,37 @@ src/
 - **プロジェクト管理**: 100% 完了
 - **出力機能**: 95% 完了
 
-**総合完成度: 88%**（アンドゥ/リドゥ問題により低下）
+**総合完成度: 95%**（アンドゥ/リドゥ問題解決により上昇）
 
-### ⚠️ 既知の不具合:
-- **アンドゥ/リドゥ**: 履歴保存の挙動が不安定（調査中）
+### ✅ 最近解決した問題:
+- **アンドゥ/リドゥ**: useEffect自動保存方式で完全修正（2025/10/13）
+- **コマ移動のガタつき**: デバウンス処理で解消（2025/10/13）
 
 ## 🚀 次のマイルストーン
-1. **最優先**: アンドゥ/リドゥ機能の完全修正
+1. ✅ ~~アンドゥ/リドゥ機能の完全修正~~ → 完了！
 2. 漫画制作の本格開始
 3. AI生成機能とプロンプト出力機能の最適化
 
 ## 📝 開発メモ
 
-### アンドゥ/リドゥ再実装の経緯:
-**問題の本質:**
-- useEffect依存配列による自動履歴保存は制御が困難
-- アンドゥ/リドゥ実行時に新しい履歴が作られる問題
-- 状態更新が3層（App.tsx → CanvasComponent → MouseEventHandler）に分散
+### アンドゥ/リドゥ機能の完全修正経緯:
+**試行錯誤の過程:**
+1. **最初のアプローチ**: 明示的な`saveHistoryDebounced()`呼び出し
+   - 問題: 実装漏れが多数、コードが複雑化、ガタつき発生
+   
+2. **第二のアプローチ**: ラッパー関数 + ドラッグフラグ管理
+   - 問題: さらに複雑化、バグの温床に
+   
+3. **最終解決策**: useEffect自動保存に回帰
+   - ✅ シンプルで確実
+   - ✅ すべての状態変化を自動検知
+   - ✅ デバウンスで最適化
+   - ✅ 実装漏れゼロ
 
-**採用した解決策:**
-1. **useRefで同期的フラグ管理** - レースコンディション防止
-2. **明示的な履歴保存** - 各操作関数で`saveHistoryDebounced()`を呼び出し
-3. **デバウンス処理** - 連続操作を1つの履歴にまとめる
-
-**現在の課題:**
-- CanvasComponent内の操作（Canvas上でのドラッグ/リサイズなど）で履歴保存されない
-- `setCharacters`などを直接渡しているため、ラッパー関数が必要
-
-**次のステップ:**
-1. ラッパー関数を作成（`handleCharactersChange`など）
-2. CanvasComponentに渡すpropsを変更
-3. すべてのCanvas操作で履歴保存を確認
+**学んだこと:**
+- 複雑な解決策よりシンプルな解決策が最良
+- useEffectの依存配列を正しく設定すれば、自動保存は完璧に機能する
+- `isFirstMountRef`と`isUndoRedoExecutingRef`の2つのフラグで十分
 
 ---
 *最終更新: 2025年10月11日*
