@@ -231,13 +231,13 @@ ${characterInfo}
           panelId: panel.id,
           type: bubbleTypeMap[content.bubbleType || '普通'] || 'normal',
           text: content.dialogue,
-          x: panel.x + panel.width * 0.5,
-          y: panel.y + panel.height * 0.2,
+          x: 0.5,  // パネル中央（相対座標）
+          y: 0.3,  // パネル上部寄り（相対座標）
           scale: 1.0,
-          width: 120,
-          height: 60,
+          width: 0.7,  // パネル幅の70%（相対座標）
+          height: 0.25, // パネル高さの25%（相対座標）
           vertical: true, // デフォルトは縦書き
-          isGlobalPosition: true
+          isGlobalPosition: false  // パネル相対座標を使用
         };
         
         newBubbles.push(newBubble);

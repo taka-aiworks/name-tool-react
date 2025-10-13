@@ -841,18 +841,25 @@ function App() {
     // セリフバブルを更新
     const updatedBubbles = speechBubbles.filter(bubble => bubble.panelId !== panelData.panelId);
     if (panelData.dialogue) {
+      const bubbleTypeMap: Record<string, string> = {
+        '普通': 'normal',
+        '叫び': 'shout',
+        '小声': 'whisper',
+        '心の声': 'thought'
+      };
+      
       updatedBubbles.push({
         id: Date.now().toString(),
         panelId: panelData.panelId,
         text: panelData.dialogue,
-        x: 0.5,
-        y: 0.5,
-        width: 0.8,
-        height: 0.3,
-        type: panelData.bubbleType || 'normal',
-        vertical: false,
+        x: 0.5,  // パネル中央（相対座標）
+        y: 0.3,  // パネル上部寄り（相対座標）
+        width: 0.7,  // パネル幅の70%（相対座標）
+        height: 0.25, // パネル高さの25%（相対座標）
+        type: bubbleTypeMap[panelData.bubbleType || '普通'] || 'normal',
+        vertical: true,  // デフォルトは縦書き
         scale: 1,
-        isGlobalPosition: false
+        isGlobalPosition: false  // パネル相対座標を使用
       });
     }
     setSpeechBubbles(updatedBubbles);
