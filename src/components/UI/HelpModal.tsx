@@ -96,9 +96,8 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, isDarkMode = fal
                   { step: '1', icon: '👤', title: 'キャラクター登録', desc: '左パネルの「👤 キャラクター」→「キャラクター名設定」で主要キャラを登録' },
                   { step: '2', icon: '📋', title: 'テンプレート選択', desc: '「📄 新規作成」でコマ数を選択（1コマ、2コマ横並び、4コマなど）' },
                   { step: '3', icon: '🤖', title: 'AIでコマ内容生成', desc: '「📖 話からコマ内容を生成」でストーリーを入力→自動でコマ内容・吹き出しを生成' },
-                  { step: '4', icon: '🎨', title: 'キャラクター配置', desc: '各コマにキャラクターを追加・配置（AIの動作プロンプトを参考に）' },
-                  { step: '5', icon: '🖼️', title: '背景・効果追加', desc: '背景、効果線、トーンで演出を追加' },
-                  { step: '6', icon: '💾', title: '保存・エクスポート', desc: 'プロジェクト保存 & PNG/JPEGで画像出力' }
+                  { step: '4', icon: '🖼️', title: '背景・効果追加', desc: '背景、効果線、トーンで演出を追加（必要に応じて）' },
+                  { step: '5', icon: '💾', title: '保存・エクスポート', desc: 'プロジェクト保存 & PNG/JPEGで画像出力' }
                 ].map((item, idx) => (
                   <div key={idx} style={{ 
                     display: 'flex', 
@@ -191,28 +190,21 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, isDarkMode = fal
               </div>
             </section>
 
-            {/* キャラクター */}
+            {/* キャラクター登録 */}
             <section style={{ marginBottom: '32px' }}>
               <h3 style={{ fontSize: '20px', marginBottom: '16px', color: isDarkMode ? '#ffb74d' : '#f39c12', borderBottom: `2px solid ${isDarkMode ? '#ffb74d' : '#f39c12'}`, paddingBottom: '8px' }}>
-                👤 キャラクター操作
+                👤 キャラクター登録
               </h3>
-              <div style={{ marginBottom: '16px' }}>
-                <h4 style={{ fontSize: '16px', marginBottom: '8px', color: isDarkMode ? '#ffb74d' : '#f39c12' }}>追加方法</h4>
+              <div style={{ backgroundColor: infoBg, padding: '16px', borderRadius: '8px' }}>
+                <h4 style={{ fontSize: '16px', marginBottom: '12px', color: textColor }}>事前登録の流れ</h4>
                 <ol style={{ lineHeight: '1.8', color: textColor, marginLeft: '20px', fontSize: '14px' }}>
-                  <li>左パネル「👤 キャラクター」→「➕ キャラクター追加」</li>
-                  <li>配置するコマを選択</li>
-                  <li>髪型、髪色、表情、向き、性別を設定</li>
-                  <li>「追加」をクリック</li>
+                  <li>左パネル「👤 キャラクター」を開く</li>
+                  <li>「キャラクター名設定」で主要キャラ（主人公、ヒロインなど）の名前を登録</li>
+                  <li>AI生成時にこの名前を使うと、キャラクターが識別されます</li>
                 </ol>
-              </div>
-              <div>
-                <h4 style={{ fontSize: '16px', marginBottom: '8px', color: isDarkMode ? '#ffb74d' : '#f39c12' }}>編集</h4>
-                <ul style={{ lineHeight: '1.8', color: textColor, fontSize: '14px' }}>
-                  <li><strong>移動:</strong> ドラッグ</li>
-                  <li><strong>リサイズ:</strong> 四隅のハンドル</li>
-                  <li><strong>回転:</strong> 回転ハンドル（円形）</li>
-                  <li><strong>削除:</strong> 右クリック → 削除</li>
-                </ul>
+                <div style={{ marginTop: '12px', padding: '12px', backgroundColor: tipBg, borderRadius: '6px', fontSize: '14px' }}>
+                  <strong>💡 Note:</strong> 基本的にはAI生成でコマ内容と吹き出しが自動配置されるため、手動でのキャラクター配置は不要です
+                </div>
               </div>
             </section>
 
@@ -271,10 +263,10 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, isDarkMode = fal
                 💡 よくある質問
               </h3>
               {[
-                { q: 'AI生成がうまくいかない', a: 'より詳細なストーリーを入力してください。各コマの内容を明確に区切って記述し、キャラクター名を統一します。' },
-                { q: '吹き出しのサイズを変えたい', a: '吹き出しを選択すると四隅にハンドルが表示されます。ドラッグでリサイズできます。' },
+                { q: 'AI生成がうまくいかない', a: 'より詳細なストーリーを入力してください。各コマの内容を明確に区切って記述し、事前に登録したキャラクター名を使用します。' },
+                { q: '吹き出しのサイズや位置を変えたい', a: '吹き出しを選択すると四隅にハンドルが表示されます。ドラッグで移動・リサイズできます。' },
                 { q: 'プロジェクトが消えた', a: 'ブラウザのローカルストレージに保存されています。同じブラウザで「📁 プロジェクト管理」から確認できます。' },
-                { q: 'キャラクターの表情を変えたい', a: 'キャラクターを選択→左パネルの「👤 キャラクター」で表情を変更できます。' }
+                { q: 'コマの内容を変更したい', a: '1コマ生成モードで選択したコマのみ再生成できます。または吹き出しをダブルクリックでテキスト編集できます。' }
               ].map((item, idx) => (
                 <div key={idx} style={{ marginBottom: '16px' }}>
                   <strong style={{ color: isDarkMode ? '#9575cd' : '#8e44ad', fontSize: '14px' }}>Q: {item.q}</strong>
