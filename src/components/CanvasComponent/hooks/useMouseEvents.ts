@@ -588,12 +588,25 @@ export const useMouseEvents = ({
           height: clickedBubble.height
         });
       } else {
-        // コンソールログは無効化
+        // 吹き出しドラッグ開始
         actions.setIsDragging(true);
-        actions.setDragOffset({
-          x: mouseX - clickedBubble.x,
-          y: mouseY - clickedBubble.y,
-        });
+        
+        // 相対座標の場合は、変換後の座標を使用
+        if (!clickedBubble.isGlobalPosition) {
+          const bubblePos = BubbleRenderer.calculateBubblePosition(clickedBubble, panel);
+          actions.setDragOffset({
+            x: mouseX - bubblePos.x,
+            y: mouseY - bubblePos.y,
+          });
+          console.log(`🖱️ 吹き出しドラッグ開始(相対): bubble=(${clickedBubble.x},${clickedBubble.y}), 画面座標=(${bubblePos.x},${bubblePos.y}), mouse=(${mouseX},${mouseY}), offset=(${mouseX - bubblePos.x},${mouseY - bubblePos.y})`);
+        } else {
+          // 絶対座標の場合
+          actions.setDragOffset({
+            x: mouseX - clickedBubble.x,
+            y: mouseY - clickedBubble.y,
+          });
+          console.log(`🖱️ 吹き出しドラッグ開始(絶対): bubble=(${clickedBubble.x},${clickedBubble.y}), mouse=(${mouseX},${mouseY}), offset=(${mouseX - clickedBubble.x},${mouseY - clickedBubble.y})`);
+        }
       }
       
       e.preventDefault();
@@ -1052,21 +1065,50 @@ if (selectedTone && state.isCharacterResizing && state.initialCharacterBounds &&
 
     // 吹き出し移動
     if (state.selectedBubble && state.isDragging) {
-      const newX = mouseX - state.dragOffset.x;
-      const newY = mouseY - state.dragOffset.y;
+      const panel = panels.find(p => p.id === state.selectedBubble!.panelId) || panels[0];
       
-      const updatedBubble = {
-        ...state.selectedBubble,
-        x: newX,
-        y: newY,
-      };
-      
-      setSpeechBubbles(
-        speechBubbles.map((bubble) =>
-          bubble.id === state.selectedBubble!.id ? updatedBubble : bubble
-        )
-      );
-      actions.setSelectedBubble(updatedBubble);
+      if (panel && !state.selectedBubble.isGlobalPosition) {
+        // 相対座標の場合: パネル相対座標に変換
+        const newAbsX = mouseX - state.dragOffset.x;
+        const newAbsY = mouseY - state.dragOffset.y;
+        
+        const relativeX = (newAbsX - panel.x) / panel.width;
+        const relativeY = (newAbsY - panel.y) / panel.height;
+        
+        console.log(`📍 吹き出し移動(相対): mouse=(${mouseX},${mouseY}), offset=(${state.dragOffset.x},${state.dragOffset.y}), 新画面座標=(${newAbsX},${newAbsY}), panel=(${panel.x},${panel.y},${panel.width}x${panel.height}), 新相対座標=(${relativeX},${relativeY})`);
+        
+        const updatedBubble = {
+          ...state.selectedBubble,
+          x: relativeX,
+          y: relativeY,
+        };
+        
+        setSpeechBubbles(
+          speechBubbles.map((bubble) =>
+            bubble.id === state.selectedBubble!.id ? updatedBubble : bubble
+          )
+        );
+        actions.setSelectedBubble(updatedBubble);
+      } else {
+        // 絶対座標の場合
+        const newX = mouseX - state.dragOffset.x;
+        const newY = mouseY - state.dragOffset.y;
+        
+        console.log(`📍 吹き出し移動(絶対): mouse=(${mouseX},${mouseY}), offset=(${state.dragOffset.x},${state.dragOffset.y}), 新座標=(${newX},${newY})`);
+        
+        const updatedBubble = {
+          ...state.selectedBubble,
+          x: newX,
+          y: newY,
+        };
+        
+        setSpeechBubbles(
+          speechBubbles.map((bubble) =>
+            bubble.id === state.selectedBubble!.id ? updatedBubble : bubble
+          )
+        );
+        actions.setSelectedBubble(updatedBubble);
+      }
       return;
     }
 

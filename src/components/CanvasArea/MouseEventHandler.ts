@@ -221,6 +221,8 @@ export class MouseEventHandler {
   ): void {
     if (!mouseState.isDragging && !mouseState.isPanelResizing && !mouseState.isPanelMoving) return;
     
+    console.log(`🖱️ マウス移動: isDragging=${mouseState.isDragging}, selectedBubble=${selectedBubble ? selectedBubble.id : 'なし'}`);
+    
     const rect = canvas.getBoundingClientRect();
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
