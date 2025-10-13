@@ -256,6 +256,9 @@ function App() {
   
   // アンドゥリドゥ実行中フラグ（useRefで同期管理）
   const isUndoRedoExecutingRef = useRef(false);
+  
+  // ドラッグ中フラグ（ドラッグ中は履歴保存しない）
+  const isDraggingRef = useRef(false);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -342,6 +345,11 @@ function App() {
   const saveHistoryDebounced = useCallback(() => {
     // アンドゥリドゥ実行中は保存しない
     if (isUndoRedoExecutingRef.current) {
+      return;
+    }
+    
+    // ドラッグ中は保存しない（onDragEndで保存される）
+    if (isDraggingRef.current) {
       return;
     }
     
@@ -562,14 +570,19 @@ function App() {
       
     console.log('📐 Scaled panels:', scaledPanels);
     setPanels(scaledPanels);
-    } else {
-      console.error(`Template "${template}" not found`);
-    }
     
     setCharacters([]);
     setSpeechBubbles([]);
     setBackgrounds([]);
     setEffects([]);
+    
+    // テンプレート適用後に即座に履歴保存（初期状態確保のため）
+    setTimeout(() => {
+      saveToHistory([], [], scaledPanels, [], []);
+    }, 0);
+    } else {
+      console.error(`Template "${template}" not found`);
+    }
     
     if (canvasRef.current) {
       const canvas = canvasRef.current;
@@ -581,10 +594,7 @@ function App() {
     }
     
     console.log('✅ Template applied successfully with ratio scaling');
-    
-    // テンプレート適用後に履歴保存
-    saveHistoryDebounced();
-  }, [canvasSettings, saveHistoryDebounced]);
+  }, [canvasSettings, saveToHistory]);
 
   // ページ管理hook
   const pageManager = usePageManager({
@@ -733,6 +743,32 @@ function App() {
     }
   }, [addBubbleFunc, dialogueText]);
 
+  // 🔄 履歴保存付き状態更新ラッパー関数
+  const handleCharactersChange = useCallback((newCharacters: Character[] | ((prev: Character[]) => Character[])) => {
+    setCharacters(newCharacters);
+    saveHistoryDebounced();
+  }, [saveHistoryDebounced]);
+
+  const handleSpeechBubblesChange = useCallback((newBubbles: SpeechBubble[] | ((prev: SpeechBubble[]) => SpeechBubble[])) => {
+    setSpeechBubbles(newBubbles);
+    saveHistoryDebounced();
+  }, [saveHistoryDebounced]);
+
+  const handleBackgroundsChange = useCallback((newBackgrounds: BackgroundElement[] | ((prev: BackgroundElement[]) => BackgroundElement[])) => {
+    setBackgrounds(newBackgrounds);
+    saveHistoryDebounced();
+  }, [saveHistoryDebounced]);
+
+  const handleEffectsChange = useCallback((newEffects: EffectElement[] | ((prev: EffectElement[]) => EffectElement[])) => {
+    setEffects(newEffects);
+    saveHistoryDebounced();
+  }, [saveHistoryDebounced]);
+
+  const handleTonesChange = useCallback((newTones: ToneElement[] | ((prev: ToneElement[]) => ToneElement[])) => {
+    setTones(newTones);
+    saveHistoryDebounced();
+  }, [saveHistoryDebounced]);
+
   // 👤 キャラプロンプト登録保存
   const handleSaveCharacterPrompt = useCallback((characterId: string, name: string, prompt: string) => {
     // キャラクター名を更新
@@ -837,8 +873,8 @@ function App() {
 
   const handlePanelUpdate = useCallback((updatedPanels: Panel[]) => {
     setPanels(updatedPanels);
-    saveHistoryDebounced();
-  }, [saveHistoryDebounced]);
+    // 履歴保存はonDragEndで行う（ドラッグ中の連続更新を防ぐため）
+  }, []);
   
 
   const handlePanelAdd = useCallback((targetPanelId: string, position: 'above' | 'below' | 'left' | 'right') => {
@@ -1396,15 +1432,15 @@ function App() {
             panels={panels}
             setPanels={handlePanelUpdate}
             characters={characters}
-            setCharacters={setCharacters}
+            setCharacters={handleCharactersChange}
             speechBubbles={speechBubbles}
-            setSpeechBubbles={setSpeechBubbles}
+            setSpeechBubbles={handleSpeechBubblesChange}
             backgrounds={backgrounds}
-            setBackgrounds={setBackgrounds}
+            setBackgrounds={handleBackgroundsChange}
             effects={effects}
-            setEffects={setEffects}
+            setEffects={handleEffectsChange}
             tones={tones}
-            setTones={setTones}
+            setTones={handleTonesChange}
             selectedTone={selectedTone}
             onToneSelect={setSelectedTone}
             showTonePanel={showTonePanel}
@@ -1463,6 +1499,20 @@ function App() {
             snapSettings={snapSettings}
             swapPanel1={swapPanel1}
             swapPanel2={swapPanel2}
+            onDragStart={() => {
+              // ドラッグ開始時：フラグを立てる
+              isDraggingRef.current = true;
+              // 保留中の履歴保存をキャンセル
+              if (saveHistoryTimerRef.current) {
+                clearTimeout(saveHistoryTimerRef.current);
+                saveHistoryTimerRef.current = null;
+              }
+            }}
+            onDragEnd={() => {
+              // ドラッグ終了時：フラグを下ろして履歴保存
+              isDraggingRef.current = false;
+              saveToHistory(characters, speechBubbles, panels, backgrounds, effects);
+            }}
           />
         </div>
 
