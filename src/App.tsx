@@ -1123,65 +1123,6 @@ function App() {
 
           <div style={{ width: "1px", height: "24px", background: "var(--border-color)" }}></div>
 
-          {projectSave.hasUnsavedChanges && (projectSave.currentProjectId && projectSave.currentProjectName) && (
-          <button 
-            className="control-btn"
-              onClick={async () => {
-                try {
-                  const projectData = {
-                    panels,
-                    characters,
-                    bubbles: speechBubbles,
-                    backgrounds,
-                    effects,
-                    tones,
-                    canvasSize,
-                    settings,
-                    characterNames,
-                    characterSettings,
-                    canvasSettings
-                  };
-                  
-                  
-                  if (projectSave.currentProjectId) {
-                    // 既存プロジェクトの上書き保存
-                    const success = await projectSave.saveProject(projectData);
-                    if (success) {
-                      alert('プロジェクトを上書き保存しました');
-                    }
-                  } else {
-                    // 新規プロジェクトの作成
-                    const projectName = prompt('プロジェクト名を入力してください:');
-                    if (projectName && projectName.trim()) {
-                      const projectId = await projectSave.saveProject(projectData, projectName.trim());
-                      if (projectId) {
-                        alert(`プロジェクト「${projectName}」を新規作成しました`);
-                      }
-                    } else if (projectName !== null) {
-                      // 空文字列の場合はデフォルト名で作成
-                      const projectId = await projectSave.saveProject(projectData, '無題のプロジェクト');
-                      if (projectId) {
-                        alert('プロジェクト「無題のプロジェクト」を新規作成しました');
-                      }
-                    }
-                  }
-                } catch (error) {
-                  console.error('保存エラー:', error);
-                  alert('保存に失敗しました');
-                }
-              }}
-              title={projectSave.currentProjectId && projectSave.currentProjectName ? `上書き保存: ${projectSave.currentProjectName}` : "新規保存"}
-            style={{
-                background: COLOR_PALETTE.buttons.save.primary,
-                color: "white",
-                border: `1px solid ${COLOR_PALETTE.buttons.save.primary}`,
-                fontWeight: "bold"
-              }}
-            >
-              💾 {projectSave.currentProjectId && projectSave.currentProjectName ? `上書き: ${projectSave.currentProjectName}` : "新規保存"}
-          </button>
-          )}
-
           <button 
             className="control-btn"
             onClick={() => setShowProjectPanel(true)}

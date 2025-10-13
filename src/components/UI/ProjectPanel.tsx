@@ -348,6 +348,39 @@ const ProjectPanel: React.FC<ProjectPanelProps> = ({
               <span>📄</span>
               新規プロジェクト
             </button>
+            {currentProjectId && (
+              <button
+                onClick={async () => {
+                  try {
+                    const success = await onSaveProject();
+                    if (success) {
+                      alert('プロジェクトを上書き保存しました');
+                      refreshProjects();
+                    } else {
+                      alert('保存に失敗しました');
+                    }
+                  } catch (error) {
+                    console.error('保存エラー:', error);
+                    alert('保存中にエラーが発生しました');
+                  }
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '8px 16px',
+                  backgroundColor: '#10b981',
+                  color: 'white',
+                  borderRadius: '8px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontWeight: '500'
+                }}
+              >
+                <span>💾</span>
+                上書き保存
+              </button>
+            )}
             <button
               onClick={handleSaveAsNew}
               style={{
