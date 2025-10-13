@@ -27,6 +27,7 @@ import { CURRENT_CONFIG, BetaUtils } from './config/betaConfig';
 import { StoryToComicModal } from './components/UI/StoryToComicModal';
 import { OpenAISettingsModal } from './components/UI/OpenAISettingsModal';
 import { CharacterPromptRegisterModal } from './components/UI/CharacterPromptRegisterModal';
+import HelpModal from './components/UI/HelpModal';
 import { openAIService } from './services/OpenAIService';
 
 import {
@@ -102,6 +103,9 @@ function App() {
   // 👤 キャラプロンプト登録
   const [showCharacterPromptRegister, setShowCharacterPromptRegister] = useState<boolean>(false);
   const [registeringCharacterId, setRegisteringCharacterId] = useState<string>('character_1');
+  
+  // 📖 ヘルプモーダル
+  const [showHelpModal, setShowHelpModal] = useState<boolean>(false);
 
   // スナップ設定の状態管理
   const [snapSettings, setSnapSettings] = useState<SnapSettings>({
@@ -1177,6 +1181,20 @@ function App() {
           </button>
 
           <div style={{ width: "1px", height: "24px", background: "var(--border-color)" }}></div>
+
+          <button 
+            className="control-btn"
+            onClick={() => setShowHelpModal(true)}
+            title="使い方ガイド"
+            style={{
+              background: '#3498db',
+              color: "white",
+              border: '1px solid #3498db',
+              fontWeight: "bold"
+            }}
+          >
+            📖 使い方ガイド
+          </button>
 
           <button 
             className="control-btn"
@@ -2360,6 +2378,13 @@ function App() {
         isVisible={showFeedbackPanel}
         onClose={() => setShowFeedbackPanel(false)}
         onDarkMode={isDarkMode}
+      />
+
+      {/* 📖 ヘルプモーダル */}
+      <HelpModal
+        isOpen={showHelpModal}
+        onClose={() => setShowHelpModal(false)}
+        isDarkMode={isDarkMode}
       />
     </div>
   );

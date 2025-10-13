@@ -1,0 +1,322 @@
+import React from 'react';
+
+interface HelpModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  isDarkMode?: boolean;
+}
+
+const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, isDarkMode = false }) => {
+  if (!isOpen) return null;
+
+  const bgColor = isDarkMode ? '#1a1a1a' : 'white';
+  const textColor = isDarkMode ? '#e0e0e0' : '#333';
+  const headerBg = isDarkMode ? '#2d2d2d' : '#f8f9fa';
+  const sectionBorder = isDarkMode ? '#444' : '#e0e0e0';
+  const infoBg = isDarkMode ? '#2a4a5a' : '#e8f4f8';
+  const tipBg = isDarkMode ? '#4a3a2a' : '#fff3cd';
+  const cardBg = isDarkMode ? '#2d2d2d' : '#ecf0f1';
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 10000,
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          backgroundColor: bgColor,
+          borderRadius: '12px',
+          width: '90%',
+          maxWidth: '1000px',
+          maxHeight: '90vh',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* ヘッダー */}
+        <div
+          style={{
+            padding: '20px 24px',
+            borderBottom: `2px solid ${sectionBorder}`,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            backgroundColor: headerBg,
+          }}
+        >
+          <h2 style={{ margin: 0, fontSize: '24px', fontWeight: 'bold', color: textColor }}>
+            📖 使い方ガイド
+          </h2>
+          <button
+            onClick={onClose}
+            style={{
+              background: 'none',
+              border: 'none',
+              fontSize: '28px',
+              cursor: 'pointer',
+              padding: '0 8px',
+              color: isDarkMode ? '#aaa' : '#666',
+            }}
+          >
+            ×
+          </button>
+        </div>
+
+        {/* コンテンツ */}
+        <div
+          style={{
+            flex: 1,
+            overflowY: 'auto',
+            padding: '24px',
+          }}
+        >
+          <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+            
+            {/* ネーム制作の流れ */}
+            <section style={{ marginBottom: '32px' }}>
+              <h3 style={{ fontSize: '22px', marginBottom: '20px', color: isDarkMode ? '#4fc3f7' : '#2c3e50', borderBottom: `3px solid ${isDarkMode ? '#4fc3f7' : '#3498db'}`, paddingBottom: '8px' }}>
+                🚀 ネーム制作の流れ
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {[
+                  { step: '1', icon: '👤', title: 'キャラクター登録', desc: '左パネルの「👤 キャラクター」→「キャラクター名設定」で主要キャラを登録' },
+                  { step: '2', icon: '📋', title: 'テンプレート選択', desc: '「📄 新規作成」でコマ数を選択（1コマ、2コマ横並び、4コマなど）' },
+                  { step: '3', icon: '🤖', title: 'AIでコマ内容生成', desc: '「📖 話からコマ内容を生成」でストーリーを入力→自動でコマ内容・吹き出しを生成' },
+                  { step: '4', icon: '🎨', title: 'キャラクター配置', desc: '各コマにキャラクターを追加・配置（AIの動作プロンプトを参考に）' },
+                  { step: '5', icon: '🖼️', title: '背景・効果追加', desc: '背景、効果線、トーンで演出を追加' },
+                  { step: '6', icon: '💾', title: '保存・エクスポート', desc: 'プロジェクト保存 & PNG/JPEGで画像出力' }
+                ].map((item, idx) => (
+                  <div key={idx} style={{ 
+                    display: 'flex', 
+                    alignItems: 'flex-start', 
+                    gap: '16px',
+                    padding: '16px',
+                    backgroundColor: cardBg,
+                    borderRadius: '8px',
+                    border: `2px solid ${idx === 0 ? (isDarkMode ? '#4fc3f7' : '#3498db') : 'transparent'}`
+                  }}>
+                    <div style={{ 
+                      minWidth: '48px',
+                      height: '48px',
+                      borderRadius: '50%',
+                      backgroundColor: isDarkMode ? '#3a3a3a' : '#fff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '24px',
+                      border: `2px solid ${sectionBorder}`
+                    }}>
+                      {item.icon}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '18px', fontWeight: 'bold', color: textColor, marginBottom: '8px' }}>
+                        Step {item.step}: {item.title}
+                      </div>
+                      <div style={{ fontSize: '14px', color: isDarkMode ? '#aaa' : '#666', lineHeight: '1.6' }}>
+                        {item.desc}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* AI生成機能 */}
+            <section style={{ marginBottom: '32px' }}>
+              <h3 style={{ fontSize: '20px', marginBottom: '16px', color: isDarkMode ? '#ff6b9d' : '#e74c3c', borderBottom: `2px solid ${isDarkMode ? '#ff6b9d' : '#e74c3c'}`, paddingBottom: '8px' }}>
+                🤖 AI生成機能の使い方
+              </h3>
+              
+              <div style={{ marginBottom: '20px' }}>
+                <h4 style={{ fontSize: '16px', marginBottom: '12px', color: isDarkMode ? '#ff6b9d' : '#e74c3c' }}>📚 1ページ分を生成</h4>
+                <ol style={{ lineHeight: '1.8', color: textColor, marginLeft: '20px' }}>
+                  <li>「📖 話からコマ内容を生成」ボタンをクリック</li>
+                  <li>ストーリーを日本語で入力
+                    <div style={{ backgroundColor: infoBg, padding: '12px', borderRadius: '6px', marginTop: '8px', fontSize: '14px' }}>
+                      例: 「主人公が朝起きて驚く。窓の外に巨大なロボット。主人公は急いで着替えて外に飛び出す。」
+                    </div>
+                  </li>
+                  <li>「1ページ分を生成」を選択</li>
+                  <li>「🎨 プレビュー生成」→ 内容確認 → 「✅ 適用」</li>
+                </ol>
+              </div>
+
+              <div style={{ marginBottom: '16px' }}>
+                <h4 style={{ fontSize: '16px', marginBottom: '12px', color: isDarkMode ? '#ff6b9d' : '#e74c3c' }}>🎯 1コマのみ生成</h4>
+                <ol style={{ lineHeight: '1.8', color: textColor, marginLeft: '20px' }}>
+                  <li>コマを選択</li>
+                  <li>「📖 話からコマ内容を生成」→「選択中の1コマを生成」</li>
+                  <li>そのコマの内容を入力 → 生成</li>
+                </ol>
+              </div>
+
+              <div style={{ backgroundColor: tipBg, padding: '12px', borderRadius: '8px', borderLeft: `4px solid ${isDarkMode ? '#ffa726' : '#f39c12'}` }}>
+                <strong>💡 Tip:</strong> 詳細なストーリーほど質の高い内容が生成されます。キャラクター名を統一して記述してください。
+              </div>
+            </section>
+
+            {/* 基本操作 */}
+            <section style={{ marginBottom: '32px' }}>
+              <h3 style={{ fontSize: '20px', marginBottom: '16px', color: isDarkMode ? '#81c784' : '#27ae60', borderBottom: `2px solid ${isDarkMode ? '#81c784' : '#27ae60'}`, paddingBottom: '8px' }}>
+                🎨 基本操作
+              </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                {[
+                  { title: '新規作成', desc: '📄ボタンでテンプレート選択' },
+                  { title: '保存', desc: '💾 新規保存 or 上書き保存' },
+                  { title: 'エクスポート', desc: '📥 PNG/JPEG形式で出力' },
+                  { title: '元に戻す', desc: 'Ctrl + Z（やり直し: Ctrl + Y）' },
+                  { title: 'コマ編集', desc: '✏️ボタンで移動・リサイズ・分割' },
+                  { title: '吹き出し', desc: 'ダブルクリックでテキスト入力' }
+                ].map((item, idx) => (
+                  <div key={idx} style={{ padding: '12px', backgroundColor: cardBg, borderRadius: '6px' }}>
+                    <strong style={{ color: textColor }}>{item.title}:</strong>
+                    <div style={{ fontSize: '14px', color: isDarkMode ? '#aaa' : '#666', marginTop: '4px' }}>{item.desc}</div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* キャラクター */}
+            <section style={{ marginBottom: '32px' }}>
+              <h3 style={{ fontSize: '20px', marginBottom: '16px', color: isDarkMode ? '#ffb74d' : '#f39c12', borderBottom: `2px solid ${isDarkMode ? '#ffb74d' : '#f39c12'}`, paddingBottom: '8px' }}>
+                👤 キャラクター操作
+              </h3>
+              <div style={{ marginBottom: '16px' }}>
+                <h4 style={{ fontSize: '16px', marginBottom: '8px', color: isDarkMode ? '#ffb74d' : '#f39c12' }}>追加方法</h4>
+                <ol style={{ lineHeight: '1.8', color: textColor, marginLeft: '20px', fontSize: '14px' }}>
+                  <li>左パネル「👤 キャラクター」→「➕ キャラクター追加」</li>
+                  <li>配置するコマを選択</li>
+                  <li>髪型、髪色、表情、向き、性別を設定</li>
+                  <li>「追加」をクリック</li>
+                </ol>
+              </div>
+              <div>
+                <h4 style={{ fontSize: '16px', marginBottom: '8px', color: isDarkMode ? '#ffb74d' : '#f39c12' }}>編集</h4>
+                <ul style={{ lineHeight: '1.8', color: textColor, fontSize: '14px' }}>
+                  <li><strong>移動:</strong> ドラッグ</li>
+                  <li><strong>リサイズ:</strong> 四隅のハンドル</li>
+                  <li><strong>回転:</strong> 回転ハンドル（円形）</li>
+                  <li><strong>削除:</strong> 右クリック → 削除</li>
+                </ul>
+              </div>
+            </section>
+
+            {/* 吹き出し */}
+            <section style={{ marginBottom: '32px' }}>
+              <h3 style={{ fontSize: '20px', marginBottom: '16px', color: isDarkMode ? '#4dd0e1' : '#16a085', borderBottom: `2px solid ${isDarkMode ? '#4dd0e1' : '#16a085'}`, paddingBottom: '8px' }}>
+                💬 吹き出し編集
+              </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div>
+                  <h4 style={{ fontSize: '14px', marginBottom: '8px', color: isDarkMode ? '#4dd0e1' : '#16a085' }}>基本操作</h4>
+                  <ul style={{ fontSize: '14px', lineHeight: '1.6', color: textColor }}>
+                    <li>追加: コマをダブルクリック</li>
+                    <li>編集: 吹き出しをダブルクリック</li>
+                    <li>確定: Ctrl + Enter</li>
+                    <li>キャンセル: Esc</li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 style={{ fontSize: '14px', marginBottom: '8px', color: isDarkMode ? '#4dd0e1' : '#16a085' }}>種類</h4>
+                  <ul style={{ fontSize: '14px', lineHeight: '1.6', color: textColor }}>
+                    <li>💬 普通: 通常の吹き出し</li>
+                    <li>💭 思考: 雲形の吹き出し</li>
+                    <li>❗ 叫び: ギザギザ</li>
+                    <li>🤫 小声: 点線</li>
+                  </ul>
+                </div>
+              </div>
+            </section>
+
+            {/* ショートカット */}
+            <section style={{ marginBottom: '32px' }}>
+              <h3 style={{ fontSize: '20px', marginBottom: '16px', color: isDarkMode ? '#e57373' : '#c0392b', borderBottom: `2px solid ${isDarkMode ? '#e57373' : '#c0392b'}`, paddingBottom: '8px' }}>
+                ⌨️ ショートカットキー
+              </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+                {[
+                  { key: 'Ctrl + Z', desc: '元に戻す' },
+                  { key: 'Ctrl + Y', desc: 'やり直し' },
+                  { key: 'Delete', desc: '削除' },
+                  { key: 'Ctrl + Enter', desc: '編集確定' },
+                  { key: 'Esc', desc: 'キャンセル' },
+                  { key: 'ダブルクリック', desc: '吹き出し編集' }
+                ].map((item, idx) => (
+                  <div key={idx} style={{ padding: '10px', backgroundColor: cardBg, borderRadius: '6px', textAlign: 'center' }}>
+                    <div style={{ fontWeight: 'bold', fontSize: '13px', color: textColor, marginBottom: '4px' }}>{item.key}</div>
+                    <div style={{ fontSize: '12px', color: isDarkMode ? '#aaa' : '#666' }}>{item.desc}</div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* Tips */}
+            <section style={{ marginBottom: '16px' }}>
+              <h3 style={{ fontSize: '20px', marginBottom: '16px', color: isDarkMode ? '#9575cd' : '#8e44ad', borderBottom: `2px solid ${isDarkMode ? '#9575cd' : '#8e44ad'}`, paddingBottom: '8px' }}>
+                💡 よくある質問
+              </h3>
+              {[
+                { q: 'AI生成がうまくいかない', a: 'より詳細なストーリーを入力してください。各コマの内容を明確に区切って記述し、キャラクター名を統一します。' },
+                { q: '吹き出しのサイズを変えたい', a: '吹き出しを選択すると四隅にハンドルが表示されます。ドラッグでリサイズできます。' },
+                { q: 'プロジェクトが消えた', a: 'ブラウザのローカルストレージに保存されています。同じブラウザで「📁 プロジェクト管理」から確認できます。' },
+                { q: 'キャラクターの表情を変えたい', a: 'キャラクターを選択→左パネルの「👤 キャラクター」で表情を変更できます。' }
+              ].map((item, idx) => (
+                <div key={idx} style={{ marginBottom: '16px' }}>
+                  <strong style={{ color: isDarkMode ? '#9575cd' : '#8e44ad', fontSize: '14px' }}>Q: {item.q}</strong>
+                  <p style={{ marginTop: '6px', marginBottom: '0', color: textColor, marginLeft: '16px', fontSize: '14px', lineHeight: '1.6' }}>
+                    A: {item.a}
+                  </p>
+                </div>
+              ))}
+            </section>
+
+          </div>
+        </div>
+
+        {/* フッター */}
+        <div
+          style={{
+            padding: '16px 24px',
+            borderTop: `2px solid ${sectionBorder}`,
+            display: 'flex',
+            justifyContent: 'flex-end',
+            backgroundColor: headerBg,
+          }}
+        >
+          <button
+            onClick={onClose}
+            style={{
+              padding: '10px 24px',
+              backgroundColor: '#3498db',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '16px',
+              fontWeight: 'bold',
+            }}
+          >
+            閉じる
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default HelpModal;
