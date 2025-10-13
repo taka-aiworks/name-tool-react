@@ -158,6 +158,9 @@ export class MouseEventHandler {
           y: mouseY - clickedBubble.y,
         }
       });
+      if (callbacks.onDragStart) {
+        callbacks.onDragStart();
+      }
       e.preventDefault();
       return;
     }
@@ -173,6 +176,9 @@ export class MouseEventHandler {
           y: mouseY - clickedCharacter.y,
         }
       });
+      if (callbacks.onDragStart) {
+        callbacks.onDragStart();
+      }
       e.preventDefault();
     }
   }

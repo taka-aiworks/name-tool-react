@@ -257,8 +257,8 @@ function App() {
   // アンドゥリドゥ実行中フラグ（useRefで同期管理）
   const isUndoRedoExecutingRef = useRef(false);
   
-  // ドラッグ中フラグ（ドラッグ中は履歴保存しない）
-  const isDraggingRef = useRef(false);
+  // 初回マウント判定用
+  const isFirstMountRef = useRef(true);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -338,38 +338,32 @@ function App() {
   }, []);
 
 
-  // デバウンス用のタイマーref
-  const saveHistoryTimerRef = useRef<NodeJS.Timeout | null>(null);
-  
-  // 履歴保存（デバウンス付き）
-  const saveHistoryDebounced = useCallback(() => {
-    // アンドゥリドゥ実行中は保存しない
+  // 自動履歴保存（useEffect）
+  useEffect(() => {
+    // 初回マウント時はスキップ
+    if (isFirstMountRef.current) {
+      isFirstMountRef.current = false;
+      return;
+    }
+    
+    // アンドゥリドゥ実行中はスキップ
     if (isUndoRedoExecutingRef.current) {
       return;
     }
     
-    // ドラッグ中は保存しない（onDragEndで保存される）
-    if (isDraggingRef.current) {
-      return;
-    }
-    
-    // 空の状態では保存しない
+    // 空の状態ではスキップ
     if (characters.length === 0 && speechBubbles.length === 0 && panels.length === 0 && 
         backgrounds.length === 0 && effects.length === 0) {
       return;
     }
-    
-    // 既存のタイマーをクリア
-    if (saveHistoryTimerRef.current) {
-      clearTimeout(saveHistoryTimerRef.current);
-    }
-    
-    // 500ms後に履歴保存
-    saveHistoryTimerRef.current = setTimeout(() => {
+
+    // 500ms後に履歴保存（デバウンス）
+    const timer = setTimeout(() => {
       saveToHistory(characters, speechBubbles, panels, backgrounds, effects);
-      saveHistoryTimerRef.current = null;
     }, 500);
-  }, [characters, speechBubbles, panels, backgrounds, effects, saveToHistory]);
+
+    return () => clearTimeout(timer);
+  }, [charactersSignature, bubblesSignature, panelsSignature, backgroundsSignature, effectsSignature, saveToHistory]);
 
   // アンドゥ/リドゥ処理
   const handleUndo = useCallback(() => {
@@ -377,19 +371,12 @@ function App() {
       // 実行中フラグを立てる
       isUndoRedoExecutingRef.current = true;
       
-      // 保留中の履歴保存をキャンセル
-      if (saveHistoryTimerRef.current) {
-        clearTimeout(saveHistoryTimerRef.current);
-        saveHistoryTimerRef.current = null;
-      }
-      
       const newIndex = operationHistory.currentIndex - 1;
       setCharacters([...operationHistory.characters[newIndex]]);
       setSpeechBubbles([...operationHistory.speechBubbles[newIndex]]);
       setPanels([...operationHistory.panels[newIndex]]);
       setBackgrounds([...operationHistory.backgrounds[newIndex]]);
       setEffects([...operationHistory.effects[newIndex]]);
-      // トーン機能は無効化
       setOperationHistory(prev => ({ ...prev, currentIndex: newIndex }));
       
       // フラグをリセット（履歴保存タイムアウトより長く）
@@ -404,19 +391,12 @@ function App() {
       // 実行中フラグを立てる
       isUndoRedoExecutingRef.current = true;
       
-      // 保留中の履歴保存をキャンセル
-      if (saveHistoryTimerRef.current) {
-        clearTimeout(saveHistoryTimerRef.current);
-        saveHistoryTimerRef.current = null;
-      }
-      
       const newIndex = operationHistory.currentIndex + 1;
       setCharacters([...operationHistory.characters[newIndex]]);
       setSpeechBubbles([...operationHistory.speechBubbles[newIndex]]);
       setPanels([...operationHistory.panels[newIndex]]);
       setBackgrounds([...operationHistory.backgrounds[newIndex]]);
       setEffects([...operationHistory.effects[newIndex]]);
-      // トーン機能は無効化
       setOperationHistory(prev => ({ ...prev, currentIndex: newIndex }));
       
       // フラグをリセット（履歴保存タイムアウトより長く）
@@ -570,19 +550,14 @@ function App() {
       
     console.log('📐 Scaled panels:', scaledPanels);
     setPanels(scaledPanels);
+    } else {
+      console.error(`Template "${template}" not found`);
+    }
     
     setCharacters([]);
     setSpeechBubbles([]);
     setBackgrounds([]);
     setEffects([]);
-    
-    // テンプレート適用後に即座に履歴保存（初期状態確保のため）
-    setTimeout(() => {
-      saveToHistory([], [], scaledPanels, [], []);
-    }, 0);
-    } else {
-      console.error(`Template "${template}" not found`);
-    }
     
     if (canvasRef.current) {
       const canvas = canvasRef.current;
@@ -606,8 +581,6 @@ function App() {
       setBackgrounds(newBackgrounds);
       setEffects(newEffects);
       setTones(newTones);
-      // ページ切り替え後に履歴保存
-      saveHistoryDebounced();
     }
   });
 
@@ -743,32 +716,6 @@ function App() {
     }
   }, [addBubbleFunc, dialogueText]);
 
-  // 🔄 履歴保存付き状態更新ラッパー関数
-  const handleCharactersChange = useCallback((newCharacters: Character[] | ((prev: Character[]) => Character[])) => {
-    setCharacters(newCharacters);
-    saveHistoryDebounced();
-  }, [saveHistoryDebounced]);
-
-  const handleSpeechBubblesChange = useCallback((newBubbles: SpeechBubble[] | ((prev: SpeechBubble[]) => SpeechBubble[])) => {
-    setSpeechBubbles(newBubbles);
-    saveHistoryDebounced();
-  }, [saveHistoryDebounced]);
-
-  const handleBackgroundsChange = useCallback((newBackgrounds: BackgroundElement[] | ((prev: BackgroundElement[]) => BackgroundElement[])) => {
-    setBackgrounds(newBackgrounds);
-    saveHistoryDebounced();
-  }, [saveHistoryDebounced]);
-
-  const handleEffectsChange = useCallback((newEffects: EffectElement[] | ((prev: EffectElement[]) => EffectElement[])) => {
-    setEffects(newEffects);
-    saveHistoryDebounced();
-  }, [saveHistoryDebounced]);
-
-  const handleTonesChange = useCallback((newTones: ToneElement[] | ((prev: ToneElement[]) => ToneElement[])) => {
-    setTones(newTones);
-    saveHistoryDebounced();
-  }, [saveHistoryDebounced]);
-
   // 👤 キャラプロンプト登録保存
   const handleSaveCharacterPrompt = useCallback((characterId: string, name: string, prompt: string) => {
     // キャラクター名を更新
@@ -857,15 +804,13 @@ function App() {
     });
     
     setSelectedCharacter(updatedCharacter);
-    saveHistoryDebounced();
-  }, [saveHistoryDebounced]);
+  }, []);
 
   const handleCharacterDelete = useCallback((characterToDelete: Character) => {
     const newCharacters = characters.filter(char => char.id !== characterToDelete.id);
     setCharacters(newCharacters);
     setSelectedCharacter(null);
-    saveHistoryDebounced();
-  }, [characters, saveHistoryDebounced]);
+  }, [characters]);
 
   const handleCharacterPanelClose = useCallback(() => {
     setSelectedCharacter(null);
@@ -906,8 +851,7 @@ function App() {
 
     setPanels(prevPanels => [...prevPanels, newPanel]);
     console.log(`✅ コマ追加完了: ${newPanelId} (${position})`);
-    saveHistoryDebounced();
-  }, [panels, saveHistoryDebounced]);
+  }, [panels]);
 
   const handlePanelDelete = useCallback((panelId: string) => {
     if (panels.length <= 1) {
@@ -927,9 +871,8 @@ function App() {
       setSelectedEffect(null);
       // トーン機能は無効化
       console.log(`🗑️ コマ削除: ${panelId}`);
-      saveHistoryDebounced();
     }
-  }, [panels.length, saveHistoryDebounced]);
+  }, [panels.length]);
 
   const handlePanelSplit = useCallback((panelId: number, direction: "horizontal" | "vertical") => {
     const panelToSplit = panels.find(p => p.id === panelId);
@@ -974,8 +917,7 @@ function App() {
 
     setPanels(newPanels);
     console.log(`${direction}分割完了（隙間: ${gap}px）`);
-    saveHistoryDebounced();
-  }, [panels, saveHistoryDebounced]);
+  }, [panels]);
 
   // コマの入れ替え機能（サイズはそのまま、内容のみ入れ替え）
   const handlePanelSwap = useCallback((panelId1: number, panelId2: number) => {
@@ -1011,8 +953,7 @@ function App() {
     }));
 
     console.log(`🔄 コマ ${panelId1} と ${panelId2} の内容を入れ替えました`);
-    saveHistoryDebounced();
-  }, [panels, saveHistoryDebounced]);
+  }, [panels]);
 
   const handleClearAll = useCallback(() => {
     if (window.confirm("全ての要素をクリアしますか？")) {
@@ -1432,15 +1373,15 @@ function App() {
             panels={panels}
             setPanels={handlePanelUpdate}
             characters={characters}
-            setCharacters={handleCharactersChange}
+            setCharacters={setCharacters}
             speechBubbles={speechBubbles}
-            setSpeechBubbles={handleSpeechBubblesChange}
+            setSpeechBubbles={setSpeechBubbles}
             backgrounds={backgrounds}
-            setBackgrounds={handleBackgroundsChange}
+            setBackgrounds={setBackgrounds}
             effects={effects}
-            setEffects={handleEffectsChange}
+            setEffects={setEffects}
             tones={tones}
-            setTones={handleTonesChange}
+            setTones={setTones}
             selectedTone={selectedTone}
             onToneSelect={setSelectedTone}
             showTonePanel={showTonePanel}
@@ -1499,20 +1440,6 @@ function App() {
             snapSettings={snapSettings}
             swapPanel1={swapPanel1}
             swapPanel2={swapPanel2}
-            onDragStart={() => {
-              // ドラッグ開始時：フラグを立てる
-              isDraggingRef.current = true;
-              // 保留中の履歴保存をキャンセル
-              if (saveHistoryTimerRef.current) {
-                clearTimeout(saveHistoryTimerRef.current);
-                saveHistoryTimerRef.current = null;
-              }
-            }}
-            onDragEnd={() => {
-              // ドラッグ終了時：フラグを下ろして履歴保存
-              isDraggingRef.current = false;
-              saveToHistory(characters, speechBubbles, panels, backgrounds, effects);
-            }}
           />
         </div>
 
