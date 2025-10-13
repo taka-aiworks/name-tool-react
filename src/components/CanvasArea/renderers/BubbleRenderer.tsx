@@ -17,27 +17,27 @@ export class BubbleRenderer {
 
   // 座標変換ヘルパー関数
   static calculateBubblePosition(bubble: SpeechBubble, panel: Panel): { x: number; y: number; width: number; height: number } {
-    // 既存の吹き出しのサイズを拡大
-    const scaleFactor = 2.0; // 2倍に拡大
-    const scaledWidth = bubble.width * scaleFactor;
-    const scaledHeight = bubble.height * scaleFactor;
-    
     if (bubble.isGlobalPosition) {
+      // 絶対座標の場合：サイズを拡大
+      const scaleFactor = 2.0; // 2倍に拡大
       return {
         x: bubble.x,
         y: bubble.y,
-        width: scaledWidth,
-        height: scaledHeight
+        width: bubble.width * scaleFactor,
+        height: bubble.height * scaleFactor
       };
     } else {
+      // 相対座標の場合：パネルサイズに基づいて計算（拡大なし）
       const x = panel.x + (bubble.x * panel.width);
       const y = panel.y + (bubble.y * panel.height);
+      const width = bubble.width * panel.width;
+      const height = bubble.height * panel.height;
       
       return {
         x: x,
         y: y,
-        width: scaledWidth,
-        height: scaledHeight
+        width: width,
+        height: height
       };
     }
   }
