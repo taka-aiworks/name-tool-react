@@ -848,7 +848,7 @@ function App() {
         '心の声': 'thought'
       };
       
-      updatedBubbles.push({
+      const newBubble = {
         id: Date.now().toString(),
         panelId: panelData.panelId,
         text: panelData.dialogue,
@@ -860,7 +860,11 @@ function App() {
         vertical: true,  // デフォルトは縦書き
         scale: 1,
         isGlobalPosition: false  // パネル相対座標を使用
-      });
+      };
+      
+      console.log(`🔧 1コマ生成吹き出し作成: panel=${panelData.panelId}, bubble=${newBubble.id}, coords=(${newBubble.x},${newBubble.y},${newBubble.width}x${newBubble.height}), isGlobal=${newBubble.isGlobalPosition}`);
+      
+      updatedBubbles.push(newBubble);
     }
     setSpeechBubbles(updatedBubbles);
 

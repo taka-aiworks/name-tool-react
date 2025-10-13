@@ -20,14 +20,12 @@ export class BubbleRenderer {
     if (bubble.isGlobalPosition) {
       // 絶対座標の場合：サイズを拡大
       const scaleFactor = 2.0; // 2倍に拡大
-      const result = {
+      return {
         x: bubble.x,
         y: bubble.y,
         width: bubble.width * scaleFactor,
         height: bubble.height * scaleFactor
       };
-      console.log(`📍 絶対座標吹き出し: panel=${panel.id}, bubble=${bubble.id}`, result);
-      return result;
     } else {
       // 相対座標の場合：パネルサイズに基づいて計算（拡大なし）
       const x = panel.x + (bubble.x * panel.width);
@@ -35,14 +33,12 @@ export class BubbleRenderer {
       const width = bubble.width * panel.width;
       const height = bubble.height * panel.height;
       
-      const result = {
+      return {
         x: x,
         y: y,
         width: width,
         height: height
       };
-      console.log(`📍 相対座標吹き出し: panel=${panel.id}(${panel.x},${panel.y},${panel.width}x${panel.height}), bubble=${bubble.id}(${bubble.x},${bubble.y},${bubble.width}x${bubble.height}) → 計算結果:`, result);
-      return result;
     }
   }
 
@@ -64,8 +60,6 @@ export class BubbleRenderer {
     const bubblePos = this.calculateBubblePosition(bubble, panel);
     const transformedBubble = { ...bubble, ...bubblePos };
 
-    console.log(`🎨 吹き出し描画開始: bubble=${bubble.id}, text="${bubble.text}", pos=(${bubblePos.x},${bubblePos.y}), size=${bubblePos.width}x${bubblePos.height}`);
-
     ctx.save();
 
     // 🔧 編集中の吹き出しは半透明で表示
@@ -85,7 +79,6 @@ export class BubbleRenderer {
     }
 
     ctx.restore();
-    console.log(`✅ 吹き出し描画完了: bubble=${bubble.id}`);
   }
 
   // 吹き出し背景描画（形状完全分離版）
