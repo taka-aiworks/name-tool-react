@@ -1107,6 +1107,22 @@ function App() {
       <header className="header">
         <h1>📖 AI漫画ネームメーカー</h1>
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <button 
+            className="control-btn"
+            onClick={() => setShowHelpModal(true)}
+            title="使い方ガイド"
+            style={{
+              background: '#3498db',
+              color: "white",
+              border: '1px solid #3498db',
+              fontWeight: "bold"
+            }}
+          >
+            📖 使い方ガイド
+          </button>
+
+          <div style={{ width: "1px", height: "24px", background: "var(--border-color)" }}></div>
+
           {projectSave.hasUnsavedChanges && (projectSave.currentProjectId && projectSave.currentProjectName) && (
           <button 
             className="control-btn"
@@ -1181,20 +1197,6 @@ function App() {
           </button>
 
           <div style={{ width: "1px", height: "24px", background: "var(--border-color)" }}></div>
-
-          <button 
-            className="control-btn"
-            onClick={() => setShowHelpModal(true)}
-            title="使い方ガイド"
-            style={{
-              background: '#3498db',
-              color: "white",
-              border: '1px solid #3498db',
-              fontWeight: "bold"
-            }}
-          >
-            📖 使い方ガイド
-          </button>
 
           <button 
             className="control-btn"
