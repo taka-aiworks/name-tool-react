@@ -550,17 +550,20 @@ export class BubbleRenderer {
     bubbles: SpeechBubble[], 
     panels: Panel[]
   ): SpeechBubble | null {
+    console.log(`🔎 findBubbleAt呼び出し: click=(${x},${y}), bubbles=${bubbles.length}個`);
     for (let i = bubbles.length - 1; i >= 0; i--) {
       const bubble = bubbles[i];
       const panel = panels.find(p => p.id === bubble.panelId) || panels[0];
       if (!panel) continue;
       
       const bubblePos = this.calculateBubblePosition(bubble, panel);
+      console.log(`  吹き出し${i}: id=${bubble.id}, 元座標=(${bubble.x},${bubble.y}), 画面座標=(${bubblePos.x},${bubblePos.y}), サイズ=${bubblePos.width}x${bubblePos.height}, isGlobal=${bubble.isGlobalPosition}`);
       
       if (x >= bubblePos.x && 
           x <= bubblePos.x + bubblePos.width &&
           y >= bubblePos.y && 
           y <= bubblePos.y + bubblePos.height) {
+        console.log(`  ✅ ヒット！`);
         return bubble;
       }
     }

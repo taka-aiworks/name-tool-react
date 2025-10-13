@@ -149,6 +149,7 @@ export class MouseEventHandler {
 
     // 吹き出し操作
     const clickedBubble = BubbleRenderer.findBubbleAt(mouseX, mouseY, speechBubbles, panels);
+    console.log(`🔍 吹き出しクリック判定: mouse=(${mouseX},${mouseY}), 吹き出し数=${speechBubbles.length}, 見つかった=${clickedBubble ? 'あり' : 'なし'}`);
     if (clickedBubble) {
       callbacks.setSelectedBubble(clickedBubble);
       
