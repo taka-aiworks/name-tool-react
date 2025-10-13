@@ -1125,6 +1125,52 @@ function App() {
 
           <button 
             className="control-btn"
+            onClick={async () => {
+              if (!projectSave.currentProjectId || !projectSave.currentProjectName) {
+                alert('保存されているプロジェクトがありません。「📁 プロジェクト管理」から「名前を付けて保存」してください。');
+                return;
+              }
+              
+              try {
+                const projectData = {
+                  panels,
+                  characters,
+                  bubbles: speechBubbles,
+                  backgrounds,
+                  effects,
+                  tones,
+                  canvasSize,
+                  settings,
+                  characterNames,
+                  characterSettings,
+                  canvasSettings
+                };
+                
+                const success = await projectSave.saveProject(projectData);
+                if (success) {
+                  alert(`プロジェクト「${projectSave.currentProjectName}」を上書き保存しました`);
+                } else {
+                  alert('保存に失敗しました');
+                }
+              } catch (error) {
+                console.error('保存エラー:', error);
+                alert('保存中にエラーが発生しました');
+              }
+            }}
+            title={projectSave.currentProjectName ? `上書き保存: ${projectSave.currentProjectName}` : "上書き保存（プロジェクト未保存）"}
+            style={{
+              background: projectSave.currentProjectId ? COLOR_PALETTE.buttons.save.primary : '#9ca3af',
+              color: "white",
+              border: `1px solid ${projectSave.currentProjectId ? COLOR_PALETTE.buttons.save.primary : '#9ca3af'}`,
+              fontWeight: "bold",
+              cursor: projectSave.currentProjectId ? 'pointer' : 'not-allowed'
+            }}
+          >
+            💾 {projectSave.currentProjectName ? `上書き: ${projectSave.currentProjectName}` : "上書き保存"}
+          </button>
+
+          <button 
+            className="control-btn"
             onClick={() => setShowProjectPanel(true)}
             title="プロジェクト管理"
             style={{
