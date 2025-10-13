@@ -103,25 +103,31 @@ ${characterInfo}
   "panels": [
     {
       "panelId": 1,
-      "note": "リナ悩む表情、カフェの一角",
-      "dialogue": "絵が描けない...でも漫画作りたい",
+      "note": "リナ悩む表情",
+      "dialogue": "絵が描けない...",
       "bubbleType": "普通",
-      "actionPrompt": "worried expression, looking down, sitting at cafe table, upper body, natural lighting",
-      "actionPromptJa": "心配そうな表情、下を向く、カフェのテーブルに座る、上半身、自然光",
+      "actionPrompt": "worried expression, looking down",
+      "actionPromptJa": "心配そうな表情、下を向く",
       "characterId": "character_1"
     }
   ]
 }
 
-ルール:
-- コマ数は厳密に守る
-- noteは簡潔に（キャラ名＋動作＋場所、20文字以内）
-- dialogueは自然な会話（1コマ15文字以内推奨）
-- bubbleTypeは「普通」「叫び」「小声」「心の声」のいずれか
-- actionPromptは英語で、表情・動作・構図・背景・ライティングを含める（Stable Diffusion形式）
-- actionPromptJaは日本語で、actionPromptの内容を分かりやすく説明
-- characterIdは登場キャラのIDを指定（登録キャラがいる場合は必ず使用）
-- トーン（コメディ/シリアス等）に合わせた表現にする`;
+**重要なルール:**
+1. **入力内容のみを使用** - 入力にない要素（具体的な物、場所、詳細な設定）は絶対に追加しない
+2. コマ数は厳密に守る
+3. noteは簡潔に（キャラ名＋基本的な動作のみ、15文字以内）
+4. dialogueは自然な会話（1コマ15文字以内推奨）
+5. bubbleTypeは「普通」「叫び」「小声」「心の声」のいずれか
+6. actionPromptは英語で、**入力された動作・表情のみ**を表現（勝手な追加禁止）
+7. actionPromptJaは日本語で、actionPromptの内容をそのまま説明
+8. characterIdは登場キャラのIDを指定（登録キャラがいる場合は必ず使用）
+9. トーン（コメディ/シリアス等）に合わせた表現にする
+
+**禁止事項:**
+- 入力にない具体的な物や生き物を追加する（例: 入力「びっくりする」→「巨大なウサギ」は禁止）
+- 入力にない場所や環境を追加する
+- 過度に詳細な描写や装飾を加える`;
 
       const userPrompt = `話の概要: ${request.story}
 コマ数: ${request.panelCount}
@@ -285,19 +291,25 @@ ${characterInfo || 'キャラクター情報なし'}
 以下のJSON形式で1つのコマの情報のみを返してください：
 {
   "panelId": ${targetPanelId},
-  "note": "コマの内容説明（日本語）",
+  "note": "コマの内容説明（簡潔に、15文字以内）",
   "dialogue": "セリフ",
   "bubbleType": "普通",
-  "actionPrompt": "動作・表情・構図のプロンプト（英語）",
+  "actionPrompt": "動作・表情のプロンプト（英語、シンプルに）",
   "actionPromptJa": "動作プロンプトの日本語説明",
   "characterId": "character_1"
 }
 
-【注意事項】
-- 既存のコマとの整合性を保つ
-- ストーリーの流れに沿った内容にする
-- セリフは自然で魅力的にする
-- プロンプトは画像生成に適した英語で記述する`;
+**重要なルール:**
+1. **入力内容のみを使用** - 入力（ストーリー）にない要素は絶対に追加しない
+2. noteは簡潔に（キャラ名＋基本的な動作のみ、15文字以内）
+3. dialogueは自然な会話（15文字以内推奨）
+4. actionPromptは英語で、**入力された動作・表情のみ**を表現（勝手な追加禁止）
+5. 既存のコマとの整合性を保つ
+
+**禁止事項:**
+- 入力にない具体的な物や生き物を追加する（例: 入力「びっくりする」→「巨大なウサギ」は禁止）
+- 入力にない場所や環境を追加する
+- 過度に詳細な描写や装飾を加える`;
 
     try {
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
