@@ -2408,9 +2408,7 @@ function App() {
 
       <PaperSizeSelectPanel
         currentSettings={canvasSettings}
-        onSettingsChange={(newSettings: CanvasSettings) => {
-          setCanvasSettings(newSettings);
-        }}
+        onSettingsChange={handleCanvasSettingsChange}
         isVisible={isPaperSizePanelVisible}
         onToggle={() => setIsPaperSizePanelVisible(!isPaperSizePanelVisible)}
         isDarkMode={isDarkMode}
