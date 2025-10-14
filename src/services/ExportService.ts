@@ -465,10 +465,43 @@ export class ExportService {
     canvasElement: HTMLCanvasElement,
     panels: Panel[],
     options: ExportOptions,
-    onProgress?: (progress: ExportProgress) => void
+    onProgress?: (progress: ExportProgress) => void,
+    redrawTemplateOnly?: () => Promise<void>
   ): Promise<void> {
     try {
       onProgress?.({ step: 'initialize', progress: 0, message: 'テンプレート画像を生成中...' });
+
+      // キャンバスをテンプレートのみで再描画
+      if (redrawTemplateOnly) {
+        await redrawTemplateOnly();
+        // 再描画を待つ
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
+      // 実際のキャンバスから直接コピー
+      const outputCanvas = await this.captureCanvas(canvasElement, options);
+
+      onProgress?.({ step: 'saving', progress: 90, message: 'テンプレート画像を保存中...' });
+      this.downloadImage(outputCanvas, 'ネーム_テンプレート.png');
+
+      onProgress?.({ step: 'complete', progress: 100, message: 'テンプレート画像出力完了！' });
+    } catch (error) {
+      console.error('テンプレート画像出力エラー:', error);
+      throw new Error('テンプレート画像出力に失敗しました');
+    }
+  }
+
+  /**
+   * テンプレート画像をPDFとして出力
+   */
+  async exportTemplatePDF(
+    canvasElement: HTMLCanvasElement,
+    panels: Panel[],
+    options: ExportOptions,
+    onProgress?: (progress: ExportProgress) => void
+  ): Promise<void> {
+    try {
+      onProgress?.({ step: 'initialize', progress: 0, message: 'テンプレートPDFを生成中...' });
 
       const scale = this.getScaleFromQuality(options.quality);
       const outputCanvas = document.createElement('canvas');
@@ -503,13 +536,39 @@ export class ExportService {
         ctx.fillText(`${index + 1}`, x + 5, y + 20);
       });
 
-      onProgress?.({ step: 'saving', progress: 90, message: 'テンプレート画像を保存中...' });
-      this.downloadImage(outputCanvas, 'ネーム_テンプレート.png');
+      onProgress?.({ step: 'convert', progress: 80, message: 'PDF形式に変換中...' });
 
-      onProgress?.({ step: 'complete', progress: 100, message: 'テンプレート画像出力完了！' });
+      // PDFとして出力
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 10;
+
+      const imgWidth = pageWidth - (margin * 2);
+      const imgHeight = (outputCanvas.height * imgWidth) / outputCanvas.width;
+
+      pdf.addImage(
+        outputCanvas.toDataURL('image/jpeg', 0.95),
+        'JPEG',
+        margin,
+        margin,
+        imgWidth,
+        Math.min(imgHeight, pageHeight - (margin * 2))
+      );
+
+      onProgress?.({ step: 'saving', progress: 95, message: 'PDFファイルを保存中...' });
+      const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+      pdf.save(`ネーム_テンプレート_${timestamp}.pdf`);
+
+      onProgress?.({ step: 'complete', progress: 100, message: 'テンプレートPDF出力完了！' });
     } catch (error) {
-      console.error('テンプレート画像出力エラー:', error);
-      throw new Error('テンプレート画像出力に失敗しました');
+      console.error('テンプレートPDF出力エラー:', error);
+      throw new Error('テンプレートPDF出力に失敗しました');
     }
   }
 

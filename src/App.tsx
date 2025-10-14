@@ -100,7 +100,46 @@ function App() {
   // 🤖 OpenAI連携機能
   const [showStoryToComicModal, setShowStoryToComicModal] = useState<boolean>(false);
   const [storyModalMode, setStoryModalMode] = useState<'full' | 'single'>('full');
+  
+  // 🖼️ テンプレート出力用の一時状態
+  const [tempCharacters, setTempCharacters] = useState<Character[]>([]);
+  const [tempBubbles, setTempBubbles] = useState<SpeechBubble[]>([]);
+  const [tempBackgrounds, setTempBackgrounds] = useState<BackgroundElement[]>([]);
+  const [tempEffects, setTempEffects] = useState<EffectElement[]>([]);
+  const [tempTones, setTempTones] = useState<ToneElement[]>([]);
   const [showOpenAISettingsModal, setShowOpenAISettingsModal] = useState<boolean>(false);
+
+  // 🖼️ テンプレートのみ描画コールバック
+  const handleRedrawTemplateOnly = useCallback(async () => {
+    // 元のデータを保存
+    setTempCharacters(characters);
+    setTempBubbles(speechBubbles);
+    setTempBackgrounds(backgrounds);
+    setTempEffects(effects);
+    setTempTones(tones);
+    
+    // すべてをクリア
+    setCharacters([]);
+    setSpeechBubbles([]);
+    setBackgrounds([]);
+    setEffects([]);
+    setTones([]);
+    
+    // 再描画を待つ
+    await new Promise(resolve => setTimeout(resolve, 50));
+  }, [characters, speechBubbles, backgrounds, effects, tones]);
+
+  // 🖼️ 元の描画に戻すコールバック
+  const handleRestoreFullCanvas = useCallback(async () => {
+    setCharacters(tempCharacters);
+    setSpeechBubbles(tempBubbles);
+    setBackgrounds(tempBackgrounds);
+    setEffects(tempEffects);
+    setTones(tempTones);
+    
+    // 再描画を待つ
+    await new Promise(resolve => setTimeout(resolve, 50));
+  }, [tempCharacters, tempBubbles, tempBackgrounds, tempEffects, tempTones]);
   const [isGeneratingFromStory, setIsGeneratingFromStory] = useState<boolean>(false);
   
   // 👤 キャラプロンプト登録
@@ -2360,6 +2399,8 @@ function App() {
               currentPageIndex={pageManager.currentPageIndex}
               pages={pageManager.pages}
               paperSize={canvasSettings.paperSize}
+              onRedrawTemplateOnly={handleRedrawTemplateOnly}
+              onRestoreFullCanvas={handleRestoreFullCanvas}
             />
           </div>
         </div>

@@ -37,8 +37,8 @@ export const templates: Templates = {
   },
   "dialogue_2": {
     panels: [
-      { id: 1, x: MARGIN_SIDES, y: MARGIN_TOP, width: USABLE_W, height: USABLE_H * 0.65 },  // メインコマ（65%）
-      { id: 2, x: MARGIN_SIDES, y: MARGIN_TOP + USABLE_H * 0.65 + GAP, width: USABLE_W, height: USABLE_H * 0.35 - GAP }, // サブコマ（35%）
+      { id: 1, x: MARGIN_SIDES, y: MARGIN_TOP, width: USABLE_W, height: (USABLE_H - GAP) * 0.65 },  // メインコマ（65%）
+      { id: 2, x: MARGIN_SIDES, y: MARGIN_TOP + (USABLE_H - GAP) * 0.65 + GAP, width: USABLE_W, height: (USABLE_H - GAP) * 0.35 }, // サブコマ（35%）
     ],
   },
   "main_sub": {
@@ -64,16 +64,16 @@ export const templates: Templates = {
   },
   "t_shape": {
     panels: [
-      { id: 1, x: MARGIN_SIDES, y: MARGIN_TOP, width: USABLE_W, height: USABLE_H * 0.4 },   // 上段は1番（40%に調整）
-      { id: 3, x: MARGIN_SIDES, y: MARGIN_TOP + USABLE_H * 0.4 + GAP, width: (USABLE_W - GAP) / 2, height: USABLE_H * 0.6 - GAP },  // 左下は3番（60%に調整）
-      { id: 2, x: MARGIN_SIDES + (USABLE_W - GAP) / 2 + GAP, y: MARGIN_TOP + USABLE_H * 0.4 + GAP, width: (USABLE_W - GAP) / 2, height: USABLE_H * 0.6 - GAP }, // 右下は2番（60%に調整）
+      { id: 1, x: MARGIN_SIDES, y: MARGIN_TOP, width: USABLE_W, height: (USABLE_H - GAP) * 0.4 },   // 上段は1番（40%に調整）
+      { id: 3, x: MARGIN_SIDES, y: MARGIN_TOP + (USABLE_H - GAP) * 0.4 + GAP, width: (USABLE_W - GAP) / 2, height: (USABLE_H - GAP) * 0.6 },  // 左下は3番（60%に調整）
+      { id: 2, x: MARGIN_SIDES + (USABLE_W - GAP) / 2 + GAP, y: MARGIN_TOP + (USABLE_H - GAP) * 0.4 + GAP, width: (USABLE_W - GAP) / 2, height: (USABLE_H - GAP) * 0.6 }, // 右下は2番（60%に調整）
     ],
   },
   "reverse_t": {
     panels: [
-      { id: 2, x: MARGIN_SIDES, y: MARGIN_TOP, width: (USABLE_W - GAP) / 2, height: USABLE_H * 0.6 },  // 左上は2番（60%に調整）
-      { id: 1, x: MARGIN_SIDES + (USABLE_W - GAP) / 2 + GAP, y: MARGIN_TOP, width: (USABLE_W - GAP) / 2, height: USABLE_H * 0.6 }, // 右上は1番（60%に調整）
-      { id: 3, x: MARGIN_SIDES, y: MARGIN_TOP + USABLE_H * 0.6 + GAP, width: USABLE_W, height: USABLE_H * 0.4 - GAP }, // 下段は3番（40%に調整）
+      { id: 2, x: MARGIN_SIDES, y: MARGIN_TOP, width: (USABLE_W - GAP) / 2, height: (USABLE_H - GAP) * 0.6 },  // 左上は2番（60%に調整）
+      { id: 1, x: MARGIN_SIDES + (USABLE_W - GAP) / 2 + GAP, y: MARGIN_TOP, width: (USABLE_W - GAP) / 2, height: (USABLE_H - GAP) * 0.6 }, // 右上は1番（60%に調整）
+      { id: 3, x: MARGIN_SIDES, y: MARGIN_TOP + (USABLE_H - GAP) * 0.6 + GAP, width: USABLE_W, height: (USABLE_H - GAP) * 0.4 }, // 下段は3番（40%に調整）
     ],
   },
 
@@ -112,18 +112,18 @@ export const templates: Templates = {
   },
   "dialogue": {
     panels: [
-      { id: 1, x: MARGIN_SIDES, y: MARGIN_TOP, width: USABLE_W, height: USABLE_H * 0.25 },   // 上段は1番（25%）
-      { id: 3, x: MARGIN_SIDES, y: MARGIN_TOP + USABLE_H * 0.25 + GAP, width: (USABLE_W - GAP) / 2, height: USABLE_H * 0.25 },  // 左中は3番（25%）
-      { id: 2, x: MARGIN_SIDES + (USABLE_W - GAP) / 2 + GAP, y: MARGIN_TOP + USABLE_H * 0.25 + GAP, width: (USABLE_W - GAP) / 2, height: USABLE_H * 0.25 }, // 右中は2番（25%）
-      { id: 4, x: MARGIN_SIDES, y: MARGIN_TOP + USABLE_H * 0.5 + GAP * 2, width: USABLE_W, height: USABLE_H * 0.5 - GAP * 2 },  // 下段は4番（50%）
+      { id: 1, x: MARGIN_SIDES, y: MARGIN_TOP, width: USABLE_W, height: (USABLE_H - GAP * 2) * 0.25 },   // 上段は1番（25%）
+      { id: 3, x: MARGIN_SIDES, y: MARGIN_TOP + (USABLE_H - GAP * 2) * 0.25 + GAP, width: (USABLE_W - GAP) / 2, height: (USABLE_H - GAP * 2) * 0.25 },  // 左中は3番（25%）
+      { id: 2, x: MARGIN_SIDES + (USABLE_W - GAP) / 2 + GAP, y: MARGIN_TOP + (USABLE_H - GAP * 2) * 0.25 + GAP, width: (USABLE_W - GAP) / 2, height: (USABLE_H - GAP * 2) * 0.25 }, // 右中は2番（25%）
+      { id: 4, x: MARGIN_SIDES, y: MARGIN_TOP + (USABLE_H - GAP * 2) * 0.5 + GAP * 2, width: USABLE_W, height: (USABLE_H - GAP * 2) * 0.5 },  // 下段は4番（50%）
     ],
   },
   "action": {
     panels: [
-      { id: 3, x: MARGIN_SIDES, y: MARGIN_TOP, width: USABLE_W * 0.35, height: USABLE_H * 0.5 },  // 左は3番（35%に調整）
-      { id: 1, x: MARGIN_SIDES + USABLE_W * 0.35 + GAP, y: MARGIN_TOP, width: USABLE_W * 0.65 - GAP, height: (USABLE_H * 0.5 - GAP) / 2 }, // 右上は1番（65%に調整）
-      { id: 2, x: MARGIN_SIDES + USABLE_W * 0.35 + GAP, y: MARGIN_TOP + (USABLE_H * 0.5 - GAP) / 2 + GAP, width: USABLE_W * 0.65 - GAP, height: (USABLE_H * 0.5 - GAP) / 2 },// 右下は2番（65%に調整）
-      { id: 4, x: MARGIN_SIDES, y: MARGIN_TOP + USABLE_H * 0.5 + GAP, width: USABLE_W, height: USABLE_H * 0.5 - GAP }, // 下段は4番
+      { id: 3, x: MARGIN_SIDES, y: MARGIN_TOP, width: (USABLE_W - GAP) * 0.35, height: (USABLE_H - GAP) * 0.5 },  // 左は3番（35%に調整）
+      { id: 1, x: MARGIN_SIDES + (USABLE_W - GAP) * 0.35 + GAP, y: MARGIN_TOP, width: (USABLE_W - GAP) * 0.65, height: ((USABLE_H - GAP) * 0.5 - GAP) / 2 }, // 右上は1番（65%に調整）
+      { id: 2, x: MARGIN_SIDES + (USABLE_W - GAP) * 0.35 + GAP, y: MARGIN_TOP + ((USABLE_H - GAP) * 0.5 - GAP) / 2 + GAP, width: (USABLE_W - GAP) * 0.65, height: ((USABLE_H - GAP) * 0.5 - GAP) / 2 },// 右下は2番（65%に調整）
+      { id: 4, x: MARGIN_SIDES, y: MARGIN_TOP + (USABLE_H - GAP) * 0.5 + GAP, width: USABLE_W, height: (USABLE_H - GAP) * 0.5 }, // 下段は4番
     ],
   },
   "emotional": {
