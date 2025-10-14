@@ -261,8 +261,122 @@ AI生成を活用した効率的なワークフローを実現。
 - useEffectの依存配列を正しく設定すれば、自動保存は完璧に機能する
 - `isFirstMountRef`と`isUndoRedoExecutingRef`の2つのフラグで十分
 
+## 🚀 デプロイ・運用方針
+
+### 📦 リポジトリ構成
+- **開発版**: https://github.com/taka-aiworks/name-tool-react
+  - 主要な開発作業用
+  - バックアップとバージョン管理
+  
+- **ベータ版**: https://github.com/taka-aiworks/ai-manga-name-maker-beta
+  - 公開用リポジトリ
+  - Vercelと連携（自動デプロイ無効化済み）
+
+### 🔄 開発・公開ワークフロー
+
+#### 日常の開発・保存
+```bash
+# 1. ローカルで開発・テスト
+npm start
+# → http://localhost:3000 で動作確認
+
+# 2. GitHubに保存（公開されない）
+git add .
+git commit -m "機能追加の説明"
+git push origin main         # 開発版リポジトリに保存
+git push beta develop        # ベータ版developブランチに保存
+```
+
+#### 本番公開（準備完了時のみ）
+```bash
+# 1. developブランチをmainにマージ
+git checkout main
+git merge develop
+git push origin main
+git push beta main
+
+# 2. Vercelで手動デプロイ
+# → Vercel Dashboardで手動デプロイボタンをクリック
+```
+
+### 🔒 安全性の仕組み
+
+#### 自動デプロイ無効化
+`vercel.json`で自動デプロイを停止：
+```json
+{
+  "git": {
+    "deploymentEnabled": false
+  }
+}
+```
+
+これにより：
+- ✅ GitHubへの`push` = 保存のみ（公開されない）
+- ✅ 公開 = Vercel Dashboardで手動操作が必要
+- ✅ 誤って公開される心配なし
+
+### 📋 Vercel手動デプロイ手順
+
+#### 方法1: Vercel Dashboard
+1. https://vercel.com にログイン
+2. `ai-manga-name-maker-beta` プロジェクトを選択
+3. **Deployments** タブをクリック
+4. 右上の **Deploy** ボタンをクリック
+5. デプロイが完了するまで待つ（通常1-3分）
+6. 公開URLで動作確認: https://ai-manga-name-maker-beta.vercel.app
+
+#### 方法2: Vercel CLI（オプション）
+```bash
+# Vercel CLIをインストール（初回のみ）
+npm install -g vercel
+
+# ログイン（初回のみ）
+vercel login
+
+# 手動デプロイ
+vercel --prod
+```
+
+### 🎯 ブランチ戦略
+
+#### `develop` ブランチ
+- 日常の開発作業
+- 新機能の実装
+- バグフィックス
+- まだ公開前の状態
+
+#### `main` ブランチ
+- 本番環境用
+- 安定版のみマージ
+- 公開準備完了した状態
+
+### 📊 運用フロー図
+```
+ローカル開発
+    ↓
+git push origin main (開発版リポジトリ)
+    ↓
+git push beta develop (ベータ版 - 非公開)
+    ↓
+テスト・確認
+    ↓
+git merge main ← develop (準備完了時)
+    ↓
+Vercel Dashboard → Deploy (手動操作)
+    ↓
+本番公開 🎉
+```
+
+### 💡 メリット
+1. **安全**: 保存と公開が完全に分離
+2. **制御**: いつでも公開タイミングをコントロール
+3. **バックアップ**: GitHub に全履歴保存
+4. **柔軟**: テスト環境と本番環境の分離
+5. **無料**: GitHub も Vercel も無料プラン利用
+
 ---
-*最終更新: 2025年10月13日*
+*最終更新: 2025年10月14日*
 
 ## 📊 機能一覧サマリー
 
