@@ -768,8 +768,8 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
     {
       id: 'nanobanana' as ExportPurpose,
       icon: '🍌',
-      title: 'NanoBanana出力（調整中）',
-      desc: 'AI漫画生成用'
+      title: 'NanoBanana出力',
+      desc: 'Google AI Studioで完成漫画を自動生成'
     },
     {
       id: 'prompt' as ExportPurpose,
@@ -1009,23 +1009,38 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
                       <div 
                         style={{
                           background: isDarkMode ? "rgba(251, 191, 36, 0.1)" : "rgba(245, 158, 11, 0.05)",
-                          padding: "8px",
+                          padding: "10px",
                           borderRadius: "4px",
                           marginBottom: "12px",
-                          textAlign: "center",
                         }}
                       >
                         <p 
                           style={{
-                            fontSize: "10px",
+                            fontSize: "11px",
                             color: isDarkMode ? "#fbbf24" : "#f59e0b",
                             margin: 0,
-                            lineHeight: "1.4"
+                            lineHeight: "1.6",
+                            textAlign: "left"
                           }}
                         >
-                          レイアウト画像＋プロンプト＋使用方法ガイドを一括出力。<br/>
-                          Google AI StudioのNanoBananaで完成した漫画を生成できます。<br/>
-                          <strong>商用利用する場合はGoogleの利用規約に従ってください。</strong>
+                          <strong>🍌 NanoBananaとは？</strong><br/>
+                          Google AI Studioの画像生成機能。レイアウト＋プロンプトで一貫性のある漫画を自動生成。<br/>
+                          <br/>
+                          <strong>📦 出力内容：</strong><br/>
+                          • layout.png（コマ割りレイアウト）<br/>
+                          • prompt.txt（AI生成用プロンプト）<br/>
+                          • 使用方法ガイド<br/>
+                          <br/>
+                          <strong>🎯 使い方：</strong><br/>
+                          1. ZIPをダウンロード・解凍<br/>
+                          2. Google AI Studioを開く<br/>
+                          3. layout.pngをアップロード<br/>
+                          4. prompt.txtをコピペして生成<br/>
+                          <br/>
+                          <span style={{fontSize: "10px"}}>
+                          ※詳細は NANOBANANA_GUIDE.md を参照<br/>
+                          ※商用利用時はGoogleの利用規約に従ってください
+                          </span>
                         </p>
                       </div>
 
