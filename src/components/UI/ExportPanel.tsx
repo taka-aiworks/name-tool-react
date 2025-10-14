@@ -186,8 +186,6 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
       if (purpose === 'nanobanana') {
         // NanoBanana用設定を適用
         setNanoBananaOptions(DEFAULT_NANOBANANA_EXPORT_OPTIONS);
-      } else if (purpose === 'prompt') {
-        handlePromptExport();
       } else {
         setExportOptions({
           ...exportOptions,
@@ -850,11 +848,6 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
                     fontSize: "12px",
                     marginBottom: "2px"
                   }}>
-                    {purpose.id === 'prompt' && isExporting && (
-                      <span style={{ fontSize: "10px", marginLeft: "8px", color: "#f59e0b" }}>
-                        🎯 生成中...
-                      </span>
-                    )}
                   </div>
                   <div style={{ 
                     fontSize: "10px", 
@@ -1435,8 +1428,8 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
                     </>
                   )}
 
-                  {/* 出力ボタン（プロンプト以外） */}
-                  {selectedPurpose !== 'prompt' && selectedPurpose !== 'nanobanana' && (
+                  {/* 出力ボタン（NanoBanana以外） */}
+                  {selectedPurpose !== 'nanobanana' && (
                     <button
                       onClick={handleExport}
                       disabled={isExporting || panels.length === 0}
