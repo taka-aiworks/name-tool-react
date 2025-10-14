@@ -248,8 +248,8 @@ export class MouseEventHandler {
 
     // パネル移動
     if (selectedPanel && mouseState.isPanelMoving) {
-      const deltaX = mouseX - mouseState.dragOffset.x - selectedPanel.x;
-      const deltaY = mouseY - mouseState.dragOffset.y - selectedPanel.y;
+      const deltaX = mouseX - mouseState.dragOffset.x;
+      const deltaY = mouseY - mouseState.dragOffset.y;
       
       const moveResult = PanelManager.movePanel(
         selectedPanel,
