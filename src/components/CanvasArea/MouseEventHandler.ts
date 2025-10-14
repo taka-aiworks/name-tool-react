@@ -248,8 +248,10 @@ export class MouseEventHandler {
 
     // パネル移動
     if (selectedPanel && mouseState.isPanelMoving) {
-      const deltaX = mouseX - mouseState.dragOffset.x;
-      const deltaY = mouseY - mouseState.dragOffset.y;
+      // ドラッグ開始位置との差分から、現在パネル座標を引いて純粋な移動量を算出
+      // これによりドラッグ開始直後の「ガタつき（初期ジャンプ）」を防ぐ
+      const deltaX = (mouseX - mouseState.dragOffset.x) - selectedPanel.x;
+      const deltaY = (mouseY - mouseState.dragOffset.y) - selectedPanel.y;
       
       const moveResult = PanelManager.movePanel(
         selectedPanel,
