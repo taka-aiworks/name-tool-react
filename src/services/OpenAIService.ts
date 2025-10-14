@@ -48,6 +48,15 @@ class OpenAIService {
    * APIキーを取得
    */
   public getApiKey(): string | null {
+    // 環境変数からAPIキーを取得（公開モード用）
+    const envApiKey = process.env.REACT_APP_OPENAI_API_KEY;
+    const useEnvKey = process.env.REACT_APP_USE_ENV_API_KEY === 'true';
+    
+    if (useEnvKey && envApiKey) {
+      return envApiKey;
+    }
+    
+    // ローカルストレージから取得（開発モード用）
     if (!this.apiKey && typeof window !== 'undefined') {
       this.apiKey = localStorage.getItem('openai_api_key');
     }
