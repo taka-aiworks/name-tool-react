@@ -46,7 +46,43 @@ npm run build
 
 ビルド時に環境変数が埋め込まれます。
 
-### 4. デプロイ
+---
+
+## 🌐 Vercelでのデプロイ（推奨）
+
+### 1. Vercelプロジェクトを作成
+
+1. https://vercel.com にアクセス
+2. **New Project** をクリック
+3. GitHubリポジトリを選択
+4. Framework Preset: **Create React App** を選択
+
+### 2. 環境変数を設定
+
+Vercel Dashboard → Settings → Environment Variables で以下を設定：
+
+```
+REACT_APP_OPENAI_API_KEY=sk-your-actual-api-key-here
+REACT_APP_USE_ENV_API_KEY=true
+REACT_APP_APP_NAME=AI漫画ネームメーカー（ベータ版）
+```
+
+**重要**: Environment は **Production**, **Preview**, **Development** すべてに適用してください。
+
+### 3. デプロイ
+
+**Deploy** ボタンをクリックすると、自動的にビルド・デプロイされます。
+
+以降、`main` ブランチへのpushで自動デプロイされます。
+
+### 4. ドメイン設定（オプション）
+
+Vercelが自動的に `your-project.vercel.app` のようなURLを提供します。
+カスタムドメインを設定する場合は、Settings → Domains から設定できます。
+
+---
+
+### 4. その他の方法でデプロイ
 
 #### Netlify / Vercel の場合:
 管理画面で環境変数を設定：
