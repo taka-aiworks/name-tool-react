@@ -1115,8 +1115,8 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
                               fontFamily: "inherit",
                             }}
                           >
-                            <option value="english">英語（推奨）</option>
-                            <option value="japanese">日本語</option>
+                            <option value="japanese">日本語（推奨）</option>
+                            <option value="english">英語</option>
                             <option value="both">両方</option>
                           </select>
                         </div>

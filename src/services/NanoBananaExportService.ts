@@ -370,12 +370,14 @@ export class NanoBananaExportService {
    * 📖 使用方法ガイド生成
    */
   private generateInstructions(language: 'english' | 'japanese' | 'both'): string {
-    if (language === 'japanese') {
-      return this.generateJapaneseInstructions();
-    } else if (language === 'both') {
-      return this.generateEnglishInstructions() + '\n\n' + '='.repeat(50) + '\n\n' + this.generateJapaneseInstructions();
-    } else {
+    // デフォルトは日本語ガイド
+    if (language === 'english') {
       return this.generateEnglishInstructions();
+    } else if (language === 'both') {
+      return this.generateJapaneseInstructions() + '\n\n' + '='.repeat(80) + '\n\n' + this.generateEnglishInstructions();
+    } else {
+      // 'japanese' または指定なしの場合は日本語
+      return this.generateJapaneseInstructions();
     }
   }
 
@@ -415,31 +417,106 @@ For support, visit: https://github.com/your-repo/name-tool-react
    * 🇯🇵 日本語使用方法ガイド
    */
   private generateJapaneseInstructions(): string {
-    return `=== NanoBanana使用方法ガイド ===
+    return `=== 🍌 NanoBanana使用方法ガイド ===
 
-このパッケージには、Google AI StudioのNanoBananaを使用して漫画を生成するために必要なすべてが含まれています。
+このパッケージには、Google AI StudioのNanoBanana（Gemini）を使用して
+漫画を自動生成するために必要なファイルが含まれています。
 
-含まれるファイル：
-- layout.png: コマの視覚的レイアウト
-- prompt.txt: 詳細な生成プロンプト
-- character_mapping.txt: キャラクター参照ガイド
-- metadata.json: プロジェクト情報
+📦 含まれるファイル：
+─────────────────────────────────────
+• layout.png - コマ割りレイアウト画像
+• prompt.txt - AI画像生成用プロンプト集
+• character_mapping.txt - キャラクター名対応表
+• metadata.json - プロジェクト情報
 
-使用方法：
-1. Google AI Studioを開く
-2. NanoBananaモデルを選択
-3. layout.pngを参照画像としてアップロード
-4. prompt.txtの内容をコピー＆ペースト
-5. 漫画を生成！
+🚀 基本的な使い方：
+─────────────────────────────────────
+【ステップ1】準備
+1. Google AI Studio にアクセス
+   → https://aistudio.google.com
+2. Googleアカウントでログイン
+3. モデルを「Gemini 2.0 Flash Experimental」に設定
+   （画像生成対応モデル）
 
-最良の結果を得るためのコツ：
-- キャラクターの一貫性を保つためにキャラクター対応表を使用
-- 特定のニーズに基づいてプロンプトを調整
-- 異なるスタイルと設定を試してみる
-- お気に入りの結果を保存して将来の参考にする
+【ステップ2】レイアウトをアップロード
+1. 「📎 Attach」ボタンをクリック
+2. layout.png をアップロード
+3. 画像が表示されることを確認
 
-Name Tool v1.2.0で生成
-サポート: https://github.com/your-repo/name-tool-react
+【ステップ3】プロンプトを入力
+1. prompt.txt を開く
+2. 以下のテンプレートを使用：
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+このコマ割りレイアウトに従って、漫画を生成してください。
+レイアウト、吹き出しの位置、コマの配置を維持してください。
+
+[Panel 1のプロンプトをコピペ]
+
+[Panel 2のプロンプトをコピペ]
+
+[Panel 3のプロンプトをコピペ]
+
+キャラクターの外見を全コマで統一してください。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+3. 「送信」ボタンをクリック
+4. AIが画像を生成（30秒〜1分）
+
+【ステップ4】生成・確認
+1. 生成された画像を確認
+2. 気に入らない場合はプロンプトを調整して再生成
+3. 満足したら画像をダウンロード
+
+🎯 キャラクター一貫性を高める方法：
+─────────────────────────────────────
+キャラクターが複数コマに登場する場合：
+
+方法1：最初のコマで生成した画像を再アップロード
+1. Panel 1を生成
+2. 生成された画像もアップロード（リファレンスとして）
+3. プロンプトに追加：
+   "Use the character design from the reference image. 
+    Maintain the exact same appearance."
+
+方法2：キャラクター設定をより詳細に
+1. prompt.txt のキャラクタープロンプトをさらに詳しく
+   例: 髪型、目の色、服装の細かい特徴
+2. すべてのコマで同じキャラクタープロンプトを使用
+
+💡 生成のコツ：
+─────────────────────────────────────
+✅ プロンプトは具体的に
+   ○ "black hair, blue eyes, white shirt"
+   × "girl"
+
+✅ レイアウト維持を強調
+   プロンプトに必ず含める：
+   "Keep the same panel layout and speech bubble positions"
+
+✅ 1コマずつ生成してから一括生成
+   - 最初は1コマだけ生成して品質確認
+   - 問題なければ全コマ一括生成
+
+✅ Negative Promptを活用
+   prompt.txt の最後に記載されています
+
+⚠️ 注意事項：
+─────────────────────────────────────
+• NanoBananaは無料枠がありますが、回数制限があります
+• 生成結果は毎回異なります（同じプロンプトでも）
+• 複雑なシーンは2-3回試すことをおすすめ
+• 商用利用する場合はGoogleの利用規約を確認してください
+
+📚 参考リンク：
+─────────────────────────────────────
+• Google AI Studio: https://aistudio.google.com
+• NanoBanana詳細ガイド: https://eikyuhozon.com/generative-ai/nanobanana-guide.html
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AI漫画ネームメーカー v1.2.0 で生成
+サポート: https://github.com/taka-aiworks/ai-manga-name-maker-beta
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 `;
   }
 

@@ -950,7 +950,7 @@ export const DEFAULT_NANOBANANA_EXPORT_OPTIONS: NanoBananaExportOptions = {
   includeCharacterMapping: true,
   layoutImageFormat: 'png',
   layoutImageQuality: 'high',
-  promptLanguage: 'english',
+  promptLanguage: 'japanese',  // デフォルトは日本語ガイド
 };
 
 export const DEFAULT_LAYOUT_IMAGE_OPTIONS: LayoutImageOptions = {
