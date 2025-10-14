@@ -1291,12 +1291,110 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
                         <input
                           type="checkbox"
                           checked={exportPromptAlso}
-                          onChange={(e) => setExportPromptAlso(e.target.checked)}
+                          onChange={async (e) => {
+                            const checked = e.target.checked;
+                            setExportPromptAlso(checked);
+                            if (checked && !promptOutput) {
+                              // チェックがONで、まだプロンプトが生成されていない場合は自動生成
+                              await handlePromptExport();
+                            }
+                          }}
                           disabled={isExporting}
                           style={{ margin: 0 }}
                         />
                         🎨 プロンプトも出力
                       </label>
+
+                      {/* プロンプトプレビュー（チェック時のみ表示） */}
+                      {exportPromptAlso && (
+                        <div style={{
+                          marginBottom: "12px",
+                          padding: "12px",
+                          background: isDarkMode ? "#1f2937" : "#f9fafb",
+                          border: `1px solid ${isDarkMode ? "#374151" : "#e5e7eb"}`,
+                          borderRadius: "4px"
+                        }}>
+                          <div style={{ 
+                            display: "flex", 
+                            justifyContent: "space-between", 
+                            alignItems: "center",
+                            marginBottom: "8px" 
+                          }}>
+                            <h4 style={{
+                              fontSize: "11px",
+                              fontWeight: "bold",
+                              color: isDarkMode ? "#10b981" : "#059669",
+                              margin: 0,
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "4px"
+                            }}>
+                              {promptOutput ? '✅ プロンプト生成完了' : '🎨 プロンプト生成中...'}
+                            </h4>
+                            <button
+                              onClick={handlePromptExport}
+                              disabled={isExporting}
+                              style={{
+                                background: isExporting ? "#999999" : "#f59e0b",
+                                color: "white",
+                                border: "none",
+                                borderRadius: "4px",
+                                padding: "4px 8px",
+                                fontSize: "9px",
+                                fontWeight: "600",
+                                cursor: isExporting ? "not-allowed" : "pointer",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "2px"
+                              }}
+                            >
+                              {isExporting ? '更新中...' : '🔄 再生成'}
+                            </button>
+                          </div>
+
+                          {promptOutput && (
+                            <>
+                              <div style={{ 
+                                display: "flex", 
+                                justifyContent: "center",
+                                marginBottom: "8px" 
+                              }}>
+                                <button
+                                  onClick={handleCopyPrompt}
+                                  style={{
+                                    background: "#10b981",
+                                    color: "white",
+                                    border: "none",
+                                    borderRadius: "4px",
+                                    padding: "4px 12px",
+                                    fontSize: "9px",
+                                    cursor: "pointer",
+                                    fontWeight: "600"
+                                  }}
+                                >
+                                  📋 プロンプトコピー
+                                </button>
+                              </div>
+
+                              <div style={{
+                                background: isDarkMode ? "#111827" : "#ffffff",
+                                border: `1px solid ${isDarkMode ? "#374151" : "#d1d5db"}`,
+                                borderRadius: "4px",
+                                padding: "8px",
+                                maxHeight: "200px",
+                                overflowY: "auto",
+                                fontFamily: "monospace",
+                                fontSize: "9px",
+                                lineHeight: "1.3",
+                                whiteSpace: "pre-wrap",
+                                color: isDarkMode ? "#e5e7eb" : "#374151"
+                              }}>
+                                {promptOutput}
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      )}
 
                       <div>
                         <label 
