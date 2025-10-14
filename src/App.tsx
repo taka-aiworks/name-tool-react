@@ -1169,7 +1169,7 @@ function App() {
                   currentPageIndex: pageManager.currentPageIndex  // 現在のページインデックスを追加
                 };
                 
-                const success = await projectSave.saveProject(projectData);
+                const success = await projectSave.saveProject(projectData, projectSave.currentProjectName || 'untitled');
                 if (success) {
                   alert(`プロジェクト「${projectSave.currentProjectName}」を上書き保存しました`);
                 } else {
