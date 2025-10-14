@@ -125,6 +125,14 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
       message: 'NanoBananaエクスポートを開始しています...' 
     });
 
+    // 🎨 エクスポート時は一時的にライトモードに切り替え
+    const originalTheme = document.documentElement.getAttribute("data-theme");
+    const wasDarkMode = originalTheme === "dark";
+    if (wasDarkMode) {
+      document.documentElement.setAttribute("data-theme", "light");
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
     try {
       const result = await nanoBananaExportService.exportForNanoBanana(
         panels,
@@ -157,6 +165,10 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
       console.error('NanoBanana export error:', error);
       alert('NanoBananaエクスポートに失敗しました: ' + (error as Error).message);
     } finally {
+      // 🎨 元のテーマに戻す
+      if (wasDarkMode) {
+        document.documentElement.setAttribute("data-theme", "dark");
+      }
       setIsNanoBananaExporting(false);
       setTimeout(() => {
         setNanoBananaProgress(null);
@@ -207,6 +219,15 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
     setIsExporting(true);
     setExportProgress({ step: 'initialize', progress: 0, message: '準備中...' });
 
+    // 🎨 エクスポート時は一時的にライトモードに切り替え
+    const originalTheme = document.documentElement.getAttribute("data-theme");
+    const wasDarkMode = originalTheme === "dark";
+    if (wasDarkMode) {
+      document.documentElement.setAttribute("data-theme", "light");
+      // キャンバスの再描画を待つ
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
     try {
       switch (exportOptions.format) {
         case 'pdf':
@@ -223,6 +244,10 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
       console.error('エクスポートエラー:', error);
       alert('エクスポートに失敗しました: ' + (error as Error).message);
     } finally {
+      // 🎨 元のテーマに戻す
+      if (wasDarkMode) {
+        document.documentElement.setAttribute("data-theme", "dark");
+      }
       setIsExporting(false);
       setExportProgress(null);
       setSelectedPurpose(null);
@@ -1276,26 +1301,7 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
                         </select>
                       </div>
                       
-                      <label style={{ 
-                        display: "flex", 
-                        alignItems: "center", 
-                        gap: "6px",
-                        fontSize: "11px",
-                        color: isDarkMode ? "#ffffff" : "#333333",
-                        cursor: "pointer"
-                      }}>
-                        <input
-                          type="checkbox"
-                          checked={exportOptions.separatePages}
-                          onChange={(e) => setExportOptions({
-                            ...exportOptions,
-                            separatePages: e.target.checked
-                          })}
-                          disabled={isExporting}
-                          style={{ margin: 0 }}
-                        />
-                        各コマを別ページにする
-                      </label>
+                      {/* 各コマ個別出力オプションは削除（不要） */}
                     </>
                   )}
 
