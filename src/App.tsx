@@ -1164,7 +1164,9 @@ function App() {
                   settings,
                   characterNames,
                   characterSettings,
-                  canvasSettings
+                  canvasSettings,
+                  pages: pageManager.pages,  // ページデータを追加
+                  currentPageIndex: pageManager.currentPageIndex  // 現在のページインデックスを追加
                 };
                 
                 const success = await projectSave.saveProject(projectData);
@@ -2459,6 +2461,16 @@ function App() {
               document.documentElement.setAttribute("data-theme", project.settings.darkMode ? "dark" : "light");
             }
             
+            // 🆕 ページデータの復元
+            if (project.pages && project.pages.length > 0) {
+              pageManager.loadProjectPages(project.pages, project.currentPageIndex || 0);
+              console.log('📄 ページデータ復元完了:', {
+                pageCount: project.pages.length,
+                currentPageIndex: project.currentPageIndex || 0,
+                currentPageNote: project.pages[project.currentPageIndex || 0]?.note || '（メモなし）'
+              });
+            }
+            
             console.log('✅ プロジェクト読み込み完了');
           } else {
             console.error('❌ プロジェクトデータが取得できませんでした');
@@ -2505,7 +2517,9 @@ function App() {
             settings,
             characterNames,
             characterSettings,
-            canvasSettings
+            canvasSettings,
+            pages: pageManager.pages,  // ページデータを追加
+            currentPageIndex: pageManager.currentPageIndex  // 現在のページインデックスを追加
           };
           
           const success = await projectSave.saveProject(projectData, name);

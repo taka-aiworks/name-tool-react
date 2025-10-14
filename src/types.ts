@@ -688,6 +688,9 @@ export interface UsePageManagerReturn {
   // ページメタデータ
   canDeletePage: boolean;
   hasUnsavedChanges: boolean;
+  
+  // プロジェクトロード用
+  loadProjectPages: (loadedPages: Page[], pageIndex?: number) => void;
 }
 
 // バッチプロンプト生成用の型

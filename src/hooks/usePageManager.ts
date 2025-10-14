@@ -277,6 +277,13 @@ export const usePageManager = (props: UsePageManagerProps): UsePageManagerReturn
     );
   }, [pages, currentPageIndex, panels, characters, bubbles, backgrounds, effects, tones]);
 
+  // プロジェクトロード用の関数
+  const loadProjectPages = useCallback((loadedPages: Page[], pageIndex: number = 0) => {
+    setPages(loadedPages);
+    setCurrentPageIndex(Math.min(pageIndex, loadedPages.length - 1));
+    console.log('📄 ページデータロード完了:', loadedPages.length, 'ページ');
+  }, []);
+
   return {
     pages,
     currentPageIndex,
@@ -289,7 +296,8 @@ export const usePageManager = (props: UsePageManagerProps): UsePageManagerReturn
     reorderPages,
     updateCurrentPageData,
     canDeletePage,
-    hasUnsavedChanges
+    hasUnsavedChanges,
+    loadProjectPages  // プロジェクトロード時に使用
   };
 };
 
