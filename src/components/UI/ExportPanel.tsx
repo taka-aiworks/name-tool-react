@@ -23,7 +23,7 @@ type ExportPurpose = 'image' | 'clipstudio' | 'nanobanana';
 const purposeDefaults: Record<ExportPurpose, Partial<ExportOptions>> = {
   image: {
     format: 'png',
-    quality: 'high',
+    quality: 'medium', // 固定値
     resolution: 300,
     includeBackground: true,
     separatePages: false
@@ -1396,52 +1396,6 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
                         </div>
                       )}
 
-                      <div>
-                        <label 
-                          style={{
-                            display: "block",
-                            fontSize: "11px",
-                            fontWeight: "600",
-                            color: isDarkMode ? "#ffffff" : "#333333",
-                            marginBottom: "6px",
-                          }}
-                        >
-                          品質
-                        </label>
-                        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                          {[
-                            { value: 'high', label: '高品質' },
-                            { value: 'medium', label: '標準' },
-                            { value: 'low', label: '軽量' }
-                          ].map((item) => (
-                            <label 
-                              key={item.value} 
-                              style={{ 
-                                display: "flex", 
-                                alignItems: "center", 
-                                gap: "6px",
-                                fontSize: "11px",
-                                color: isDarkMode ? "#ffffff" : "#333333",
-                                cursor: "pointer"
-                              }}
-                            >
-                              <input
-                                type="radio"
-                                name="quality"
-                                value={item.value}
-                                checked={exportOptions.quality === item.value}
-                                onChange={(e) => setExportOptions({
-                                  ...exportOptions,
-                                  quality: e.target.value as any
-                                })}
-                                disabled={isExporting}
-                                style={{ margin: 0 }}
-                              />
-                              {item.label}
-                            </label>
-                          ))}
-                        </div>
-                      </div>
 
                       <label style={{ 
                         display: "flex", 

@@ -433,12 +433,8 @@ export class ExportService {
   }
 
   private getScaleFromQuality(quality: string): number {
-    switch (quality) {
-      case 'high': return 3.0;
-      case 'medium': return 2.0;
-      case 'low': return 1.0;
-      default: return 2.0;
-    }
+    // 品質設定を削除し、標準的な2倍スケールに固定
+    return 2.0;
   }
 
   private downloadImage(canvas: HTMLCanvasElement, filename: string): void {
