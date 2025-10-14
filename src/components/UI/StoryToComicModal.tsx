@@ -13,6 +13,7 @@ interface StoryToComicModalProps {
   isDarkMode?: boolean;
   characterNames?: Record<string, string>;
   selectedPanelId?: number | null;
+  initialStory?: string; // ページメモからの初期値
 }
 
 export const StoryToComicModal: React.FC<StoryToComicModalProps> = ({
@@ -25,15 +26,23 @@ export const StoryToComicModal: React.FC<StoryToComicModalProps> = ({
   onApplySinglePanel,
   isDarkMode = false,
   characterNames = {},
-  selectedPanelId = null
+  selectedPanelId = null,
+  initialStory = ''
 }) => {
   const [generationMode, setGenerationMode] = useState<'full' | 'single'>('full');
-  const [story, setStory] = useState('');
+  const [story, setStory] = useState(initialStory);
   const [tone, setTone] = useState('コメディ');
   const [previewData, setPreviewData] = useState<PanelContent[] | null>(null);
   const [singlePanelData, setSinglePanelData] = useState<PanelContent | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [step, setStep] = useState<'input' | 'preview'>('input');
+
+  // モーダルが開いた時にinitialStoryを反映
+  React.useEffect(() => {
+    if (isOpen && initialStory) {
+      setStory(initialStory);
+    }
+  }, [isOpen, initialStory]);
 
   if (!isOpen) return null;
 
