@@ -63,12 +63,19 @@ class UsageLimitService {
    * ブラウザフィンガープリント生成（簡易版）
    */
   private async generateFingerprint(): Promise<string> {
+    // eslint-disable-next-line no-restricted-globals
+    const screenWidth = typeof window !== 'undefined' ? window.screen.width : 0;
+    // eslint-disable-next-line no-restricted-globals
+    const screenHeight = typeof window !== 'undefined' ? window.screen.height : 0;
+    // eslint-disable-next-line no-restricted-globals
+    const screenColorDepth = typeof window !== 'undefined' ? window.screen.colorDepth : 0;
+    
     const components = [
       navigator.userAgent,
       navigator.language,
-      window.screen.width,
-      window.screen.height,
-      window.screen.colorDepth,
+      screenWidth,
+      screenHeight,
+      screenColorDepth,
       new Date().getTimezoneOffset(),
       navigator.hardwareConcurrency || 0,
       navigator.platform
