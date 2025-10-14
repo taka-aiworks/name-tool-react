@@ -1046,12 +1046,16 @@ if (selectedTone && state.isCharacterResizing && state.initialCharacterBounds &&
       const deltaX = mouseX - state.dragOffset.x;
       const deltaY = mouseY - state.dragOffset.y;
       
+      // パネルを取得（相対座標変換に必要）
+      const panel = panels.find(p => p.id === state.selectedBubble!.panelId) || panels[0];
+      
       const resizedBubble = BubbleRenderer.resizeBubble(
         state.selectedBubble,
         state.resizeDirection,
         deltaX,
         deltaY,
-        state.initialBubbleBounds
+        state.initialBubbleBounds,
+        panel
       );
       
       setSpeechBubbles(

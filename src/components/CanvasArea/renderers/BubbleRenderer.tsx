@@ -579,49 +579,60 @@ export class BubbleRenderer {
     direction: string,
     deltaX: number,
     deltaY: number,
-    originalBounds: { x: number; y: number; width: number; height: number }
+    originalBounds: { x: number; y: number; width: number; height: number },
+    panel?: Panel
   ): SpeechBubble {
     let newX = bubble.x;
     let newY = bubble.y;
     let newWidth = bubble.width;
     let newHeight = bubble.height;
 
-    const minWidth = 60;
-    const minHeight = 40;
+    // 相対座標の場合は、デルタ値をパネルサイズで正規化
+    let adjustedDeltaX = deltaX;
+    let adjustedDeltaY = deltaY;
+    
+    if (!bubble.isGlobalPosition && panel) {
+      adjustedDeltaX = deltaX / panel.width;
+      adjustedDeltaY = deltaY / panel.height;
+    }
+    
+    // 相対座標の場合は、最小サイズも相対値で指定
+    const minWidth = bubble.isGlobalPosition ? 60 : 0.1;
+    const minHeight = bubble.isGlobalPosition ? 40 : 0.05;
 
     switch (direction) {
       case "nw":
-        newWidth = Math.max(minWidth, originalBounds.width - deltaX);
-        newHeight = Math.max(minHeight, originalBounds.height - deltaY);
+        newWidth = Math.max(minWidth, originalBounds.width - adjustedDeltaX);
+        newHeight = Math.max(minHeight, originalBounds.height - adjustedDeltaY);
         newX = originalBounds.x + originalBounds.width - newWidth;
         newY = originalBounds.y + originalBounds.height - newHeight;
         break;
       case "n":
-        newHeight = Math.max(minHeight, originalBounds.height - deltaY);
+        newHeight = Math.max(minHeight, originalBounds.height - adjustedDeltaY);
         newY = originalBounds.y + originalBounds.height - newHeight;
         break;
       case "ne":
-        newWidth = Math.max(minWidth, originalBounds.width + deltaX);
-        newHeight = Math.max(minHeight, originalBounds.height - deltaY);
+        newWidth = Math.max(minWidth, originalBounds.width + adjustedDeltaX);
+        newHeight = Math.max(minHeight, originalBounds.height - adjustedDeltaY);
         newY = originalBounds.y + originalBounds.height - newHeight;
         break;
       case "e":
-        newWidth = Math.max(minWidth, originalBounds.width + deltaX);
+        newWidth = Math.max(minWidth, originalBounds.width + adjustedDeltaX);
         break;
       case "se":
-        newWidth = Math.max(minWidth, originalBounds.width + deltaX);
-        newHeight = Math.max(minHeight, originalBounds.height + deltaY);
+        newWidth = Math.max(minWidth, originalBounds.width + adjustedDeltaX);
+        newHeight = Math.max(minHeight, originalBounds.height + adjustedDeltaY);
         break;
       case "s":
-        newHeight = Math.max(minHeight, originalBounds.height + deltaY);
+        newHeight = Math.max(minHeight, originalBounds.height + adjustedDeltaY);
         break;
       case "sw":
-        newWidth = Math.max(minWidth, originalBounds.width - deltaX);
-        newHeight = Math.max(minHeight, originalBounds.height + deltaY);
+        newWidth = Math.max(minWidth, originalBounds.width - adjustedDeltaX);
+        newHeight = Math.max(minHeight, originalBounds.height + adjustedDeltaY);
         newX = originalBounds.x + originalBounds.width - newWidth;
         break;
       case "w":
-        newWidth = Math.max(minWidth, originalBounds.width - deltaX);
+        newWidth = Math.max(minWidth, originalBounds.width - adjustedDeltaX);
         newX = originalBounds.x + originalBounds.width - newWidth;
         break;
       default:

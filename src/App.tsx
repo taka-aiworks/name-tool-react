@@ -63,6 +63,7 @@ function App() {
   const [tones, setTones] = useState<ToneElement[]>([]);
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
   const [selectedPanel, setSelectedPanel] = useState<Panel | null>(null);
+  const [selectedPanels, setSelectedPanels] = useState<Panel[]>([]); // 複数選択用
   const [selectedEffect, setSelectedEffect] = useState<EffectElement | null>(null);
   const [selectedTone, setSelectedTone] = useState<ToneElement | null>(null);
   const [dialogueText, setDialogueText] = useState<string>("");
