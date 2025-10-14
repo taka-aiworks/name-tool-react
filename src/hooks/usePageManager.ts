@@ -58,6 +58,7 @@ export const usePageManager = (props: UsePageManagerProps): UsePageManagerReturn
   const currentPage = useMemo((): Page => ({
     id: pages[currentPageIndex]?.id || generatePageId(),
     title: pages[currentPageIndex]?.title || `ページ ${currentPageIndex + 1}`,
+    note: pages[currentPageIndex]?.note,
     createdAt: pages[currentPageIndex]?.createdAt || new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     panels,

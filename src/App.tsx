@@ -1566,10 +1566,10 @@ function App() {
                     note: e.target.value
                   });
                 }}
-                placeholder="例: 導入シーン、主人公の決意を描く"
+                placeholder="例: 主人公が朝起きて驚く。窓の外に巨大なロボット。主人公は急いで着替えて外に飛び出す。"
                 style={{
                   width: '100%',
-                  minHeight: '60px',
+                  minHeight: '80px',
                   padding: '8px',
                   fontSize: '12px',
                   borderRadius: '4px',
@@ -1579,12 +1579,152 @@ function App() {
                   resize: 'vertical'
                 }}
               />
+              
+              {/* AI生成ボタン */}
+              <button
+                onClick={async () => {
+                  const pageNote = pageManager.currentPage.note?.trim();
+                  if (!pageNote) {
+                    alert('ページメモにストーリーを入力してください');
+                    return;
+                  }
+                  
+                  if (!openAIService.hasApiKey()) {
+                    if (window.confirm('OpenAI APIキーが未設定です。設定画面を開きますか？')) {
+                      setShowOpenAISettingsModal(true);
+                    }
+                    return;
+                  }
+                  
+                  if (panels.length === 0) {
+                    alert('先にコマ割りテンプレートを選択してください');
+                    return;
+                  }
+                  
+                  if (!window.confirm(`このページの内容をAIで生成しますか？\n\n「${pageNote.substring(0, 50)}${pageNote.length > 50 ? '...' : ''}」`)) {
+                    return;
+                  }
+                  
+                  try {
+                    setIsGeneratingFromStory(true);
+                    
+                    // 既存のコマ情報を取得
+                    const existingPanels = panels.map(panel => ({
+                      panelId: panel.id,
+                      note: panel.note || '',
+                      dialogue: speechBubbles.find(bubble => bubble.panelId === panel.id)?.text || '',
+                      actionPrompt: panel.actionPrompt || '',
+                      characterId: panel.selectedCharacterId
+                    }));
+                    
+                    // 登録済みキャラクター情報
+                    const characters = Object.entries(characterNames).map(([id, name]) => ({
+                      id,
+                      name,
+                      prompt: characterSettings[id]?.appearance?.basePrompt || ''
+                    }));
+                    
+                    // AIで生成
+                    const result = await openAIService.generatePanelContent({
+                      story: pageNote,
+                      panelCount: panels.length,
+                      tone: 'コメディ',
+                      characters: characters,
+                      generationMode: 'page',
+                      existingPanels: existingPanels
+                    });
+                    
+                    // 確認してから適用
+                    const previewText = result.panels.map((p, idx) => 
+                      `【コマ${idx + 1}】\n📌 ${p.note}\n💬 ${p.dialogue}\n🎬 ${p.actionPrompt}`
+                    ).join('\n\n');
+                    
+                    if (window.confirm(`生成された内容:\n\n${previewText}\n\n適用しますか？`)) {
+                      // パネルに適用
+                      const updatedPanels = panels.map(panel => {
+                        const content = result.panels.find(p => p.panelId === panel.id);
+                        return content
+                          ? {
+                              ...panel,
+                              note: content.note,
+                              actionPrompt: content.actionPrompt,
+                              actionPromptJa: content.actionPromptJa,
+                              selectedCharacterId: content.characterId
+                            }
+                          : panel;
+                      });
+                      setPanels(updatedPanels);
+                      
+                      // 吹き出しに適用
+                      const bubbleTypeMap: Record<string, string> = {
+                        '普通': 'normal',
+                        '叫び': 'shout',
+                        '小声': 'whisper',
+                        '心の声': 'thought'
+                      };
+                      
+                      const newBubbles: SpeechBubble[] = [];
+                      result.panels.forEach(content => {
+                        if (content.dialogue) {
+                          newBubbles.push({
+                            id: Date.now().toString() + Math.random().toString(),
+                            panelId: content.panelId,
+                            text: content.dialogue,
+                            x: 0.5,
+                            y: 0.3,
+                            width: 0.7,
+                            height: 0.25,
+                            type: bubbleTypeMap[content.bubbleType || '普通'] || 'normal',
+                            vertical: true,
+                            scale: 1,
+                            isGlobalPosition: false
+                          });
+                        }
+                      });
+                      
+                      // 既存の吹き出しを削除して新しいものを追加
+                      const bubblesFromOtherPanels = speechBubbles.filter(
+                        bubble => !result.panels.some(p => p.panelId === bubble.panelId)
+                      );
+                      setSpeechBubbles([...bubblesFromOtherPanels, ...newBubbles]);
+                      
+                      alert('✅ このページの内容を適用しました！');
+                    }
+                  } catch (error) {
+                    console.error('Page generation error:', error);
+                    alert('生成に失敗しました: ' + (error as Error).message);
+                  } finally {
+                    setIsGeneratingFromStory(false);
+                  }
+                }}
+                disabled={!pageManager.currentPage.note?.trim() || panels.length === 0 || isGeneratingFromStory}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  background: (!pageManager.currentPage.note?.trim() || panels.length === 0 || isGeneratingFromStory) 
+                    ? '#999' 
+                    : COLOR_PALETTE.buttons.export.primary,
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: (!pageManager.currentPage.note?.trim() || panels.length === 0 || isGeneratingFromStory) 
+                    ? 'not-allowed' 
+                    : 'pointer',
+                  fontSize: '13px',
+                  fontWeight: 'bold',
+                  marginTop: '8px',
+                  marginBottom: '8px'
+                }}
+              >
+                {isGeneratingFromStory ? '🤖 生成中...' : '🤖 このページを生成'}
+              </button>
+              
               <div style={{ 
                 fontSize: "10px", 
                 color: "var(--text-muted)", 
                 marginTop: "4px" 
               }}>
-                このページ全体の役割や構成メモを記録
+                💡 ページメモからAIがコマ内容・吹き出しを自動生成
               </div>
             </div>
           </div>
