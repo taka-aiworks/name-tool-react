@@ -256,13 +256,13 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
             alert('ページデータが不足しています');
           }
           break;
-        case 'pdf':
+        case 'print':
           await exportService.exportToPDF(canvasRef.current, panels, exportOptions, setExportProgress);
           break;
-        case 'png':
+        case 'image':
           await exportService.exportToPNG(canvasRef.current, panels, exportOptions, setExportProgress);
           break;
-        case 'psd':
+        case 'clipstudio':
           await exportService.exportToPSD(canvasRef.current, panels, characters, bubbles, backgrounds, effects, tones, exportOptions, setExportProgress);
           break;
       }
