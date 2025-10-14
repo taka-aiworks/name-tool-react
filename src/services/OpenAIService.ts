@@ -302,7 +302,8 @@ ${characterInfo}
       throw new Error(limitCheck.reason || '使用制限に達しました');
     }
     
-    if (!this.apiKey) {
+    const apiKey = this.getApiKey();
+    if (!apiKey) {
       const useEnvKey = process.env.REACT_APP_USE_ENV_API_KEY === 'true';
       const errorMsg = useEnvKey 
         ? 'APIキーが環境変数に設定されていません。Vercelの環境変数設定を確認してください。'
@@ -362,7 +363,7 @@ ${characterInfo || 'キャラクター情報なし'}
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`
+          'Authorization': `Bearer ${apiKey}`
         },
         body: JSON.stringify({
           model: this.model,
