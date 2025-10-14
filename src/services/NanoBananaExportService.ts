@@ -42,7 +42,8 @@ export class NanoBananaExportService {
     characterSettings?: Record<string, CharacterSettings>,
     characterNames?: Record<string, string>,
     options: NanoBananaExportOptions = DEFAULT_NANOBANANA_EXPORT_OPTIONS,
-    onProgress?: (progress: NanoBananaExportProgress) => void
+    onProgress?: (progress: NanoBananaExportProgress) => void,
+    canvasElement?: HTMLCanvasElement  // 🆕 実際のキャンバス要素を受け取る
   ): Promise<NanoBananaExportResult> {
     try {
       const zip = new JSZip();
@@ -59,7 +60,9 @@ export class NanoBananaExportService {
 
       // 1. レイアウト画像生成
       updateProgress('generate_layout', 10, 'レイアウト画像を生成中...', 'layout.png');
-      const layoutImage = await this.generateLayoutImage(panels, paperSize, DEFAULT_LAYOUT_IMAGE_OPTIONS);
+      const layoutImage = canvasElement 
+        ? await this.captureCanvasAsImage(canvasElement)
+        : await this.generateLayoutImage(panels, paperSize, DEFAULT_LAYOUT_IMAGE_OPTIONS);
       zip.file('layout.png', layoutImage);
 
       // 2. プロンプト生成
@@ -113,7 +116,22 @@ export class NanoBananaExportService {
   }
 
   /**
-   * 🎨 レイアウト画像生成
+   * 🎨 実際のキャンバスをキャプチャ
+   */
+  private async captureCanvasAsImage(canvas: HTMLCanvasElement): Promise<Blob> {
+    return new Promise((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (blob) {
+          resolve(blob);
+        } else {
+          reject(new Error('Canvas to Blob conversion failed'));
+        }
+      }, 'image/png');
+    });
+  }
+
+  /**
+   * 🎨 レイアウト画像生成（フォールバック用）
    */
   private async generateLayoutImage(
     panels: Panel[], 

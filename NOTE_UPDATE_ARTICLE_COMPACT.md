@@ -57,24 +57,6 @@
 - ✅ プロジェクト保存改善
 - ✅ UI統一（色分けで直感的に）
 
-### 🎨 5. AI生成精度向上
-
-**改善前：**
-```
-入力: 「驚いた顔」
-出力: A character with a surprised expression, eyes wide open 
-      and mouth agape in shock. The character is standing in a 
-      dynamic pose, slightly leaning back... 背景は賑やかな街...
-→ 長すぎ！ ❌
-```
-
-**改善後：**
-```
-入力: 「驚いた顔」
-出力: A character with a surprised expression, eyes wide open
-→ シンプル！ ✅
-```
-
 ---
 
 ## 🎯 AI漫画制作ワークフロー

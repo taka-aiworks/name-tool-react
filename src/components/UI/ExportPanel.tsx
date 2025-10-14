@@ -142,7 +142,8 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
         characterSettings,
         characterNames,
         nanoBananaOptions,
-        setNanoBananaProgress
+        setNanoBananaProgress,
+        canvasRef.current || undefined  // 🆕 キャンバス要素を渡す
       );
 
       if (result.success && result.zipBlob) {
