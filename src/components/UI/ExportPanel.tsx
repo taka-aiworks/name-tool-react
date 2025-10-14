@@ -18,7 +18,7 @@ import {
 } from '../../types';
 import { BetaUtils } from '../../config/betaConfig';
 
-type ExportPurpose = 'print' | 'image' | 'clipstudio' | 'prompt' | 'nanobanana' | 'template' | 'data';
+type ExportPurpose = 'print' | 'image' | 'clipstudio' | 'prompt' | 'nanobanana';
 
 const purposeDefaults: Record<ExportPurpose, Partial<ExportOptions>> = {
   print: {
@@ -54,20 +54,6 @@ const purposeDefaults: Record<ExportPurpose, Partial<ExportOptions>> = {
     quality: 'high',
     resolution: 300,
     includeBackground: true,
-    separatePages: false
-  },
-  template: {
-    format: 'png',
-    quality: 'high',
-    resolution: 300,
-    includeBackground: true,
-    separatePages: false
-  },
-  data: {
-    format: 'json' as any,
-    quality: 'high',
-    resolution: 300,
-    includeBackground: false,
     separatePages: false
   }
 };
@@ -107,6 +93,7 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
   const [promptOutput, setPromptOutput] = useState<string>('');
   const [debugOutput, setDebugOutput] = useState<string>('');
   const [exportCurrentPageOnly, setExportCurrentPageOnly] = useState<boolean>(false);
+  const [exportTemplateOnly, setExportTemplateOnly] = useState<boolean>(false);
   
   // 🆕 NanoBanana関連のstate
   const [nanoBananaOptions, setNanoBananaOptions] = useState<NanoBananaExportOptions>(DEFAULT_NANOBANANA_EXPORT_OPTIONS);
@@ -245,22 +232,19 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
 
     try {
       switch (selectedPurpose) {
-        case 'template':
-          await exportService.exportTemplatePNG(canvasRef.current, panels, exportOptions, setExportProgress);
-          break;
-        case 'data':
-          if (pages && typeof currentPageIndex === 'number') {
-            const projectName = 'ネームプロジェクト';
-            await exportService.exportProjectDataJSON(pages, currentPageIndex, projectName, setExportProgress);
+        case 'print':
+          if (exportTemplateOnly) {
+            await exportService.exportTemplatePNG(canvasRef.current, panels, exportOptions, setExportProgress);
           } else {
-            alert('ページデータが不足しています');
+            await exportService.exportToPDF(canvasRef.current, panels, exportOptions, setExportProgress);
           }
           break;
-        case 'print':
-          await exportService.exportToPDF(canvasRef.current, panels, exportOptions, setExportProgress);
-          break;
         case 'image':
-          await exportService.exportToPNG(canvasRef.current, panels, exportOptions, setExportProgress);
+          if (exportTemplateOnly) {
+            await exportService.exportTemplatePNG(canvasRef.current, panels, exportOptions, setExportProgress);
+          } else {
+            await exportService.exportToPNG(canvasRef.current, panels, exportOptions, setExportProgress);
+          }
           break;
         case 'clipstudio':
           await exportService.exportToPSD(canvasRef.current, panels, characters, bubbles, backgrounds, effects, tones, exportOptions, setExportProgress);
@@ -791,6 +775,12 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
 
   const purposes = [
     {
+      id: 'print' as ExportPurpose,
+      icon: '📄',
+      title: 'ネーム出力',
+      desc: 'PDF・画像で印刷・共有'
+    },
+    {
       id: 'nanobanana' as ExportPurpose,
       icon: '🍌',
       title: 'NanoBanana出力',
@@ -801,30 +791,6 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
       icon: '🎨',
       title: 'プロンプト出力',
       desc: 'AI画像生成用'
-    },
-    {
-      id: 'template' as ExportPurpose,
-      icon: '📐',
-      title: 'テンプレート画像',
-      desc: 'コマ割り枠のみ'
-    },
-    {
-      id: 'data' as ExportPurpose,
-      icon: '📊',
-      title: 'データ出力',
-      desc: '全情報JSON'
-    },
-    {
-      id: 'print' as ExportPurpose,
-      icon: '📄',
-      title: '印刷用PDF',
-      desc: 'ネーム印刷・共有用'
-    },
-    {
-      id: 'image' as ExportPurpose,
-      icon: '🖼️',
-      title: '画像保存',
-      desc: 'SNS・Web用'
     },
     {
       id: 'clipstudio' as ExportPurpose,
@@ -1356,8 +1322,24 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
                           <option value={600}>600 DPI (最高品質)</option>
                         </select>
                       </div>
-                      
-                      {/* 各コマ個別出力オプションは削除（不要） */}
+
+                      <label style={{ 
+                        display: "flex", 
+                        alignItems: "center", 
+                        gap: "6px",
+                        fontSize: "11px",
+                        color: isDarkMode ? "#ffffff" : "#333333",
+                        cursor: "pointer"
+                      }}>
+                        <input
+                          type="checkbox"
+                          checked={exportTemplateOnly}
+                          onChange={(e) => setExportTemplateOnly(e.target.checked)}
+                          disabled={isExporting}
+                          style={{ margin: 0 }}
+                        />
+                        📐 テンプレート画像のみ（枠＋番号）
+                      </label>
                     </>
                   )}
 
@@ -1410,6 +1392,24 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
                           ))}
                         </div>
                       </div>
+
+                      <label style={{ 
+                        display: "flex", 
+                        alignItems: "center", 
+                        gap: "6px",
+                        fontSize: "11px",
+                        color: isDarkMode ? "#ffffff" : "#333333",
+                        cursor: "pointer"
+                      }}>
+                        <input
+                          type="checkbox"
+                          checked={exportTemplateOnly}
+                          onChange={(e) => setExportTemplateOnly(e.target.checked)}
+                          disabled={isExporting}
+                          style={{ margin: 0 }}
+                        />
+                        📐 テンプレート画像のみ（枠＋番号）
+                      </label>
 
                       <label style={{ 
                         display: "flex", 
