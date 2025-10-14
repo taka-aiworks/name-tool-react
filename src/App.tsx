@@ -1360,37 +1360,6 @@ function App() {
             </div>
           </div>
 
-          {isPanelEditMode && (
-            <div className="section" style={{ 
-              border: `2px solid ${COLOR_PALETTE.primary.orange}`,
-              background: "var(--bg-tertiary)",
-            }}>
-              <h3>🔧 コマ操作</h3>
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                <button 
-                  className="btn btn-secondary"
-                  onClick={handleClearAll}
-                  title="全要素をクリア"
-                >
-                  🧹 全クリア
-                </button>
-                <div style={{ 
-                  fontSize: "11px", 
-                  color: "var(--text-muted)",
-                  padding: "8px",
-                  background: "var(--bg-primary)",
-                  borderRadius: "4px",
-                  lineHeight: "1.4",
-                }}>
-                  <strong>操作方法:</strong><br/>
-                  • コマを選択してハンドルで操作<br/>
-                  • 🔵 移動 / 🟧 リサイズ / 🟣 分割<br/>
-                  • Ctrl+E でモード切替
-                </div>
-              </div>
-            </div>
-          )}
-
           <div className="section">
             <h3>📐 用紙サイズ</h3>
             <button
@@ -1999,6 +1968,47 @@ function App() {
                   💡 最終プロンプト = キャラ + 動作で自動合成
                 </div>
               </div>
+
+              {/* コマ編集操作 */}
+              {isPanelEditMode && (
+                <div style={{ marginTop: "16px", paddingTop: "16px", borderTop: "1px solid var(--border-color)" }}>
+                  <h4 style={{ fontSize: "12px", marginBottom: "8px", color: "var(--text-primary)" }}>
+                    🔧 コマ編集操作
+                  </h4>
+                  <button 
+                    className="btn btn-secondary"
+                    onClick={handleClearAll}
+                    style={{
+                      width: '100%',
+                      padding: '8px',
+                      background: COLOR_PALETTE.buttons.delete.primary,
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '12px',
+                      fontWeight: 'bold',
+                      marginBottom: '8px'
+                    }}
+                  >
+                    🧹 全クリア
+                  </button>
+                  <div style={{ 
+                    fontSize: "10px", 
+                    color: "var(--text-muted)",
+                    padding: "8px",
+                    background: "var(--bg-secondary)",
+                    borderRadius: "4px",
+                    lineHeight: "1.4",
+                  }}>
+                    <strong>操作方法:</strong><br/>
+                    • 🔵 移動: 中央ハンドルをドラッグ<br/>
+                    • 🟧 リサイズ: 四隅のハンドル<br/>
+                    • ✂️ 分割: 分割アイコンをクリック<br/>
+                    • 🗑️ 削除: 削除アイコンをクリック
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
