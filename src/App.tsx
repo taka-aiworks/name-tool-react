@@ -29,6 +29,7 @@ import { OpenAISettingsModal } from './components/UI/OpenAISettingsModal';
 import { CharacterPromptRegisterModal } from './components/UI/CharacterPromptRegisterModal';
 import HelpModal from './components/UI/HelpModal';
 import { openAIService } from './services/OpenAIService';
+import { usageLimitService } from './services/UsageLimitService';
 
 import {
   calculateScaleTransform,
@@ -230,6 +231,24 @@ function App() {
     };
     projectSave.checkForChanges(projectData);
   }, [panels, characters, speechBubbles, backgrounds, effects, tones, canvasSize, settings, characterNames, characterSettings, canvasSettings, projectSave]);
+
+  // 使用状況の更新（環境変数モード時のみ）
+  useEffect(() => {
+    const updateUsageStatus = async () => {
+      if (process.env.REACT_APP_USE_ENV_API_KEY === 'true') {
+        const statusText = await usageLimitService.getUsageStatusText();
+        const statusElement = document.getElementById('usage-status');
+        if (statusElement) {
+          statusElement.textContent = statusText;
+        }
+      }
+    };
+    
+    updateUsageStatus();
+    const interval = setInterval(updateUsageStatus, 5000); // 5秒ごとに更新
+    
+    return () => clearInterval(interval);
+  }, []);
 
   const getCharacterDisplayName = useCallback((character: Character) => {
     return characterNames[character.type] || character.name || 'キャラクター';
@@ -1327,7 +1346,7 @@ function App() {
             <h3>👤 キャラクター登録</h3>
             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
               {Object.entries(characterNames).map(([id, name]) => (
-                <button
+                <button 
                   key={id}
                   onClick={() => {
                     setRegisteringCharacterId(id);
@@ -1354,11 +1373,11 @@ function App() {
                   </span>
                 </button>
               ))}
-            </div>
+                </div>
             <div className="section-info" style={{ marginTop: "8px" }}>
               💡 プロンプトを登録すると使い回せます
+              </div>
             </div>
-          </div>
 
           <div className="section">
             <h3>📐 用紙サイズ</h3>
@@ -1636,6 +1655,25 @@ function App() {
               >
                 🔑 APIキー設定
               </button>
+              
+              {/* 使用状況表示（環境変数モード時のみ） */}
+              {process.env.REACT_APP_USE_ENV_API_KEY === 'true' && (
+                <div style={{
+                  marginTop: '8px',
+                  padding: '8px',
+                  background: 'var(--bg-secondary)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '4px',
+                  fontSize: '10px',
+                  color: 'var(--text-muted)'
+                }}>
+                  <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>📊 使用状況</div>
+                  <div id="usage-status">本日: 0/10回 | 累計: 0/100回</div>
+                  <div style={{ marginTop: '4px', fontSize: '9px' }}>
+                    💡 無料版: 1日10回、累計100回まで
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -1817,7 +1855,7 @@ function App() {
               {/* 動作プロンプト（自動生成） */}
               <div>
                 <label style={{
-                  fontSize: "11px", 
+              fontSize: "11px", 
                   fontWeight: "bold",
                   color: "var(--text-primary)",
                   display: "block",
@@ -1949,15 +1987,15 @@ function App() {
                 
                 <div style={{
                   fontSize: "10px",
-                  color: "var(--text-muted)",
-                  padding: "4px 8px",
-                  background: "var(--bg-secondary)",
-                  borderRadius: "4px",
+              color: "var(--text-muted)",
+              padding: "4px 8px",
+              background: "var(--bg-secondary)",
+              borderRadius: "4px",
                   marginTop: "4px"
-                }}>
+            }}>
                   💡 最終プロンプト = キャラ + 動作で自動合成
-                </div>
-              </div>
+            </div>
+          </div>
 
               {/* コマ編集操作 */}
               {isPanelEditMode && (

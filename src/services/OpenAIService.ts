@@ -2,6 +2,7 @@
 // OpenAI API連携サービス
 
 import { Panel, SpeechBubble } from '../types';
+import { usageLimitService } from './UsageLimitService';
 
 export interface StoryToComicRequest {
   story: string;
@@ -84,6 +85,16 @@ class OpenAIService {
    * 話からコマ内容を生成
    */
   public async generatePanelContent(request: StoryToComicRequest): Promise<StoryToComicResponse> {
+    // 使用制限チェック
+    const limitCheck = await usageLimitService.canUseAI();
+    if (!limitCheck.allowed) {
+      return {
+        panels: [],
+        success: false,
+        error: limitCheck.reason || '使用制限に達しました'
+      };
+    }
+    
     const apiKey = this.getApiKey();
     
     if (!apiKey) {
@@ -174,6 +185,9 @@ ${characterInfo}
       }
 
       const parsedContent = JSON.parse(content);
+      
+      // 使用回数を記録
+      await usageLimitService.recordUsage();
       
       return {
         panels: parsedContent.panels || [],
@@ -270,6 +284,12 @@ ${characterInfo}
     tone?: string,
     characters?: Array<{ id: string; name: string; prompt?: string }>
   ): Promise<PanelContent | null> {
+    // 使用制限チェック
+    const limitCheck = await usageLimitService.canUseAI();
+    if (!limitCheck.allowed) {
+      throw new Error(limitCheck.reason || '使用制限に達しました');
+    }
+    
     if (!this.apiKey) {
       throw new Error('APIキーが設定されていません');
     }
@@ -359,6 +379,10 @@ ${characterInfo || 'キャラクター情報なし'}
       }
 
       const panelData = JSON.parse(jsonMatch[0]);
+      
+      // 使用回数を記録
+      await usageLimitService.recordUsage();
+      
       return panelData as PanelContent;
 
     } catch (error) {
@@ -371,6 +395,12 @@ ${characterInfo || 'キャラクター情報なし'}
    * 動作・シチュエーションの説明から英語プロンプトを生成
    */
   public async generateActionPrompt(description: string): Promise<{ prompt: string; promptJa: string }> {
+    // 使用制限チェック（軽量なので0.5回としてカウント）
+    const limitCheck = await usageLimitService.canUseAI();
+    if (!limitCheck.allowed) {
+      throw new Error(limitCheck.reason || '使用制限に達しました');
+    }
+    
     const apiKey = this.getApiKey();
     
     if (!apiKey) {
