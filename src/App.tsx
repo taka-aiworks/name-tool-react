@@ -2405,7 +2405,7 @@ function App() {
         isDarkMode={isDarkMode}
         characterNames={characterNames}
         selectedPanelId={selectedPanel?.id}
-        initialStory={pageManager.currentPage.note || ''}
+        initialStory={storyModalMode === 'full' ? (pageManager.currentPage.note || '') : ''}
         initialMode={storyModalMode}
       />
 

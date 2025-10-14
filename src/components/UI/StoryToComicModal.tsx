@@ -96,7 +96,7 @@ export const StoryToComicModal: React.FC<StoryToComicModalProps> = ({
     setPreviewData(null);
     setSinglePanelData(null);
     setStep('input');
-    setGenerationMode('full');
+    // generationModeはリセットしない（initialModeで制御される）
     onClose();
   };
 
