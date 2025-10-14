@@ -18,7 +18,7 @@ import {
 } from '../../types';
 import { BetaUtils } from '../../config/betaConfig';
 
-type ExportPurpose = 'print' | 'image' | 'clipstudio' | 'prompt' | 'nanobanana';
+type ExportPurpose = 'print' | 'image' | 'clipstudio' | 'prompt' | 'nanobanana' | 'template' | 'data';
 
 const purposeDefaults: Record<ExportPurpose, Partial<ExportOptions>> = {
   print: {
@@ -54,6 +54,20 @@ const purposeDefaults: Record<ExportPurpose, Partial<ExportOptions>> = {
     quality: 'high',
     resolution: 300,
     includeBackground: true,
+    separatePages: false
+  },
+  template: {
+    format: 'png',
+    quality: 'high',
+    resolution: 300,
+    includeBackground: true,
+    separatePages: false
+  },
+  data: {
+    format: 'json' as any,
+    quality: 'high',
+    resolution: 300,
+    includeBackground: false,
     separatePages: false
   }
 };
@@ -230,7 +244,18 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
     }
 
     try {
-      switch (exportOptions.format) {
+      switch (selectedPurpose) {
+        case 'template':
+          await exportService.exportTemplatePNG(canvasRef.current, panels, exportOptions, setExportProgress);
+          break;
+        case 'data':
+          if (pages && typeof currentPageIndex === 'number') {
+            const projectName = 'ネームプロジェクト';
+            await exportService.exportProjectDataJSON(pages, currentPageIndex, projectName, setExportProgress);
+          } else {
+            alert('ページデータが不足しています');
+          }
+          break;
         case 'pdf':
           await exportService.exportToPDF(canvasRef.current, panels, exportOptions, setExportProgress);
           break;
@@ -776,6 +801,18 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
       icon: '🎨',
       title: 'プロンプト出力',
       desc: 'AI画像生成用'
+    },
+    {
+      id: 'template' as ExportPurpose,
+      icon: '📐',
+      title: 'テンプレート画像',
+      desc: 'コマ割り枠のみ'
+    },
+    {
+      id: 'data' as ExportPurpose,
+      icon: '📊',
+      title: 'データ出力',
+      desc: '全情報JSON'
     },
     {
       id: 'print' as ExportPurpose,
@@ -1457,41 +1494,43 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
                   )}
 
                   {/* 出力ボタン（プロンプト以外） */}
-                  <button
-                    onClick={handleExport}
-                    disabled={isExporting || panels.length === 0}
-                    style={{
-                      width: "100%",
-                      background: isExporting || panels.length === 0 ? "#999999" : "#ff8833",
-                      color: "white",
-                      padding: "8px 12px",
-                      borderRadius: "4px",
-                      border: "none",
-                      fontSize: "11px",
-                      fontWeight: "600",
-                      cursor: isExporting || panels.length === 0 ? "not-allowed" : "pointer",
-                      transition: "background-color 0.2s",
-                      fontFamily: "inherit",
-                    }}
-                  >
-                    {isExporting ? (
-                      <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
-                        <div 
-                          style={{
-                            width: "12px",
-                            height: "12px",
-                            border: "2px solid white",
-                            borderTop: "2px solid transparent",
-                            borderRadius: "50%",
-                            animation: "spin 1s linear infinite",
-                          }}
-                        />
-                        出力中...
-                      </span>
-                    ) : (
-                      'ファイルダウンロード'
-                    )}
-                  </button>
+                  {selectedPurpose !== 'prompt' && selectedPurpose !== 'nanobanana' && (
+                    <button
+                      onClick={handleExport}
+                      disabled={isExporting || panels.length === 0}
+                      style={{
+                        width: "100%",
+                        background: isExporting || panels.length === 0 ? "#999999" : "#ff8833",
+                        color: "white",
+                        padding: "8px 12px",
+                        borderRadius: "4px",
+                        border: "none",
+                        fontSize: "11px",
+                        fontWeight: "600",
+                        cursor: isExporting || panels.length === 0 ? "not-allowed" : "pointer",
+                        transition: "background-color 0.2s",
+                        fontFamily: "inherit",
+                      }}
+                    >
+                      {isExporting ? (
+                        <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+                          <div 
+                            style={{
+                              width: "12px",
+                              height: "12px",
+                              border: "2px solid white",
+                              borderTop: "2px solid transparent",
+                              borderRadius: "50%",
+                              animation: "spin 1s linear infinite",
+                            }}
+                          />
+                          出力中...
+                        </span>
+                      ) : (
+                        'ファイルダウンロード'
+                      )}
+                    </button>
+                  )}
                 </div>
               </div>
             )}

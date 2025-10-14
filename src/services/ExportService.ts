@@ -233,12 +233,21 @@ export class ExportService {
   ): Promise<HTMLCanvasElement> {
     const scale = this.getScaleFromQuality(options.quality);
     
-    return html2canvas(canvasElement, {
-      scale: scale,
-      useCORS: true,
-      allowTaint: false,
-      backgroundColor: options.includeBackground ? '#ffffff' : null
-    });
+    // Canvasを直接コピー（html2canvasを使わない）
+    const outputCanvas = document.createElement('canvas');
+    const ctx = outputCanvas.getContext('2d')!;
+    
+    outputCanvas.width = canvasElement.width * scale;
+    outputCanvas.height = canvasElement.height * scale;
+    
+    if (options.includeBackground) {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, outputCanvas.width, outputCanvas.height);
+    }
+    
+    ctx.drawImage(canvasElement, 0, 0, outputCanvas.width, outputCanvas.height);
+    
+    return outputCanvas;
   }
 
   private async capturePanelArea(
@@ -248,22 +257,26 @@ export class ExportService {
   ): Promise<HTMLCanvasElement> {
     const scale = this.getScaleFromQuality(options.quality);
     
+    // スケール比率を計算
+    const scaleX = canvasElement.width / canvasElement.clientWidth;
+    const scaleY = canvasElement.height / canvasElement.clientHeight;
+    
     // パネル領域のみをキャプチャ
     const tempCanvas = document.createElement('canvas');
     const tempCtx = tempCanvas.getContext('2d')!;
     
-    tempCanvas.width = panel.width * scale;
-    tempCanvas.height = panel.height * scale;
+    tempCanvas.width = panel.width * scaleX * scale;
+    tempCanvas.height = panel.height * scaleY * scale;
     
     if (options.includeBackground) {
       tempCtx.fillStyle = '#ffffff';
       tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
     }
 
-    // キャンバス要素から該当領域をコピー
+    // スケールを考慮してキャンバス要素から該当領域をコピー
     tempCtx.drawImage(
       canvasElement,
-      panel.x, panel.y, panel.width, panel.height,
+      panel.x * scaleX, panel.y * scaleY, panel.width * scaleX, panel.height * scaleY,
       0, 0, tempCanvas.width, tempCanvas.height
     );
 
@@ -443,5 +456,130 @@ export class ExportService {
     link.href = url;
     link.click();
     URL.revokeObjectURL(url);
+  }
+
+  /**
+   * テンプレート画像のみを出力（レイアウト枠＋番号）
+   */
+  async exportTemplatePNG(
+    canvasElement: HTMLCanvasElement,
+    panels: Panel[],
+    options: ExportOptions,
+    onProgress?: (progress: ExportProgress) => void
+  ): Promise<void> {
+    try {
+      onProgress?.({ step: 'initialize', progress: 0, message: 'テンプレート画像を生成中...' });
+
+      const scale = this.getScaleFromQuality(options.quality);
+      const outputCanvas = document.createElement('canvas');
+      const ctx = outputCanvas.getContext('2d')!;
+      
+      outputCanvas.width = canvasElement.width * scale;
+      outputCanvas.height = canvasElement.height * scale;
+      
+      // 白背景
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, outputCanvas.width, outputCanvas.height);
+      
+      // パネル枠のみを描画
+      const scaleX = canvasElement.width / canvasElement.clientWidth;
+      const scaleY = canvasElement.height / canvasElement.clientHeight;
+      
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 2;
+      
+      panels.forEach((panel, index) => {
+        const x = panel.x * scaleX * scale;
+        const y = panel.y * scaleY * scale;
+        const width = panel.width * scaleX * scale;
+        const height = panel.height * scaleY * scale;
+        
+        // パネル枠
+        ctx.strokeRect(x, y, width, height);
+        
+        // パネル番号
+        ctx.fillStyle = '#000000';
+        ctx.font = `${16 * scale}px Arial`;
+        ctx.fillText(`${index + 1}`, x + 5, y + 20);
+      });
+
+      onProgress?.({ step: 'saving', progress: 90, message: 'テンプレート画像を保存中...' });
+      this.downloadImage(outputCanvas, 'ネーム_テンプレート.png');
+
+      onProgress?.({ step: 'complete', progress: 100, message: 'テンプレート画像出力完了！' });
+    } catch (error) {
+      console.error('テンプレート画像出力エラー:', error);
+      throw new Error('テンプレート画像出力に失敗しました');
+    }
+  }
+
+  /**
+   * プロジェクトデータ一式をJSONで出力
+   */
+  async exportProjectDataJSON(
+    pages: any[],
+    currentPageIndex: number,
+    projectName: string,
+    onProgress?: (progress: ExportProgress) => void
+  ): Promise<void> {
+    try {
+      onProgress?.({ step: 'initialize', progress: 0, message: 'プロジェクトデータを準備中...' });
+
+      const projectData = {
+        version: '1.0',
+        projectName,
+        exportDate: new Date().toISOString(),
+        currentPageIndex,
+        pages: pages.map((page, pageIndex) => ({
+          pageNumber: pageIndex + 1,
+          note: page.note || '',
+          panels: page.panels.map((panel: any, panelIndex: number) => ({
+            panelNumber: panelIndex + 1,
+            id: panel.id,
+            x: panel.x,
+            y: panel.y,
+            width: panel.width,
+            height: panel.height,
+            importance: panel.importance || 'normal',
+            memo: panel.memo || '',
+            characters: panel.characters?.map((char: any) => ({
+              id: char.id,
+              name: char.name,
+              expression: char.expression,
+              action: char.action,
+              facing: char.facing,
+              eyeState: char.eyeState,
+              scale: char.scale,
+              x: char.x,
+              y: char.y
+            })) || [],
+            bubbles: panel.bubbles?.map((bubble: any) => ({
+              id: bubble.id,
+              text: bubble.text,
+              type: bubble.type,
+              x: bubble.x,
+              y: bubble.y,
+              width: bubble.width,
+              height: bubble.height,
+              fontSize: bubble.fontSize,
+              vertical: bubble.vertical
+            })) || [],
+            backgrounds: panel.backgrounds || [],
+            effects: panel.effects || [],
+            tones: panel.tones || []
+          }))
+        }))
+      };
+
+      onProgress?.({ step: 'saving', progress: 90, message: 'データファイルを保存中...' });
+      
+      const jsonData = JSON.stringify(projectData, null, 2);
+      this.downloadJSON(jsonData, `${projectName}_データ.json`);
+
+      onProgress?.({ step: 'complete', progress: 100, message: 'プロジェクトデータ出力完了！' });
+    } catch (error) {
+      console.error('プロジェクトデータ出力エラー:', error);
+      throw new Error('プロジェクトデータ出力に失敗しました');
+    }
   }
 }
