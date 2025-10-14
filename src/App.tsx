@@ -99,6 +99,7 @@ function App() {
   
   // 🤖 OpenAI連携機能
   const [showStoryToComicModal, setShowStoryToComicModal] = useState<boolean>(false);
+  const [storyModalMode, setStoryModalMode] = useState<'full' | 'single'>('full');
   const [showOpenAISettingsModal, setShowOpenAISettingsModal] = useState<boolean>(false);
   const [isGeneratingFromStory, setIsGeneratingFromStory] = useState<boolean>(false);
   
@@ -1567,7 +1568,7 @@ function App() {
 
           {/* ページ全体メモ */}
           <div className="section">
-            <h3>📄 ページ設定</h3>
+            <h3>📄 AIでページ作成</h3>
             
             <div style={{ marginBottom: "12px" }}>
               <label style={{
@@ -1600,7 +1601,7 @@ function App() {
                 }}
               />
               
-              {/* AI生成ボタン - モーダルを開く */}
+              {/* AI生成ボタン - 1ページ分を生成 */}
               <button
                 onClick={() => {
                   if (!openAIService.hasApiKey()) {
@@ -1610,6 +1611,7 @@ function App() {
                   } else if (panels.length === 0) {
                     alert('先にコマ割りテンプレートを選択してください');
                   } else {
+                    setStoryModalMode('full');
                     setShowStoryToComicModal(true);
                   }
                 }}
@@ -1625,18 +1627,19 @@ function App() {
                   fontSize: '13px',
                   fontWeight: 'bold',
                   marginTop: '8px',
-                  marginBottom: '8px'
+                  marginBottom: '4px'
                 }}
               >
-                🤖 AIで生成
+                🤖 1ページ分を生成
               </button>
               
               <div style={{ 
                 fontSize: "10px", 
                 color: "var(--text-muted)", 
-                marginTop: "4px" 
+                marginTop: "4px",
+                marginBottom: "8px" 
               }}>
-                💡 ページメモがモーダルに引き継がれます
+                💡 ページメモからすべてのコマ内容を生成
               </div>
 
               {/* APIキー設定（開発モード時のみ） */}
@@ -1684,6 +1687,34 @@ function App() {
           {selectedPanel && (
             <div className="section">
               <h3>📝 コマ {selectedPanel.id}</h3>
+              
+              {/* 1コマ生成ボタン */}
+              <button
+                onClick={() => {
+                  if (!openAIService.hasApiKey()) {
+                    if (window.confirm('OpenAI APIキーが未設定です。設定画面を開きますか？')) {
+                      setShowOpenAISettingsModal(true);
+                    }
+                  } else {
+                    setStoryModalMode('single');
+                    setShowStoryToComicModal(true);
+                  }
+                }}
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  background: COLOR_PALETTE.buttons.export.primary,
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                  fontWeight: 'bold',
+                  marginBottom: '8px'
+                }}
+              >
+                🤖 AIでコマ内容を生成
+              </button>
               
               {/* コマ重要度マーカー */}
               <div style={{ marginBottom: "12px" }}>
@@ -2375,6 +2406,7 @@ function App() {
         characterNames={characterNames}
         selectedPanelId={selectedPanel?.id}
         initialStory={pageManager.currentPage.note || ''}
+        initialMode={storyModalMode}
       />
 
       <OpenAISettingsModal

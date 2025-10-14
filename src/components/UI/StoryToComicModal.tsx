@@ -14,6 +14,7 @@ interface StoryToComicModalProps {
   characterNames?: Record<string, string>;
   selectedPanelId?: number | null;
   initialStory?: string; // ページメモからの初期値
+  initialMode?: 'full' | 'single'; // 初期モード（デフォルトはfull）
 }
 
 export const StoryToComicModal: React.FC<StoryToComicModalProps> = ({
@@ -27,9 +28,10 @@ export const StoryToComicModal: React.FC<StoryToComicModalProps> = ({
   isDarkMode = false,
   characterNames = {},
   selectedPanelId = null,
-  initialStory = ''
+  initialStory = '',
+  initialMode = 'full'
 }) => {
-  const [generationMode, setGenerationMode] = useState<'full' | 'single'>('full');
+  const [generationMode, setGenerationMode] = useState<'full' | 'single'>(initialMode);
   const [story, setStory] = useState(initialStory);
   const [tone, setTone] = useState('コメディ');
   const [previewData, setPreviewData] = useState<PanelContent[] | null>(null);
@@ -37,12 +39,15 @@ export const StoryToComicModal: React.FC<StoryToComicModalProps> = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [step, setStep] = useState<'input' | 'preview'>('input');
 
-  // モーダルが開いた時にinitialStoryを反映
+  // モーダルが開いた時にinitialStoryとinitialModeを反映
   React.useEffect(() => {
-    if (isOpen && initialStory) {
-      setStory(initialStory);
+    if (isOpen) {
+      if (initialStory) {
+        setStory(initialStory);
+      }
+      setGenerationMode(initialMode);
     }
-  }, [isOpen, initialStory]);
+  }, [isOpen, initialStory, initialMode]);
 
   if (!isOpen) return null;
 
@@ -141,59 +146,15 @@ export const StoryToComicModal: React.FC<StoryToComicModalProps> = ({
           fontSize: '18px',
           color: isDarkMode ? '#fff' : '#333'
         }}>
-          📖 話からコマ内容を生成 {step === 'preview' && '- プレビュー'}
+          {generationMode === 'full' 
+            ? '📖 1ページ分のコマ内容を生成' 
+            : `🎯 コマ${selectedPanelId}の内容を生成`
+          }
+          {step === 'preview' && ' - プレビュー'}
         </div>
 
         {step === 'input' ? (
           <>
-            {/* 生成モード選択 */}
-            <div style={{ marginBottom: '16px' }}>
-              <label style={{
-                display: 'block',
-                marginBottom: '8px',
-                fontWeight: 'bold',
-                fontSize: '13px',
-                color: isDarkMode ? '#fff' : '#333'
-              }}>
-                🎯 生成モード
-              </label>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button
-                  onClick={() => setGenerationMode('full')}
-                  style={{
-                    flex: 1,
-                    padding: '10px',
-                    border: generationMode === 'full' ? '2px solid #8b5cf6' : `1px solid ${isDarkMode ? '#555' : '#ccc'}`,
-                    borderRadius: '6px',
-                    background: generationMode === 'full' ? (isDarkMode ? '#3b2a5a' : '#f3e8ff') : (isDarkMode ? '#404040' : 'white'),
-                    color: isDarkMode ? '#fff' : '#333',
-                    cursor: 'pointer',
-                    fontSize: '13px',
-                    fontWeight: generationMode === 'full' ? 'bold' : 'normal'
-                  }}
-                >
-                  📄 1ページ分を生成
-                </button>
-                <button
-                  onClick={() => setGenerationMode('single')}
-                  disabled={!selectedPanelId}
-                  style={{
-                    flex: 1,
-                    padding: '10px',
-                    border: generationMode === 'single' ? '2px solid #8b5cf6' : `1px solid ${isDarkMode ? '#555' : '#ccc'}`,
-                    borderRadius: '6px',
-                    background: !selectedPanelId ? '#999' : (generationMode === 'single' ? (isDarkMode ? '#3b2a5a' : '#f3e8ff') : (isDarkMode ? '#404040' : 'white')),
-                    color: !selectedPanelId ? '#666' : (isDarkMode ? '#fff' : '#333'),
-                    cursor: !selectedPanelId ? 'not-allowed' : 'pointer',
-                    fontSize: '13px',
-                    fontWeight: generationMode === 'single' ? 'bold' : 'normal',
-                    opacity: !selectedPanelId ? 0.6 : 1
-                  }}
-                >
-                  🎬 1コマのみ生成 {selectedPanelId && `(コマ${selectedPanelId})`}
-                </button>
-              </div>
-            </div>
 
             {/* 入力画面 */}
             <div style={{

@@ -86,17 +86,45 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, isDarkMode = fal
         >
           <div style={{ maxWidth: '900px', margin: '0 auto' }}>
             
+            {/* AI漫画制作の全体フロー */}
+            <section style={{ marginBottom: '32px', padding: '20px', backgroundColor: isDarkMode ? '#1e3a4a' : '#e8f4f8', borderRadius: '12px', border: `2px solid ${isDarkMode ? '#4fc3f7' : '#3498db'}` }}>
+              <h3 style={{ fontSize: '22px', marginBottom: '16px', color: isDarkMode ? '#4fc3f7' : '#2c3e50', textAlign: 'center' }}>
+                🎨 AI漫画制作の全体フロー
+              </h3>
+              <div style={{ fontSize: '16px', lineHeight: '2', color: textColor, textAlign: 'center' }}>
+                <div style={{ marginBottom: '8px' }}>
+                  <strong>① このツールでネーム作成</strong> 📝<br/>
+                  <span style={{ fontSize: '14px', color: isDarkMode ? '#aaa' : '#666' }}>コマ割り・セリフ・動作プロンプト生成</span>
+                </div>
+                <div style={{ fontSize: '24px', margin: '8px 0' }}>↓</div>
+                <div style={{ marginBottom: '8px' }}>
+                  <strong>② エクスポート（画像 + プロンプト）</strong> 📥<br/>
+                  <span style={{ fontSize: '14px', color: isDarkMode ? '#aaa' : '#666' }}>prompts.txt に各コマの画像生成用プロンプトが出力</span>
+                </div>
+                <div style={{ fontSize: '24px', margin: '8px 0' }}>↓</div>
+                <div style={{ marginBottom: '8px' }}>
+                  <strong>③ AI画像生成ツールで各コマを生成</strong> 🤖<br/>
+                  <span style={{ fontSize: '14px', color: isDarkMode ? '#aaa' : '#666' }}>Stable Diffusion / Midjourney / DALL-E 3 など</span>
+                </div>
+                <div style={{ fontSize: '24px', margin: '8px 0' }}>↓</div>
+                <div>
+                  <strong>④ 画像合成して完成！</strong> ✨<br/>
+                  <span style={{ fontSize: '14px', color: isDarkMode ? '#aaa' : '#666' }}>生成画像にセリフを重ねて漫画化</span>
+                </div>
+              </div>
+            </section>
+
             {/* ネーム制作の流れ */}
             <section style={{ marginBottom: '32px' }}>
               <h3 style={{ fontSize: '22px', marginBottom: '20px', color: isDarkMode ? '#4fc3f7' : '#2c3e50', borderBottom: `3px solid ${isDarkMode ? '#4fc3f7' : '#3498db'}`, paddingBottom: '8px' }}>
-                🚀 ネーム制作の流れ
+                🚀 このツールでの作業フロー
               </h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {[
                   { step: '1', icon: '👤', title: 'キャラクター登録', desc: '左パネルの「👤 キャラクター」→「キャラクター名設定」で主要キャラを登録' },
                   { step: '2', icon: '📋', title: 'テンプレート選択', desc: '「📄 新規作成」でコマ数を選択（1コマ、2コマ横並び、4コマなど）' },
-                  { step: '3', icon: '📝', title: 'ページメモ入力', desc: '右サイドバー「📄 ページ設定」でストーリーを入力' },
-                  { step: '4', icon: '🤖', title: 'AIで生成', desc: '「🤖 AIで生成」ボタンでモーダルを開き、プレビュー→適用' },
+                  { step: '3', icon: '📝', title: 'ページメモ入力', desc: '右サイドバー「📄 AIでページ作成」でストーリーを入力' },
+                  { step: '4', icon: '🤖', title: 'AIで生成', desc: '「🤖 1ページ分を生成」ボタンでモーダルを開き、プレビュー→適用' },
                   { step: '5', icon: '🎨', title: '微調整', desc: '吹き出しサイズ、コマ重要度、背景などを調整' },
                   { step: '6', icon: '💾', title: '保存・エクスポート', desc: 'プロジェクト保存 & PNG/JPEGで画像出力' }
                 ].map((item, idx) => (
@@ -142,15 +170,15 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, isDarkMode = fal
               </h3>
               
               <div style={{ marginBottom: '20px' }}>
-                <h4 style={{ fontSize: '16px', marginBottom: '12px', color: isDarkMode ? '#ff6b9d' : '#e74c3c' }}>📚 1ページ分を生成</h4>
+                <h4 style={{ fontSize: '16px', marginBottom: '12px', color: isDarkMode ? '#ff6b9d' : '#e74c3c' }}>📄 1ページ分を生成</h4>
                 <ol style={{ lineHeight: '1.8', color: textColor, marginLeft: '20px' }}>
-                  <li>「📖 話からコマ内容を生成」ボタンをクリック</li>
-                  <li>ストーリーを日本語で入力
+                  <li>右サイドバーの「📄 AIでページ作成」を開く</li>
+                  <li>「ページメモ（構成・展開・意図）」にストーリーを入力
                     <div style={{ backgroundColor: infoBg, padding: '12px', borderRadius: '6px', marginTop: '8px', fontSize: '14px' }}>
                       例: 「主人公が朝起きて驚く。窓の外に巨大なロボット。主人公は急いで着替えて外に飛び出す。」
                     </div>
                   </li>
-                  <li>「1ページ分を生成」を選択</li>
+                  <li>「🤖 1ページ分を生成」ボタンをクリック</li>
                   <li>「🎨 プレビュー生成」→ 内容確認 → 「✅ 適用」</li>
                 </ol>
               </div>
@@ -159,8 +187,9 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, isDarkMode = fal
                 <h4 style={{ fontSize: '16px', marginBottom: '12px', color: isDarkMode ? '#ff6b9d' : '#e74c3c' }}>🎯 1コマのみ生成</h4>
                 <ol style={{ lineHeight: '1.8', color: textColor, marginLeft: '20px' }}>
                   <li>コマを選択</li>
-                  <li>「📖 話からコマ内容を生成」→「選択中の1コマを生成」</li>
-                  <li>そのコマの内容を入力 → 生成</li>
+                  <li>右サイドバーの「📝 コマ設定」を開く</li>
+                  <li>「🤖 AIでコマ内容を生成」ボタンをクリック</li>
+                  <li>そのコマの内容を入力 → 「🎨 プレビュー生成」→ 「✅ 適用」</li>
                 </ol>
               </div>
 
@@ -178,7 +207,6 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, isDarkMode = fal
                 {[
                   { title: '新規作成', desc: '📄ボタンでテンプレート選択' },
                   { title: '保存', desc: '💾 新規保存 or 上書き保存' },
-                  { title: 'エクスポート', desc: '📥 PNG/JPEG形式で出力' },
                   { title: '元に戻す', desc: 'Ctrl + Z（やり直し: Ctrl + Y）' },
                   { title: 'コマ編集', desc: '✏️ボタンで移動・リサイズ・分割' },
                   { title: '吹き出し', desc: 'ダブルクリックでテキスト入力' }
@@ -188,6 +216,36 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, isDarkMode = fal
                     <div style={{ fontSize: '14px', color: isDarkMode ? '#aaa' : '#666', marginTop: '4px' }}>{item.desc}</div>
                   </div>
                 ))}
+              </div>
+            </section>
+
+            {/* エクスポート */}
+            <section style={{ marginBottom: '32px' }}>
+              <h3 style={{ fontSize: '20px', marginBottom: '16px', color: isDarkMode ? '#ba68c8' : '#8e44ad', borderBottom: `2px solid ${isDarkMode ? '#ba68c8' : '#8e44ad'}`, paddingBottom: '8px' }}>
+                📥 エクスポート（画像 + プロンプト）
+              </h3>
+              <div style={{ backgroundColor: infoBg, padding: '16px', borderRadius: '8px', marginBottom: '16px' }}>
+                <h4 style={{ fontSize: '16px', marginBottom: '12px', color: textColor }}>出力される3つのファイル</h4>
+                <ol style={{ lineHeight: '1.8', color: textColor, marginLeft: '20px', fontSize: '14px' }}>
+                  <li><strong>layout.png/jpg</strong>: ネーム画像（コマ割り・吹き出し配置）</li>
+                  <li><strong>prompts.txt</strong>: 各コマの画像生成用プロンプト（英語）</li>
+                  <li><strong>project.json</strong>: プロジェクトデータ（バックアップ用）</li>
+                </ol>
+              </div>
+
+              <div style={{ backgroundColor: isDarkMode ? '#2a4a2a' : '#e8f5e9', padding: '16px', borderRadius: '8px', border: `2px solid ${isDarkMode ? '#66bb6a' : '#4caf50'}` }}>
+                <h4 style={{ fontSize: '16px', marginBottom: '12px', color: isDarkMode ? '#66bb6a' : '#2e7d32' }}>🎨 prompts.txt の活用方法</h4>
+                <div style={{ fontSize: '14px', lineHeight: '1.8', color: textColor }}>
+                  <p style={{ marginBottom: '12px' }}>各コマの<strong>Action Prompt</strong>を以下のAI画像生成ツールにコピペ：</p>
+                  <ul style={{ marginLeft: '20px', marginBottom: '12px' }}>
+                    <li><strong>Stable Diffusion WebUI</strong>: そのままコピーして使用</li>
+                    <li><strong>Midjourney</strong>: /imagine の後に貼り付け</li>
+                    <li><strong>DALL-E 3</strong>: ChatGPT Plus で送信</li>
+                  </ul>
+                  <div style={{ backgroundColor: tipBg, padding: '12px', borderRadius: '6px', fontSize: '13px' }}>
+                    <strong>💡 Tip:</strong> プロンプトは英語で出力されるため、そのままコピペで高品質な画像が生成できます！
+                  </div>
+                </div>
               </div>
             </section>
 
