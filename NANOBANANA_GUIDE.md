@@ -62,61 +62,108 @@ NanoBananaでの具体的な使い方手順が日本語で記載されていま�
 
 ## 🚀 NanoBananaでの使い方（Google AI Studio）
 
+### 📋 全体の流れ
+
+```
+1. キャラクターリファレンス画像を生成（Stable Diffusion等）
+   ↓
+2. Google AI Studioにリファレンス画像+レイアウト画像をアップロード
+   ↓
+3. プロンプトを入力して生成
+   ↓
+4. 完成した漫画をダウンロード
+```
+
 ### 準備
 
-1. **Google AI Studio にアクセス**
-   - https://aistudio.google.com にアクセス
+1. **ZIPファイルを解凍**
+   - エクスポートしたZIPを解凍
+   - `prompt.txt`、`layout.png`を確認
+
+2. **Stable Diffusion / Midjourney / DALL-E を準備**
+   - キャラクター画像生成用
+
+3. **Google AI Studio にアクセス**
+   - https://aistudio.google.com
    - Googleアカウントでログイン
 
-2. **ZIPファイルを解凍**
-   - エクスポートしたZIPを解凍
-   - `layout.png`と`prompt.txt`を用意
+---
 
-### 方法1: 基本的な使い方
+### 方法1: 基本的な使い方（推奨）
 
-#### ステップ1: 新しいチャットを開始
+#### ステップ1: キャラクターリファレンス画像を生成
+```
+1. prompt.txt を開く
+2. 「📸 キャラクターリファレンス画像の生成」セクションを見つける
+3. 各キャラクターの完全なプロンプト例をコピー
+   
+例:
+【主人公】
+solo, 1girl, teen, black hair, blue eyes, black sweater, 
+full body, standing pose, front view, simple background, 
+masterpiece, best quality, anime style
+
+4. Stable Diffusion / Midjourney / DALL-E で画像を生成
+5. 生成した画像を保存（character_主人公.png）
+6. キャラクターが複数いる場合、全員分生成
+
+※これが重要：全コマでキャラを統一するためのリファレンス
+```
+
+#### ステップ2: Google AI Studio を開く
 ```
 1. Google AI Studio で「New Chat」をクリック
 2. モデルを「Gemini 2.0 Flash Experimental」に設定
-   （画像生成対応モデル）
 ```
 
-#### ステップ2: レイアウト画像をアップロード
+#### ステップ3: 画像を全部アップロード
 ```
-3. 「📎 Attach」ボタンをクリック
-4. layout.png をアップロード
-5. 画像が表示されることを確認
-```
-
-#### ステップ3: プロンプトを入力
-```
-6. prompt.txt を開く
-7. Panel 1のプロンプトをコピー
-8. 以下のように入力:
-
-"This is a manga panel layout. Generate a full illustration 
-for Panel 1 based on this layout.
-
-Panel 1 Prompt:
-solo, 1girl, teen, black hair, blue eyes, black sweater, 
-walking in forest, serious expression, quiet forest background,
-masterpiece, best quality, anime style
-
-Keep the same panel position and speech bubble placement 
-as shown in the layout image."
+1. 「📎 Attach」ボタンをクリック
+2. キャラクターリファレンス画像をアップロード
+   - character_主人公.png
+   - character_サブキャラ.png など
+3. layout.png（レイアウト画像）もアップロード
+4. すべての画像が表示されることを確認
 ```
 
-#### ステップ4: 生成・確認
+#### ステップ4: プロンプトを入力
 ```
-9. 送信ボタンをクリック
-10. AIが画像を生成（30秒〜1分）
-11. 結果を確認
+1. prompt.txt の「コマ別プロンプト」セクションを開く
+2. 以下のテンプレートで入力：
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+アップロードした画像を使って、漫画を生成してください。
+
+【使用する画像】
+• キャラクターリファレンス: 主人公、サブキャラ（アップロード済み）
+• レイアウト: layout.png（アップロード済み）
+
+【各コマの内容】
+コマ1:
+  📌 メモ: [prompt.txtからコピー]
+  💬 セリフ: [prompt.txtからコピー]
+  🎨 プロンプト: [prompt.txtからコピー]
+
+コマ2:
+  [同様にコピー]
+
+【必須条件】
+• キャラクターはリファレンス画像の外見を使用
+• layout.pngのコマ配置・吹き出し位置を維持
+• セリフを正確に描画
+• 高品質な漫画スタイル
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+3. 送信ボタンをクリック
+4. AIが画像を生成（30秒〜1分）
 ```
 
-#### ステップ5: 他のコマも生成
+#### ステップ5: 生成・確認
 ```
-12. Panel 2, 3, 4... と同じ手順を繰り返す
-13. すべてのコマの画像が揃ったら完成！
+1. 生成された漫画を確認
+2. 気に入らない場合は再生成
+3. 満足したら画像をダウンロード
+4. 完成！
 ```
 
 ### 方法2: 一括生成（推奨）

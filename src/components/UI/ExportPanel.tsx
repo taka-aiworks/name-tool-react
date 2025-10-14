@@ -1033,11 +1033,12 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
                           • instructions.txt（日本語ガイド）<br/>
                           <br/>
                           <strong>🎯 使い方：</strong><br/>
-                          1. ZIPをダウンロード・解凍<br/>
-                          2. Google AI Studioを開く<br/>
-                          3. layout.pngをアップロード<br/>
-                          4. prompt.txtをコピペして生成<br/>
-                          5. セリフも自動的に描画されます！<br/>
+                          1. ZIPを解凍 → prompt.txt を開く<br/>
+                          2. キャラ外見プロンプトで画像生成（SD等）<br/>
+                          3. Google AI Studioを開く<br/>
+                          4. キャラ画像+layout.pngをアップロード<br/>
+                          5. prompt.txtをコピペして生成<br/>
+                          6. セリフ・レイアウト維持で完成！<br/>
                           <br/>
                           <span style={{fontSize: "10px"}}>
                           ※詳細は NANOBANANA_GUIDE.md を参照<br/>

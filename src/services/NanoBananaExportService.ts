@@ -67,7 +67,7 @@ export class NanoBananaExportService {
 
       // 2. プロンプト生成
       updateProgress('generate_prompt', 30, 'AIプロンプトを生成中...', 'prompt.txt');
-      const promptText = this.generatePromptText(panels, characters, bubbles, options.promptLanguage || 'english');
+      const promptText = this.generatePromptText(panels, characters, bubbles, options.promptLanguage || 'english', characterSettings);
       zip.file('prompt.txt', promptText);
 
       // 3. キャラクター名対応表生成
@@ -181,7 +181,8 @@ export class NanoBananaExportService {
     panels: Panel[],
     characters: Character[],
     bubbles: SpeechBubble[],
-    language: 'english' | 'japanese' | 'both'
+    language: 'english' | 'japanese' | 'both',
+    characterSettings?: Record<string, CharacterSettings>
   ): string {
     const isEnglish = language === 'english' || language === 'both';
     const isJapanese = language === 'japanese' || language === 'both';
@@ -189,7 +190,7 @@ export class NanoBananaExportService {
     let prompt = '';
 
     if (isEnglish) {
-      prompt += this.generateEnglishPrompt(panels, characters, bubbles);
+      prompt += this.generateEnglishPrompt(panels, characters, bubbles, characterSettings);
     }
 
     if (isJapanese && isEnglish) {
@@ -197,7 +198,7 @@ export class NanoBananaExportService {
     }
 
     if (isJapanese) {
-      prompt += this.generateJapanesePrompt(panels, characters, bubbles);
+      prompt += this.generateJapanesePrompt(panels, characters, bubbles, characterSettings);
     }
 
     return prompt;
@@ -206,12 +207,42 @@ export class NanoBananaExportService {
   /**
    * 🇺🇸 英語プロンプト生成
    */
-  private generateEnglishPrompt(panels: Panel[], characters: Character[], bubbles: SpeechBubble[]): string {
+  private generateEnglishPrompt(
+    panels: Panel[], 
+    characters: Character[], 
+    bubbles: SpeechBubble[],
+    characterSettings?: Record<string, CharacterSettings>
+  ): string {
     let prompt = '=== AI Manga Generation Prompt ===\n\n';
     
     prompt += 'Layout: ' + panels.length + ' panels\n';
     prompt += 'Characters: ' + characters.length + '\n';
     prompt += 'Dialogue bubbles: ' + bubbles.length + '\n\n';
+
+    // 🆕 キャラクター設定プロンプトを最初に出力
+    if (characterSettings && Object.keys(characterSettings).length > 0) {
+      prompt += '=== 📸 Generate Character Reference Images First ===\n';
+      prompt += '※Before using NanoBanana, generate character images with these prompts\n';
+      prompt += '※Use Stable Diffusion, Midjourney, DALL-E, etc.\n\n';
+      
+      Object.entries(characterSettings).forEach(([charId, settings]) => {
+        const charName = settings.name || charId;
+        prompt += `【${charName}】\n`;
+        if (settings.basePrompt) {
+          prompt += `Appearance Prompt:\n${settings.basePrompt}\n`;
+          prompt += `\nRecommended Settings:\n`;
+          prompt += `- Style: anime style, manga style\n`;
+          prompt += `- Background: simple background, white background\n`;
+          prompt += `- Composition: full body, standing pose, front view\n`;
+          prompt += `- Quality: masterpiece, best quality, high resolution\n`;
+          prompt += `\nComplete Prompt Example:\n`;
+          prompt += `${settings.basePrompt}, full body, standing pose, front view, `;
+          prompt += `simple background, masterpiece, best quality, anime style\n`;
+        }
+        prompt += '\n';
+      });
+      prompt += '─'.repeat(60) + '\n\n';
+    }
 
     // Panel別プロンプト（キャラ＋動作の分離システム）
     prompt += '=== Panel Prompts ===\n';
@@ -233,14 +264,21 @@ export class NanoBananaExportService {
         });
       }
       
-      // 分離プロンプトシステム
+      // 分離プロンプトシステム（characterSettingsのbasePromptを優先）
       const parts: string[] = [];
-      if (panel.characterPrompt) parts.push(panel.characterPrompt.trim());
+      
+      // キャラクタープロンプトを取得（characterSettings優先）
+      let charPrompt = panel.characterPrompt;
+      if (panel.selectedCharacterId && characterSettings?.[panel.selectedCharacterId]?.basePrompt) {
+        charPrompt = characterSettings[panel.selectedCharacterId].basePrompt;
+      }
+      
+      if (charPrompt) parts.push(charPrompt.trim());
       if (panel.actionPrompt) parts.push(panel.actionPrompt.trim());
       
       if (parts.length > 0) {
         prompt += `  🎨 Image Generation Prompt: ${parts.join(', ')}\n`;
-        if (panel.characterPrompt) prompt += `    - Character: ${panel.characterPrompt}\n`;
+        if (charPrompt) prompt += `    - Character: ${charPrompt}\n`;
         if (panel.actionPrompt) prompt += `    - Action: ${panel.actionPrompt}\n`;
       } else if (panel.prompt) {
         // フォールバック
@@ -283,12 +321,42 @@ export class NanoBananaExportService {
   /**
    * 🇯🇵 日本語プロンプト生成
    */
-  private generateJapanesePrompt(panels: Panel[], characters: Character[], bubbles: SpeechBubble[]): string {
+  private generateJapanesePrompt(
+    panels: Panel[], 
+    characters: Character[], 
+    bubbles: SpeechBubble[],
+    characterSettings?: Record<string, CharacterSettings>
+  ): string {
     let prompt = '=== AI漫画生成用プロンプト ===\n\n';
     
     prompt += 'レイアウト: ' + panels.length + 'コマ\n';
     prompt += 'キャラクター: ' + characters.length + '人\n';
     prompt += '吹き出し: ' + bubbles.length + '個\n\n';
+
+    // 🆕 キャラクター設定プロンプトを最初に出力
+    if (characterSettings && Object.keys(characterSettings).length > 0) {
+      prompt += '=== 📸 キャラクターリファレンス画像の生成 ===\n';
+      prompt += '※NanoBananaで使う前に、以下のプロンプトでキャラクター画像を生成してください\n';
+      prompt += '※Stable Diffusion、Midjourney、DALL-E等で生成できます\n\n';
+      
+      Object.entries(characterSettings).forEach(([charId, settings]) => {
+        const charName = settings.name || charId;
+        prompt += `【${charName}】\n`;
+        if (settings.basePrompt) {
+          prompt += `外見プロンプト:\n${settings.basePrompt}\n`;
+          prompt += `\n推奨設定:\n`;
+          prompt += `- スタイル: anime style, manga style\n`;
+          prompt += `- 背景: simple background, white background\n`;
+          prompt += `- 構図: full body, standing pose, front view\n`;
+          prompt += `- 品質: masterpiece, best quality, high resolution\n`;
+          prompt += `\n完全なプロンプト例:\n`;
+          prompt += `${settings.basePrompt}, full body, standing pose, front view, `;
+          prompt += `simple background, masterpiece, best quality, anime style\n`;
+        }
+        prompt += '\n';
+      });
+      prompt += '─'.repeat(60) + '\n\n';
+    }
 
     // コマ別プロンプト（キャラ＋動作の分離システム）
     prompt += '=== コマ別プロンプト ===\n';
@@ -310,14 +378,21 @@ export class NanoBananaExportService {
         });
       }
       
-      // 分離プロンプトシステム
+      // 分離プロンプトシステム（characterSettingsのbasePromptを優先）
       const parts: string[] = [];
-      if (panel.characterPrompt) parts.push(panel.characterPrompt.trim());
+      
+      // キャラクタープロンプトを取得（characterSettings優先）
+      let charPrompt = panel.characterPrompt;
+      if (panel.selectedCharacterId && characterSettings?.[panel.selectedCharacterId]?.basePrompt) {
+        charPrompt = characterSettings[panel.selectedCharacterId].basePrompt;
+      }
+      
+      if (charPrompt) parts.push(charPrompt.trim());
       if (panel.actionPrompt) parts.push(panel.actionPrompt.trim());
       
       if (parts.length > 0) {
         prompt += `  🎨 画像生成プロンプト: ${parts.join(', ')}\n`;
-        if (panel.characterPrompt) prompt += `    - キャラ: ${panel.characterPrompt}\n`;
+        if (charPrompt) prompt += `    - キャラ: ${charPrompt}\n`;
         if (panel.actionPrompt) prompt += `    - 動作: ${panel.actionPrompt}\n`;
       } else if (panel.prompt) {
         // フォールバック
@@ -455,19 +530,32 @@ For support, visit: https://github.com/your-repo/name-tool-react
 
 🚀 基本的な使い方：
 ─────────────────────────────────────
-【ステップ1】準備
+【ステップ1】キャラクターリファレンス画像を生成
+1. prompt.txt を開く
+2. 「📸 キャラクターリファレンス画像の生成」セクションを確認
+3. 各キャラクターの外見プロンプトをコピー
+4. Stable Diffusion / Midjourney / DALL-E で画像生成
+   例: 「主人公」の外見プロンプト → 主人公の立ち絵を生成
+5. 生成した画像を保存（例: character_主人公.png）
+
+※キャラクターが複数いる場合は、全員分の画像を生成してください
+
+【ステップ2】Google AI Studio で準備
 1. Google AI Studio にアクセス
    → https://aistudio.google.com
 2. Googleアカウントでログイン
-3. モデルを「Gemini 2.0 Flash Experimental」に設定
+3. 「New Chat」をクリック
+4. モデルを「Gemini 2.0 Flash Experimental」に設定
    （画像生成対応モデル）
 
-【ステップ2】レイアウトをアップロード
+【ステップ3】画像をアップロード
 1. 「📎 Attach」ボタンをクリック
-2. layout.png をアップロード
-3. 画像が表示されることを確認
+2. キャラクターリファレンス画像をすべてアップロード
+   （主人公.png、サブキャラ.png など）
+3. layout.png（レイアウト画像）もアップロード
+4. すべての画像が表示されることを確認
 
-【ステップ3】プロンプトを入力
+【ステップ4】プロンプトを入力
 1. prompt.txt を開く
 2. 各コマの情報を確認：
    • 📌 メモ（シーン説明）
@@ -477,27 +565,37 @@ For support, visit: https://github.com/your-repo/name-tool-react
 3. 以下のテンプレートを使用：
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-このコマ割りレイアウトに従って、漫画を生成してください。
-レイアウト、吹き出しの位置、コマの配置を維持してください。
+アップロードした画像を使って、漫画を生成してください。
 
+【重要な指示】
+1. キャラクターリファレンス画像のキャラクターを使用
+   • 主人公: [アップロードした主人公の画像]
+   • サブキャラ: [アップロードしたサブキャラの画像]
+   
+2. layout.png のコマ割り、吹き出し配置を維持
+
+3. 各コマの内容：
 [Panel 1のプロンプトをコピペ]
-※セリフも含めてコピーすると、吹き出し内のテキストも生成されます
 
 [Panel 2のプロンプトをコピペ]
 
 [Panel 3のプロンプトをコピペ]
 
-キャラクターの外見を全コマで統一してください。
-吹き出し内のセリフも正確に描画してください。
+【必須条件】
+• キャラクターの外見を全コマで統一（リファレンス画像通り）
+• レイアウトのコマ配置を維持
+• 吹き出し内のセリフを正確に描画
+• 高品質な漫画スタイル（anime style, masterpiece）
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 4. 「送信」ボタンをクリック
 5. AIが画像を生成（30秒〜1分）
 
-【ステップ4】生成・確認
+【ステップ5】生成・確認
 1. 生成された画像を確認
 2. 気に入らない場合はプロンプトを調整して再生成
 3. 満足したら画像をダウンロード
+4. 完成！
 
 🎯 キャラクター一貫性を高める方法：
 ─────────────────────────────────────
