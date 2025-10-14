@@ -97,6 +97,7 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
   const [promptOutput, setPromptOutput] = useState<string>('');
   const [debugOutput, setDebugOutput] = useState<string>('');
   const [exportCurrentPageOnly, setExportCurrentPageOnly] = useState<boolean>(false);
+  const [exportTemplateOnly, setExportTemplateOnly] = useState<boolean>(false);
   
   // 🆕 NanoBanana関連のstate
   const [nanoBananaOptions, setNanoBananaOptions] = useState<NanoBananaExportOptions>(DEFAULT_NANOBANANA_EXPORT_OPTIONS);
@@ -243,7 +244,15 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
           }
           break;
         case 'image':
-          await exportService.exportToPNG(canvasRef.current, panels, exportOptions, setExportProgress);
+          if (exportTemplateOnly) {
+            await exportService.exportTemplatePNG(canvasRef.current, panels, exportOptions, setExportProgress, onRedrawTemplateOnly);
+            // テンプレート出力後、元に戻す
+            if (onRestoreFullCanvas) {
+              await onRestoreFullCanvas();
+            }
+          } else {
+            await exportService.exportToPNG(canvasRef.current, panels, exportOptions, setExportProgress);
+          }
           break;
         case 'clipstudio':
           await exportService.exportToPSD(canvasRef.current, panels, characters, bubbles, backgrounds, effects, tones, exportOptions, setExportProgress);
@@ -253,7 +262,7 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
       console.error('エクスポートエラー:', error);
       alert('エクスポートに失敗しました: ' + (error as Error).message);
       // エラーでも元に戻す
-      if (selectedPurpose === 'template' && onRestoreFullCanvas) {
+      if ((selectedPurpose === 'template' || (selectedPurpose === 'image' && exportTemplateOnly)) && onRestoreFullCanvas) {
         await onRestoreFullCanvas();
       }
     } finally {
@@ -786,7 +795,7 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
     {
       id: 'image' as ExportPurpose,
       icon: '🖼️',
-      title: 'フル画像',
+      title: '画像出力',
       desc: 'キャラ・吹き出し・背景等すべて含むPNG'
     },
     {
@@ -1315,9 +1324,28 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
                     </div>
                   )}
 
-                  {/* フル画像設定 */}
+                  {/* 画像出力設定 */}
                   {selectedPurpose === 'image' && (
                     <>
+                      <label style={{ 
+                        display: "flex", 
+                        alignItems: "center", 
+                        gap: "6px",
+                        fontSize: "11px",
+                        color: isDarkMode ? "#ffffff" : "#333333",
+                        cursor: "pointer",
+                        marginBottom: "8px"
+                      }}>
+                        <input
+                          type="checkbox"
+                          checked={exportTemplateOnly}
+                          onChange={(e) => setExportTemplateOnly(e.target.checked)}
+                          disabled={isExporting}
+                          style={{ margin: 0 }}
+                        />
+                        📐 コマ割りのみ（枠＋番号）
+                      </label>
+
                       <div>
                         <label 
                           style={{
@@ -1388,79 +1416,6 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
                     </>
                   )}
 
-                  {/* 画像用設定 */}
-                  {selectedPurpose === 'image' && (
-                    <>
-                      <div>
-                        <label 
-                          style={{
-                            display: "block",
-                            fontSize: "11px",
-                            fontWeight: "600",
-                            color: isDarkMode ? "#ffffff" : "#333333",
-                            marginBottom: "6px",
-                          }}
-                        >
-                          品質
-                        </label>
-                        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                          {[
-                            { value: 'high', label: '高品質' },
-                            { value: 'medium', label: '標準' },
-                            { value: 'low', label: '軽量' }
-                          ].map((item) => (
-                            <label 
-                              key={item.value} 
-                              style={{ 
-                                display: "flex", 
-                                alignItems: "center", 
-                                gap: "6px",
-                                fontSize: "11px",
-                                color: isDarkMode ? "#ffffff" : "#333333",
-                                cursor: "pointer"
-                              }}
-                            >
-                              <input
-                                type="radio"
-                                name="quality"
-                                value={item.value}
-                                checked={exportOptions.quality === item.value}
-                                onChange={(e) => setExportOptions({
-                                  ...exportOptions,
-                                  quality: e.target.value as any
-                                })}
-                                disabled={isExporting}
-                                style={{ margin: 0 }}
-                              />
-                              {item.label}
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-
-
-                      <label style={{ 
-                        display: "flex", 
-                        alignItems: "center", 
-                        gap: "6px",
-                        fontSize: "11px",
-                        color: isDarkMode ? "#ffffff" : "#333333",
-                        cursor: "pointer"
-                      }}>
-                        <input
-                          type="checkbox"
-                          checked={!exportOptions.includeBackground}
-                          onChange={(e) => setExportOptions({
-                            ...exportOptions,
-                            includeBackground: !e.target.checked
-                          })}
-                          disabled={isExporting}
-                          style={{ margin: 0 }}
-                        />
-                        背景を透明にする
-                      </label>
-                    </>
-                  )}
 
                   {/* クリスタ用設定 */}
                   {selectedPurpose === 'clipstudio' && (
