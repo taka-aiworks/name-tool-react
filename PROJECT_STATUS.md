@@ -402,3 +402,244 @@ Vercel Dashboard → Deploy (手動操作)
 - [ ] ページ全体メモ
 - [ ] コマ重要度マーキング
 - [ ] カメラアングル設定
+
+---
+
+## 🚀 サブスクリプション実装計画
+
+### 💰 価格設定
+- **無料版**: 1日10回AI生成制限
+- **プレミアム版**: ¥300/月（AI生成無制限）
+- **特典**: 初回1週間無料トライアル
+
+### 📋 Phase 1: 簡易版（1-2日で実装可能）
+
+#### 必須実装
+- [ ] **プレミアムコード機能**
+  - [ ] LocalStorageでステータス管理
+  - [ ] トライアルコード「TRIAL7」（7日間無料）
+  - [ ] 有効期限チェック機能
+  - [ ] UsageLimitService と連携
+
+- [ ] **サブスク管理UI**
+  - [ ] SubscriptionPanel.tsx 作成
+  - [ ] プレミアムステータス表示
+  - [ ] コード入力欄
+  - [ ] 解約ボタン（ローカル版）
+  - [ ] アップグレードボタン
+
+- [ ] **Stripe Payment Link 設定**
+  - [ ] Stripeアカウント作成
+  - [ ] Payment Link作成（¥300/月）
+  - [ ] Customer Portal有効化
+  - [ ] 環境変数設定（REACT_APP_STRIPE_PORTAL_URL）
+
+- [ ] **一括エクスポート機能**
+  - [ ] ProjectPanel.tsx に追加
+  - [ ] 全プロジェクトをJSON出力
+  - [ ] バックアップ促進UI
+
+- [ ] **サービスステータス管理**
+  - [ ] ServiceStatusBanner.tsx 作成
+  - [ ] 環境変数でステータス制御
+    - REACT_APP_SERVICE_STATUS (active/ending/closed)
+    - REACT_APP_SERVICE_END_DATE
+    - REACT_APP_MAINTENANCE_MODE
+  - [ ] メンテナンスモード画面
+  - [ ] サービス終了画面
+
+#### ファイル構成（Phase 1）
+```
+src/
+├── components/
+│   ├── ServiceStatusBanner.tsx          # 新規
+│   └── UI/
+│       ├── SubscriptionPanel.tsx        # 新規
+│       └── ProjectPanel.tsx             # 修正（一括エクスポート追加）
+├── services/
+│   ├── UsageLimitService.ts             # 修正（プレミアムチェック追加）
+│   └── SubscriptionService.ts           # 新規（Phase 1用）
+└── App.tsx                              # 修正（ステータスチェック追加）
+```
+
+#### 環境変数設定
+```bash
+# .env / Vercel環境変数
+REACT_APP_SERVICE_STATUS=active
+REACT_APP_SERVICE_END_DATE=
+REACT_APP_MAINTENANCE_MODE=false
+REACT_APP_MAINTENANCE_MESSAGE=
+REACT_APP_STRIPE_PORTAL_URL=https://billing.stripe.com/p/login/xxx
+REACT_APP_SUPPORT_EMAIL=support@example.com
+```
+
+#### 実装手順
+1. **Stripe設定**（30分）
+   - Stripeアカウント作成
+   - Payment Link作成（¥300/月、月次課金）
+   - Customer Portal有効化
+   - テスト決済確認
+
+2. **プレミアムコード機能**（2-3時間）
+   - SubscriptionService.ts 作成
+   - LocalStorageでステータス管理
+   - トライアルコード検証ロジック
+   - 有効期限チェック
+
+3. **UI実装**（3-4時間）
+   - SubscriptionPanel.tsx 作成
+   - ServiceStatusBanner.tsx 作成
+   - App.tsx にステータスチェック追加
+   - 一括エクスポートボタン追加
+
+4. **テスト**（1時間）
+   - トライアルコード動作確認
+   - 有効期限切れ動作確認
+   - 一括エクスポート確認
+   - メンテナンスモード確認
+
+5. **デプロイ**（30分）
+   - Vercel環境変数設定
+   - デプロイ
+   - 本番環境テスト
+
+**合計所要時間: 1-2日**
+
+---
+
+### 📋 Phase 2: 完全版（2-3週間）
+
+#### 実装内容
+- [ ] **Firebase Authentication**
+  - [ ] ユーザー登録/ログイン
+  - [ ] メール認証
+  - [ ] パスワードリセット
+  - [ ] ソーシャルログイン（Google/Twitter）
+
+- [ ] **Stripe自動連携**
+  - [ ] Cloud Functions / Vercel Serverless Functions
+  - [ ] Webhook処理（決済成功/失敗/解約）
+  - [ ] サブスクステータス自動更新
+  - [ ] 請求失敗時の処理
+
+- [ ] **クラウド保存**
+  - [ ] Firebase Firestore設定
+  - [ ] プロジェクトデータ同期
+  - [ ] 複数デバイス対応
+  - [ ] 競合解決ロジック
+
+- [ ] **プレミアム専用機能**（オプション）
+  - [ ] クラウドバックアップ自動化
+  - [ ] プロジェクトバージョン履歴
+  - [ ] コラボレーション機能
+  - [ ] 高度なエクスポートオプション
+
+#### 技術スタック
+```
+認証: Firebase Authentication
+決済: Stripe（自動連携）
+データベース: Firebase Firestore
+サーバーレス: Vercel Serverless Functions
+ホスティング: Vercel
+```
+
+**合計所要時間: 2-3週間**
+
+---
+
+### 🔄 サービス終了時の手順
+
+#### 2週間前
+```bash
+# Vercel環境変数を変更
+REACT_APP_SERVICE_STATUS=ending
+REACT_APP_SERVICE_END_DATE=2025-12-31
+
+# 再デプロイ → 警告バナー表示
+git commit -m "Enable service ending notice"
+git push beta main
+```
+
+#### 1週間前
+```
+- noteで終了告知
+- メール通知（プレミアムユーザー）
+- 一括エクスポート促進
+```
+
+#### 終了日
+```bash
+# すべてのサブスクを停止（Stripe Dashboard）
+# サービスを終了モードに
+REACT_APP_SERVICE_STATUS=closed
+
+# 再デプロイ → 終了画面表示
+git push beta main
+```
+
+#### 1ヶ月後（完全削除）
+```
+- Vercel Dashboard → Delete Project
+- Firebase Project削除
+- Stripeデータエクスポート・削除
+```
+
+---
+
+### 🎯 優先度
+
+#### 最優先（Phase 1 - 今すぐ）
+1. ✅ プレミアムコード機能（簡易サブスク）
+2. ✅ Stripe Payment Link設定
+3. ✅ サブスク管理UI
+4. ✅ サービスステータス管理
+
+#### 中優先（Phase 2 - 1-2ヶ月後）
+1. Firebase Authentication
+2. Stripe自動連携
+3. クラウド保存
+
+#### 低優先（将来的に）
+1. プレミアム専用機能
+2. コラボレーション機能
+3. モバイルアプリ化
+
+---
+
+### 📊 収益予測
+
+#### Phase 1（簡易版）
+```
+1ヶ月目: 20人 × ¥300 = ¥6,000/月
+3ヶ月目: 100人 × ¥300 = ¥30,000/月
+6ヶ月目: 300人 × ¥300 = ¥90,000/月
+
+年間: 約¥500,000 - ¥1,000,000
+```
+
+#### Phase 2（完全版）
+```
+1年後: 1000人 × ¥300 = ¥300,000/月
+      = ¥3,600,000/年
+
+解約率10%を考慮: 約¥3,200,000/年
+```
+
+---
+
+### 💡 次のアクション
+
+#### 今週中
+1. Stripeアカウント作成
+2. Phase 1の実装開始
+3. テスト環境で動作確認
+
+#### 来週
+1. 本番デプロイ
+2. noteで販売告知
+3. フィードバック収集
+
+#### 1ヶ月後
+1. ユーザー数・解約率分析
+2. Phase 2の実装判断
+3. 機能改善
