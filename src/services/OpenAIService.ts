@@ -53,6 +53,16 @@ class OpenAIService {
     const envApiKey = process.env.REACT_APP_OPENAI_API_KEY;
     const useEnvKey = process.env.REACT_APP_USE_ENV_API_KEY === 'true';
     
+    // デバッグ情報（開発環境のみ）
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      console.log('🔑 API Key Debug:', {
+        useEnvKey,
+        hasEnvKey: !!envApiKey,
+        envKeyLength: envApiKey?.length || 0,
+        hasLocalStorageKey: !!localStorage.getItem('openai_api_key')
+      });
+    }
+    
     if (useEnvKey && envApiKey) {
       return envApiKey;
     }
@@ -101,7 +111,9 @@ class OpenAIService {
       return {
         panels: [],
         success: false,
-        error: 'APIキーが設定されていません'
+        error: process.env.REACT_APP_USE_ENV_API_KEY === 'true'
+          ? 'APIキーが環境変数に設定されていません。Vercelの環境変数設定を確認してください。'
+          : 'APIキーが設定されていません。画面右側の「🔑 APIキー設定」から設定してください。'
       };
     }
 
@@ -291,7 +303,11 @@ ${characterInfo}
     }
     
     if (!this.apiKey) {
-      throw new Error('APIキーが設定されていません');
+      const useEnvKey = process.env.REACT_APP_USE_ENV_API_KEY === 'true';
+      const errorMsg = useEnvKey 
+        ? 'APIキーが環境変数に設定されていません。Vercelの環境変数設定を確認してください。'
+        : 'APIキーが設定されていません。画面右側の「🔑 APIキー設定」から設定してください。';
+      throw new Error(errorMsg);
     }
 
     const characterInfo = characters ? characters.map(char => 
@@ -404,7 +420,11 @@ ${characterInfo || 'キャラクター情報なし'}
     const apiKey = this.getApiKey();
     
     if (!apiKey) {
-      throw new Error('APIキーが設定されていません');
+      const useEnvKey = process.env.REACT_APP_USE_ENV_API_KEY === 'true';
+      const errorMsg = useEnvKey 
+        ? 'APIキーが環境変数に設定されていません。Vercelの環境変数設定を確認してください。'
+        : 'APIキーが設定されていません。画面右側の「🔑 APIキー設定」から設定してください。';
+      throw new Error(errorMsg);
     }
 
     try {
