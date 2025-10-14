@@ -66,9 +66,9 @@ class UsageLimitService {
     const components = [
       navigator.userAgent,
       navigator.language,
-      screen.width,
-      screen.height,
-      screen.colorDepth,
+      window.screen.width,
+      window.screen.height,
+      window.screen.colorDepth,
       new Date().getTimezoneOffset(),
       navigator.hardwareConcurrency || 0,
       navigator.platform
