@@ -18,7 +18,7 @@ import {
 } from '../../types';
 import { BetaUtils } from '../../config/betaConfig';
 
-type ExportPurpose = 'image' | 'clipstudio' | 'prompt' | 'nanobanana';
+type ExportPurpose = 'image' | 'clipstudio' | 'nanobanana';
 
 const purposeDefaults: Record<ExportPurpose, Partial<ExportOptions>> = {
   image: {
@@ -34,13 +34,6 @@ const purposeDefaults: Record<ExportPurpose, Partial<ExportOptions>> = {
     resolution: 300,
     includeBackground: false,
     separatePages: false
-  },
-  prompt: {
-    format: 'txt' as any,
-    quality: 'high',
-    resolution: 512,
-    includeBackground: false,
-    separatePages: true
   },
   nanobanana: {
     format: 'zip' as any,
@@ -91,6 +84,7 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
   const [debugOutput, setDebugOutput] = useState<string>('');
   const [exportCurrentPageOnly, setExportCurrentPageOnly] = useState<boolean>(false);
   const [exportTemplateOnly, setExportTemplateOnly] = useState<boolean>(false);
+  const [exportPromptAlso, setExportPromptAlso] = useState<boolean>(false);
   
   // 🆕 NanoBanana関連のstate
   const [nanoBananaOptions, setNanoBananaOptions] = useState<NanoBananaExportOptions>(DEFAULT_NANOBANANA_EXPORT_OPTIONS);
@@ -238,6 +232,11 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
             }
           } else {
             await exportService.exportToPNG(canvasRef.current, panels, exportOptions, setExportProgress);
+          }
+          
+          // プロンプトも出力する場合
+          if (exportPromptAlso) {
+            await handlePromptExport();
           }
           break;
         case 'clipstudio':
@@ -785,12 +784,6 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
       desc: 'Google AI Studioで完成漫画を自動生成'
     },
     {
-      id: 'prompt' as ExportPurpose,
-      icon: '🎨',
-      title: 'プロンプト出力',
-      desc: 'AI画像生成用'
-    },
-    {
       id: 'clipstudio' as ExportPurpose,
       icon: '🎭',
       title: 'クリスタ用',
@@ -828,19 +821,7 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
         {purposes.map((purpose) => (
           <div key={purpose.id}>
             <button
-              onClick={() => {
-                if (purpose.id === 'prompt') {
-                  if (selectedPurpose === 'prompt') {
-                    setSelectedPurpose(null); // 既に開いている場合は閉じる
-                    setPromptOutput(''); // プロンプト結果もクリア
-                  } else {
-                    setSelectedPurpose('prompt'); // まず画面を開く
-                    handlePromptExport(); // それから生成開始
-                  }
-                } else {
-                  handlePurposeClick(purpose.id);
-                }
-              }}
+              onClick={() => handlePurposeClick(purpose.id)}
               disabled={panels.length === 0 || isExporting}
               style={{
                 width: "100%",
@@ -898,8 +879,8 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
               >
                 <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
 
-                  {/* プロンプト出力設定画面 */}
-                  {selectedPurpose === 'prompt' && promptOutput && (
+                  {/* プロンプト出力設定画面（統合済み） */}
+                  {false && (
                     <div>
                       <div style={{ 
                         display: "flex", 
@@ -1303,6 +1284,25 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
                           style={{ margin: 0 }}
                         />
                         📐 コマ割りのみ（枠＋番号）
+                      </label>
+
+                      <label style={{ 
+                        display: "flex", 
+                        alignItems: "center", 
+                        gap: "6px",
+                        fontSize: "11px",
+                        color: isDarkMode ? "#ffffff" : "#333333",
+                        cursor: "pointer",
+                        marginBottom: "8px"
+                      }}>
+                        <input
+                          type="checkbox"
+                          checked={exportPromptAlso}
+                          onChange={(e) => setExportPromptAlso(e.target.checked)}
+                          disabled={isExporting}
+                          style={{ margin: 0 }}
+                        />
+                        🎨 プロンプトも出力
                       </label>
 
                       <div>
