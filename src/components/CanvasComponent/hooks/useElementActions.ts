@@ -298,8 +298,21 @@ export const useElementActions = ({
   const handleEditComplete = () => {
     if (state.editingBubble && state.editText.trim()) {
       const textLength = state.editText.length;
-      const newWidth = Math.max(60, textLength * 8 + 20);
-      const newHeight = Math.max(80, Math.ceil(textLength / 4) * 20 + 40);
+      
+      // 相対座標か絶対座標かで処理を分ける
+      let newWidth: number;
+      let newHeight: number;
+      
+      if (state.editingBubble.isGlobalPosition === false) {
+        // 相対座標の場合（AI生成など）: 0-1の範囲で指定
+        // 元のサイズを保持（テキスト量に応じた自動調整はしない）
+        newWidth = state.editingBubble.width;
+        newHeight = state.editingBubble.height;
+      } else {
+        // 絶対座標の場合（手動配置）: ピクセル単位で計算
+        newWidth = Math.max(60, textLength * 8 + 20);
+        newHeight = Math.max(80, Math.ceil(textLength / 4) * 20 + 40);
+      }
       
       const updatedBubble = {
         ...state.editingBubble,
