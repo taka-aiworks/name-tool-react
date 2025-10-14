@@ -18,16 +18,9 @@ import {
 } from '../../types';
 import { BetaUtils } from '../../config/betaConfig';
 
-type ExportPurpose = 'template' | 'image' | 'clipstudio' | 'prompt' | 'nanobanana';
+type ExportPurpose = 'image' | 'clipstudio' | 'prompt' | 'nanobanana';
 
 const purposeDefaults: Record<ExportPurpose, Partial<ExportOptions>> = {
-  template: {
-    format: 'png',
-    quality: 'high',
-    resolution: 300,
-    includeBackground: true,
-    separatePages: false
-  },
   image: {
     format: 'png',
     quality: 'high',
@@ -236,13 +229,6 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
 
     try {
       switch (selectedPurpose) {
-        case 'template':
-          await exportService.exportTemplatePNG(canvasRef.current, panels, exportOptions, setExportProgress, onRedrawTemplateOnly);
-          // テンプレート出力後、元に戻す
-          if (onRestoreFullCanvas) {
-            await onRestoreFullCanvas();
-          }
-          break;
         case 'image':
           if (exportTemplateOnly) {
             await exportService.exportTemplatePNG(canvasRef.current, panels, exportOptions, setExportProgress, onRedrawTemplateOnly);
@@ -262,7 +248,7 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
       console.error('エクスポートエラー:', error);
       alert('エクスポートに失敗しました: ' + (error as Error).message);
       // エラーでも元に戻す
-      if ((selectedPurpose === 'template' || (selectedPurpose === 'image' && exportTemplateOnly)) && onRestoreFullCanvas) {
+      if (selectedPurpose === 'image' && exportTemplateOnly && onRestoreFullCanvas) {
         await onRestoreFullCanvas();
       }
     } finally {
@@ -787,12 +773,6 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
 
   const purposes = [
     {
-      id: 'template' as ExportPurpose,
-      icon: '📐',
-      title: 'コマ割りのみ',
-      desc: '枠＋番号だけのPNG'
-    },
-    {
       id: 'image' as ExportPurpose,
       icon: '🖼️',
       title: '画像出力',
@@ -1302,27 +1282,6 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
                     </div>
                   )}
                   
-                  {/* コマ割りのみ設定 */}
-                  {selectedPurpose === 'template' && (
-                    <div 
-                      style={{
-                        background: isDarkMode ? "rgba(59, 130, 246, 0.1)" : "rgba(59, 130, 246, 0.05)",
-                        padding: "8px",
-                        borderRadius: "4px",
-                        textAlign: "center",
-                      }}
-                    >
-                      <p 
-                        style={{
-                          fontSize: "10px",
-                          color: isDarkMode ? "#93c5fd" : "#3b82f6",
-                          margin: 0,
-                        }}
-                      >
-                        コマ割り枠と番号のみのPNG画像を出力します
-                      </p>
-                    </div>
-                  )}
 
                   {/* 画像出力設定 */}
                   {selectedPurpose === 'image' && (
