@@ -26,6 +26,16 @@
     -->
     <title>AI漫画ネームメーカー</title>
     <script src="%PUBLIC_URL%/dict/default_sfw.js"></script>  <!-- 追加 -->
+    <!-- Production環境でconsole出力を無効化 -->
+    <script>
+      // localhost以外（本番環境）でconsoleを無効化
+      if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+        console.log = function() {};
+        console.debug = function() {};
+        console.info = function() {};
+        console.warn = function() {};
+      }
+    </script>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
