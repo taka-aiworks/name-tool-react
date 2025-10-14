@@ -126,8 +126,8 @@ export class MouseEventHandler {
           callbacks.setMouseState({
             isPanelMoving: true,
             dragOffset: {
-              x: mouseX - selectedPanel.x,
-              y: mouseY - selectedPanel.y,
+              x: mouseX,
+              y: mouseY,
             }
           });
           // ドラッグ開始時にイベントを発火
@@ -248,10 +248,9 @@ export class MouseEventHandler {
 
     // パネル移動
     if (selectedPanel && mouseState.isPanelMoving) {
-      // ドラッグ開始位置との差分から、現在パネル座標を引いて純粋な移動量を算出
-      // これによりドラッグ開始直後の「ガタつき（初期ジャンプ）」を防ぐ
-      const deltaX = (mouseX - mouseState.dragOffset.x) - selectedPanel.x;
-      const deltaY = (mouseY - mouseState.dragOffset.y) - selectedPanel.y;
+      // シンプルな差分計算：現在マウス位置 - ドラッグ開始位置
+      const deltaX = mouseX - mouseState.dragOffset.x;
+      const deltaY = mouseY - mouseState.dragOffset.y;
       
       const moveResult = PanelManager.movePanel(
         selectedPanel,
