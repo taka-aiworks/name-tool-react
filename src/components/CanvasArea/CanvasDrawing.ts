@@ -130,6 +130,26 @@ export class CanvasDrawing {
     ctx.fillStyle = numberColor;
     ctx.fillText(`${panel.id}`, textX, textY);
 
+    // 重要度マーカー表示
+    if (panel.importance === 'important' || panel.importance === 'climax') {
+      const markerSize = 24;
+      const markerX = panel.x + panel.width - markerSize - 8;
+      const markerY = panel.y + 8;
+      
+      // マーカー背景
+      ctx.fillStyle = panel.importance === 'climax' ? 'rgba(239, 68, 68, 0.9)' : 'rgba(245, 158, 11, 0.9)';
+      ctx.beginPath();
+      ctx.arc(markerX + markerSize/2, markerY + markerSize/2, markerSize/2, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // マーカーアイコン
+      ctx.fillStyle = 'white';
+      ctx.font = 'bold 14px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(panel.importance === 'climax' ? '🔥' : '⭐', markerX + markerSize/2, markerY + markerSize/2);
+    }
+
     // コマメモ表示（panel.noteがあれば）
     if ((panel as any).note) {
       const note = (panel as any).note as string;

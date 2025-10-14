@@ -287,22 +287,23 @@ export class BubbleRenderer {
 
     if (bubble.vertical) {
       // 縦書きモード
-      this.drawVerticalText(ctx, bubble.text, textArea);
+      this.drawVerticalText(ctx, bubble.text, textArea, bubble.fontSize);
     } else {
       // 横書きモード（文字折り返し対応）
-      this.drawHorizontalText(ctx, bubble.text, textArea);
+      this.drawHorizontalText(ctx, bubble.text, textArea, bubble.fontSize);
     }
   }
 
   // 🆕 横書きテキスト描画（自動折り返し・フォントサイズ調整）
-  static drawHorizontalText(ctx: CanvasRenderingContext2D, text: string, area: {x: number, y: number, width: number, height: number}) {
-    // 基本フォントサイズから開始
-    let fontSize = 32; // 20 → 32 に拡大
+  static drawHorizontalText(ctx: CanvasRenderingContext2D, text: string, area: {x: number, y: number, width: number, height: number}, customFontSize?: number) {
+    // 基本フォントサイズから開始（カスタムサイズがあればそれを使用）
+    let fontSize = customFontSize || 32;
     let lines: string[] = [];
     let lineHeight = 0;
     
     // フォントサイズを調整してテキストがエリア内に収まるようにする
-    for (let size = fontSize; size >= 18; size -= 1) { // 最小サイズを12 → 18 に拡大
+    const minSize = Math.max(18, customFontSize ? customFontSize * 0.6 : 18);
+    for (let size = fontSize; size >= minSize; size -= 1) {
       ctx.font = `${size}px 'Noto Sans JP', 'Hiragino Sans', 'Yu Gothic', sans-serif`;
       lineHeight = size * 1.2;
       
@@ -334,9 +335,9 @@ export class BubbleRenderer {
   }
 
   // 🆕 縦書きテキスト描画（改良版）
-  static drawVerticalText(ctx: CanvasRenderingContext2D, text: string, area: {x: number, y: number, width: number, height: number}) {
-    // 縦書き用基本設定
-    let fontSize = 32; // 20 → 32 に拡大
+  static drawVerticalText(ctx: CanvasRenderingContext2D, text: string, area: {x: number, y: number, width: number, height: number}, customFontSize?: number) {
+    // 縦書き用基本設定（カスタムサイズがあればそれを使用）
+    let fontSize = customFontSize || 32;
     const chars = Array.from(text); // Unicode対応の文字分割
     
     // 縦書きレイアウト計算
@@ -344,7 +345,8 @@ export class BubbleRenderer {
     const charsPerColumn = Math.floor(area.height / (fontSize * 1.2));
     
     // フォントサイズ調整
-    for (let size = fontSize; size >= 18; size -= 1) { // 最小サイズを12 → 18 に拡大
+    const minSize = Math.max(18, customFontSize ? customFontSize * 0.6 : 18);
+    for (let size = fontSize; size >= minSize; size -= 1) {
       const columnWidth = size * 1.2;
       const charHeight = size * 1.2;
       

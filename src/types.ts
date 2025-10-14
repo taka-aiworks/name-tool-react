@@ -8,6 +8,7 @@ export interface Panel {
   height: number;
   prompt?: string;  // AI Prompt Maker Pro連携用（廃止予定）
   note?: string;    // コマの日本語メモ（構図・動き・シーン説明）
+  importance?: 'normal' | 'important' | 'climax';  // コマの重要度マーカー
   // 🆕 分離プロンプトシステム
   characterPrompt?: string;  // キャラベースプロンプト（AI Prompt Maker Pro）
   actionPrompt?: string;     // 動作・シチュエーションプロンプト（OpenAI自動生成）
@@ -116,6 +117,7 @@ export interface SpeechBubble {
   height: number;
   vertical: boolean;
   isGlobalPosition: boolean;
+  fontSize?: number;  // フォントサイズ（未指定時はデフォルト32）
 }
 
 // 🆕 テキスト描画設定の型定義（新規追加）
@@ -593,6 +595,7 @@ export type CanvasElement = Panel | Character | SpeechBubble | BackgroundElement
 export interface Page {
   id: string;
   title: string;
+  note?: string;  // ページ全体のメモ（構成、展開、意図など）
   createdAt: string;
   updatedAt: string;
   panels: Panel[];

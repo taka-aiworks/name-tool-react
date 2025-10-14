@@ -30,6 +30,15 @@ const EditBubbleModal: React.FC<EditBubbleModalProps> = ({
     }
   };
 
+  const handleFontSizeChange = (size: number) => {
+    if (onUpdateBubble) {
+      onUpdateBubble({
+        ...editingBubble,
+        fontSize: size
+      });
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     // 編集モーダル内でのキーイベントをグローバルに伝播させない
     e.stopPropagation();
@@ -95,6 +104,52 @@ const EditBubbleModal: React.FC<EditBubbleModalProps> = ({
         <span style={{ fontSize: "11px", color: "#666" }}>
           {editingBubble.vertical ? "右→左で表示" : "左→右で表示"}
         </span>
+      </div>
+
+      {/* フォントサイズ調整 */}
+      <div style={{ marginBottom: "12px" }}>
+        <label style={{ fontSize: "12px", fontWeight: "bold", display: "block", marginBottom: "6px" }}>
+          📏 文字サイズ: {editingBubble.fontSize || 32}px
+        </label>
+        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+          <input
+            type="range"
+            min="16"
+            max="72"
+            value={editingBubble.fontSize || 32}
+            onChange={(e) => handleFontSizeChange(Number(e.target.value))}
+            style={{ flex: 1 }}
+          />
+          <div style={{ display: "flex", gap: "4px" }}>
+            {[20, 32, 48].map(size => (
+              <button
+                key={size}
+                onClick={() => handleFontSizeChange(size)}
+                style={{
+                  padding: "4px 8px",
+                  border: "1px solid #ccc",
+                  borderRadius: "4px",
+                  background: (editingBubble.fontSize || 32) === size ? "#007bff" : "white",
+                  color: (editingBubble.fontSize || 32) === size ? "white" : "#333",
+                  cursor: "pointer",
+                  fontSize: "11px"
+                }}
+              >
+                {size}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* 文字数カウント */}
+      <div style={{ marginBottom: "8px", fontSize: "11px", color: "#666", textAlign: "right" }}>
+        📝 文字数: {editText.length}文字
+        {editText.length > 50 && (
+          <span style={{ color: "#ff6b6b", marginLeft: "8px" }}>
+            ⚠️ 長すぎる可能性
+          </span>
+        )}
       </div>
 
       {/* セリフ編集エリア */}

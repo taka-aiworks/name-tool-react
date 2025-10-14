@@ -1576,6 +1576,50 @@ function App() {
             </button>
           </div>
 
+          {/* ページ全体メモ */}
+          <div className="section">
+            <h3>📄 ページ設定</h3>
+            
+            <div style={{ marginBottom: "12px" }}>
+              <label style={{
+                fontSize: "11px",
+                fontWeight: "bold",
+                color: "var(--text-primary)",
+                display: "block",
+                marginBottom: "4px"
+              }}>
+                📝 ページメモ（構成・展開・意図）
+              </label>
+              <textarea
+                value={pageManager.currentPage.note || ''}
+                onChange={(e) => {
+                  pageManager.updateCurrentPageData({
+                    note: e.target.value
+                  });
+                }}
+                placeholder="例: 導入シーン、主人公の決意を描く"
+                style={{
+                  width: '100%',
+                  minHeight: '60px',
+                  padding: '8px',
+                  fontSize: '12px',
+                  borderRadius: '4px',
+                  border: '1px solid var(--border-color)',
+                  background: 'var(--bg-primary)',
+                  color: 'var(--text-primary)',
+                  resize: 'vertical'
+                }}
+              />
+              <div style={{ 
+                fontSize: "10px", 
+                color: "var(--text-muted)", 
+                marginTop: "4px" 
+              }}>
+                このページ全体の役割や構成メモを記録
+              </div>
+            </div>
+          </div>
+
           <div className="section">
             <h3>🤖 AI自動生成</h3>
             
@@ -1640,6 +1684,52 @@ function App() {
           {selectedPanel && (
             <div className="section">
               <h3>📝 コマ {selectedPanel.id}</h3>
+              
+              {/* コマ重要度マーカー */}
+              <div style={{ marginBottom: "12px" }}>
+                <label style={{
+                  fontSize: "11px",
+                  fontWeight: "bold",
+                  color: "var(--text-primary)",
+                  display: "block",
+                  marginBottom: "6px"
+                }}>
+                  ⭐ 重要度
+                </label>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  {[
+                    { value: 'normal', label: '通常', color: '#6b7280', emoji: '○' },
+                    { value: 'important', label: '重要', color: '#f59e0b', emoji: '⭐' },
+                    { value: 'climax', label: '見せ場', color: '#ef4444', emoji: '🔥' }
+                  ].map(({ value, label, color, emoji }) => (
+                    <button
+                      key={value}
+                      onClick={() => {
+                        const updatedPanels = panels.map(p =>
+                          p.id === selectedPanel.id
+                            ? { ...p, importance: value as 'normal' | 'important' | 'climax' }
+                            : p
+                        );
+                        setPanels(updatedPanels);
+                        setSelectedPanel({ ...selectedPanel, importance: value as 'normal' | 'important' | 'climax' });
+                      }}
+                      style={{
+                        flex: 1,
+                        padding: "8px",
+                        fontSize: "11px",
+                        borderRadius: "4px",
+                        border: `2px solid ${(selectedPanel.importance || 'normal') === value ? color : 'var(--border-color)'}`,
+                        background: (selectedPanel.importance || 'normal') === value ? color : 'var(--bg-primary)',
+                        color: (selectedPanel.importance || 'normal') === value ? 'white' : 'var(--text-primary)',
+                        cursor: "pointer",
+                        fontWeight: (selectedPanel.importance || 'normal') === value ? 'bold' : 'normal'
+                      }}
+                    >
+                      {emoji} {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
               
               {/* コマメモ */}
               <div style={{ marginBottom: "12px" }}>
