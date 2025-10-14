@@ -57,7 +57,7 @@ interface ExportPanelProps {
   paperSize?: PaperSize;
   currentPageIndex?: number;
   pages?: any[];
-  onRedrawTemplateOnly?: () => Promise<void>;
+  onRedrawTemplateOnly?: (withoutNumbers?: boolean) => Promise<void>;
   onRestoreFullCanvas?: () => Promise<void>;
 }
 
@@ -84,6 +84,7 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
   const [debugOutput, setDebugOutput] = useState<string>('');
   const [exportCurrentPageOnly, setExportCurrentPageOnly] = useState<boolean>(false);
   const [exportTemplateOnly, setExportTemplateOnly] = useState<boolean>(false);
+  const [exportTemplateWithoutNumbers, setExportTemplateWithoutNumbers] = useState<boolean>(false);
   const [exportPromptAlso, setExportPromptAlso] = useState<boolean>(false);
   
   // 🆕 NanoBanana関連のstate
@@ -223,7 +224,11 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
       switch (selectedPurpose) {
         case 'image':
           if (exportTemplateOnly) {
-            await exportService.exportTemplatePNG(canvasRef.current, panels, exportOptions, setExportProgress, onRedrawTemplateOnly);
+            // 番号なしオプションを渡す
+            if (onRedrawTemplateOnly) {
+              await onRedrawTemplateOnly(exportTemplateWithoutNumbers);
+            }
+            await exportService.exportTemplatePNG(canvasRef.current, panels, exportOptions, setExportProgress);
             // テンプレート出力後、元に戻す
             if (onRestoreFullCanvas) {
               await onRestoreFullCanvas();
@@ -518,13 +523,10 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
           output = promptService.formatPromptOutput(promptData, filteredPanels, pageInfo, characterSettings);
         }
       } else {
-        // 全ページ出力（現在のpanels配列を使用）
+        // 全ページ出力（シンプル版）
         output = "=== AI画像生成用プロンプト ===\n\n";
         
         filteredPanels.forEach((panel: Panel, panelIdx: number) => {
-            const sceneData = promptData.scenes[panelIdx];
-            if (!sceneData) return;
-            
             output += `【Panel ${panelIdx + 1}】\n`;
             
             // デバッグ: パネルの内容を確認
@@ -761,7 +763,12 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `v1.1.1-final-prompts-${new Date().toISOString().split('T')[0]}.txt`;
+    
+    // プロジェクト名を取得（localStorageから）
+    const projectName = localStorage.getItem('currentProjectName') || 'untitled';
+    const safeProjectName = projectName.replace(/[^a-zA-Z0-9\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/g, '-');
+    
+    a.download = `${safeProjectName}-prompts.txt`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -1279,6 +1286,28 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
                         📐 コマ割りのみ（枠＋番号）
                       </label>
 
+                      {exportTemplateOnly && (
+                        <label style={{ 
+                          display: "flex", 
+                          alignItems: "center", 
+                          gap: "6px",
+                          fontSize: "11px",
+                          color: isDarkMode ? "#ffffff" : "#333333",
+                          cursor: "pointer",
+                          marginBottom: "8px",
+                          marginLeft: "16px"
+                        }}>
+                          <input
+                            type="checkbox"
+                            checked={exportTemplateWithoutNumbers}
+                            onChange={(e) => setExportTemplateWithoutNumbers(e.target.checked)}
+                            disabled={isExporting}
+                            style={{ margin: 0 }}
+                          />
+                          📝 番号なし（枠のみ）
+                        </label>
+                      )}
+
                       <label style={{ 
                         display: "flex", 
                         alignItems: "center", 
@@ -1483,18 +1512,18 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
                   {/* 出力ボタン（NanoBanana以外） */}
                   {selectedPurpose !== 'nanobanana' && (
                     <button
-                      onClick={handleExport}
-                      disabled={isExporting || panels.length === 0}
+                      onClick={exportPromptAlso ? handleDownloadPrompt : handleExport}
+                      disabled={isExporting || panels.length === 0 || (exportPromptAlso && !promptOutput)}
                       style={{
                         width: "100%",
-                        background: isExporting || panels.length === 0 ? "#999999" : "#ff8833",
+                        background: isExporting || panels.length === 0 || (exportPromptAlso && !promptOutput) ? "#999999" : "#ff8833",
                         color: "white",
                         padding: "8px 12px",
                         borderRadius: "4px",
                         border: "none",
                         fontSize: "11px",
                         fontWeight: "600",
-                        cursor: isExporting || panels.length === 0 ? "not-allowed" : "pointer",
+                        cursor: isExporting || panels.length === 0 || (exportPromptAlso && !promptOutput) ? "not-allowed" : "pointer",
                         transition: "background-color 0.2s",
                         fontFamily: "inherit",
                       }}
@@ -1514,7 +1543,7 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
                           出力中...
                         </span>
                       ) : (
-                        'ファイルダウンロード'
+                        exportPromptAlso ? '📄 プロンプトファイルダウンロード' : 'ファイルダウンロード'
                       )}
                     </button>
                   )}

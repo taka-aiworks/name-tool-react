@@ -29,6 +29,22 @@ export class ExportService {
     return ExportService.instance;
   }
 
+  // プロジェクト名をファイル名用に取得（localStorageに保存されている想定）
+  private getSafeProjectName(): string {
+    try {
+      const name = localStorage.getItem('currentProjectName') || 'untitled';
+      // 日本語・英数字以外をハイフンに置換（記号など）
+      return name.replace(/[^a-zA-Z0-9\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/g, '-');
+    } catch {
+      return 'untitled';
+    }
+  }
+
+  private buildFilename(suffix: string): string {
+    const project = this.getSafeProjectName();
+    return `${project}-${suffix}`;
+  }
+
   /**
    * キャンバス全体をPDF出力
    */
@@ -58,7 +74,7 @@ export class ExportService {
       onProgress?.({ step: 'saving', progress: 95, message: 'PDFファイルを保存中...' });
       
       const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
-      pdf.save(`ネーム_${timestamp}.pdf`);
+      pdf.save(this.buildFilename(`export-${timestamp}.pdf`));
 
       onProgress?.({ step: 'complete', progress: 100, message: 'PDF出力完了！' });
     } catch (error) {
@@ -68,7 +84,7 @@ export class ExportService {
   }
 
   /**
-   * 各コマを個別のPNGとして出力
+   * 全体画像をPNGとして出力
    */
   async exportToPNG(
     canvasElement: HTMLCanvasElement,
@@ -79,21 +95,12 @@ export class ExportService {
     try {
       onProgress?.({ step: 'initialize', progress: 0, message: 'PNG出力を開始...' });
 
-      // 全体画像の出力
+      // 描画完了を待つ
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // 全体画像の出力のみ
       const fullCanvas = await this.captureCanvas(canvasElement, options);
-      this.downloadImage(fullCanvas, 'ネーム_全体.png');
-
-      onProgress?.({ step: 'panels', progress: 30, message: '各コマを出力中...' });
-
-      // 各コマの個別出力
-      for (let i = 0; i < panels.length; i++) {
-        const panel = panels[i];
-        const panelCanvas = await this.capturePanelArea(canvasElement, panel, options);
-        this.downloadImage(panelCanvas, `ネーム_コマ${i + 1}.png`);
-        
-        const progress = 30 + (60 * (i + 1) / panels.length);
-        onProgress?.({ step: 'panels', progress, message: `コマ ${i + 1}/${panels.length} 完了` });
-      }
+      this.downloadImage(fullCanvas, this.buildFilename('full.png'));
 
       onProgress?.({ step: 'complete', progress: 100, message: 'PNG出力完了！' });
     } catch (error) {
@@ -126,7 +133,7 @@ export class ExportService {
 
       // JSONファイルとして出力（クリスタで読み込み可能）
       const jsonData = JSON.stringify(layerData, null, 2);
-      this.downloadJSON(jsonData, 'ネーム_レイヤー構造.json');
+      this.downloadJSON(jsonData, this.buildFilename('layers.json'));
 
       // 各要素を個別のPNGとして出力
       await this.exportLayersAsPNG(canvasElement, layerData, options, onProgress);
@@ -233,6 +240,36 @@ export class ExportService {
   ): Promise<HTMLCanvasElement> {
     const scale = this.getScaleFromQuality(options.quality);
     
+    // デバッグ: キャンバス情報をログ出力
+    console.log('🔍 captureCanvas デバッグ:');
+    console.log('  originalWidth:', canvasElement.width);
+    console.log('  originalHeight:', canvasElement.height);
+    console.log('  clientWidth:', canvasElement.clientWidth);
+    console.log('  clientHeight:', canvasElement.clientHeight);
+    console.log('  scale:', scale);
+    console.log('  outputWidth:', canvasElement.width * scale);
+    console.log('  outputHeight:', canvasElement.height * scale);
+    
+    // キャンバスの2Dコンテキストを取得
+    const originalCtx = canvasElement.getContext('2d');
+    if (!originalCtx) {
+      throw new Error('キャンバスの2Dコンテキストが取得できません');
+    }
+    
+    // キャンバスの内容をより詳しくチェック
+    const imageData = originalCtx.getImageData(0, 0, canvasElement.width, canvasElement.height);
+    const hasContent = imageData.data.some((value, index) => index % 4 === 3 && value > 0); // alpha channel check
+    
+    // 非透明ピクセル数をカウント
+    const nonTransparentPixels = imageData.data.filter((value, index) => index % 4 === 3 && value > 0).length;
+    const totalPixels = canvasElement.width * canvasElement.height;
+    const contentRatio = (nonTransparentPixels / totalPixels * 100).toFixed(2);
+    
+    console.log('  hasContent:', hasContent);
+    console.log('  nonTransparentPixels:', nonTransparentPixels);
+    console.log('  totalPixels:', totalPixels);
+    console.log('  contentRatio:', contentRatio + '%');
+    
     // Canvasを直接コピー（html2canvasを使わない）
     const outputCanvas = document.createElement('canvas');
     const ctx = outputCanvas.getContext('2d')!;
@@ -246,6 +283,16 @@ export class ExportService {
     }
     
     ctx.drawImage(canvasElement, 0, 0, outputCanvas.width, outputCanvas.height);
+    
+    // 出力キャンバスの内容もチェック
+    const outputImageData = ctx.getImageData(0, 0, outputCanvas.width, outputCanvas.height);
+    const outputHasContent = outputImageData.data.some((value, index) => index % 4 === 3 && value > 0);
+    const outputNonTransparentPixels = outputImageData.data.filter((value, index) => index % 4 === 3 && value > 0).length;
+    const outputContentRatio = (outputNonTransparentPixels / (outputCanvas.width * outputCanvas.height) * 100).toFixed(2);
+    
+    console.log('  outputHasContent:', outputHasContent);
+    console.log('  outputNonTransparentPixels:', outputNonTransparentPixels);
+    console.log('  outputContentRatio:', outputContentRatio + '%');
     
     return outputCanvas;
   }
@@ -478,7 +525,7 @@ export class ExportService {
       const outputCanvas = await this.captureCanvas(canvasElement, options);
 
       onProgress?.({ step: 'saving', progress: 90, message: 'テンプレート画像を保存中...' });
-      this.downloadImage(outputCanvas, 'ネーム_テンプレート.png');
+      this.downloadImage(outputCanvas, this.buildFilename('template.png'));
 
       onProgress?.({ step: 'complete', progress: 100, message: 'テンプレート画像出力完了！' });
     } catch (error) {

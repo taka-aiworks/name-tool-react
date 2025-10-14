@@ -624,93 +624,30 @@ class PromptService {
       output += `${'='.repeat(60)}\n\n`;
     }
 
-    promptData.scenes.forEach((scene, index) => {
+    // シンプルなプロンプト出力
+    panels?.forEach((panel, index) => {
       const panelLabel = pageInfo 
         ? `【Page ${pageInfo.pageIndex + 1} - Panel ${index + 1}】`
         : `【Panel ${index + 1}】`;
       output += `${panelLabel}\n`;
       
-      // Panel用メモ
-      if (panels && panels[index]?.note) {
-        output += `📌 メモ: ${panels[index].note}\n`;
+      // パネルのメモ
+      if (panel.note) {
+        output += `📌 メモ: ${panel.note}\n`;
       }
       
-      // 🆕 分離プロンプトシステム: キャラ＋動作を合成
-      const panel = panels?.[index];
-      if (panel) {
-        const parts: string[] = [];
-        
-        // キャラプロンプト取得（panel.characterPrompt or characterSettingsから）
-        let charPrompt = panel.characterPrompt;
-        if (!charPrompt && panel.selectedCharacterId && characterSettings?.[panel.selectedCharacterId]?.appearance?.basePrompt) {
-          charPrompt = characterSettings[panel.selectedCharacterId].appearance.basePrompt;
-        }
-        
-        if (charPrompt) {
-          parts.push(charPrompt.trim());
-        }
-        
-        // 動作プロンプト
-        if (panel.actionPrompt) {
-          parts.push(panel.actionPrompt.trim());
-        }
-        
-        // 合成プロンプト出力
-        if (parts.length > 0) {
-          const combinedPrompt = parts.join(', ');
-          output += `プロンプト: ${combinedPrompt}\n`;
-        } else if (panel.prompt) {
-          // フォールバック: 旧形式のpromptがあれば使用
-          output += `プロンプト: ${panel.prompt}\n`;
-        }
+      // 動作プロンプト（シンプルに）
+      if (panel.actionPrompt) {
+        output += `🎬 動作: ${panel.actionPrompt}\n`;
       }
       
-      const panelCharacters = scene.panelCharacters;
-
-      // キャラクター
-      if (panelCharacters.length > 0) {
-        panelCharacters.forEach(char => {
-          if (this.isValidValue(char.fullPrompt)) {
-            output += `キャラクター: masterpiece, best quality, ${char.fullPrompt}, single character, anime style\n`;
-          } else if (this.isValidValue(char.scenePrompt)) {
-            output += `キャラクター: masterpiece, best quality, ${char.scenePrompt}, single character, anime style\n`;
-          }
-          
-          // キャラクターの日本語説明を追加
-          if (this.isValidValue(char.scenePrompt)) {
-            const japaneseDesc = this.buildCharacterJapaneseDescription(char.scenePrompt);
-            if (japaneseDesc) {
-              output += `【日本語説明】\n${japaneseDesc}\n`;
-            }
-          }
-        });
+      // 日本語動作プロンプト
+      if (panel.actionPromptJa) {
+        output += `💬 日本語: ${panel.actionPromptJa}\n`;
       }
-
-      // 背景
-      if (scene.backgroundPrompt && this.isValidValue(scene.backgroundPrompt)) {
-        const bgMapping: Record<string, string> = {
-          'gradient': 'gradient background',
-          'solid': 'simple background',
-          'pattern': 'pattern background',
-          'texture': 'texture background'
-        };
-        const bgPrompt = bgMapping[scene.backgroundPrompt] || scene.backgroundPrompt;
-        output += `背景: ${bgPrompt}\n`;
-      } else {
-        output += `背景: simple background, no humans\n`;
-      }
-
-      // 効果線
-      if (scene.effectsPrompt && this.isValidValue(scene.effectsPrompt)) {
-        output += `効果線: ${scene.effectsPrompt}\n`;
-      }
-
+      
       output += '\n';
     });
-
-    // Negative Prompt
-    const negativePrompt = this.buildNegativePrompt();
-    output += `【Negative Prompt】\n${negativePrompt}\n`;
 
     return output;
   }

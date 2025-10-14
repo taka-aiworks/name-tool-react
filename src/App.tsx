@@ -107,16 +107,18 @@ function App() {
   const [tempBackgrounds, setTempBackgrounds] = useState<BackgroundElement[]>([]);
   const [tempEffects, setTempEffects] = useState<EffectElement[]>([]);
   const [tempTones, setTempTones] = useState<ToneElement[]>([]);
+  const [tempPanels, setTempPanels] = useState<Panel[]>([]);
   const [showOpenAISettingsModal, setShowOpenAISettingsModal] = useState<boolean>(false);
 
   // 🖼️ テンプレートのみ描画コールバック
-  const handleRedrawTemplateOnly = useCallback(async () => {
+  const handleRedrawTemplateOnly = useCallback(async (withoutNumbers = false) => {
     // 元のデータを保存
     setTempCharacters(characters);
     setTempBubbles(speechBubbles);
     setTempBackgrounds(backgrounds);
     setTempEffects(effects);
     setTempTones(tones);
+    setTempPanels(panels);
     
     // すべてをクリア
     setCharacters([]);
@@ -125,9 +127,18 @@ function App() {
     setEffects([]);
     setTones([]);
     
+    // パネルのメモもクリア（枠＋番号のみにするため）
+    setPanels(panels.map(panel => ({ ...panel, note: '', actionPrompt: '', actionPromptJa: '' })));
+    
+    // 番号なしの場合は、パネルIDも一時的に変更（描画時に番号が表示されないように）
+    if (withoutNumbers) {
+      // パネルIDを一時的に0にして、番号表示を無効化
+      setPanels(panels.map((panel, index) => ({ ...panel, id: 0, note: '', actionPrompt: '', actionPromptJa: '' })));
+    }
+    
     // 再描画を待つ
     await new Promise(resolve => setTimeout(resolve, 50));
-  }, [characters, speechBubbles, backgrounds, effects, tones]);
+  }, [characters, speechBubbles, backgrounds, effects, tones, panels]);
 
   // 🖼️ 元の描画に戻すコールバック
   const handleRestoreFullCanvas = useCallback(async () => {
@@ -136,10 +147,11 @@ function App() {
     setBackgrounds(tempBackgrounds);
     setEffects(tempEffects);
     setTones(tempTones);
+    setPanels(tempPanels);
     
     // 再描画を待つ
     await new Promise(resolve => setTimeout(resolve, 50));
-  }, [tempCharacters, tempBubbles, tempBackgrounds, tempEffects, tempTones]);
+  }, [tempCharacters, tempBubbles, tempBackgrounds, tempEffects, tempTones, tempPanels]);
   const [isGeneratingFromStory, setIsGeneratingFromStory] = useState<boolean>(false);
   
   // 👤 キャラプロンプト登録
@@ -1105,18 +1117,31 @@ function App() {
   }, [panels]);
 
   const handleClearAll = useCallback(() => {
-    if (window.confirm("全ての要素をクリアしますか？")) {
-      setCharacters([]);
-      setSpeechBubbles([]);
-      setBackgrounds([]);
-      setEffects([]);
-      // トーン機能は無効化
-      setSelectedCharacter(null);
-      setSelectedPanel(null);
-      setSelectedEffect(null);
-      // トーン機能は無効化
+    if (!selectedPanel) {
+      alert("クリアするコマを選択してください");
+      return;
     }
-  }, []);
+    
+    if (window.confirm(`コマ ${selectedPanel.id} の内容をクリアしますか？`)) {
+      // 選択中のコマ内の要素だけをクリア
+      setCharacters(prev => prev.filter(c => c.panelId !== selectedPanel.id));
+      setSpeechBubbles(prev => prev.filter(b => b.panelId !== selectedPanel.id));
+      setBackgrounds(prev => prev.filter(bg => bg.panelId !== selectedPanel.id));
+      setEffects(prev => prev.filter(e => e.panelId !== selectedPanel.id));
+      setTones(prev => prev.filter(t => t.panelId !== selectedPanel.id));
+      
+      // パネルのメモ、動作、重要度もクリア
+      setPanels(prev => prev.map(p => 
+        p.id === selectedPanel.id 
+          ? { ...p, note: '', action: '', actionJa: '', importance: 'normal' as const }
+          : p
+      ));
+      
+      setSelectedCharacter(null);
+      setSelectedEffect(null);
+      setSelectedTone(null);
+    }
+  }, [selectedPanel]);
 
   const handleExport = useCallback((format: string) => {
     alert(`${format}でのエクスポート機能は実装予定です`);
@@ -2078,38 +2103,6 @@ function App() {
                   <h4 style={{ fontSize: "12px", marginBottom: "8px", color: "var(--text-primary)" }}>
                     🔧 コマ編集操作
                   </h4>
-                  <button 
-                    className="btn btn-secondary"
-                    onClick={handleClearAll}
-                    style={{
-                      width: '100%',
-                      padding: '8px',
-                      background: COLOR_PALETTE.buttons.delete.primary,
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      fontSize: '12px',
-                      fontWeight: 'bold',
-                      marginBottom: '8px'
-                    }}
-                  >
-                    🧹 全クリア
-                  </button>
-                  <div style={{ 
-                    fontSize: "10px", 
-                    color: "var(--text-muted)",
-                    padding: "8px",
-                    background: "var(--bg-secondary)",
-                    borderRadius: "4px",
-                    lineHeight: "1.4",
-                  }}>
-                    <strong>操作方法:</strong><br/>
-                    • 🔵 移動: 中央ハンドルをドラッグ<br/>
-                    • 🟧 リサイズ: 四隅のハンドル<br/>
-                    • ✂️ 分割: 分割アイコンをクリック<br/>
-                    • 🗑️ 削除: 削除アイコンをクリック
-                  </div>
                 </div>
               )}
             </div>
@@ -2155,16 +2148,41 @@ function App() {
               {isPanelEditMode ? "✅ 編集モード中" : "🔧 コマ編集モード"}
             </button>
             <div style={{
-              fontSize: "10px",
+              fontSize: "11px",
               color: "var(--text-muted)",
-              padding: "8px",
+              padding: "10px",
               background: "var(--bg-tertiary)",
               borderRadius: "4px",
               marginTop: "8px",
-              lineHeight: "1.4"
+              lineHeight: "1.6"
             }}>
-              💡 コマをクリック→ハンドルで移動・リサイズ・分割
+              <div style={{ fontWeight: "bold", marginBottom: "6px", color: "var(--text-primary)" }}>操作方法</div>
+              <div style={{ marginBottom: "4px" }}>🔵 <strong>移動:</strong> 中央ハンドルをドラッグ</div>
+              <div style={{ marginBottom: "4px" }}>🟧 <strong>リサイズ:</strong> 四隅のハンドル</div>
+              <div style={{ marginBottom: "4px" }}>✂️ <strong>分割:</strong> 分割アイコンをクリック</div>
+              <div style={{ marginBottom: "4px" }}>🗑️ <strong>削除:</strong> 削除アイコンをクリック</div>
+              <div style={{ marginTop: "8px", fontSize: "10px", color: "var(--text-muted)" }}>💡 コマを選択後、下のボタンで内容をクリアできます</div>
             </div>
+            <button 
+              className="btn btn-secondary"
+              onClick={handleClearAll}
+              disabled={!selectedPanel}
+              style={{
+                width: '100%',
+                padding: '8px',
+                background: selectedPanel ? COLOR_PALETTE.buttons.delete.primary : 'var(--bg-secondary)',
+                color: selectedPanel ? 'white' : 'var(--text-muted)',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: selectedPanel ? 'pointer' : 'not-allowed',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                marginTop: '8px',
+                opacity: selectedPanel ? 1 : 0.5
+              }}
+            >
+              🧹 コマ内容をクリア
+            </button>
           </div>
 
           <div className="section">

@@ -208,7 +208,6 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, isDarkMode = fal
                   { title: '新規作成', desc: '📄ボタンでテンプレート選択' },
                   { title: '保存', desc: '💾 新規保存 or 上書き保存' },
                   { title: '元に戻す', desc: 'Ctrl + Z（やり直し: Ctrl + Y）' },
-                  { title: 'コマ編集', desc: '✏️ボタンで移動・リサイズ・分割' },
                   { title: '吹き出し', desc: 'ダブルクリックでテキスト入力' }
                 ].map((item, idx) => (
                   <div key={idx} style={{ padding: '12px', backgroundColor: cardBg, borderRadius: '6px' }}>
@@ -216,6 +215,21 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, isDarkMode = fal
                     <div style={{ fontSize: '14px', color: isDarkMode ? '#aaa' : '#666', marginTop: '4px' }}>{item.desc}</div>
                   </div>
                 ))}
+              </div>
+              
+              {/* コマ編集詳細 */}
+              <div style={{ marginTop: '16px', backgroundColor: infoBg, padding: '16px', borderRadius: '8px' }}>
+                <h4 style={{ fontSize: '16px', marginBottom: '12px', color: textColor }}>🔧 コマ編集操作</h4>
+                <div style={{ fontSize: '14px', lineHeight: '1.8', color: textColor }}>
+                  <p style={{ marginBottom: '8px' }}>コマを選択 → 右サイドバーの「<strong>✏️ コマ編集</strong>」をクリック</p>
+                  <ul style={{ marginLeft: '20px' }}>
+                    <li><strong>🔵 移動:</strong> 中央ハンドルをドラッグ</li>
+                    <li><strong>🟧 リサイズ:</strong> 四隅のハンドルをドラッグ</li>
+                    <li><strong>✂️ 分割:</strong> 分割アイコンをクリック</li>
+                    <li><strong>🗑️ 削除:</strong> 削除アイコンをクリック</li>
+                    <li><strong>🧹 全クリア:</strong> 右サイドバーの「🧹 全クリア」ボタン</li>
+                  </ul>
+                </div>
               </div>
             </section>
 
