@@ -31,31 +31,32 @@ nanobanana_export_2025-10-14.zip
 #### 1. `layout.png` - レイアウト画像
 - コマ割りが描かれた画像
 - コマの配置、吹き出し、セリフが含まれる
-- NanoBananaがこのレイアウトを参照して画像を生成
+- **これをNanoBananaにアップロードすると、同じレイアウトで画像が生成される**
 
-#### 2. `prompt.txt` - プロンプト
+#### 2. `prompt.txt` - プロンプト（キャラ・動作・セリフすべて含む）
 ```
-=== Panel 1 ===
-Character: solo, 1girl, teen, black hair, blue eyes, black sweater
-Action: walking in forest, serious expression
-Scene: quiet forest background
+=== コマ1 ===
+📌 メモ: 主人公が森を歩いているシーン
+💬 セリフ:
+  1. 「この森、なんだか静かすぎる...」
+🎨 画像生成プロンプト: solo, 1girl, teen, black hair, blue eyes, 
+   black sweater, walking in forest, serious expression
+  - キャラ: solo, 1girl, teen, black hair, blue eyes, black sweater
+  - 動作: walking in forest, serious expression
+```
 
-Full Prompt:
-solo, 1girl, teen, black hair, blue eyes, black sweater, 
-walking in forest, serious expression, quiet forest background,
-masterpiece, best quality, anime style
-```
+**重要：セリフ情報も含まれているので、NanoBananaがテキストも描画します！**
 
 #### 3. `character_mapping.txt` - キャラクター対応表
 ```
 キャラクター名対応表
 ==================
 character_1 → 主人公（リナ）
-character_2 → サブキャラ（タケシ）
+  - 詳細プロンプト: solo, 1girl, teen, black hair, blue eyes...
 ```
 
-#### 4. `instructions.txt` - 使用方法
-NanoBananaでの具体的な使い方手順
+#### 4. `instructions.txt` - 使用方法（日本語）
+NanoBananaでの具体的な使い方手順が日本語で記載されています
 
 ---
 

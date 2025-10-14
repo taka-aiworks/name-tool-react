@@ -218,7 +218,19 @@ export class NanoBananaExportService {
     panels.forEach((panel, index) => {
       prompt += `Panel ${index + 1}:\n`;
       if (panel.note) {
-        prompt += `  Note: ${panel.note}\n`;
+        prompt += `  📌 Note: ${panel.note}\n`;
+      }
+      
+      // 🆕 吹き出し・セリフ情報を追加
+      const panelBubbles = bubbles.filter(b => b.panelId === panel.id);
+      if (panelBubbles.length > 0) {
+        prompt += `  💬 Dialogue:\n`;
+        panelBubbles.forEach((bubble, bubbleIdx) => {
+          const bubbleTypeText = bubble.type === 'shout' ? ' (shouting)' :
+                                 bubble.type === 'whisper' ? ' (whispering)' :
+                                 bubble.type === 'thought' ? ' (thinking)' : '';
+          prompt += `    ${bubbleIdx + 1}. "${bubble.text}"${bubbleTypeText}\n`;
+        });
       }
       
       // 分離プロンプトシステム
@@ -227,14 +239,14 @@ export class NanoBananaExportService {
       if (panel.actionPrompt) parts.push(panel.actionPrompt.trim());
       
       if (parts.length > 0) {
-        prompt += `  Combined Prompt: ${parts.join(', ')}\n`;
+        prompt += `  🎨 Image Generation Prompt: ${parts.join(', ')}\n`;
         if (panel.characterPrompt) prompt += `    - Character: ${panel.characterPrompt}\n`;
         if (panel.actionPrompt) prompt += `    - Action: ${panel.actionPrompt}\n`;
       } else if (panel.prompt) {
         // フォールバック
-        prompt += `  Prompt: ${panel.prompt}\n`;
+        prompt += `  🎨 Prompt: ${panel.prompt}\n`;
       } else {
-        prompt += `  Size: ${Math.round(panel.width * 100)}% x ${Math.round(panel.height * 100)}%\n`;
+        prompt += `  📐 Size: ${Math.round(panel.width * 100)}% x ${Math.round(panel.height * 100)}%\n`;
       }
       prompt += '\n';
     });
@@ -283,7 +295,19 @@ export class NanoBananaExportService {
     panels.forEach((panel, index) => {
       prompt += `コマ${index + 1}:\n`;
       if (panel.note) {
-        prompt += `  メモ: ${panel.note}\n`;
+        prompt += `  📌 メモ: ${panel.note}\n`;
+      }
+      
+      // 🆕 吹き出し・セリフ情報を追加
+      const panelBubbles = bubbles.filter(b => b.panelId === panel.id);
+      if (panelBubbles.length > 0) {
+        prompt += `  💬 セリフ:\n`;
+        panelBubbles.forEach((bubble, bubbleIdx) => {
+          const bubbleTypeText = bubble.type === 'shout' ? '（叫び）' :
+                                 bubble.type === 'whisper' ? '（小声）' :
+                                 bubble.type === 'thought' ? '（心の声）' : '';
+          prompt += `    ${bubbleIdx + 1}. 「${bubble.text}」${bubbleTypeText}\n`;
+        });
       }
       
       // 分離プロンプトシステム
@@ -292,14 +316,14 @@ export class NanoBananaExportService {
       if (panel.actionPrompt) parts.push(panel.actionPrompt.trim());
       
       if (parts.length > 0) {
-        prompt += `  合成プロンプト: ${parts.join(', ')}\n`;
+        prompt += `  🎨 画像生成プロンプト: ${parts.join(', ')}\n`;
         if (panel.characterPrompt) prompt += `    - キャラ: ${panel.characterPrompt}\n`;
         if (panel.actionPrompt) prompt += `    - 動作: ${panel.actionPrompt}\n`;
       } else if (panel.prompt) {
         // フォールバック
-        prompt += `  プロンプト: ${panel.prompt}\n`;
+        prompt += `  🎨 プロンプト: ${panel.prompt}\n`;
       } else {
-        prompt += `  サイズ: ${Math.round(panel.width * 100)}% x ${Math.round(panel.height * 100)}%\n`;
+        prompt += `  📐 サイズ: ${Math.round(panel.width * 100)}% x ${Math.round(panel.height * 100)}%\n`;
       }
       prompt += '\n';
     });
@@ -445,23 +469,30 @@ For support, visit: https://github.com/your-repo/name-tool-react
 
 【ステップ3】プロンプトを入力
 1. prompt.txt を開く
-2. 以下のテンプレートを使用：
+2. 各コマの情報を確認：
+   • 📌 メモ（シーン説明）
+   • 💬 セリフ（吹き出しの内容・タイプ）
+   • 🎨 画像生成プロンプト（キャラ+動作）
+
+3. 以下のテンプレートを使用：
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 このコマ割りレイアウトに従って、漫画を生成してください。
 レイアウト、吹き出しの位置、コマの配置を維持してください。
 
 [Panel 1のプロンプトをコピペ]
+※セリフも含めてコピーすると、吹き出し内のテキストも生成されます
 
 [Panel 2のプロンプトをコピペ]
 
 [Panel 3のプロンプトをコピペ]
 
 キャラクターの外見を全コマで統一してください。
+吹き出し内のセリフも正確に描画してください。
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-3. 「送信」ボタンをクリック
-4. AIが画像を生成（30秒〜1分）
+4. 「送信」ボタンをクリック
+5. AIが画像を生成（30秒〜1分）
 
 【ステップ4】生成・確認
 1. 生成された画像を確認

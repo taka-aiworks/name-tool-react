@@ -1027,15 +1027,17 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
                           Google AI Studioの画像生成機能。レイアウト＋プロンプトで一貫性のある漫画を自動生成。<br/>
                           <br/>
                           <strong>📦 出力内容：</strong><br/>
-                          • layout.png（コマ割りレイアウト）<br/>
-                          • prompt.txt（AI生成用プロンプト）<br/>
-                          • 使用方法ガイド<br/>
+                          • layout.png（コマ割り+吹き出し）<br/>
+                          • prompt.txt（キャラ・動作・セリフ）<br/>
+                          • character_mapping.txt（キャラ対応表）<br/>
+                          • instructions.txt（日本語ガイド）<br/>
                           <br/>
                           <strong>🎯 使い方：</strong><br/>
                           1. ZIPをダウンロード・解凍<br/>
                           2. Google AI Studioを開く<br/>
                           3. layout.pngをアップロード<br/>
                           4. prompt.txtをコピペして生成<br/>
+                          5. セリフも自動的に描画されます！<br/>
                           <br/>
                           <span style={{fontSize: "10px"}}>
                           ※詳細は NANOBANANA_GUIDE.md を参照<br/>
