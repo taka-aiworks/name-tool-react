@@ -790,8 +790,6 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, ExtendedCanvasComponentPro
       {/* Canvas要素 */}
       <canvas
         ref={canvasRef}
-        width={800}
-        height={600}
         onClick={mouseEventHandlers.handleCanvasClick}
         onContextMenu={mouseEventHandlers.handleCanvasContextMenu}
         onDoubleClick={mouseEventHandlers.handleCanvasDoubleClick}

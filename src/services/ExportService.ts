@@ -238,21 +238,21 @@ export class ExportService {
     canvasElement: HTMLCanvasElement,
     options: ExportOptions
   ): Promise<HTMLCanvasElement> {
-    const scale = this.getScaleFromQuality(options.quality);
-    
-    // Canvasを直接コピー（html2canvasを使わない）
+    // シンプルな1:1コピーで問題を特定
     const outputCanvas = document.createElement('canvas');
     const ctx = outputCanvas.getContext('2d')!;
     
-    outputCanvas.width = canvasElement.width * scale;
-    outputCanvas.height = canvasElement.height * scale;
+    // 元のキャンバスと同じサイズで出力
+    outputCanvas.width = canvasElement.width;
+    outputCanvas.height = canvasElement.height;
     
     if (options.includeBackground) {
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, outputCanvas.width, outputCanvas.height);
     }
     
-    ctx.drawImage(canvasElement, 0, 0, outputCanvas.width, outputCanvas.height);
+    // 単純にコピー
+    ctx.drawImage(canvasElement, 0, 0);
     
     return outputCanvas;
   }
