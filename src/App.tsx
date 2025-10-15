@@ -108,11 +108,37 @@ function App() {
   const [tempEffects, setTempEffects] = useState<EffectElement[]>([]);
   const [tempTones, setTempTones] = useState<ToneElement[]>([]);
   const [tempPanels, setTempPanels] = useState<Panel[]>([]);
+  
+  // useRefで状態を直接管理
+  const tempDataRef = useRef<{
+    characters: Character[];
+    bubbles: SpeechBubble[];
+    backgrounds: BackgroundElement[];
+    effects: EffectElement[];
+    tones: ToneElement[];
+    panels: Panel[];
+  }>({
+    characters: [],
+    bubbles: [],
+    backgrounds: [],
+    effects: [],
+    tones: [],
+    panels: []
+  });
   const [showOpenAISettingsModal, setShowOpenAISettingsModal] = useState<boolean>(false);
 
   // 🖼️ テンプレートのみ描画コールバック
   const handleRedrawTemplateOnly = useCallback(async (withoutNumbers = false) => {
-    // 元のデータを保存
+    // 元のデータを保存（useRefとuseState両方）
+    tempDataRef.current = {
+      characters: [...characters],
+      bubbles: [...speechBubbles],
+      backgrounds: [...backgrounds],
+      effects: [...effects],
+      tones: [...tones],
+      panels: [...panels]
+    };
+    
     setTempCharacters(characters);
     setTempBubbles(speechBubbles);
     setTempBackgrounds(backgrounds);
@@ -142,16 +168,25 @@ function App() {
 
   // 🖼️ 元の描画に戻すコールバック
   const handleRestoreFullCanvas = useCallback(async () => {
-    setCharacters(tempCharacters);
-    setSpeechBubbles(tempBubbles);
-    setBackgrounds(tempBackgrounds);
-    setEffects(tempEffects);
-    setTones(tempTones);
-    setPanels(tempPanels);
+    // useRefから直接復元
+    const tempData = tempDataRef.current;
+    setCharacters(tempData.characters);
+    setSpeechBubbles(tempData.bubbles);
+    setBackgrounds(tempData.backgrounds);
+    setEffects(tempData.effects);
+    setTones(tempData.tones);
+    setPanels(tempData.panels);
     
     // 再描画を待つ
     await new Promise(resolve => setTimeout(resolve, 50));
-  }, [tempCharacters, tempBubbles, tempBackgrounds, tempEffects, tempTones, tempPanels]);
+    
+    // キャンバスを強制的に再描画
+    if (canvasRef.current) {
+      const canvas = canvasRef.current;
+      canvas.click();
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+  }, [characters, speechBubbles, backgrounds, effects, tones, panels]);
   const [isGeneratingFromStory, setIsGeneratingFromStory] = useState<boolean>(false);
   
   // 👤 キャラプロンプト登録
