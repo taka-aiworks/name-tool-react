@@ -238,11 +238,10 @@ export class ExportService {
     canvasElement: HTMLCanvasElement,
     options: ExportOptions
   ): Promise<HTMLCanvasElement> {
-    // シンプルな1:1コピーで問題を特定
+    // 実際のキャンバスサイズで出力（表示サイズではなく）
     const outputCanvas = document.createElement('canvas');
     const ctx = outputCanvas.getContext('2d')!;
     
-    // 元のキャンバスと同じサイズで出力
     outputCanvas.width = canvasElement.width;
     outputCanvas.height = canvasElement.height;
     
@@ -251,7 +250,7 @@ export class ExportService {
       ctx.fillRect(0, 0, outputCanvas.width, outputCanvas.height);
     }
     
-    // 単純にコピー
+    // キャンバス全体をコピー
     ctx.drawImage(canvasElement, 0, 0);
     
     return outputCanvas;

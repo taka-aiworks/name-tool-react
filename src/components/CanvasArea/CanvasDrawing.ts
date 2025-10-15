@@ -128,7 +128,10 @@ export class CanvasDrawing {
     ctx.fillRect(textX - 4, textY - 2, textWidth, textHeight);
     
     ctx.fillStyle = numberColor;
-    ctx.fillText(`${panel.id}`, textX, textY);
+    // パネルIDが0の場合は番号を表示しない（番号なしオプション）
+    if (panel.id !== 0) {
+      ctx.fillText(`${panel.id}`, textX, textY);
+    }
 
     // 重要度マーカー表示
     if (panel.importance === 'important' || panel.importance === 'climax') {

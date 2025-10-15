@@ -827,8 +827,10 @@ export const useCanvasDrawing = ({
    */
   const observeThemeChange = () => {
     const handleThemeChange = () => {
-      // コンソールログは無効化
-      drawCanvas();
+      // テーマ切り替え後、即座に再描画（クリアしない）
+      setTimeout(() => {
+        drawCanvas();
+      }, 100);
     };
     
     const observer = new MutationObserver(handleThemeChange);

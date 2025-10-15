@@ -123,7 +123,8 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
     const wasDarkMode = originalTheme === "dark";
     if (wasDarkMode) {
       document.documentElement.setAttribute("data-theme", "light");
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // キャンバスの再描画を強制的に待つ（十分な時間を確保）
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
 
     try {
@@ -216,8 +217,20 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
     const wasDarkMode = originalTheme === "dark";
     if (wasDarkMode) {
       document.documentElement.setAttribute("data-theme", "light");
-      // キャンバスの再描画を待つ
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // キャンバスの再描画を強制的に待つ（十分な時間を確保）
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // 追加の待機時間でキャンバス内容の更新を確実にする
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // キャンバスを強制的に再描画
+      if (canvasRef.current) {
+        // キャンバス要素をクリックして再描画を強制
+        const canvas = canvasRef.current;
+        canvas.click();
+        // 再描画を待つ
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
     }
 
     try {
@@ -254,6 +267,12 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
         await onRestoreFullCanvas();
       }
     } finally {
+      // テンプレート出力のために一時的に内容を消している場合は必ず元に戻す
+      if (exportTemplateOnly && onRestoreFullCanvas) {
+        try {
+          await onRestoreFullCanvas();
+        } catch {}
+      }
       // 🎨 元のテーマに戻す
       if (wasDarkMode) {
         document.documentElement.setAttribute("data-theme", "dark");

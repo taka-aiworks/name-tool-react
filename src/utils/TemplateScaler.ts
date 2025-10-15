@@ -10,6 +10,7 @@ const BASE_CANVAS_SIZE = {
   height: 600
 };
 
+
 /**
  * マージン設定
  */
@@ -33,7 +34,7 @@ export const scaleTemplateToCanvas = (
 
   const { pixelWidth, pixelHeight } = canvasSettings.paperSize;
   
-  // スケール比率を計算
+  // スケール比率を計算（元のベースサイズを使用）
   const scaleX = pixelWidth / BASE_CANVAS_SIZE.width;
   const scaleY = pixelHeight / BASE_CANVAS_SIZE.height;
   
