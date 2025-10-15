@@ -240,36 +240,6 @@ export class ExportService {
   ): Promise<HTMLCanvasElement> {
     const scale = this.getScaleFromQuality(options.quality);
     
-    // デバッグ: キャンバス情報をログ出力
-    console.log('🔍 captureCanvas デバッグ:');
-    console.log('  originalWidth:', canvasElement.width);
-    console.log('  originalHeight:', canvasElement.height);
-    console.log('  clientWidth:', canvasElement.clientWidth);
-    console.log('  clientHeight:', canvasElement.clientHeight);
-    console.log('  scale:', scale);
-    console.log('  outputWidth:', canvasElement.width * scale);
-    console.log('  outputHeight:', canvasElement.height * scale);
-    
-    // キャンバスの2Dコンテキストを取得
-    const originalCtx = canvasElement.getContext('2d');
-    if (!originalCtx) {
-      throw new Error('キャンバスの2Dコンテキストが取得できません');
-    }
-    
-    // キャンバスの内容をより詳しくチェック
-    const imageData = originalCtx.getImageData(0, 0, canvasElement.width, canvasElement.height);
-    const hasContent = imageData.data.some((value, index) => index % 4 === 3 && value > 0); // alpha channel check
-    
-    // 非透明ピクセル数をカウント
-    const nonTransparentPixels = imageData.data.filter((value, index) => index % 4 === 3 && value > 0).length;
-    const totalPixels = canvasElement.width * canvasElement.height;
-    const contentRatio = (nonTransparentPixels / totalPixels * 100).toFixed(2);
-    
-    console.log('  hasContent:', hasContent);
-    console.log('  nonTransparentPixels:', nonTransparentPixels);
-    console.log('  totalPixels:', totalPixels);
-    console.log('  contentRatio:', contentRatio + '%');
-    
     // Canvasを直接コピー（html2canvasを使わない）
     const outputCanvas = document.createElement('canvas');
     const ctx = outputCanvas.getContext('2d')!;
@@ -283,16 +253,6 @@ export class ExportService {
     }
     
     ctx.drawImage(canvasElement, 0, 0, outputCanvas.width, outputCanvas.height);
-    
-    // 出力キャンバスの内容もチェック
-    const outputImageData = ctx.getImageData(0, 0, outputCanvas.width, outputCanvas.height);
-    const outputHasContent = outputImageData.data.some((value, index) => index % 4 === 3 && value > 0);
-    const outputNonTransparentPixels = outputImageData.data.filter((value, index) => index % 4 === 3 && value > 0).length;
-    const outputContentRatio = (outputNonTransparentPixels / (outputCanvas.width * outputCanvas.height) * 100).toFixed(2);
-    
-    console.log('  outputHasContent:', outputHasContent);
-    console.log('  outputNonTransparentPixels:', outputNonTransparentPixels);
-    console.log('  outputContentRatio:', outputContentRatio + '%');
     
     return outputCanvas;
   }
