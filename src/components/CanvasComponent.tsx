@@ -636,6 +636,9 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, ExtendedCanvasComponentPro
     onPanelSelect,
     onCharacterSelect,
     onPanelSplit,
+    // モバイル用スケール情報
+    canvasScale,
+    isMobile,
   });
 
   // キーボードイベント処理（トーンパネル表示制御追加）
@@ -790,8 +793,9 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, ExtendedCanvasComponentPro
     if (!canvas) return;
     
     const rect = canvas.getBoundingClientRect();
-    const x = touch.clientX - rect.left;
-    const y = touch.clientY - rect.top;
+    // スケールを考慮した座標変換
+    const x = (touch.clientX - rect.left) / (isMobile ? canvasScale : 1);
+    const y = (touch.clientY - rect.top) / (isMobile ? canvasScale : 1);
     
     setTouchStartTime(Date.now());
     setTouchStartPosition({ x, y });
@@ -832,8 +836,9 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, ExtendedCanvasComponentPro
       if (!canvas) return;
       
       const rect = canvas.getBoundingClientRect();
-      const x = touch.clientX - rect.left;
-      const y = touch.clientY - rect.top;
+      // スケールを考慮した座標変換
+      const x = (touch.clientX - rect.left) / (isMobile ? canvasScale : 1);
+      const y = (touch.clientY - rect.top) / (isMobile ? canvasScale : 1);
       
       // タップ位置が開始位置から大きく離れていない場合のみクリック処理
       const distance = Math.sqrt(
@@ -890,8 +895,8 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, ExtendedCanvasComponentPro
             scale = containerHeight / canvas.height;
           }
           
-          // 最大90%までスケール
-          scale = Math.min(scale * 0.9, 1);
+          // 最小50%、最大100%までスケール
+          scale = Math.max(Math.min(scale, 1), 0.5);
           setCanvasScale(scale);
         }
       } else {

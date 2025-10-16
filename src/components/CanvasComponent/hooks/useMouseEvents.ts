@@ -52,6 +52,9 @@ export interface MouseEventHookProps {
   onPanelSelect?: (panel: Panel | null) => void;
   onCharacterSelect?: (character: Character | null) => void;
   onPanelSplit?: (panelId: number, direction: 'horizontal' | 'vertical') => void;
+  // モバイル用スケール情報
+  canvasScale?: number;
+  isMobile?: boolean;
 }
 
 // 簡易的な背景クリック判定ヘルパー
@@ -255,6 +258,8 @@ export const useMouseEvents = ({
   onPanelSelect,
   onCharacterSelect,
   onPanelSplit,
+  canvasScale = 1,
+  isMobile = false,
 }: MouseEventHookProps): MouseEventHandlers => {
 
   // 座標変換ヘルパー関数
@@ -266,9 +271,12 @@ export const useMouseEvents = ({
     const displayWidth = canvas.offsetWidth;
     const displayScale = actualWidth > 0 && displayWidth > 0 ? displayWidth / actualWidth : 1;
     
+    // モバイル時のスケールを考慮
+    const totalScale = displayScale * (isMobile ? canvasScale : 1);
+    
     return {
-      x: Math.round(mouseX / displayScale),
-      y: Math.round(mouseY / displayScale)
+      x: Math.round(mouseX / totalScale),
+      y: Math.round(mouseY / totalScale)
     };
   };
 
