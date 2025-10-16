@@ -1,3 +1,10 @@
 # https://www.robotstxt.org/robotstxt.html
 User-agent: *
-Disallow:
+Allow: /
+Disallow: /static/
+
+# Sitemap
+Sitemap: https://ai-manga-maker.com/sitemap.xml
+
+# クローラー最適化
+Crawl-delay: 1

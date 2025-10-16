@@ -1,30 +1,58 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ja">
   <head>
     <meta charset="utf-8" />
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-    <meta name="theme-color" content="#000000" />
-    <meta
-      name="description"
-      content="Web site created using create-react-app"
-    />
+    <meta name="theme-color" content="#667eea" />
+    
+    <!-- SEO基本メタタグ -->
+    <title>AI漫画ネームメーカー | AIでストーリーからコマ割り・セリフを自動生成</title>
+    <meta name="description" content="AIを使って漫画のネーム（コマ割り・セリフ・構図）を自動生成。ストーリーを入力するだけで、プロ品質のネームが完成。漫画家・同人作家の制作を効率化する無料Webツール。" />
+    <meta name="keywords" content="AI漫画,ネーム作成,コマ割り,漫画制作ツール,AI自動生成,ストーリーボード,同人誌,漫画家,創作支援" />
+    <meta name="author" content="AI Manga Maker" />
+    <link rel="canonical" href="https://ai-manga-maker.com/" />
+    
+    <!-- OGP (Open Graph Protocol) - SNSシェア用 -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="AI漫画ネームメーカー" />
+    <meta property="og:title" content="AI漫画ネームメーカー | AIでストーリーからコマ割り・セリフを自動生成" />
+    <meta property="og:description" content="AIを使って漫画のネーム（コマ割り・セリフ・構図）を自動生成。ストーリーを入力するだけで、プロ品質のネームが完成。" />
+    <meta property="og:url" content="https://ai-manga-maker.com/" />
+    <meta property="og:image" content="https://ai-manga-maker.com/logo512.png" />
+    <meta property="og:locale" content="ja_JP" />
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="AI漫画ネームメーカー | AIでストーリーからコマ割り・セリフを自動生成" />
+    <meta name="twitter:description" content="AIを使って漫画のネーム（コマ割り・セリフ・構図）を自動生成。ストーリーを入力するだけで、プロ品質のネームが完成。" />
+    <meta name="twitter:image" content="https://ai-manga-maker.com/logo512.png" />
+    
+    <!-- 構造化データ (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "AI漫画ネームメーカー",
+      "description": "AIを使って漫画のネーム（コマ割り・セリフ・構図）を自動生成できるWebアプリケーション",
+      "url": "https://ai-manga-maker.com",
+      "applicationCategory": "DesignApplication",
+      "operatingSystem": "Web Browser",
+      "offers": {
+        "@type": "AggregateOffer",
+        "lowPrice": "0",
+        "highPrice": "980",
+        "priceCurrency": "JPY"
+      },
+      "author": {
+        "@type": "Organization",
+        "name": "AI Manga Maker"
+      }
+    }
+    </script>
+    
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
-    <!--
-      manifest.json provides metadata used when your web app is installed on a
-      user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
-    -->
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
-    <!--
-      Notice the use of %PUBLIC_URL% in the tags above.
-      It will be replaced with the URL of the `public` folder during the build.
-      Only files inside the `public` folder can be referenced from the HTML.
-
-      Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
-      work correctly both with client-side routing and a non-root public URL.
-      Learn how to configure a non-root public URL by running `npm run build`.
-    -->
-    <title>AI漫画ネームメーカー</title>
     <script src="%PUBLIC_URL%/dict/default_sfw.js"></script>  <!-- 追加 -->
     <!-- Production環境でconsole出力を無効化 -->
     <script>
