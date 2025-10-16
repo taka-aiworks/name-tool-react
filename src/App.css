@@ -218,6 +218,8 @@ body {
   .main-content {
     height: 100vh;
     padding-top: 50px; /* ヘッダー分の高さを確保 */
+    padding-left: 0;
+    padding-right: 0;
     flex-direction: column;
     position: relative;
   }
@@ -225,6 +227,8 @@ body {
   /* ページマネージャーがある場合の調整 */
   .main-content.with-page-manager {
     padding-top: 90px; /* ヘッダー + ページマネージャー分 */
+    padding-left: 0;
+    padding-right: 0;
   }
   
   .sidebar {
@@ -254,7 +258,7 @@ body {
     order: 1;
     height: 100vh;
     max-height: 100vh;
-    padding: 5px;
+    padding: 2px;
     padding-bottom: 40vh; /* サイドバー分のスペースを確保 */
     overflow: auto;
     display: flex;
@@ -265,7 +269,7 @@ body {
   
   /* サイドバーが閉じている時のキャンバスエリア */
   .canvas-area.mobile-full {
-    padding-bottom: 5px;
+    padding: 1px;
     height: calc(100vh - 50px);
     justify-content: center;
     align-items: center;
@@ -274,7 +278,8 @@ body {
   /* ページマネージャーがある場合のキャンバスエリア */
   .canvas-area.with-page-manager {
     height: calc(100vh - 90px);
-    padding-top: 0;
+    padding: 1px;
+    padding-top: 1px;
     justify-content: center;
     align-items: center;
   }
@@ -316,8 +321,8 @@ body {
   .canvas-area.fullscreen {
     height: 100vh;
     max-height: 100vh;
-    padding: 10px;
-    padding-bottom: 10px;
+    padding: 1px;
+    padding-bottom: 1px;
   }
   
   /* モバイル時のサイドバー非表示 */
