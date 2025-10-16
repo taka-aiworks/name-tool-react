@@ -660,7 +660,6 @@ function App() {
 
   // 🔧 最適化5: テンプレート切り替えの最適化
   const handleTemplateClick = useCallback((template: string) => {
-    console.log('🎯 Template change:', template);
     setSelectedTemplate(template);
     setSelectedCharacter(null);
     setSelectedPanel(null);
@@ -668,8 +667,6 @@ function App() {
     
     const templateData = templates[template];
     if (templateData) {
-      console.log('📐 Template panels with corrected IDs:', templateData.panels);
-      console.log('📐 Panel IDs:', templateData.panels.map(p => p.id));
       
       const { pixelWidth, pixelHeight } = canvasSettings.paperSize;
       const templateBaseWidth = 800;
@@ -683,7 +680,6 @@ function App() {
         height: Math.round(panel.height * pixelHeight / templateBaseHeight)
       }));
       
-    console.log('📐 Scaled panels:', scaledPanels);
     setPanels(scaledPanels);
     } else {
       console.error(`Template "${template}" not found`);
@@ -699,11 +695,8 @@ function App() {
       const ctx = canvas.getContext('2d');
       if (ctx) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        console.log('🔄 Canvas cleared for template change');
       }
     }
-    
-    console.log('✅ Template applied successfully with ratio scaling');
   }, [canvasSettings, saveToHistory]);
 
   // ページ管理hook
@@ -1752,32 +1745,22 @@ function App() {
                 if (lastPanelClickRef.current && 
                     lastPanelClickRef.current.panelId === panel.id && 
                     now - lastPanelClickRef.current.timestamp < 300) {
-                  console.log('⏭️ 重複クリック無視');
                   return;
                 }
                 lastPanelClickRef.current = { panelId: panel.id, timestamp: now };
-                
-                console.log('🔄 入れ替えモード: コマクリック', { 
-                  panelId: panel.id, 
-                  currentSwap1: swapPanel1, 
-                  currentSwap2: swapPanel2 
-                });
+
                 
                 setSwapPanel1((prev1) => {
                   const currentSwap2 = swapPanel2;
                   
                   if (panel.id === prev1) {
-                    console.log('❌ 1番目のコマを選択解除');
                     return null;
                   } else if (panel.id === currentSwap2) {
-                    console.log('❌ 2番目のコマを選択解除');
                     setSwapPanel2(null);
                     return prev1;
                   } else if (!prev1) {
-                    console.log('✅ 1番目のコマを選択:', panel.id);
                     return panel.id;
                   } else if (prev1 && !currentSwap2) {
-                    console.log('✅ 2番目のコマを選択:', panel.id);
                     setSwapPanel2(panel.id);
                     return prev1;
                   }
