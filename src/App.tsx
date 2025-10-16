@@ -1729,6 +1729,12 @@ function App() {
             selectedTemplate={selectedTemplate}
             panels={panels}
             setPanels={handlePanelUpdate}
+            style={{
+              margin: isMobile ? '0' : undefined,
+              padding: isMobile ? '0' : undefined,
+              height: isMobile ? '100%' : undefined,
+              minHeight: isMobile ? 'auto' : undefined
+            }}
             characters={characters}
             setCharacters={setCharacters}
             speechBubbles={speechBubbles}

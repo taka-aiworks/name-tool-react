@@ -256,23 +256,24 @@ body {
   
   .canvas-area {
     order: 1;
-    height: 100vh;
-    max-height: 100vh;
+    height: calc(100vh - 50px);
+    max-height: calc(100vh - 50px);
     padding: 2px;
-    padding-bottom: 40vh; /* サイドバー分のスペースを確保 */
+    padding-bottom: 20vh; /* 40vh → 20vh に削減 */
     overflow: auto;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start; /* center → flex-start に変更 */
   }
   
   /* サイドバーが閉じている時のキャンバスエリア */
   .canvas-area.mobile-full {
     padding: 1px;
     height: calc(100vh - 50px);
-    justify-content: center;
+    justify-content: flex-start; /* center → flex-start に変更 */
     align-items: center;
+    padding-bottom: 5px; /* 下部余白を最小限に */
   }
   
   /* ページマネージャーがある場合のキャンバスエリア */
@@ -280,8 +281,9 @@ body {
     height: calc(100vh - 90px);
     padding: 1px;
     padding-top: 1px;
-    justify-content: center;
+    justify-content: flex-start; /* center → flex-start に変更 */
     align-items: center;
+    padding-bottom: 5px; /* 下部余白を最小限に */
   }
   
   .control-btn {
