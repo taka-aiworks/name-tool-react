@@ -289,8 +289,8 @@ export const createSpeechBubble = (config: {
 }): Omit<SpeechBubble, 'id' | 'panelId'> => ({
   type: config.type ?? "普通",
   text: config.text ?? "",
-  x: config.x ?? 0.15,
-  y: config.y ?? 0.15,
+  x: config.x ?? 0.5,  // 中央配置（0.15 → 0.5）
+  y: config.y ?? 0.5,  // 中央配置（0.15 → 0.5）
   width: config.width ?? 160, // 80 → 160 に拡大
   height: config.height ?? 120, // 60 → 120 に拡大
   scale: config.scale ?? 1.0,
@@ -305,6 +305,8 @@ export const bubblePresets = {
     createSpeechBubble({
       type: "普通",
       text,
+      x: 0.5,  // 中央配置
+      y: 0.5,  // 中央配置
       width: 160, // 80 → 160 に拡大
       height: 120, // 60 → 120 に拡大
       vertical: true,
@@ -315,6 +317,8 @@ export const bubblePresets = {
     createSpeechBubble({
       type: "叫び",
       text,
+      x: 0.5,  // 中央配置
+      y: 0.5,  // 中央配置
       // 🔧 叫び系は大きめ + 横書き推奨
       width: 200, // 100 → 200 に拡大
       height: 160, // 80 → 160 に拡大
@@ -340,6 +344,8 @@ export const bubblePresets = {
     createSpeechBubble({
       type: "小声",
       text,
+      x: 0.5,  // 中央配置
+      y: 0.5,  // 中央配置
       // 🔧 小声は小さめ
       width: 140, // 70 → 140 に拡大
       height: 100, // 50 → 100 に拡大
@@ -353,6 +359,8 @@ export const bubblePresets = {
     createSpeechBubble({
       type: "普通",
       text,
+      x: 0.5,  // 中央配置
+      y: 0.5,  // 中央配置
       width: 170, // 85 → 170 に拡大
       height: 130, // 65 → 130 に拡大
       vertical: true,
