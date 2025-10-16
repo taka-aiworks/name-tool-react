@@ -488,6 +488,10 @@ ${description}`;
       }
 
       const result = JSON.parse(jsonMatch[0]);
+      
+      // 使用回数を記録
+      await usageLimitService.recordUsage();
+      
       return result as { prompt: string; promptJa: string };
 
     } catch (error) {
