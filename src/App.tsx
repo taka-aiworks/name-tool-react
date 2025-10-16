@@ -1492,7 +1492,42 @@ function App() {
         </button>
       )}
 
-      <div className={`main-content ${(isHeaderCollapsed && isTopBarCollapsed) ? 'fullscreen' : ''}`}>
+      {/* モバイル用フルスクリーンボタン */}
+      {isMobile && !isHeaderCollapsed && !isTopBarCollapsed && (
+        <button
+          onClick={() => {
+            setIsHeaderCollapsed(true);
+            setIsTopBarCollapsed(true);
+            setIsLeftSidebarOpen(false);
+            setIsRightSidebarOpen(false);
+          }}
+          style={{
+            position: 'fixed',
+            bottom: '20px',
+            right: '20px',
+            padding: '12px 16px',
+            background: 'var(--accent-color)',
+            color: 'white',
+            border: 'none',
+            borderRadius: '50%',
+            cursor: 'pointer',
+            zIndex: 1000,
+            fontSize: '20px',
+            fontWeight: 'bold',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+            width: '56px',
+            height: '56px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+          title="キャンバスを全画面表示"
+        >
+          🔍
+        </button>
+      )}
+
+      <div className={`main-content ${(isHeaderCollapsed && isTopBarCollapsed) ? 'fullscreen' : ''} ${isMobile ? (isTopBarCollapsed ? '' : 'with-page-manager') : ''}`}>
         {!isLeftSidebarOpen && (
           <button
             onClick={() => setIsLeftSidebarOpen(true)}
@@ -1516,7 +1551,7 @@ function App() {
         )}
         
         {isLeftSidebarOpen && (
-        <div className={`sidebar left-sidebar ${isMobile ? 'mobile-sidebar' : ''}`}>
+        <div className={`sidebar left-sidebar ${isMobile ? `mobile-sidebar ${isLeftSidebarOpen ? 'mobile-open' : ''}` : ''}`}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
             <h3 style={{ margin: 0, fontSize: '16px', color: 'var(--text-primary)' }}>🛠️ ツール</h3>
             <button
@@ -1616,47 +1651,76 @@ function App() {
         )}
 
         {/* メインエリア */}
-        <div className={`canvas-area ${(isHeaderCollapsed && isTopBarCollapsed) ? 'fullscreen' : ''}`}>
-          <div className="canvas-controls">
-            <div className="undo-redo-buttons">
+        <div className={`canvas-area ${(isHeaderCollapsed && isTopBarCollapsed) ? 'fullscreen' : ''} ${isMobile ? (!isLeftSidebarOpen && !isRightSidebarOpen ? 'mobile-full' : '') : ''} ${isMobile ? (!isTopBarCollapsed ? 'with-page-manager' : '') : ''}`}>
+          <div className="canvas-controls" style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '8px 12px',
+            background: 'var(--bg-secondary)',
+            borderBottom: '1px solid var(--border-color)',
+            fontSize: '12px',
+            color: 'var(--text-primary)',
+            gap: '12px',
+            flexWrap: 'wrap'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <button 
                 className="control-btn"
                 onClick={handleUndo}
                 disabled={operationHistory.currentIndex <= 0 || operationHistory.characters.length === 0}
                 title="元に戻す (Ctrl+Z)"
+                style={{
+                  padding: '4px 8px',
+                  fontSize: '11px',
+                  minWidth: 'auto'
+                }}
               >
-                ↶ 戻す
+                ↶
               </button>
               <button 
                 className="control-btn"
                 onClick={handleRedo}
                 disabled={operationHistory.currentIndex >= operationHistory.characters.length - 1 || operationHistory.characters.length === 0}
                 title="やり直し (Ctrl+Y)"
+                style={{
+                  padding: '4px 8px',
+                  fontSize: '11px',
+                  minWidth: 'auto'
+                }}
               >
-                ↷ 進む
+                ↷
               </button>
               <button 
                 className="control-btn delete-btn"
                 onClick={handleDeleteSelected}
                 disabled={!selectedCharacter}
                 title="選択要素を削除 (Backspace)"
+                style={{
+                  padding: '4px 8px',
+                  fontSize: '11px',
+                  minWidth: 'auto'
+                }}
               >
-                🗑️ 削除
+                🗑️
               </button>
             </div>
-            <div className="canvas-info">
-              操作履歴: {operationHistory.currentIndex + 1} / {Math.max(1, operationHistory.characters.length)}
-              {selectedCharacter && <span> | 選択中: {getCharacterDisplayName(selectedCharacter)}</span>}
-              {selectedPanel && <span> | パネル{selectedPanel.id}選択中</span>}
-              {selectedEffect && <span> | 効果線選択中</span>}
-              {/* トーン機能は無効化 */}
-              {isPanelEditMode && <span> | 🔧 コマ編集モード</span>}
-              {snapSettings.enabled && <span> | ⚙️ スナップ: {snapSettings.gridSize}px ({snapSettings.sensitivity})</span>}
-              {projectSave.isAutoSaving && <span> | 💾 自動保存中...</span>}
-              {projectSave.hasUnsavedChanges && <span> | ⚠️ 未保存</span>}
-              {backgrounds.length > 0 && <span> | 🎨 背景: {backgrounds.length}個</span>}
-              {effects.length > 0 && <span> | ⚡ 効果線: {effects.length}個</span>}
-              {/* トーン機能は無効化 */}
+            
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '8px',
+              fontSize: '11px',
+              color: 'var(--text-muted)',
+              flexWrap: 'wrap',
+              justifyContent: 'center'
+            }}>
+              <span>履歴: {operationHistory.currentIndex + 1}/{Math.max(1, operationHistory.characters.length)}</span>
+              {snapSettings.enabled && <span>⚙️ {snapSettings.gridSize}px</span>}
+              {projectSave.hasUnsavedChanges && <span>⚠️ 未保存</span>}
+              {isPanelEditMode && <span>🔧 編集</span>}
+              {selectedCharacter && <span>👤 {getCharacterDisplayName(selectedCharacter)}</span>}
+              {selectedPanel && <span>📦 {selectedPanel.id}</span>}
             </div>
           </div>
 
@@ -1759,7 +1823,7 @@ function App() {
         )}
 
         {isRightSidebarOpen && (
-        <div className={`sidebar right-sidebar ${isMobile ? 'mobile-sidebar' : ''}`}>
+        <div className={`sidebar right-sidebar ${isMobile ? `mobile-sidebar ${isRightSidebarOpen ? 'mobile-open' : ''}` : ''}`}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
             <h3 style={{ margin: 0, fontSize: '16px', color: 'var(--text-primary)' }}>⚙️ 設定</h3>
             <button
