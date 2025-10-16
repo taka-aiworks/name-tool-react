@@ -123,6 +123,10 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, ExtendedCanvasComponentPro
   const [isLongPress, setIsLongPress] = useState<boolean>(false);
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
 
+  // モバイル用キャンバススケール状態
+  const [canvasScale, setCanvasScale] = useState<number>(1);
+  const [isMobile, setIsMobile] = useState<boolean>(false);
+
   // ContextMenuActions実装（トーン対応版）
   const contextMenuActions: ContextMenuActions = {
     onDuplicateCharacter: (character: Character) => {
@@ -861,6 +865,46 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, ExtendedCanvasComponentPro
     }
   }, [contextMenu.visible]);
 
+  // モバイル検出とキャンバススケール調整
+  useEffect(() => {
+    const checkMobile = () => {
+      const mobile = window.innerWidth <= 768;
+      setIsMobile(mobile);
+      
+      if (mobile) {
+        // モバイル時のキャンバスサイズ調整
+        const canvas = canvasRef.current;
+        if (canvas) {
+          const containerWidth = window.innerWidth - 20; // 余白を考慮
+          const containerHeight = window.innerHeight - 100; // ヘッダーとコントロール分を考慮
+          
+          const canvasAspectRatio = canvas.width / canvas.height;
+          const containerAspectRatio = containerWidth / containerHeight;
+          
+          let scale;
+          if (canvasAspectRatio > containerAspectRatio) {
+            // キャンバスが横長の場合
+            scale = containerWidth / canvas.width;
+          } else {
+            // キャンバスが縦長の場合
+            scale = containerHeight / canvas.height;
+          }
+          
+          // 最大90%までスケール
+          scale = Math.min(scale * 0.9, 1);
+          setCanvasScale(scale);
+        }
+      } else {
+        setCanvasScale(1);
+      }
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, [panels]); // panelsが変更された時も再計算
+
   // クリーンアップ
   useEffect(() => {
     return () => {
@@ -871,7 +915,16 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, ExtendedCanvasComponentPro
   }, []);
 
   return (
-    <div style={{ position: "relative", display: "flex", justifyContent: "center", alignItems: "flex-start", padding: "0px", minWidth: "fit-content" }}>
+    <div style={{ 
+      position: "relative", 
+      display: "flex", 
+      justifyContent: "center", 
+      alignItems: "center", 
+      padding: "0px", 
+      minWidth: "fit-content",
+      width: "100%",
+      height: isMobile ? "100%" : "auto"
+    }}>
       {/* Canvas要素 */}
       <canvas
         ref={canvasRef}
@@ -892,6 +945,9 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, ExtendedCanvasComponentPro
           boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
           borderRadius: "8px",
           marginTop: "0px",
+          transform: isMobile ? `scale(${canvasScale})` : 'none',
+          transformOrigin: 'center center',
+          transition: 'transform 0.3s ease',
         }}
       />
 

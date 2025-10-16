@@ -257,18 +257,26 @@ body {
     padding: 5px;
     padding-bottom: 40vh; /* サイドバー分のスペースを確保 */
     overflow: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
   }
   
   /* サイドバーが閉じている時のキャンバスエリア */
   .canvas-area.mobile-full {
     padding-bottom: 5px;
     height: calc(100vh - 50px);
+    justify-content: center;
+    align-items: center;
   }
   
   /* ページマネージャーがある場合のキャンバスエリア */
   .canvas-area.with-page-manager {
     height: calc(100vh - 90px);
     padding-top: 0;
+    justify-content: center;
+    align-items: center;
   }
   
   .control-btn {
