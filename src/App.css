@@ -258,8 +258,8 @@ body {
     order: 1;
     height: calc(100vh - 50px);
     max-height: calc(100vh - 50px);
-    padding: 2px;
-    padding-bottom: 20vh; /* 40vh → 20vh に削減 */
+    padding: 0;
+    padding-bottom: 5vh; /* 20vh → 5vh に大幅削減 */
     overflow: auto;
     display: flex;
     flex-direction: column;
@@ -269,21 +269,21 @@ body {
   
   /* サイドバーが閉じている時のキャンバスエリア */
   .canvas-area.mobile-full {
-    padding: 1px;
+    padding: 0;
     height: calc(100vh - 50px);
     justify-content: flex-start; /* center → flex-start に変更 */
     align-items: center;
-    padding-bottom: 5px; /* 下部余白を最小限に */
+    padding-bottom: 0; /* 余白を完全削除 */
   }
   
   /* ページマネージャーがある場合のキャンバスエリア */
   .canvas-area.with-page-manager {
     height: calc(100vh - 90px);
-    padding: 1px;
-    padding-top: 1px;
+    padding: 0;
+    padding-top: 0;
     justify-content: flex-start; /* center → flex-start に変更 */
     align-items: center;
-    padding-bottom: 5px; /* 下部余白を最小限に */
+    padding-bottom: 0; /* 余白を完全削除 */
   }
   
   .control-btn {
@@ -323,8 +323,8 @@ body {
   .canvas-area.fullscreen {
     height: 100vh;
     max-height: 100vh;
-    padding: 1px;
-    padding-bottom: 1px;
+    padding: 0;
+    padding-bottom: 0;
   }
   
   /* モバイル時のサイドバー非表示 */
