@@ -1923,24 +1923,20 @@ function App() {
                 </button>
               )}
               
-              {/* サブスクリプション管理ボタン（常に表示） */}
-              <button
-                onClick={() => setShowSubscriptionPanel(true)}
-                style={{
-                  width: '100%',
-                  padding: '8px',
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '11px',
-                  marginTop: '8px',
-                  fontWeight: 'bold'
-                }}
-              >
-                💎 サブスク管理
-              </button>
+              {/* サブスクリプション管理ボタン（準備中） */}
+              <div style={{
+                width: '100%',
+                padding: '8px',
+                background: 'var(--bg-secondary)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '4px',
+                fontSize: '11px',
+                marginTop: '8px',
+                textAlign: 'center',
+                color: 'var(--text-muted)'
+              }}>
+                💎 サブスク機能 準備中...
+              </div>
 
               {/* 使用状況表示（環境変数モード時のみ） */}
               {process.env.REACT_APP_USE_ENV_API_KEY === 'true' && (
