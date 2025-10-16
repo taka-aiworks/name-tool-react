@@ -117,6 +117,12 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, ExtendedCanvasComponentPro
   });
   const [clipboard, setClipboard] = useState<ClipboardState | null>(null);
 
+  // タッチイベント用の状態
+  const [touchStartTime, setTouchStartTime] = useState<number>(0);
+  const [touchStartPosition, setTouchStartPosition] = useState<{ x: number; y: number } | null>(null);
+  const [isLongPress, setIsLongPress] = useState<boolean>(false);
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+
   // ContextMenuActions実装（トーン対応版）
   const contextMenuActions: ContextMenuActions = {
     onDuplicateCharacter: (character: Character) => {
@@ -773,6 +779,76 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, ExtendedCanvasComponentPro
     }
   }, [selectedTemplate]);
 
+  // タッチイベントハンドラー
+  const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    const touch = e.touches[0];
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const rect = canvas.getBoundingClientRect();
+    const x = touch.clientX - rect.left;
+    const y = touch.clientY - rect.top;
+    
+    setTouchStartTime(Date.now());
+    setTouchStartPosition({ x, y });
+    setIsLongPress(false);
+    
+    // 長押しタイマー開始（500ms）
+    longPressTimer.current = setTimeout(() => {
+      setIsLongPress(true);
+      // 右クリックメニューを表示
+      mouseEventHandlers.handleCanvasContextMenu({
+        preventDefault: () => {},
+        clientX: touch.clientX,
+        clientY: touch.clientY
+      } as React.MouseEvent<HTMLCanvasElement>);
+    }, 500);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    // タッチが移動した場合は長押しをキャンセル
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+    setIsLongPress(false);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    // 長押しタイマーをクリア
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+    
+    // 短いタップの場合は通常のクリックとして処理
+    if (!isLongPress && touchStartPosition) {
+      const touch = e.changedTouches[0];
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      
+      const rect = canvas.getBoundingClientRect();
+      const x = touch.clientX - rect.left;
+      const y = touch.clientY - rect.top;
+      
+      // タップ位置が開始位置から大きく離れていない場合のみクリック処理
+      const distance = Math.sqrt(
+        Math.pow(x - touchStartPosition.x, 2) + Math.pow(y - touchStartPosition.y, 2)
+      );
+      
+      if (distance < 10) { // 10px以内の移動
+        mouseEventHandlers.handleCanvasClick({
+          preventDefault: () => {},
+          clientX: touch.clientX,
+          clientY: touch.clientY
+        } as React.MouseEvent<HTMLCanvasElement>);
+      }
+    }
+    
+    setTouchStartPosition(null);
+    setIsLongPress(false);
+  };
+
   // ContextMenu外クリック処理
   useEffect(() => {
     const handleClickOutside = () => {
@@ -784,6 +860,15 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, ExtendedCanvasComponentPro
       return () => document.removeEventListener('click', handleClickOutside);
     }
   }, [contextMenu.visible]);
+
+  // クリーンアップ
+  useEffect(() => {
+    return () => {
+      if (longPressTimer.current) {
+        clearTimeout(longPressTimer.current);
+      }
+    };
+  }, []);
 
   return (
     <div style={{ position: "relative", display: "flex", justifyContent: "center", alignItems: "flex-start", padding: "0px", minWidth: "fit-content" }}>
@@ -797,6 +882,9 @@ const CanvasComponent = forwardRef<HTMLCanvasElement, ExtendedCanvasComponentPro
         onMouseMove={mouseEventHandlers.handleCanvasMouseMove}
         onMouseUp={mouseEventHandlers.handleCanvasMouseUp}
         onMouseLeave={mouseEventHandlers.handleCanvasMouseUp}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
         style={{
           border: "2px solid #ddd",
           background: "white",

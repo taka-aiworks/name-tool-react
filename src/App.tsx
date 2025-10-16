@@ -87,6 +87,11 @@ function App() {
   // サイドバーの開閉状態
   const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState<boolean>(true);
   const [isRightSidebarOpen, setIsRightSidebarOpen] = useState<boolean>(true);
+  
+  // モバイル対応とUIバー折りたたみ状態
+  const [isMobile, setIsMobile] = useState<boolean>(false);
+  const [isHeaderCollapsed, setIsHeaderCollapsed] = useState<boolean>(false);
+  const [isTopBarCollapsed, setIsTopBarCollapsed] = useState<boolean>(false);
 
   // 🔄 コマ入れ替え機能
   const [swapPanel1, setSwapPanel1] = useState<number | null>(null);
@@ -633,6 +638,25 @@ function App() {
     setIsDarkMode(!isDarkMode);
     document.documentElement.setAttribute("data-theme", newTheme);
   }, [isDarkMode]);
+
+  // モバイル検出とレスポンシブ対応
+  useEffect(() => {
+    const checkMobile = () => {
+      const mobile = window.innerWidth <= 768;
+      setIsMobile(mobile);
+      
+      // モバイルの場合はサイドバーを閉じる
+      if (mobile) {
+        setIsLeftSidebarOpen(false);
+        setIsRightSidebarOpen(false);
+      }
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // 🔧 最適化5: テンプレート切り替えの最適化
   const handleTemplateClick = useCallback((template: string) => {
@@ -1224,8 +1248,26 @@ function App() {
   return (
     <div className={`app ${isDarkMode ? 'dark' : 'light'}`}>
       {/* ヘッダー */}
-      <header className="header">
-        <h1>📖 AI漫画ネームメーカー</h1>
+      <header className="header" style={{ display: isHeaderCollapsed ? 'none' : 'flex' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <h1>📖 AI漫画ネームメーカー</h1>
+          <button
+            onClick={() => setIsHeaderCollapsed(true)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--text-primary)',
+              cursor: 'pointer',
+              fontSize: '16px',
+              padding: '4px',
+              borderRadius: '4px',
+              opacity: 0.7
+            }}
+            title="ヘッダーを折りたたむ"
+          >
+            ▲
+          </button>
+        </div>
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
           <button 
             className="control-btn"
@@ -1368,21 +1410,89 @@ function App() {
         </div>
       </header>
 
-      <PageManager
-        currentPage={pageManager.currentPage}
-        pages={pageManager.pages}
-        currentPageIndex={pageManager.currentPageIndex}
-        onPageChange={pageManager.switchToPage}
-        onPageAdd={pageManager.addPage}
-        onPageDelete={pageManager.deletePage}
-        onPageDuplicate={pageManager.duplicatePage}
-        onPageRename={pageManager.renamePage}
-        onPageReorder={pageManager.reorderPages}
-        onCurrentPageUpdate={pageManager.updateCurrentPageData}
-        isDarkMode={isDarkMode}
-      />
+      {/* ページマネージャー */}
+      <div style={{ display: isTopBarCollapsed ? 'none' : 'block', position: 'relative' }}>
+        <PageManager
+          currentPage={pageManager.currentPage}
+          pages={pageManager.pages}
+          currentPageIndex={pageManager.currentPageIndex}
+          onPageChange={pageManager.switchToPage}
+          onPageAdd={pageManager.addPage}
+          onPageDelete={pageManager.deletePage}
+          onPageDuplicate={pageManager.duplicatePage}
+          onPageRename={pageManager.renamePage}
+          onPageReorder={pageManager.reorderPages}
+          onCurrentPageUpdate={pageManager.updateCurrentPageData}
+          isDarkMode={isDarkMode}
+        />
+        <button
+          onClick={() => setIsTopBarCollapsed(true)}
+          style={{
+            position: 'absolute',
+            top: '8px',
+            right: '8px',
+            background: 'none',
+            border: 'none',
+            color: 'var(--text-primary)',
+            cursor: 'pointer',
+            fontSize: '14px',
+            padding: '4px',
+            borderRadius: '4px',
+            opacity: 0.7
+          }}
+          title="ページバーを折りたたむ"
+        >
+          ▲
+        </button>
+      </div>
 
-      <div className="main-content">
+      {/* ヘッダー折りたたみボタン */}
+      {isHeaderCollapsed && (
+        <button
+          onClick={() => setIsHeaderCollapsed(false)}
+          style={{
+            position: 'fixed',
+            top: '10px',
+            left: '10px',
+            padding: '8px 12px',
+            background: 'var(--accent-color)',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            zIndex: 1000,
+            fontSize: '14px',
+            fontWeight: 'bold'
+          }}
+        >
+          📖 ヘッダーを表示
+        </button>
+      )}
+
+      {/* トップバー折りたたみボタン */}
+      {isTopBarCollapsed && (
+        <button
+          onClick={() => setIsTopBarCollapsed(false)}
+          style={{
+            position: 'fixed',
+            top: isHeaderCollapsed ? '10px' : '70px',
+            left: '10px',
+            padding: '8px 12px',
+            background: 'var(--bg-secondary)',
+            color: 'var(--text-primary)',
+            border: '1px solid var(--border-color)',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            zIndex: 1000,
+            fontSize: '14px',
+            fontWeight: 'bold'
+          }}
+        >
+          📄 ページバーを表示
+        </button>
+      )}
+
+      <div className={`main-content ${(isHeaderCollapsed && isTopBarCollapsed) ? 'fullscreen' : ''}`}>
         {!isLeftSidebarOpen && (
           <button
             onClick={() => setIsLeftSidebarOpen(true)}
@@ -1406,7 +1516,7 @@ function App() {
         )}
         
         {isLeftSidebarOpen && (
-        <div className="sidebar left-sidebar">
+        <div className={`sidebar left-sidebar ${isMobile ? 'mobile-sidebar' : ''}`}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
             <h3 style={{ margin: 0, fontSize: '16px', color: 'var(--text-primary)' }}>🛠️ ツール</h3>
             <button
@@ -1506,7 +1616,7 @@ function App() {
         )}
 
         {/* メインエリア */}
-        <div className="canvas-area">
+        <div className={`canvas-area ${(isHeaderCollapsed && isTopBarCollapsed) ? 'fullscreen' : ''}`}>
           <div className="canvas-controls">
             <div className="undo-redo-buttons">
               <button 
@@ -1649,7 +1759,7 @@ function App() {
         )}
 
         {isRightSidebarOpen && (
-        <div className="sidebar right-sidebar">
+        <div className={`sidebar right-sidebar ${isMobile ? 'mobile-sidebar' : ''}`}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
             <h3 style={{ margin: 0, fontSize: '16px', color: 'var(--text-primary)' }}>⚙️ 設定</h3>
             <button

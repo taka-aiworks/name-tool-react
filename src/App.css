@@ -91,6 +91,13 @@ body {
   display: flex;
   height: calc(100vh - 80px);
   min-width: 0; /* フレックスアイテムの最小幅を0に設定 */
+  transition: all 0.3s ease; /* スムーズなアニメーション */
+}
+
+/* バーが折りたたまれた時のキャンバスエリア */
+.main-content.fullscreen {
+  height: 100vh;
+  padding-top: 0;
 }
 
 /* サイドバー */
@@ -118,6 +125,13 @@ body {
   overflow-x: auto; /* 横スクロールを有効化 */
   overflow-y: auto; /* 縦スクロールも有効化 */
   min-width: 0; /* フレックスアイテムの最小幅を0に設定 */
+  transition: all 0.3s ease; /* スムーズなアニメーション */
+}
+
+/* フルスクリーン時のキャンバスエリア */
+.canvas-area.fullscreen {
+  max-height: 100vh;
+  padding: 20px; /* フルスクリーン時は余白を増やす */
 }
 
 
@@ -166,9 +180,76 @@ body {
 }
 
 .template-card:hover {
-  border-color: var(--accent-color);
+  background-color: var(--accent-color);
+  color: white;
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+/* モバイル対応 */
+@media (max-width: 768px) {
+  .header {
+    padding: 0.5rem 1rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  
+  .header h1 {
+    font-size: 1.2rem;
+  }
+  
+  .main-content {
+    height: calc(100vh - 60px);
+    flex-direction: column;
+  }
+  
+  .sidebar {
+    width: 100%;
+    height: auto;
+    max-height: 50vh;
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+    order: 2;
+  }
+  
+  .canvas-area {
+    order: 1;
+    max-height: calc(100vh - 60px - 50vh);
+    padding: 5px;
+  }
+  
+  .control-btn {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+  
+  .template-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .section {
+    padding: 0.5rem;
+    margin-bottom: 1rem;
+  }
+  
+  /* モバイル時のフルスクリーン */
+  .main-content.fullscreen {
+    height: 100vh;
+  }
+  
+  .canvas-area.fullscreen {
+    max-height: 100vh;
+    padding: 10px;
+  }
+  
+  /* モバイル時のサイドバー非表示 */
+  .sidebar.mobile-hidden {
+    display: none;
+  }
+  
+  /* モバイル時のキャンバスエリア拡大 */
+  .canvas-area.mobile-full {
+    max-height: calc(100vh - 60px);
+  }
 }
 
 .template-card.selected {
