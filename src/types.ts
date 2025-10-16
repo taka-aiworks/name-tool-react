@@ -982,3 +982,24 @@ export const DEFAULT_LAYOUT_IMAGE_OPTIONS: LayoutImageOptions = {
 // export const NANOBANANA_STYLE_PRESETS: NanoBananaStylePreset[] = [
 //   // v1.1.6以降で実装予定
 // ];
+
+// ========================================
+// サブスクリプション関連型定義
+// ========================================
+
+export type SubscriptionPlan = 'free' | 'basic' | 'premium';
+
+export interface SubscriptionStatus {
+  plan: SubscriptionPlan;
+  code: string | null;
+  activatedAt: string | null;
+  expiresAt: string | null;
+  isTrialMode: boolean;
+  stripeCustomerId?: string; // Phase 2で使用
+}
+
+export interface ServiceStatus {
+  status: 'active' | 'ending' | 'maintenance' | 'closed';
+  endDate?: string;
+  maintenanceMessage?: string;
+}

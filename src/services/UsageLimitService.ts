@@ -1,6 +1,8 @@
 // src/services/UsageLimitService.ts
 // AI生成の使用回数制限サービス
 
+import { subscriptionService } from './SubscriptionService';
+
 export interface UsageLimit {
   dailyLimit: number;
   totalLimit: number;
@@ -12,8 +14,24 @@ export interface UsageLimit {
 
 class UsageLimitService {
   private readonly STORAGE_KEY = 'ai_usage_limit';
-  private readonly DAILY_LIMIT = 10; // 1日10回まで
-  private readonly TOTAL_LIMIT = 100; // 累計100回まで
+  
+  /**
+   * プラン別の日次制限を取得
+   */
+  private getDailyLimit(): number {
+    return subscriptionService.getAIUsageLimit();
+  }
+  
+  /**
+   * 累計制限を取得（無料版のみ）
+   */
+  private getTotalLimit(): number {
+    // 無料版のみ累計制限あり
+    if (subscriptionService.isFreeTier()) {
+      return 100;
+    }
+    return Infinity; // 有料版は累計制限なし
+  }
 
   /**
    * 使用状況を取得
@@ -33,8 +51,8 @@ class UsageLimitService {
     if (!dataSource) {
       // 初回使用
       const initialData: UsageLimit = {
-        dailyLimit: this.DAILY_LIMIT,
-        totalLimit: this.TOTAL_LIMIT,
+        dailyLimit: this.getDailyLimit(),
+        totalLimit: this.getTotalLimit(),
         currentDailyUsage: 0,
         currentTotalUsage: 0,
         lastResetDate: today,
@@ -55,6 +73,9 @@ class UsageLimitService {
       localStorage.setItem(ipKey, JSON.stringify(data));
     }
     
+    // プラン変更を反映
+    data.dailyLimit = this.getDailyLimit();
+    data.totalLimit = this.getTotalLimit();
     data.isLimitEnabled = this.isLimitEnabled();
     return data;
   }

@@ -30,6 +30,8 @@ import { CharacterPromptRegisterModal } from './components/UI/CharacterPromptReg
 import HelpModal from './components/UI/HelpModal';
 import { openAIService } from './services/OpenAIService';
 import { usageLimitService } from './services/UsageLimitService';
+import SubscriptionPanel from './components/UI/SubscriptionPanel';
+import ServiceStatusBanner from './components/ServiceStatusBanner';
 
 import {
   calculateScaleTransform,
@@ -87,7 +89,7 @@ function App() {
   // サイドバーの開閉状態
   const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState<boolean>(true);
   const [isRightSidebarOpen, setIsRightSidebarOpen] = useState<boolean>(true);
-  
+
   // モバイル対応とUIバー折りたたみ状態
   const [isMobile, setIsMobile] = useState<boolean>(false);
   const [isHeaderCollapsed, setIsHeaderCollapsed] = useState<boolean>(false);
@@ -200,6 +202,7 @@ function App() {
   
   // 📖 ヘルプモーダル
   const [showHelpModal, setShowHelpModal] = useState<boolean>(false);
+  const [showSubscriptionPanel, setShowSubscriptionPanel] = useState<boolean>(false);
 
   // スナップ設定の状態管理
   const [snapSettings, setSnapSettings] = useState<SnapSettings>({
@@ -1243,7 +1246,7 @@ function App() {
       {/* ヘッダー */}
       <header className="header" style={{ display: isHeaderCollapsed ? 'none' : 'flex' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <h1>📖 AI漫画ネームメーカー</h1>
+        <h1>📖 AI漫画ネームメーカー</h1>
           <button
             onClick={() => setIsHeaderCollapsed(true)}
             style={{
@@ -1405,19 +1408,19 @@ function App() {
 
       {/* ページマネージャー */}
       <div style={{ display: isTopBarCollapsed ? 'none' : 'block', position: 'relative' }}>
-        <PageManager
-          currentPage={pageManager.currentPage}
-          pages={pageManager.pages}
-          currentPageIndex={pageManager.currentPageIndex}
-          onPageChange={pageManager.switchToPage}
-          onPageAdd={pageManager.addPage}
-          onPageDelete={pageManager.deletePage}
-          onPageDuplicate={pageManager.duplicatePage}
-          onPageRename={pageManager.renamePage}
-          onPageReorder={pageManager.reorderPages}
-          onCurrentPageUpdate={pageManager.updateCurrentPageData}
-          isDarkMode={isDarkMode}
-        />
+      <PageManager
+        currentPage={pageManager.currentPage}
+        pages={pageManager.pages}
+        currentPageIndex={pageManager.currentPageIndex}
+        onPageChange={pageManager.switchToPage}
+        onPageAdd={pageManager.addPage}
+        onPageDelete={pageManager.deletePage}
+        onPageDuplicate={pageManager.duplicatePage}
+        onPageRename={pageManager.renamePage}
+        onPageReorder={pageManager.reorderPages}
+        onCurrentPageUpdate={pageManager.updateCurrentPageData}
+        isDarkMode={isDarkMode}
+      />
         <button
           onClick={() => setIsTopBarCollapsed(true)}
           style={{
@@ -1748,7 +1751,7 @@ function App() {
                   return;
                 }
                 lastPanelClickRef.current = { panelId: panel.id, timestamp: now };
-
+                
                 
                 setSwapPanel1((prev1) => {
                   const currentSwap2 = swapPanel2;
@@ -1920,6 +1923,27 @@ function App() {
                 </button>
               )}
               
+              {/* サブスクリプション管理ボタン */}
+              {process.env.REACT_APP_USE_ENV_API_KEY === 'true' && (
+                <button
+                  onClick={() => setShowSubscriptionPanel(true)}
+                  style={{
+                    width: '100%',
+                    padding: '8px',
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '11px',
+                    marginTop: '8px',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  💎 サブスク管理
+                </button>
+              )}
+
               {/* 使用状況表示（環境変数モード時のみ） */}
               {process.env.REACT_APP_USE_ENV_API_KEY === 'true' && (
                 <div style={{
@@ -1934,7 +1958,7 @@ function App() {
                   <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>📊 使用状況</div>
                   <div id="usage-status">本日: 0/10回 | 累計: 0/100回</div>
                   <div style={{ marginTop: '4px', fontSize: '9px' }}>
-                    💡 無料版: 1日10回、累計100回まで
+                    💡 プレミアム版で無制限に！
                   </div>
                 </div>
               )}
@@ -2802,6 +2826,17 @@ function App() {
         onClose={() => setShowHelpModal(false)}
         isDarkMode={isDarkMode}
       />
+
+      {/* 💎 サブスクリプション管理パネル */}
+      {showSubscriptionPanel && (
+        <SubscriptionPanel
+          onClose={() => setShowSubscriptionPanel(false)}
+          isDarkMode={isDarkMode}
+        />
+      )}
+
+      {/* 🚨 サービスステータスバナー */}
+      <ServiceStatusBanner isDarkMode={isDarkMode} />
     </div>
   );
 }

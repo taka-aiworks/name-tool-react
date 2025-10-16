@@ -153,6 +153,43 @@ const ProjectPanel: React.FC<ProjectPanelProps> = ({
     }
   };
 
+  // 一括エクスポート（全プロジェクト）
+  const handleExportAll = () => {
+    try {
+      const allProjects = projects.map(p => SaveService.loadProject(p.id)).filter(Boolean);
+      
+      if (allProjects.length === 0) {
+        alert('エクスポートするプロジェクトがありません');
+        return;
+      }
+
+      const exportData = {
+        exportedAt: new Date().toISOString(),
+        appVersion: '1.0.0',
+        projectCount: allProjects.length,
+        projects: allProjects
+      };
+
+      const blob = new Blob(
+        [JSON.stringify(exportData, null, 2)],
+        { type: 'application/json' }
+      );
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `all-projects-backup-${Date.now()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      alert(`${allProjects.length}件のプロジェクトをエクスポートしました`);
+    } catch (error) {
+      console.error('一括エクスポートエラー:', error);
+      alert('一括エクスポートに失敗しました');
+    }
+  };
+
   // インポート
   const handleImport = () => {
     fileInputRef.current?.click();
@@ -383,6 +420,25 @@ const ProjectPanel: React.FC<ProjectPanelProps> = ({
             >
               <span>📥</span>
               インポート
+            </button>
+            <button
+              onClick={handleExportAll}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '8px 16px',
+                backgroundColor: isDarkMode ? '#1e40af' : '#3b82f6',
+                color: 'white',
+                borderRadius: '8px',
+                border: 'none',
+                cursor: 'pointer',
+                fontWeight: '500'
+              }}
+              title="全プロジェクトを一括バックアップ"
+            >
+              <span>💾</span>
+              一括エクスポート
             </button>
           </div>
         </div>
