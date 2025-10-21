@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>決済完了 - AI漫画ネームメーカー</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+        .success-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+        .code-container {
+            background: #f8f9fa;
+            border: 2px dashed #dee2e6;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .code {
+            font-family: 'Courier New', monospace;
+            font-size: 24px;
+            font-weight: bold;
+            color: #e74c3c;
+            letter-spacing: 2px;
+        }
+        .copy-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+            transition: background 0.3s;
+        }
+        .copy-btn:hover {
+            background: #2980b9;
+        }
+        .back-btn {
+            background: #95a5a6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+            transition: background 0.3s;
+        }
+        .back-btn:hover {
+            background: #7f8c8d;
+        }
+        .instructions {
+            background: #e8f5e8;
+            border-left: 4px solid #27ae60;
+            padding: 15px;
+            margin: 20px 0;
+            text-align: left;
+        }
+        .step {
+            margin: 8px 0;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="success-icon">✅</div>
+        <h1>決済完了！</h1>
+        <p>プロ版の決済が正常に完了しました。</p>
+        
+        <div class="code-container">
+            <p><strong>プラン変更コード</strong></p>
+            <div class="code" id="activationCode">PRO123456</div>
+            <button class="copy-btn" onclick="copyCode()">📋 コードをコピー</button>
+        </div>
+        
+        <div class="instructions">
+            <h3>📝 次の手順：</h3>
+            <div class="step">1. 上記のコードをコピーしてください</div>
+            <div class="step">2. AI漫画ネームメーカーアプリに戻ってください</div>
+            <div class="step">3. サブスクリプション管理画面を開いてください</div>
+            <div class="step">4. コード入力欄に貼り付けてください</div>
+            <div class="step">5. 「アクティベート」ボタンをクリックしてください</div>
+        </div>
+        
+        <div style="margin-top: 30px;">
+            <button class="back-btn" onclick="goBack()">← アプリに戻る</button>
+        </div>
+    </div>
+
+    <script>
+        // URLパラメータからプラン情報を取得
+        const urlParams = new URLSearchParams(window.location.search);
+        const plan = urlParams.get('plan') || 'pro';
+        
+        // プランに応じてコードを生成
+        function generateActivationCode(plan) {
+            const timestamp = Date.now().toString().slice(-6);
+            const planPrefix = plan === 'premium' ? 'PREMIUM' : 'PRO';
+            return `${planPrefix}${timestamp}`;
+        }
+        
+        // コードを生成して表示
+        const activationCode = generateActivationCode(plan);
+        document.getElementById('activationCode').textContent = activationCode;
+        
+        // コードをコピーする関数
+        function copyCode() {
+            const code = document.getElementById('activationCode').textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                alert('コードをコピーしました！');
+            }).catch(() => {
+                // フォールバック
+                const textArea = document.createElement('textarea');
+                textArea.value = code;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                alert('コードをコピーしました！');
+            });
+        }
+        
+        // アプリに戻る関数
+        function goBack() {
+            // アプリのURLに戻る（実際のURLに変更してください）
+            window.location.href = 'http://localhost:3000';
+        }
+        
+        // ページ読み込み時にコードを自動生成
+        window.onload = function() {
+            console.log('決済完了ページが読み込まれました');
+            console.log('プラン:', plan);
+            console.log('生成されたコード:', activationCode);
+        };
+    </script>
+</body>
+</html>

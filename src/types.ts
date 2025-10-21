@@ -987,7 +987,7 @@ export const DEFAULT_LAYOUT_IMAGE_OPTIONS: LayoutImageOptions = {
 // サブスクリプション関連型定義
 // ========================================
 
-export type SubscriptionPlan = 'free' | 'basic' | 'premium';
+export type SubscriptionPlan = 'free' | 'pro' | 'premium';
 
 export interface SubscriptionStatus {
   plan: SubscriptionPlan;
@@ -995,7 +995,7 @@ export interface SubscriptionStatus {
   activatedAt: string | null;
   expiresAt: string | null;
   isTrialMode: boolean;
-  stripeCustomerId?: string; // Phase 2で使用
+  paypalCustomerId?: string; // Phase 2で使用
 }
 
 export interface ServiceStatus {

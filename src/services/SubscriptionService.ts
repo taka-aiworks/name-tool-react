@@ -9,7 +9,7 @@ class SubscriptionService {
   // トライアルコード定義
   private readonly TRIAL_CODES: Record<string, { plan: SubscriptionPlan; days: number }> = {
     'TRIAL7': { plan: 'premium', days: 7 },
-    'BASIC30': { plan: 'basic', days: 30 },
+    'PRO30': { plan: 'pro', days: 30 },
     'PREMIUM30': { plan: 'premium', days: 30 },
   };
 
@@ -18,34 +18,20 @@ class SubscriptionService {
    */
   public getStatus(): SubscriptionStatus {
     const stored = localStorage.getItem(this.STORAGE_KEY);
-    
-    if (!stored) {
-      // 初回: 無料プラン
-      const initialStatus: SubscriptionStatus = {
-        plan: 'free',
-        code: null,
-        activatedAt: null,
-        expiresAt: null,
-        isTrialMode: false
-      };
-      this.saveStatus(initialStatus);
-      return initialStatus;
+    if (stored) {
+      return JSON.parse(stored);
     }
     
-    const status: SubscriptionStatus = JSON.parse(stored);
-    
-    // 有効期限チェック
-    if (status.expiresAt && this.isExpired(status.expiresAt)) {
-      // 期限切れ → 無料プランに戻す
-      status.plan = 'free';
-      status.code = null;
-      status.activatedAt = null;
-      status.expiresAt = null;
-      status.isTrialMode = false;
-      this.saveStatus(status);
-    }
-    
-    return status;
+    // 初期状態
+    const initialStatus: SubscriptionStatus = {
+      plan: 'free',
+      code: null,
+      activatedAt: null,
+      expiresAt: null,
+      isTrialMode: false
+    };
+    this.saveStatus(initialStatus);
+    return initialStatus;
   }
 
   /**
@@ -121,12 +107,36 @@ class SubscriptionService {
     switch (status.plan) {
       case 'premium':
         return Infinity;
-      case 'basic':
+      case 'pro':
         return 100;
       case 'free':
       default:
         return 10;
     }
+  }
+
+  /**
+   * エクスポート機能が利用可能かチェック
+   */
+  public canExport(): boolean {
+    const status = this.getStatus();
+    return status.plan !== 'free'; // 無料版ではエクスポート不可
+  }
+
+  /**
+   * クラウド保存機能が利用可能かチェック
+   */
+  public canUseCloudSave(): boolean {
+    const status = this.getStatus();
+    return status.plan === 'premium'; // プレミアム版のみ
+  }
+
+  /**
+   * ベータ機能が利用可能かチェック
+   */
+  public canUseBetaFeatures(): boolean {
+    const status = this.getStatus();
+    return status.plan === 'premium'; // プレミアム版のみ
   }
 
   /**
@@ -136,8 +146,8 @@ class SubscriptionService {
     return this.getStatus().plan === 'free';
   }
 
-  public isBasicTier(): boolean {
-    return this.getStatus().plan === 'basic';
+  public isProTier(): boolean {
+    return this.getStatus().plan === 'pro';
   }
 
   public isPremiumTier(): boolean {
@@ -166,8 +176,8 @@ class SubscriptionService {
     switch (status.plan) {
       case 'premium':
         return 'プレミアム版';
-      case 'basic':
-        return 'ベーシック版';
+      case 'pro':
+        return 'プロ版';
       case 'free':
       default:
         return '無料版';
@@ -175,20 +185,73 @@ class SubscriptionService {
   }
 
   /**
-   * Stripe決済リンクを取得
+   * 手動でプランを変更（テスト用）
    */
-  public getStripePurchaseLink(plan: 'basic' | 'premium'): string {
-    if (plan === 'basic') {
-      return process.env.REACT_APP_STRIPE_BASIC_LINK || 'https://buy.stripe.com/test_basic';
-    }
-    return process.env.REACT_APP_STRIPE_PREMIUM_LINK || 'https://buy.stripe.com/test_premium';
+  public setPlan(plan: SubscriptionPlan): void {
+    const status = this.getStatus();
+    const newStatus: SubscriptionStatus = {
+      ...status,
+      plan: plan,
+      activatedAt: new Date().toISOString(),
+      expiresAt: plan === 'free' ? null : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30日後
+      isTrialMode: false
+    };
+    this.saveStatus(newStatus);
   }
 
   /**
-   * Stripe Customer Portalリンクを取得
+   * PayPal決済リンクを取得
    */
-  public getStripePortalLink(): string {
-    return process.env.REACT_APP_STRIPE_PORTAL_URL || 'https://billing.stripe.com/p/login/test';
+  public getPurchaseLink(plan: 'pro' | 'premium'): string {
+    // PayPal決済リンク（正しいURL形式）
+    if (plan === 'pro') {
+      return process.env.REACT_APP_PAYPAL_PRO_LINK || 'https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-2XE8994072110444GND3TEJY';
+    }
+    return process.env.REACT_APP_PAYPAL_PREMIUM_LINK || 'https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-8J371319RP605241DND3TDBA';
+  }
+
+  public getNoteSubscriptionLink(): string {
+    return 'https://note.com/your-username/m/magazine-id';
+  }
+
+  /**
+   * PayPal顧客ポータルリンクを取得
+   */
+  public getPortalLink(): string {
+    return process.env.REACT_APP_PAYPAL_PORTAL_URL || 'https://www.paypal.com/myaccount/autopay';
+  }
+
+  /**
+   * サーバーからプラン状態を確認
+   */
+  public async checkServerSubscription(userId: string): Promise<{ success: boolean; plan: SubscriptionPlan; message: string }> {
+    try {
+      const response = await fetch(`/api/check-subscription?userId=${userId}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        // サーバーから取得したプランでローカルを更新
+        this.setPlan(data.plan as SubscriptionPlan);
+        return {
+          success: true,
+          plan: data.plan as SubscriptionPlan,
+          message: data.message
+        };
+      }
+      
+      return {
+        success: false,
+        plan: 'free',
+        message: 'プラン確認に失敗しました'
+      };
+    } catch (error) {
+      console.error('Server subscription check failed:', error);
+      return {
+        success: false,
+        plan: 'free',
+        message: 'サーバーとの通信に失敗しました'
+      };
+    }
   }
 }
 

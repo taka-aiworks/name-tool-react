@@ -119,7 +119,8 @@ class UsageLimitService {
    * 制限が有効かチェック（環境変数で制御）
    */
   private isLimitEnabled(): boolean {
-    return process.env.REACT_APP_USE_ENV_API_KEY === 'true';
+    // 常に制限を有効にする（デバッグ用の強制無効化を削除）
+    return true;
   }
 
   /**
